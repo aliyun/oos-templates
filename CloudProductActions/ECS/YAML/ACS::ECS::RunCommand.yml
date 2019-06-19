@@ -1,0 +1,86 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates a cloud assistant command and triggers it on one ECS instance.
+Parameters:
+  commandContent:
+    Description: The content of command.
+    Type: String
+  instanceId:
+    Description: The ID of ECS instance that will invoke command.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  commandType:
+    Description: The type of command.
+    Type: String
+    AllowedValues:
+    - RunBatScript
+    - RunPowerShellScript
+    - RunShellScript
+Tasks:
+- Name: createCommand
+  Action: ACS::ExecuteAPI
+  Description: Creates a cloud assistant command.
+  Properties:
+    Service: ECS
+    API: CreateCommand
+    Parameters:
+      CommandContent:
+        Fn::Base64Encode: '{{ commandContent }}'
+      Name: '{{ ACS::ExecutionId }}'
+      Type: '{{ commandType }}'
+  Outputs:
+    commandId:
+      Type: String
+      ValueSelector: CommandId
+- Name: invokeCommand
+  Action: ACS::ExecuteAPI
+  Description: Triggers a cloud assistant command on one ECS instances.
+  OnError: deleteCommand
+  Properties:
+    Service: ECS
+    API: InvokeCommand
+    Parameters:
+      CommandId: '{{ createCommand.commandId }}'
+      InstanceIds:
+      - '{{ instanceId }}'
+  Outputs:
+    invokeId:
+      Type: String
+      ValueSelector: InvokeId
+- Name: untilInvocationReady
+  Action: ACS::WaitFor
+  Description: Waits for the command to be completed.
+  Properties:
+    Service: ECS
+    API: DescribeInvocations
+    Parameters:
+      InvokeId: '{{ invokeCommand.invokeId }}'
+    DesiredValues:
+    - Finished
+    PropertySelector: Invocations.Invocation[].InvokeStatus
+- Name: describeInvocationResults
+  Action: ACS::ExecuteAPI
+  Description: Views the command output of a cloud assistant command in the specified
+    ECS instance.
+  Properties:
+    Service: ECS
+    API: DescribeInvocationResults
+    Parameters:
+      InvokeId: '{{ invokeCommand.invokeId }}'
+  Outputs:
+    invocationResult:
+      Type: String
+      ValueSelector: Invocation.InvocationResults.InvocationResult
+- Name: deleteCommand
+  Action: ACS::ExecuteAPI
+  Description: Deletes a cloud assistant command.
+  Properties:
+    Service: ECS
+    API: DeleteCommand
+    Parameters:
+      CommandId: '{{ createCommand.commandId }}'
+Outputs:
+  invocationResult:
+    Type: String
+    Value: '{{ describeInvocationResults.invocationResult }}'

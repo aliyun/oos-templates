@@ -1,0 +1,159 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Installs SLS agent on ECS instance by running a cloud assistant command.",
+  "Parameters": {
+    "instanceId": {
+      "Description": "The ID of instance to install ilogtail.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "logTailUserDefinedId": {
+      "Description": "The user defined Id write to /etc/ilogtail/user_defined_id",
+      "Type": "String",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Check the ECS instance is running status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
+        }
+      }
+    },
+    {
+      "Name": "createCommand",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Creates a cloud assistant command to install logtail agent.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateCommand",
+        "Parameters": {
+          "CommandContent": {
+            "Fn::Base64Encode": "wget http://logtail-release-{{ ACS::RegionId }}.oss-{{ ACS::RegionId }}-internal.aliyuncs.com/linux64/logtail.sh -O logtail.sh; chmod 755 logtail.sh; ./logtail.sh install {{ ACS::RegionId }}; echo {{ logTailUserDefinedId }} > /etc/ilogtail/user_defined_id"
+          },
+          "Name": "Command_{{ instanceId }}_{{ ACS::ExecutionId }}",
+          "Type": "RunShellScript"
+        }
+      },
+      "Outputs": {
+        "commandId": {
+          "Type": "String",
+          "ValueSelector": "CommandId"
+        }
+      }
+    },
+    {
+      "Name": "invokeCommand",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Triggers a cloud assistant command to install logtail agent.",
+      "OnError": "deleteCommand",
+      "Properties": {
+        "Service": "ECS",
+        "API": "InvokeCommand",
+        "Parameters": {
+          "CommandId": "{{ createCommand.commandId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "invokeId": {
+          "Type": "String",
+          "ValueSelector": "InvokeId"
+        }
+      }
+    },
+    {
+      "Name": "untilInvocationDone",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the command to be completed.",
+      "OnError": "deleteCommand",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocations",
+        "Parameters": {
+          "InvokeId": "{{ invokeCommand.invokeId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "PropertySelector": "Invocations.Invocation[].InvokeStatus"
+      }
+    },
+    {
+      "Name": "describeInvocationResult",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "InvokeId": "{{ invokeCommand.invokeId }}"
+        }
+      },
+      "Outputs": {
+        "exitCode": {
+          "Type": "Number",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].ExitCode"
+        },
+        "invocationResult": {
+          "Type": "String",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].Output"
+        }
+      }
+    },
+    {
+      "Name": "deleteCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Cleans up the install ilogtail command.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteCommand",
+        "Risk": "Normal",
+        "Parameters": {
+          "CommandId": "{{ createCommand.commandId }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "exitCode": {
+      "Type": "String",
+      "Value": "{{ describeInvocationResult.exitCode }}"
+    },
+    "invocationResult": {
+      "Type": "String",
+      "Value": {
+        "Fn::Base64Decode": "{{ describeInvocationResult.invocationResult }}"
+      }
+    }
+  }
+}

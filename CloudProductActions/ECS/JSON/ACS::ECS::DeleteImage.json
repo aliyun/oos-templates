@@ -1,0 +1,25 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Deletes ECS image by specifying imageId.",
+  "Parameters": {
+    "imageId": {
+      "Description": "The ID of ECS image.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "deleteImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Deletes an ECS image with the specified imageId.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Risk": "Normal",
+        "Parameters": {
+          "ImageId": "{{ imageId }}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Installs cloud assistant on ECS instance by specifying instanceId.",
+  "Parameters": {
+    "instanceId": {
+      "Description": "The Id of ECS instance you will install cloud assistant.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "installCloudAssistant",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Install cloud assistant with specified instance ID.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "InstallCloudAssistant",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "rebootInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Restarts an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "RebootInstance",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the instance restart successfully.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "describeCloudAssistantStatus",
+      "Action": "ACS::CheckFor",
+      "Description": "Check wether the cloud assistant status is true.",
+      "OnError": "ACS::END",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeCloudAssistantStatus",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "true"
+        ],
+        "PropertySelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
+      }
+    }
+  ]
+}

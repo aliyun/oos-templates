@@ -1,0 +1,23 @@
+FormatVersion: OOS-2019-06-01
+Description: Views the ECS instances by specifying instance name.
+Parameters:
+  instanceName:
+    Description: The name for query ECS instances.
+    Type: String
+Tasks:
+- Name: describeInstances
+  Action: ACS::ExecuteAPI
+  Description: Views the ECS instances by specifying instance name.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceName: '{{ instanceName }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ describeInstances.instanceIds }}'

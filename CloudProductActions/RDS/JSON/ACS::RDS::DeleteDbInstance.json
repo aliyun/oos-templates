@@ -1,0 +1,57 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Deletes DB instance.",
+  "Parameters": {
+    "dBInstanceId": {
+      "Description": "The ID of DB Instance that will be deleted.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkForInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Check weather the DB Instance is running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstances",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstance[].DBInstanceStatus"
+      }
+    },
+    {
+      "Name": "deleteDBInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Deletes DB instance with the specified DBInstanceId.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DeleteDBInstance",
+        "Risk": "Normal",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceDeleting",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for DB instance to enter deleting status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstances",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "PropertySelector": "Items.DBInstance[].DBInstanceStatus",
+        "NotDesiredValues": [
+          "Deleting"
+        ]
+      }
+    }
+  ]
+}

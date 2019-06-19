@@ -1,0 +1,23 @@
+FormatVersion: OOS-2019-06-01
+Description: Views the ECS instances by specifying instance status.
+Parameters:
+  status:
+    Description: The ECS instances status for query instances.
+    Type: String
+Tasks:
+- Name: describeInstances
+  Action: ACS::ExecuteAPI
+  Description: Views the ECS instances by specifying instance status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      Status: '{{ status }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ describeInstances.instanceIds }}'

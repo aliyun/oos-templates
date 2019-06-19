@@ -1,0 +1,49 @@
+FormatVersion: OOS-2019-06-01
+Description: Sends notification to DingTalk via webhook for asking approval. The execution
+  remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq
+  for details.
+Parameters:
+  webhook:
+    Description: DingTalk webhook to notify.
+    Type: String
+  msgtype:
+    Description: Message types.
+    Type: String
+    AllowedValues:
+    - text
+    - link
+    - markdown
+  text:
+    Description: Text param. If msgtype is text, this field is needed.
+    Type: Json
+    Default: {}
+  link:
+    Description: Link param. If msgtype is link, this field is needed.
+    Type: Json
+    Default: {}
+  markdown:
+    Description: MarkDown param. If msgtype is markdown, this field is needed.
+    Type: Json
+    Default: {}
+  at:
+    Description: '@ people to read the notification.'
+    Type: Json
+    Default: {}
+Tasks:
+- Name: approveDingTaskWebhook
+  Action: ACS::Approve
+  Description: Sends notification to DingTalk via webhook for asking approval. The
+    execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq
+    for details.
+  Properties:
+    NotifyType: WebHook
+    WebHook:
+      URI: '{{ webhook }}'
+      Headers:
+        Content-Type: application/json
+      Content:
+        msgtype: '{{ msgtype }}'
+        text: '{{ text }}'
+        link: '{{ link }}'
+        markdown: '{{ markdown }}'
+        at: '{{ at }}'

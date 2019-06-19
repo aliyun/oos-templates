@@ -1,0 +1,54 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates a custom image.
+Parameters:
+  imageName:
+    Description: The image name.
+    Type: String
+  instanceId:
+    Description: The ID of the instance.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+Tasks:
+- Name: checkInstanceReady
+  Action: ACS::CheckFor
+  Description: Checks whether the ECS instance status is running or stopped.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    - Stopped
+    PropertySelector: Instances.Instance[].Status
+- Name: createImage
+  Action: ACS::ExecuteAPI
+  Description: Creates a custom image.
+  Properties:
+    Service: ECS
+    API: CreateImage
+    Parameters:
+      ImageName: '{{ imageName }}'
+      InstanceId: '{{ instanceId }}'
+  Outputs:
+    imageId:
+      Type: String
+      ValueSelector: ImageId
+- Name: untilImageReady
+  Action: ACS::WaitFor
+  Description: Waits for the image to be available.
+  Properties:
+    Service: ECS
+    API: DescribeImages
+    Parameters:
+      ImageId: '{{ createImage.imageId }}'
+    DesiredValues:
+    - Available
+    PropertySelector: Images.Image[].Status
+Outputs:
+  imageId:
+    Type: String
+    Value: '{{ createImage.imageId }}'

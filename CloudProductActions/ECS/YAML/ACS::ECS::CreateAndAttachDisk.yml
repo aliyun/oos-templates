@@ -1,0 +1,76 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates a disk and attaches a data disk to an ECS instance.
+Parameters:
+  diskName:
+    Description: The name of the disk.
+    Type: String
+  zoneId:
+    Description: The zone ID that is available in the specified region.
+    Type: String
+  diskCategory:
+    Description: The category of the data disk.
+    Type: String
+  instanceId:
+    Description: Creates a subscription disk and the system automatically attaches
+      it to a subscription instance with the InstanceId you specified.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  size:
+    Description: The size of the disk.
+    Type: String
+Tasks:
+- Name: checkInstanceReady
+  Action: ACS::CheckFor
+  Description: Checks whether the ECS instance status is running or stopped.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    - Stopped
+    PropertySelector: Instances.Instance[].Status
+- Name: createDisk
+  Action: ACS::ExecuteAPI
+  Description: Creates a data disk.
+  Properties:
+    Service: ECS
+    API: CreateDisk
+    Parameters:
+      DiskCategory: '{{ diskCategory }}'
+      DiskName: '{{ diskName }}'
+      Size: '{{ size }}'
+      ZoneId: '{{ zoneId }}'
+  Outputs:
+    diskId:
+      Type: String
+      ValueSelector: DiskId
+- Name: checkForCreatedDiskReady
+  Action: ACS::CheckFor
+  Description: check the disk status Available.
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      DiskIds:
+      - '{{ createDisk.diskId }}'
+    DesiredValues:
+    - Available
+    PropertySelector: Disks.Disk[].Status
+- Name: attachDisk
+  Action: ACS::ExecuteAPI
+  Description: Attaches a data disk to an ECS instance.
+  Properties:
+    Service: ECS
+    API: AttachDisk
+    Parameters:
+      DiskId: '{{ createDisk.diskId }}'
+      InstanceId: '{{ instanceId }}'
+Outputs:
+  diskId:
+    Type: String
+    Value: '{{ createDisk.diskId }}'

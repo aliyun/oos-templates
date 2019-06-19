@@ -1,0 +1,18 @@
+FormatVersion: OOS-2019-06-01
+Description: Deletes ECS instance by specifying instance ID.
+Parameters:
+  instanceId:
+    Description: The ID of ECS instance.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+Tasks:
+- Name: deleteInstance
+  Action: ACS::ExecuteAPI
+  Description: Deletes ECS instance with the specified instance ID.
+  Properties:
+    Service: ECS
+    API: DeleteInstance
+    Parameters:
+      InstanceId: '{{ instanceId }}'

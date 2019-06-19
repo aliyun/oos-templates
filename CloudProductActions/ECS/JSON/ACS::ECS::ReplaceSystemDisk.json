@@ -1,0 +1,80 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Replaces the system disk of an ECS instance.",
+  "Parameters": {
+    "imageId": {
+      "Description": "The ID of image.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of ECS instance.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Stops the ECS instance with the specified instance ID.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the ECS instance to enter stopped status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "replaceSystemDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Replaces the system disk of an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ReplaceSystemDisk",
+        "Parameters": {
+          "ImageId": "{{ imageId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "List",
+          "ValueSelector": "DiskId"
+        }
+      }
+    },
+    {
+      "Name": "startInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Starts an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "StartInstance",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    }
+  ]
+}

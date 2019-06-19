@@ -1,0 +1,41 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Creates backups of a RDS instance.",
+  "Parameters": {
+    "backupMethod": {
+      "Description": "Logical",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of DB Instance that will be handled.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createBackup",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Creates backups of a RDS instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "CreateBackup",
+        "Parameters": {
+          "BackupMethod": "{{ backupMethod }}",
+          "DBInstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "backupJobId": {
+          "Type": "String",
+          "ValueSelector": "BackupJobId"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "backupJobId": {
+      "Type": "String",
+      "Value": "{{ createBackup.backupJobId }}"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+FormatVersion: OOS-2019-06-01
+Description: Schedules to upgrade internet bandwidth for ECS instances.
+Parameters:
+  cron:
+    Description: 'The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm.
+      The minimum interval is one minute.'
+    Type: String
+    MaxLength: 30
+  endDate:
+    Description: 'The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.'
+    Type: String
+  instanceIds:
+    Description: The ID list of ECS instances.
+    Type: List
+  maxBandwidthIn:
+    Description: The maximum public network bandwidth for in-direction.
+    Type: Number
+  maxBandwidthOut:
+    Description: The maximum public network bandwidth for out-direction.
+    Type: Number
+  startTime:
+    Description: 'The start time of upgrade. Format: yyyy-MM-ddThh:mmZ.'
+    Type: String
+  endTime:
+    Description: 'The end time of upgrade. Format: yyyy-MM-ddThhZ.'
+    Type: String
+  maxErrors:
+    Description: The maximum number of errors allowed during task execution.
+    Type: Number
+    Default: 0
+  concurrency:
+    Description: Concurrency ratio of task execution.
+    Type: Number
+    Default: 1
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: timerTrigger
+  Action: ACS::TimerTrigger
+  Description: Triggers a task as scheduled by specifying Cron expression.
+  Properties:
+    Type: cron
+    Expression: '{{ cron }}'
+    EndDate: '{{ endDate }}'
+- Name: modifyInstanceNetworkSpec
+  Action: ACS::ExecuteAPI
+  Description: Modifies the temporary bandwidth of the instance with the specified
+    parameters.
+  Properties:
+    Service: ECS
+    API: ModifyInstanceNetworkSpec
+    Parameters:
+      InstanceId: '{{ aCS::TaskLoopItem }}'
+      InternetMaxBandwidthIn: '{{ maxBandwidthIn }}'
+      InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'
+      StartTime: '{{ startTime }}'
+      EndTime: '{{ endTime }}'
+  Loop:
+    MaxErrors: '{{ maxErrors }}'
+    Concurrency: '{{ concurrency }}'
+    Items: '{{ instanceIds }}'

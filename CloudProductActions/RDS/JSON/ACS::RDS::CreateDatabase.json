@@ -1,0 +1,67 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Creates a new database in an instance.",
+  "Parameters": {
+    "characterSetName": {
+      "Description": "The charset name of database.",
+      "Type": "String"
+    },
+    "dBInstanceId": {
+      "Description": "The ID of DB instance that will handled.",
+      "Type": "String"
+    },
+    "dBName": {
+      "Description": "The name of database.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkForInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Check wether the DB Instance is running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstanceAttribute",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstanceAttribute[].DBInstanceStatus"
+      }
+    },
+    {
+      "Name": "createDatabase",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Creates a new database in an instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "CreateDatabase",
+        "Parameters": {
+          "CharacterSetName": "{{ characterSetName }}",
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "DBName": "{{ dBName }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for DB instance to enter running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDatabases",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "DBName": "{{ dBName }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Databases.Database[].DBStatus"
+      }
+    }
+  ]
+}

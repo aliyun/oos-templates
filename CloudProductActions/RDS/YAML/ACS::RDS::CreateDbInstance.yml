@@ -1,0 +1,58 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates an RDS instance.
+Parameters:
+  dBInstanceClass:
+    Description: The instance type (specifications).
+    Type: String
+  dBInstanceNetType:
+    Description: The network type of the instance, Internet or Intranet.
+    Type: String
+  dBInstanceStorage:
+    Description: The storage capacity of the instance.
+    Type: String
+  engine:
+    Description: The engine type of the database.
+    Type: String
+  engineVersion:
+    Description: The version of the database.
+    Type: String
+  payType:
+    Description: The billing method of the instance.
+    Type: String
+  securityIPList:
+    Description: The IP whitelist of the instance.
+    Type: String
+Tasks:
+- Name: createDBInstance
+  Action: ACS::ExecuteAPI
+  Description: Creates an RDS instance.
+  Properties:
+    Service: RDS
+    API: CreateDBInstance
+    Parameters:
+      DBInstanceClass: '{{ dBInstanceClass }}'
+      DBInstanceNetType: '{{ dBInstanceNetType }}'
+      DBInstanceStorage: '{{ dBInstanceStorage }}'
+      Engine: '{{ engine }}'
+      EngineVersion: '{{ engineVersion }}'
+      PayType: '{{ payType }}'
+      SecurityIPList: '{{ securityIPList }}'
+  Outputs:
+    dBInstanceId:
+      Type: String
+      ValueSelector: DBInstanceId
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for DB Instance to enter running status.
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      DBInstanceId: '{{ createDBInstance.dBInstanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Items.DBInstance[].DBInstanceStatus
+Outputs:
+  dBInstanceId:
+    Type: String
+    Value: '{{ createDBInstance.dBInstanceId }}'

@@ -1,0 +1,73 @@
+FormatVersion: OOS-2019-06-01
+Description: Extends the size of a cloud disk.
+Parameters:
+  diskId:
+    Description: The ID of the disk will resize.
+    Type: String
+    AllowedPattern: d-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  instanceId:
+    Description: The ID of ECS instance that will handle.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  newSize:
+    Description: The size for the disk to resize.
+    Type: String
+Tasks:
+- Name: checkInstanceReady
+  Action: ACS::CheckFor
+  Description: Check ECS instance status is running or stopped status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    - Stopped
+    PropertySelector: Instances.Instance[].Status
+- Name: resizeDisk
+  Action: ACS::ExecuteAPI
+  Description: Extends the size of a cloud disk.
+  Properties:
+    Service: ECS
+    API: ResizeDisk
+    Parameters:
+      DiskId: '{{ diskId }}'
+      NewSize: '{{ newSize }}'
+- Name: untilDiskIdReady
+  Action: ACS::WaitFor
+  Description: describe Disk
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      DiskIds:
+      - '{{ diskId }}'
+    DesiredValues:
+    - In_use
+    PropertySelector: Disks.Disk[].Status
+- Name: rebootInstance
+  Action: ACS::ExecuteAPI
+  Description: Restarts the ECS instance with the specified instance ID.
+  Properties:
+    Service: ECS
+    API: RebootInstance
+    Parameters:
+      InstanceId: '{{ instanceId }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for ECS instance to enter running status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Instances.Instance[].Status

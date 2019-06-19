@@ -1,0 +1,37 @@
+FormatVersion: OOS-2019-06-01
+Description: Detaches a disk from an ECS instance.
+Parameters:
+  instanceId:
+    Description: The ID of the ECS instance.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  diskId:
+    Description: The ECS instance disk ID.
+    Type: String
+    AllowedPattern: d-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+Tasks:
+- Name: detachDisk
+  Action: ACS::ExecuteAPI
+  Description: Detaches a disk from an ECS instance.
+  Properties:
+    Service: ECS
+    API: DetachDisk
+    Parameters:
+      DiskId: '{{ diskId }}'
+      InstanceId: '{{ instanceId }}'
+- Name: untilDiskDetached
+  Action: ACS::WaitFor
+  Description: Waits for the disk to detach successfully.
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      DiskIds:
+      - '{{ diskId }}'
+    DesiredValues:
+    - Available
+    PropertySelector: Disks.Disk[].Status

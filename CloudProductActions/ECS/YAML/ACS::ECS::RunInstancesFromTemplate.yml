@@ -1,0 +1,43 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates one or more instances by specifying launch template.
+Parameters:
+  launchTemplateId:
+    Description: The ID of the instance launch template.
+    Type: String
+  launchTemplateName:
+    Description: The name of the instance launch template.
+    Type: String
+  amount:
+    Description: The specified number of instances you want to create.
+    Type: Number
+    Default: 1
+Tasks:
+- Name: runInstances
+  Action: ACS::ExecuteAPI
+  Description: run instances
+  Properties:
+    Service: ECS
+    API: RunInstances
+    Parameters:
+      LaunchTemplateId: '{{ launchTemplateId }}'
+      LaunchTemplateName: '{{ launchTemplateName }}'
+      Amount: '{{ amount }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: InstanceIdSets.InstanceIdSet[]
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for the created instances to be Running
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds: '{{ runInstances.instanceIds }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Instances.Instance[].Status
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ runInstances.instanceIds }}'

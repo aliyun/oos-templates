@@ -1,0 +1,26 @@
+FormatVersion: OOS-2019-06-01
+Description: Restarts an RDS instance.
+Parameters:
+  dBInstanceId:
+    Description: The ID of DB Instance that will be restarted.
+    Type: String
+Tasks:
+- Name: restartDBInstance
+  Action: ACS::ExecuteAPI
+  Description: Restarts an RDS instance.
+  Properties:
+    Service: RDS
+    API: RestartDBInstance
+    Parameters:
+      DBInstanceId: '{{ dBInstanceId }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for the DB Instance to enter running status.
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      DBInstanceId: '{{ dBInstanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Items.DBInstance[].DBInstanceStatus

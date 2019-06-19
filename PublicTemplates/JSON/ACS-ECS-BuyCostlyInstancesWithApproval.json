@@ -1,0 +1,96 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Creates one or more ECS instances with approval.",
+  "Parameters": {
+    "accessToken": {
+      "Description": "Dingtalk access_token to be notified.",
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9]*"
+    },
+    "imageId": {
+      "Description": "The image ID for the ECS instances, centos_6_10_64_20G_alibase_20190326.vhd, for example.",
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
+      "MinLength": 1,
+      "MaxLength": 40
+    },
+    "instanceType": {
+      "Description": "The instance type for the ECS instances, ecs.g5.large, for example.",
+      "Type": "String",
+      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "securityGroupId": {
+      "Description": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Type": "String",
+      "AllowedPattern": "sg-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "vSwitchId": {
+      "Description": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Type": "String",
+      "AllowedPattern": "vsw-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "amount": {
+      "Description": "The specified number of instances you want to create.",
+      "Type": "Number",
+      "Default": 1
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "approvalForRunInstances",
+      "Action": "ACS::Approve",
+      "Description": "Approval to lunch ECS instances.",
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "https://oapi.dingtalk.com/robot/send?access_token={{ accessToken }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "text",
+            "text": {
+              "content": "The ECS instances will be created"
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ECS::RunInstances",
+      "Description": "Creates one or more ECS instances.",
+      "Properties": {
+        "imageId": "{{ imageId }}",
+        "instanceType": "{{ instanceType }}",
+        "securityGroupId": "{{ securityGroupId }}",
+        "vSwitchId": "{{ vSwitchId }}",
+        "amount": "{{ amount }}"
+      },
+      "Outputs": {
+        "instanceId": {
+          "ValueSelector": "instanceIds[0]",
+          "Type": "String"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceId": {
+      "Type": "String",
+      "Value": "{{ runInstances.instanceId }}"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Modifies the VPC attributes of an ECS instance.",
+  "Parameters": {
+    "instanceId": {
+      "Description": "The ID of the instance.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "vSwitchId": {
+      "Description": "The vSwitch ID for the specific VPC.",
+      "Type": "String",
+      "AllowedPattern": "vsw-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Stops the ECS instance with the specified instance ID.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the ECS instance to enter stooped status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
+        }
+      }
+    },
+    {
+      "Name": "modifyInstanceVpcAttribute",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Modifies the VPC attributes of an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceVpcAttribute",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}",
+          "VSwitchId": "{{ vSwitchId }}"
+        }
+      }
+    }
+  ]
+}

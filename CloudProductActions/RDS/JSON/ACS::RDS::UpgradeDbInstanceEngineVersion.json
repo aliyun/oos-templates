@@ -1,0 +1,57 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Upgrades the database version of an instance.",
+  "Parameters": {
+    "dBInstanceId": {
+      "Description": "The ID of DB instance will handle.",
+      "Type": "String"
+    },
+    "engineVersion": {
+      "Description": "The engine version of DB Instance will be upgraded.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkForInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks whether the RDS instance in running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstanceAttribute",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstanceAttribute[].DBInstanceStatus"
+      }
+    },
+    {
+      "Name": "upgradeDBInstanceEngineVersion",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Upgrades the database version of an instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "UpgradeDBInstanceEngineVersion",
+        "Parameters": {
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "EngineVersion": "{{ engineVersion }}"
+        }
+      },
+      "Outputs": {
+        "taskId": {
+          "Type": "String",
+          "ValueSelector": "TaskId"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "taskId": {
+      "Type": "String",
+      "Value": "{{ upgradeDBInstanceEngineVersion.taskId }}"
+    }
+  }
+}

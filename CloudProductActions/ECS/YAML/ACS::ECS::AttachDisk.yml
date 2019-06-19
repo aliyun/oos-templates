@@ -1,0 +1,37 @@
+FormatVersion: OOS-2019-06-01
+Description: Attaches a data disk to an ECS instance.
+Parameters:
+  instanceId:
+    Description: The ID of the instance.
+    Type: String
+    AllowedPattern: i-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  diskId:
+    Description: The ID of the disk to be attached.
+    Type: String
+    AllowedPattern: d-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+Tasks:
+- Name: attachDisk
+  Action: ACS::ExecuteAPI
+  Description: Attaches a data disk to an ECS instance.
+  Properties:
+    Service: ECS
+    API: AttachDisk
+    Parameters:
+      DiskId: '{{ diskId }}'
+      InstanceId: '{{ instanceId }}'
+- Name: untilDiskAttached
+  Action: ACS::WaitFor
+  Description: Waits for the disk to be attached.
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      DiskIds:
+      - '{{ diskId }}'
+    DesiredValues:
+    - In_use
+    PropertySelector: Disks.Disk[].Status

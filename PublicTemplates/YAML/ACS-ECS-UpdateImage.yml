@@ -1,0 +1,118 @@
+FormatVersion: OOS-2019-06-01
+Description: Updates an existing ECS image via ECS Cloud Assistant then creates a
+  ECS image.
+Parameters:
+  sourceImageId:
+    Description: The image ID for the ECS instances, centos_6_10_64_20G_alibase_20190326.vhd,
+      for example.
+    Type: String
+    AllowedPattern: '[A-Za-z0-9_\-\.]*'
+    MinLength: 1
+    MaxLength: 40
+  instanceType:
+    Description: The instance type for the ECS instances, ecs.g5.large, for example.
+    Type: String
+    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
+    MinLength: 1
+    MaxLength: 30
+  securityGroupId:
+    Description: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx,
+      for example.
+    Type: String
+    AllowedPattern: sg-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  vSwitchId:
+    Description: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx,
+      for example.
+    Type: String
+    AllowedPattern: vsw-[A-Za-z0-9]*
+    MinLength: 1
+    MaxLength: 30
+  commandContent:
+    Description: The content of command.
+    Type: String
+  commandType:
+    Description: The type of command to run in ECS instance.
+    Type: String
+    AllowedValues:
+    - RunBatScript
+    - RunPowerShellScript
+    - RunShellScript
+    MinLength: 1
+    MaxLength: 30
+  targetImageName:
+    Description: The name of image.
+    Type: String
+    AllowedPattern: '[A-Za-z0-9\-_]*'
+    MinLength: 1
+    MaxLength: 30
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: checkNewImageName
+  Action: ACS::CheckFor
+  Description: Check image name is available.
+  Properties:
+    Service: ECS
+    API: DescribeImages
+    Parameters:
+      ImageName: '{{ targetImageName }}'
+    DesiredValues:
+    - 0
+    PropertySelector: TotalCount
+- Name: runInstances
+  Action: ACS::ECS::RunInstances
+  Description: Create a ECS instance for the cloud assistant.
+  Properties:
+    imageId: '{{ sourceImageId }}'
+    instanceType: '{{ instanceType }}'
+    securityGroupId: '{{ securityGroupId }}'
+    vSwitchId: '{{ vSwitchId }}'
+  Outputs:
+    instanceId:
+      ValueSelector: instanceIds[0]
+      Type: String
+- Name: installCloudAssistant
+  Action: ACS::ECS::InstallCloudAssistant
+  Description: Install cloud assostant for ECS instance.
+  OnError: deleteInstance
+  Properties:
+    instanceId: '{{ runInstances.instanceId }}'
+- Name: runCommand
+  Action: ACS::ECS::RunCommand
+  Description: Run command on ECS instance.
+  OnError: deleteInstance
+  Properties:
+    commandContent:
+      Fn::Base64Encode: '{{ commandContent }}'
+    commandType: '{{ commandType }}'
+    instanceId: '{{ runInstances.instanceId }}'
+- Name: createImage
+  Action: ACS::ECS::CreateImage
+  Description: Create image with the specified image name and instance ID.
+  OnError: deleteInstance
+  Properties:
+    imageName: '{{ targetImageName }}'
+    instanceId: '{{ runInstances.instanceId }}'
+  Outputs:
+    imageId:
+      ValueSelector: imageId
+      Type: String
+- Name: deleteInstance
+  Action: ACS::ExecuteAPI
+  Description: Deletes the ECS instance by the instance ID.
+  Properties:
+    Service: ECS
+    API: DeleteInstance
+    Risk: Normal
+    Parameters:
+      InstanceId: '{{ runInstances.instanceId }}'
+      Force: true
+Outputs:
+  imageId:
+    Type: String
+    Value: '{{ createImage.imageId }}'

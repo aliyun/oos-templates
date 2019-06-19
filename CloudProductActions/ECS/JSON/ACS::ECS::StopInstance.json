@@ -1,0 +1,42 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Stops an ECS instance.",
+  "Parameters": {
+    "instanceId": {
+      "Description": "The ID of ECS instance.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Stops an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the ECS instance to enter stooped status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    }
+  ]
+}

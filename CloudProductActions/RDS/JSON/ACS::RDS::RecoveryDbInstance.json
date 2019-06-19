@@ -1,0 +1,96 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Recoveries database to an existed or new instance.",
+  "Parameters": {
+    "targetDBInstanceId": {
+      "Description": "The ID of target DB Instance that will be handled.",
+      "Type": "String"
+    },
+    "dBInstanceId": {
+      "Description": "The ID of DB instance that will be handled.",
+      "Type": "String"
+    },
+    "dBInstanceClass": {
+      "Description": "The class of DB Instance will be recovered.",
+      "Type": "String"
+    },
+    "restoreTime": {
+      "Description": "The time that database will be recovered.",
+      "Type": "String"
+    },
+    "instanceNetworkType": {
+      "Description": "The network type of DB Instance will be recovered.",
+      "Type": "String"
+    },
+    "payType": {
+      "Description": "The billing method of the instance.",
+      "Type": "String"
+    },
+    "vPCId": {
+      "Description": "The VPC ID of DB Instance will be recovered.",
+      "Type": "String"
+    },
+    "vSwitchId": {
+      "Description": "The vSwitch ID of DB Instance will be recovered.",
+      "Type": "String"
+    },
+    "dBInstanceStorage": {
+      "Description": "The Storage of DB Instance will be recovered.",
+      "Type": "String"
+    },
+    "dBName": {
+      "Description": "The name of DB Instance will be recovered.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "recoveryDBInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Recoveries database to an existed or new instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "RecoveryDBInstance",
+        "Parameters": {
+          "DBInstanceClass": "{{ dBInstanceClass }}",
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "DBInstanceStorage": "{{ dBInstanceStorage }}",
+          "InstanceNetworkType": "{{ instanceNetworkType }}",
+          "PayType": "{{ payType }}",
+          "RestoreTime": "{{ restoreTime }}",
+          "VPCId": "{{ vPCId }}",
+          "VSwitchId": "{{ vSwitchId }}"
+        }
+      },
+      "Outputs": {
+        "dBInstanceId": {
+          "Type": "String",
+          "ValueSelector": "DBInstanceId"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the database to enter running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDatabases",
+        "Parameters": {
+          "DBInstanceId": "{{ recoveryDBInstance.dBInstanceId }}",
+          "DBName": "{{ dBName }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Databases.Database[].DBStatus"
+      }
+    }
+  ],
+  "Outputs": {
+    "dBInstanceId": {
+      "Type": "String",
+      "Value": "{{ recoveryDBInstance.dBInstanceId }}"
+    }
+  }
+}
