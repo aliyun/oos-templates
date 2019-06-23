@@ -24,7 +24,7 @@ Parameters:
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: installLogtail
-  Action: ACS::SLS::InstallLogtail
+  Action: ACS::ECS::InstallLogtail
   Description: Installs SLS agent on ECS instances.
   Properties:
     logTailUserDefinedId: '{{ logTailUserDefinedId }}'

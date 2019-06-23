@@ -27,6 +27,7 @@ OOS sample templates are divided into two parts: public templates and cloud prod
 | ACS::ECS::DescribeInstancesByTag [YAML](CloudProductActions/ECS/YAML/ACS::ECS::DescribeInstancesByTag.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::DescribeInstancesByTag.json) | Views the ECS instances by specifying tag. |
 | ACS::ECS::DetachDisk [YAML](CloudProductActions/ECS/YAML/ACS::ECS::DetachDisk.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::DetachDisk.json) | Detaches a disk from an ECS instance. |
 | ACS::ECS::InstallCloudAssistant [YAML](CloudProductActions/ECS/YAML/ACS::ECS::InstallCloudAssistant.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::InstallCloudAssistant.json) | Installs cloud assistant on ECS instance by specifying instanceId. |
+| ACS::ECS::InstallLogtail [YAML](CloudProductActions/ECS/YAML/ACS::ECS::InstallLogtail.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::InstallLogtail.json) | Installs SLS agent on ECS instance by running a cloud assistant command. |
 | ACS::ECS::ModifyInstanceVpcAttribute [YAML](CloudProductActions/ECS/YAML/ACS::ECS::ModifyInstanceVpcAttribute.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::ModifyInstanceVpcAttribute.json) | Modifies the VPC attributes of an ECS instance. |
 | ACS::ECS::ModifyPrepaySpec [YAML](CloudProductActions/ECS/YAML/ACS::ECS::ModifyPrepaySpec.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::ModifyPrepaySpec.json) | Changes the type of your subscription instance. The new instance type will take effect for the entire lifecycle of the instance. |
 | ACS::ECS::ModifyVncPassword [YAML](CloudProductActions/ECS/YAML/ACS::ECS::ModifyVncPassword.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::ModifyVncPassword.json) | Modifies the Web management terminal password of an ECS instance. |
@@ -56,15 +57,11 @@ OOS sample templates are divided into two parts: public templates and cloud prod
 | ACS::RDS::RecoveryDbInstance [YAML](CloudProductActions/RDS/YAML/ACS::RDS::RecoveryDbInstance.yml) [JSON](CloudProductActions/RDS/JSON/ACS::RDS::RecoveryDbInstance.json) | Recoveries database to an existed or new instance. |
 | ACS::RDS::RestartDbInstance [YAML](CloudProductActions/RDS/YAML/ACS::RDS::RestartDbInstance.yml) [JSON](CloudProductActions/RDS/JSON/ACS::RDS::RestartDbInstance.json) | Restarts an RDS instance. |
 | ACS::RDS::UpgradeDbInstanceEngineVersion [YAML](CloudProductActions/RDS/YAML/ACS::RDS::UpgradeDbInstanceEngineVersion.yml) [JSON](CloudProductActions/RDS/JSON/ACS::RDS::UpgradeDbInstanceEngineVersion.json) | Upgrades the database version of an instance. |
-### SLS
-| Name                                     |  Description                             |
-| ---------------------------------------- | ---------------------------------------- |
-| ACS::SLS::InstallLogtail [YAML](CloudProductActions/SLS/YAML/ACS::SLS::InstallLogtail.yml) [JSON](CloudProductActions/SLS/JSON/ACS::SLS::InstallLogtail.json) | Installs SLS agent on ECS instance by running a cloud assistant command. |
 ## Public Templates
 | Name                                     |  Description                             |
 | ---------------------------------------- | ---------------------------------------- |
-| ACS-ECS-BulkyInstallSlsAgentByInstanceIds [YAML](PublicTemplates/YAML/ACS-ECS-BulkyInstallSlsAgentByInstanceIds.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BulkyInstallSlsAgentByInstanceIds.json) | Installs SLS agent on ECS instances by specifying instance IDs. |
-| ACS-ECS-BulkyInstallSlsAgentByTag [YAML](PublicTemplates/YAML/ACS-ECS-BulkyInstallSlsAgentByTag.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BulkyInstallSlsAgentByTag.json) | Installs SLS agent on ECS instances by specifying tag. |
+| ACS-ECS-BulkyInstallLogAgentByInstanceIds [YAML](PublicTemplates/YAML/ACS-ECS-BulkyInstallLogAgentByInstanceIds.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BulkyInstallLogAgentByInstanceIds.json) | Installs SLS agent on ECS instances by specifying instance IDs. |
+| ACS-ECS-BulkyInstallLogAgentByTag [YAML](PublicTemplates/YAML/ACS-ECS-BulkyInstallLogAgentByTag.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BulkyInstallLogAgentByTag.json) | Installs SLS agent on ECS instances by specifying tag. |
 | ACS-ECS-BulkyUpgradeInternetBandwidthByInstanceIds [YAML](PublicTemplates/YAML/ACS-ECS-BulkyUpgradeInternetBandwidthByInstanceIds.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BulkyUpgradeInternetBandwidthByInstanceIds.json) | Upgrades internet bandwidth of ECS instances. |
 | ACS-ECS-BuyCostlyInstancesWithApproval [YAML](PublicTemplates/YAML/ACS-ECS-BuyCostlyInstancesWithApproval.yml) [JSON](PublicTemplates/JSON/ACS-ECS-BuyCostlyInstancesWithApproval.json) | Creates one or more ECS instances with approval. |
 | ACS-ECS-DeleteInstancesWithApprovalByInstanceIds [YAML](PublicTemplates/YAML/ACS-ECS-DeleteInstancesWithApprovalByInstanceIds.yml) [JSON](PublicTemplates/JSON/ACS-ECS-DeleteInstancesWithApprovalByInstanceIds.json) | Deletes the ECS instances with approval. |

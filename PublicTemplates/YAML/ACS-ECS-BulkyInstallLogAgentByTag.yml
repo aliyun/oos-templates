@@ -46,7 +46,7 @@ Tasks:
       Type: List
       ValueSelector: Instances.Instance[].InstanceId
 - Name: installAgent
-  Action: ACS::SLS::InstallLogtail
+  Action: ACS::ECS::InstallLogtail
   Description: Install agent on the ECS instance.
   Properties:
     logTailUserDefinedId: '{{ logTailUserDefinedId }}'
