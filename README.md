@@ -9,6 +9,8 @@
 通过使用OOS还可以达到标准化运维任务的目的，从而实践运维即代码（Operations as Code）的先进理念。
 OOS支持跨产品使用，您可以使用OOS管理ECS、RDS、SLB、VPC等云产品。
 
+欢迎体验 [OOS控制台](https://home.console.aliyun.com/redirect.htm?productId=ecs&path=automation/region/)，阅读 [OOS帮助文档](https://help.aliyun.com/product/119529.html) 以了解更多细节。
+
 ## 公共模板
 | 序号   | 名称           | 描述（用途）                     | 链接         |
 | ----- | -------------- | ------------------------------- | ------------ |
@@ -92,6 +94,8 @@ Typical usage scenarios include event-driven O&M, batch O&M, scheduled O&M tasks
 OOS provides approval, notification, and other functions for some important O&M scenarios.
 By using OOS, you can also achieve the goal of standardized O&M tasks, thus practicing the advanced concept of Operations as Code.
 OOS supports cross-product use, you can use OOS to manage cloud products such as ECS, RDS, SLB, VPC and so on.
+
+Welcome to access [OOS console](https://home.console.aliyun.com/redirect.htm?productId=ecs&path=automation/region/), and to read [OOS document](https://help.aliyun.com/product/119529.html) for more details.
 
 ## Public Templates
 | No.   | Name           | Description                     | Links        |
