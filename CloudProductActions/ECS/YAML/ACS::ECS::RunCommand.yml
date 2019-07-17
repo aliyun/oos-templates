@@ -71,7 +71,7 @@ Tasks:
   Outputs:
     invocationResult:
       Type: String
-      ValueSelector: Invocation.InvocationResults.InvocationResult
+      ValueSelector: Invocation.InvocationResults.InvocationResult[].Output
 - Name: deleteCommand
   Action: ACS::ExecuteAPI
   Description: Deletes a cloud assistant command.
@@ -81,6 +81,7 @@ Tasks:
     Parameters:
       CommandId: '{{ createCommand.commandId }}'
 Outputs:
-  invocationResult:
+  invocationOutput:
     Type: String
-    Value: '{{ describeInvocationResults.invocationResult }}'
+    Value:
+      Fn::Base64Decode: '{{ describeInvocationResults.invocationResult }}'

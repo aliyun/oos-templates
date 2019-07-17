@@ -1,0 +1,58 @@
+FormatVersion: OOS-2019-06-01
+Description: Tag an ECS instance using Linux kernel version as tag value.
+Parameters:
+  instanceId:
+    Description: Instance ID of the ECS to be tagged
+    Type: String
+    MaxLength: 30
+    MinLength: 1
+  tagKey:
+    Description: The tag key.
+    Type: String
+    Default: kernelVersion
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: checkInstanceReady
+  Action: ACS::CheckFor
+  Description: Checks ECS instance is in the running status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Instances.Instance[].Status
+- Name: queryInstanceKernelVersion
+  Action: ACS::ECS::RunCommand
+  Description: Queries kernel version by RunCommand invocation result.
+  Properties:
+    commandContent: uname -r | awk -F'-' '{print $1}'
+    instanceId: '{{ instanceId }}'
+    commandType: RunShellScript
+  Outputs:
+    kernelVersion:
+      Type: String
+      ValueSelector: invocationOutput
+- Name: tagResources
+  Action: ACS::ExecuteApi
+  Description: Creates and attaches tag to ECS instance.
+  Properties:
+    Service: ECS
+    API: TagResources
+    Parameters:
+      ResourceIds:
+      - '{{ instanceId }}'
+      ResourceType: Instance
+      Tags:
+      - Key: '{{ tagKey }}'
+        Value: '{{ queryInstanceKernelVersion.kernelVersion }}'
+Outputs:
+  kernelVersion:
+    Type: String
+    Value: '{{ queryInstanceKernelVersion.kernelVersion }}'

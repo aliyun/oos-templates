@@ -1,0 +1,50 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Bulky tag ECS instances using Linux kernel version as tag value by specifying instance IDs.",
+  "Parameters": {
+    "instanceIds": {
+      "Description": "Instance IDs of the ECS to be tagged",
+      "Type": "List"
+    },
+    "tagKey": {
+      "Description": "The tag key.",
+      "Type": "String",
+      "Default": "KernelVersion"
+    },
+    "maxErrors": {
+      "Description": "The maximum number of errors allowed during task execution.",
+      "Type": "Number",
+      "Default": 0
+    },
+    "concurrency": {
+      "Description": "Concurrency ratio of task execution.",
+      "Type": "Number",
+      "Default": 1
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "tagECSInstacnes",
+      "Action": "ACS::Template",
+      "Description": "Creates and attaches tag to ECS instance.",
+      "Properties": {
+        "TemplateName": "ACS-ECS-TagInstanceByLinuxKernelVersion",
+        "Parameters": {
+          "instanceId": "{{ ACS::TaskLoopItem }}",
+          "tagKey": "{{ tagKey }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ instanceIds }}",
+        "MaxErrors": "{{ maxErrors }}",
+        "Concurrency": "{{ concurrency }}"
+      }
+    }
+  ]
+}

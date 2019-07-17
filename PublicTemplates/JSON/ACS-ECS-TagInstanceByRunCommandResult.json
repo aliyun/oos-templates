@@ -1,0 +1,89 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Tag a Linux ECS using RunCommand invocation result as tag value.",
+  "Parameters": {
+    "commandContent": {
+      "Description": "Command content to run in Linux ECS.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "Instance ID of the Linux ECS",
+      "Type": "String",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "tagKey": {
+      "Description": "The tag key.",
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks ECS instance is in the running status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "queryInstanceCommandOutput",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": "Invokes ECS instance command and gets invocation output.",
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "tagResources",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Creates and attaches tag to ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "TagResources",
+        "Parameters": {
+          "ResourceIds": [
+            "{{ instanceId }}"
+          ],
+          "ResourceType": "Instance",
+          "Tags": [
+            {
+              "Key": "{{ tagKey }}",
+              "Value": "{{ queryInstanceCommandOutput.commandOutput }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "tagValue": {
+      "Type": "String",
+      "Value": "{{ queryInstanceCommandOutput.commandOutput }}"
+    }
+  }
+}
