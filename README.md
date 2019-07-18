@@ -40,6 +40,12 @@ OOS支持跨产品使用，您可以使用OOS管理ECS、RDS、SLB、VPC等云�
 | 24 | ACS-ECS-UpdateImage | 自动更新镜像，具体逻辑为：从源镜像创建ECS实例，对新生成的实例执行云助手命令，从新实例创建新ECS镜像，最后删除新实例。输入包含七个必选参数：源镜像ID，ECS实例类型，安全组ID，交换机vSwitch ID，云助手命令内容，云助手命令类型，新镜像的名称。 | [YAML](PublicTemplates/YAML/ACS-ECS-UpdateImage.yml) [JSON](PublicTemplates/JSON/ACS-ECS-UpdateImage.json) |
 
 ## 云产品动作
+### DingTalk
+| 序号   | 名称           | 描述（用途）                     | 链接         |
+| ----- | -------------- | ------------------------------- | ------------ |
+| 1 | ACS::Approve::DingTalkWebhook | 通过 WebHook 发送通知到钉钉，以进行审批。执行会一直处于暂停状态，待同意或拒绝后，执行会继续或终止。详情请参考 https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq 。 | [YAML](CloudProductActions/DingTalk/YAML/ACS::Approve::DingTalkWebhook.yml) [JSON](CloudProductActions/DingTalk/JSON/ACS::Approve::DingTalkWebhook.json) |
+| 2 | ACS::Notify::DingTalkWebhook | 通过 WebHook 发送通知到钉钉。详情请参考 https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq 。 | [YAML](CloudProductActions/DingTalk/YAML/ACS::Notify::DingTalkWebhook.yml) [JSON](CloudProductActions/DingTalk/JSON/ACS::Notify::DingTalkWebhook.json) |
+
 ### ECS
 | 序号   | 名称           | 描述（用途）                     | 链接         |
 | ----- | -------------- | ------------------------------- | ------------ |
@@ -71,12 +77,6 @@ OOS支持跨产品使用，您可以使用OOS管理ECS、RDS、SLB、VPC等云�
 | 26 | ACS::ECS::RunInstancesFromTemplate | 根据启动模板创建ECS实例。 | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::RunInstancesFromTemplate.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::RunInstancesFromTemplate.json) |
 | 27 | ACS::ECS::StartInstance | 启动一个ECS实例。 | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::StartInstance.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::StartInstance.json) |
 | 28 | ACS::ECS::StopInstance | 停止一个ECS实例。 | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::StopInstance.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::StopInstance.json) |
-
-### OOS
-| 序号   | 名称           | 描述（用途）                     | 链接         |
-| ----- | -------------- | ------------------------------- | ------------ |
-| 1 | ACS::Approve::DingTalkWebhook | 通过 WebHook 发送通知到钉钉，以进行审批。执行会一直处于暂停状态，待同意或拒绝后，执行会继续或终止。详情请参考 https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq 。 | [YAML](CloudProductActions/OOS/YAML/ACS::Approve::DingTalkWebhook.yml) [JSON](CloudProductActions/OOS/JSON/ACS::Approve::DingTalkWebhook.json) |
-| 2 | ACS::Notify::DingTalkWebhook | 通过 WebHook 发送通知到钉钉。详情请参考 https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq 。 | [YAML](CloudProductActions/OOS/YAML/ACS::Notify::DingTalkWebhook.yml) [JSON](CloudProductActions/OOS/JSON/ACS::Notify::DingTalkWebhook.json) |
 
 ### RDS
 | 序号   | 名称           | 描述（用途）                     | 链接         |
@@ -129,6 +129,12 @@ OOS supports cross-product use, you can use OOS to manage cloud products such as
 | 24 | ACS-ECS-UpdateImage | Updates an existing ECS image via ECS Cloud Assistant then creates a ECS image. | [YAML](PublicTemplates/YAML/ACS-ECS-UpdateImage.yml) [JSON](PublicTemplates/JSON/ACS-ECS-UpdateImage.json) |
 
 ## Cloud Product Actions
+### DingTalk
+| No.   | Name           | Description                     | Links        |
+| ----- | -------------- | ------------------------------- | ------------ |
+| 1 | ACS::Approve::DingTalkWebhook | Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details. | [YAML](CloudProductActions/DingTalk/YAML/ACS::Approve::DingTalkWebhook.yml) [JSON](CloudProductActions/DingTalk/JSON/ACS::Approve::DingTalkWebhook.json) |
+| 2 | ACS::Notify::DingTalkWebhook | Sends notification to DingTalk via webhook. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details. | [YAML](CloudProductActions/DingTalk/YAML/ACS::Notify::DingTalkWebhook.yml) [JSON](CloudProductActions/DingTalk/JSON/ACS::Notify::DingTalkWebhook.json) |
+
 ### ECS
 | No.   | Name           | Description                     | Links        |
 | ----- | -------------- | ------------------------------- | ------------ |
@@ -160,12 +166,6 @@ OOS supports cross-product use, you can use OOS to manage cloud products such as
 | 26 | ACS::ECS::RunInstancesFromTemplate | Creates one or more instances by specifying launch template. | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::RunInstancesFromTemplate.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::RunInstancesFromTemplate.json) |
 | 27 | ACS::ECS::StartInstance | Starts an ECS instance. | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::StartInstance.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::StartInstance.json) |
 | 28 | ACS::ECS::StopInstance | Stops an ECS instance. | [YAML](CloudProductActions/ECS/YAML/ACS::ECS::StopInstance.yml) [JSON](CloudProductActions/ECS/JSON/ACS::ECS::StopInstance.json) |
-
-### OOS
-| No.   | Name           | Description                     | Links        |
-| ----- | -------------- | ------------------------------- | ------------ |
-| 1 | ACS::Approve::DingTalkWebhook | Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details. | [YAML](CloudProductActions/OOS/YAML/ACS::Approve::DingTalkWebhook.yml) [JSON](CloudProductActions/OOS/JSON/ACS::Approve::DingTalkWebhook.json) |
-| 2 | ACS::Notify::DingTalkWebhook | Sends notification to DingTalk via webhook. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details. | [YAML](CloudProductActions/OOS/YAML/ACS::Notify::DingTalkWebhook.yml) [JSON](CloudProductActions/OOS/JSON/ACS::Notify::DingTalkWebhook.json) |
 
 ### RDS
 | No.   | Name           | Description                     | Links        |
