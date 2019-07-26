@@ -87,8 +87,7 @@ Tasks:
   Description: Run command on ECS instance.
   OnError: deleteInstance
   Properties:
-    commandContent:
-      Fn::Base64Encode: '{{ commandContent }}'
+    commandContent: '{{ commandContent }}'
     commandType: '{{ commandType }}'
     instanceId: '{{ runInstances.instanceId }}'
 - Name: createImage
