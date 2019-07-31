@@ -1,0 +1,42 @@
+FormatVersion: OOS-2019-06-01
+Description: Invoke Created Function.
+Parameters:
+  functionName:
+    Description: Function name To Invoke.
+    Type: String
+  serviceName:
+    Description: Service name To Invoke.
+    Type: String
+  invocationType:
+    Description: Invocation Type.
+    Type: String
+    AllowedValues:
+      - Sync
+      - Async
+    Default: Sync
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: invokeFunction
+    Action: 'ACS::ExecuteAPI'
+    Description: invoke function.
+    Properties:
+      Service: FC
+      API: InvokeFunction
+      Method: POST
+      URI: '/services/{{serviceName}}/functions/{{functionName}}/invocations'
+      Headers:
+        X-Fc-Invocation-Type: '{{ invocationType }}'
+      Parameters:
+        AccountId: '{{ acs::accountid }}'
+    Outputs:
+      data:
+        Type: String
+        ValueSelector: .
+Outputs:
+  data:
+    Type: String
+    Value: '{{ invokeFunction.data }}'

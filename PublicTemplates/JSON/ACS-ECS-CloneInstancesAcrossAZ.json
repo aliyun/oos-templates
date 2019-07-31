@@ -1,0 +1,167 @@
+{
+  "Description": "Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.",
+  "FormatVersion": "OOS-2019-06-01",
+  "Parameters": {
+    "instanceIds": {
+      "Description": "The ID list of the ECS instance.",
+      "Type": "List"
+    },
+    "regionId": {
+      "Description": "The Source Region Id.",
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "targetZoneId": {
+      "Description": "The target Zone Id.",
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "targetSecurityGroupId": {
+      "Description": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Type": "String",
+      "AllowedPattern": "sg-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "targetVSwitchId": {
+      "Description": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Type": "String",
+      "AllowedPattern": "vsw-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "queryInstancetype",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the ECS instances' InstanceType.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": "{{ instanceIds }}"
+        }
+      },
+      "Outputs": {
+        "instanceType": {
+          "ValueSelector": "Instances.Instance[0].InstanceType",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Create Image.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageName": "img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}",
+          "InstanceId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ instanceIds }}",
+        "Outputs": {
+          "ImageIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "ImageId"
+          }
+        }
+      },
+      "Outputs": {
+        "ImageId": {
+          "ValueSelector": "ImageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "untilCreateImageReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Wait for created images available.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ ACS::TaskLoopItem }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Images.Image[].Status"
+      },
+      "Loop": {
+        "Items": "{{ createImage.ImageIds }}"
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Run Instances.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "RunInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ZoneId": "{{ targetZoneId }}",
+          "ImageId": "{{ ACS::TaskLoopItem }}",
+          "InstanceType": "{{ queryInstancetype.instanceType }}",
+          "SecurityGroupId": "{{ targetSecurityGroupId }}",
+          "VSwitchId": "{{ targetVSwitchId }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ createImage.ImageIds }}",
+        "Outputs": {
+          "instanceIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "instanceId"
+          }
+        }
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Wait for instances running.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": "{{ runInstances.instanceIds }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceIds": {
+      "Value": "{{ runInstances.instanceIds }}",
+      "Type": "List"
+    }
+  }
+}
