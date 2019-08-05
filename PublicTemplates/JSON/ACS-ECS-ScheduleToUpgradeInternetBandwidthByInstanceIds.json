@@ -2,13 +2,13 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Schedules to upgrade internet bandwidth for ECS instances.",
   "Parameters": {
-    "cron": {
+    "triggerCron": {
       "Description": "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm. The minimum interval is one minute.",
       "Type": "String",
       "MaxLength": 30
     },
-    "endDate": {
-      "Description": "The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.",
+    "triggerEndDate": {
+      "Description": "The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ",
       "Type": "String"
     },
     "instanceIds": {
@@ -23,13 +23,13 @@
       "Description": "The maximum public network bandwidth for out-direction.",
       "Type": "Number"
     },
-    "startTime": {
-      "Description": "The start time of upgrade. Format: yyyy-MM-ddThh:mmZ.",
+    "startHourMinute": {
+      "Description": "The start time of upgrade. Format: hh:mmZ",
       "Type": "String"
     },
-    "endTime": {
-      "Description": "The end time of upgrade. Format: yyyy-MM-ddThhZ.",
-      "Type": "String"
+    "durationHour": {
+      "Description": "The number of hours that the bandwidth upgrade lasts.",
+      "Type": "Number"
     },
     "maxErrors": {
       "Description": "The maximum number of errors allowed during task execution.",
@@ -55,8 +55,8 @@
       "Description": "Triggers a task as scheduled by specifying Cron expression.",
       "Properties": {
         "Type": "cron",
-        "Expression": "{{ cron }}",
-        "EndDate": "{{ endDate }}"
+        "Expression": "{{ triggerCron }}",
+        "EndDate": "{{ triggerEndDate }}"
       }
     },
     {
@@ -67,11 +67,21 @@
         "Service": "ECS",
         "API": "ModifyInstanceNetworkSpec",
         "Parameters": {
-          "InstanceId": "{{ aCS::TaskLoopItem }}",
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
           "InternetMaxBandwidthIn": "{{ maxBandwidthIn }}",
           "InternetMaxBandwidthOut": "{{ maxBandwidthOut }}",
-          "StartTime": "{{ startTime }}",
-          "EndTime": "{{ endTime }}"
+          "StartTime": "{{ ACS::CurrentDate }}{{ startHourMinute }}",
+          "EndTime": {
+            "Fn::FormatUTCTime": [
+              {
+                "Fn::AddHour": [
+                  "{{ ACS::CurrentDate}}{{ startHourMinute }}",
+                  "{{ durationHour }}"
+                ]
+              },
+              "%Y-%m-%dT%HZ"
+            ]
+          }
         }
       },
       "Loop": {
