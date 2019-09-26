@@ -1,0 +1,73 @@
+FormatVersion: OOS-2019-06-01
+Description: Copies the file from linux instance to OSS by RunCommand.
+Parameters:
+  instanceId:
+    Description: The ID of ECS Instance.
+    Type: String
+    MaxLength: 30
+    MinLength: 1
+  instanceRole:
+    Description: The ramRole attached on the instance.
+    Type: String
+  srcUrl:
+    Description: Current directory of the file in linux instance.
+    Type: String
+  destUrl:
+    Description: Target directory for file copy in OSS.
+    Type: String
+Tasks:
+- Name: checkInstanceReady
+  Action: ACS::CheckFor
+  Description: Checks the ECS instance is in running status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Instances.Instance[].Status
+- Name: checkInstanceRAMRoleReady
+  Action: ACS::CheckFor
+  Description: Checks the instance RAMrole is available.
+  Properties:
+    Service: ECS
+    API: DescribeInstanceRAMRole
+    Parameters:
+      InstanceIds:
+        - '{{ instanceId }}'
+      RamRoleName: '{{ instanceRole }}'
+    DesiredValues:
+      - "{{ instanceRole }}"
+    PropertySelector: InstanceRamRoleSets.InstanceRamRoleSet[].RamRoleName
+- Name: runCommand
+  Action: ACS::ECS::RunCommand
+  Description: Invokes ECS instance runcommand and gets invocation output.
+  Properties:
+    commandContent:
+      Fn::Join:
+        - ' '
+        - - if [ ! -d oos  ];then
+              mkdir /root/oos;
+            fi;
+          - cd /root/oos;
+          - if [ ! -f "/root/oos/ossutil64" ];then
+              wget https://oos-public-{{ACS::RegionId}}.oss-{{ ACS::RegionId }}-internal.aliyuncs.com/x64/ossutil64 && chmod 755 ossutil64;
+            fi;
+          - echo "[Credentials]" > oss.cfg;
+          - echo "languague=EN" >> oss.cfg;
+          - echo "endpoint=https://oss-{{ ACS::RegionId }}-internal.aliyuncs.com" >> oss.cfg;
+          - echo "[AkService]" >> oss.cfg;
+          - echo "ecsAk=http://100.100.100.200/latest/meta-data/Ram/security-credentials/{{ instanceRole }}" >> oss.cfg;
+          - ./ossutil64 --config-file oss.cfg cp {{ SrcUrl }} {{ DestUrl }}
+    instanceId: '{{ InstanceId }}'
+    commandType: RunShellScript
+  Outputs:
+    commandOutput:
+      Type: String
+      ValueSelector: invocationOutput
+Outputs:
+  result:
+    Type: String
+    Value: '{{ runCommand.commandOutput }}'

@@ -1,0 +1,53 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky starts the ECS instances.
+  zh-cn: 批量启动ECS实例。
+  name-en: ACS-ECS-BulkyStartInstances
+  name-zh-cn: 批量启动ECS实例
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: startInstance
+  Action: ACS::ECS::StartInstance
+  Description:
+    en: Starts the ECS instances.
+    zh-cn: 启动实例。
+  Properties:
+    instanceId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ getInstance.instanceIds }}'

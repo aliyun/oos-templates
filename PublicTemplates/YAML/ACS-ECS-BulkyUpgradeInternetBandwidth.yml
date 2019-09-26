@@ -1,0 +1,76 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky upgrades internet bandwidth of ECS instances.
+  zh-cn: 批量升级ECS实例公网带宽。
+  name-en: ACS-ECS-BulkyUpgradeInternetBandwidth
+  name-zh-cn: 批量升级ECS实例公网带宽
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  maxBandwidthIn:
+    Description:
+      en: The maximum public network bandwidth for in-direction.
+      zh-cn: 公网入带宽最大值。
+    Type: Number
+  maxBandwidthOut:
+    Description:
+      en: The maximum public network bandwidth for out-direction.
+      zh-cn: 公网出带宽最大值。
+    Type: Number
+  startTime:
+    Description:
+      en: 'The start time of upgrade. Format: yyyy-MM-ddThh:mmZ.'
+      zh-cn: '临时带宽升级开始时间。按照ISO8601标准表示，并使用UTC +0时间，格式为yyyy-MM-ddThh:mmZ。精确到分钟（mm）。'
+    Type: String
+  endTime:
+    Description:
+      en: 'The end time of upgrade. Format: yyyy-MM-ddThhZ.'
+      zh-cn: '临时带宽升级结束时间。按照ISO8601标准表示，并使用UTC +0时间，格式为yyyy-MM-ddThhZ。精确到小时（hh）。'
+    Type: String
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: modifyInstanceNetworkSpec
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Modifies the temporary bandwidth of the ECS instance with the specified parameters.
+    zh-cn: 通过指定参数升级ECS实例临时带宽。
+  Properties:
+    Service: ECS
+    API: ModifyInstanceNetworkSpec
+    Parameters:
+      InstanceId: '{{ ACS::TaskLoopItem }}'
+      InternetMaxBandwidthIn: '{{ maxBandwidthIn }}'
+      InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'
+      StartTime: '{{ startTime }}'
+      EndTime: '{{ endTime }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'

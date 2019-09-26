@@ -1,0 +1,82 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Triggers an exisiting cloud assistant command on one ECS instance.",
+  "Parameters": {
+    "commandId": {
+      "Description": "The ID of the cloud assistant command.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of ECS instance where the command need to be executed.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "invokeCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Triggers a cloud assistant command on one ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "InvokeCommand",
+        "Parameters": {
+          "CommandId": "{{ commandId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "invokeId": {
+          "Type": "String",
+          "ValueSelector": "InvokeId"
+        }
+      }
+    },
+    {
+      "Name": "untilInvocationReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the command to be completed.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocations",
+        "Parameters": {
+          "InvokeId": "{{ invokeCommand.invokeId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "PropertySelector": "Invocations.Invocation[].InvokeStatus"
+      }
+    },
+    {
+      "Name": "describeInvocationResults",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "InvokeId": "{{ invokeCommand.invokeId }}"
+        }
+      },
+      "Outputs": {
+        "invocationResult": {
+          "Type": "String",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].Output"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "invocationOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::Base64Decode": "{{ describeInvocationResults.invocationResult }}"
+      }
+    }
+  }
+}

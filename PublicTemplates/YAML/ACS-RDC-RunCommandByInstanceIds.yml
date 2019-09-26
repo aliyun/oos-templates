@@ -1,0 +1,47 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky run command on ECS instances.
+  zh-cn: 批量在多台实例上运行命令。
+  name-en: ACS-RDC-BulkyRunCommand
+  name-zh-cn: 云效批量运行命令
+Parameters:
+  instanceInfos:
+    Description:
+      en: The infos list of the ECS instances.
+      zh_cn: ECS实例信息列表。
+    Type: List
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: loopRunCommand
+    Description:
+      en: Bulky run cloud assistant command.
+      zh-cn: 批量运行命令。
+    Action: ACS::RDC::RunCommand
+    Properties:
+      InstanceId:
+        Fn::Select:
+          - instanceId
+          - '{{ ACS::TaskLoopItem }}'
+      CommandContent:
+        Fn::Select:
+          - commandContent
+          - '{{ ACS::TaskLoopItem }}'
+      RegionId:
+        Fn::Select:
+          - regionId
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ instanceInfos }}'
+      RateControl: {{ rateControl }}

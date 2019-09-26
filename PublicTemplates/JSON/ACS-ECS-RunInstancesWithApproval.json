@@ -1,0 +1,127 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Creates one or more ECS instances with approval.",
+    "zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-RunInstancesWithApproval",
+    "name-zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b"
+  },
+  "Parameters": {
+    "accessToken": {
+      "Description": {
+        "en": "Dingtalk access_token to be notified.",
+        "zh-cn": "\u9489\u9489\u8bbf\u95ee\u4ee4\u724c\u3002"
+      },
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9]*"
+    },
+    "imageId": {
+      "Description": {
+        "en": "The image ID for the ECS instances.",
+        "ah_cn": "\u955c\u50cfID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The instance type for the ECS instances.",
+        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType"
+    },
+    "securityGroupId": {
+      "Description": {
+        "en": "The security group ID for the ECS instances.",
+        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
+    },
+    "vSwitchId": {
+      "Description": {
+        "en": "The virtual switch ID for the ECS instances\u3002",
+        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
+      "AssociationPropertyMetadata": {
+        "Filters": [
+          {
+            "SecurityGroupId": "securityGroupId"
+          }
+        ]
+      }
+    },
+    "amount": {
+      "Description": {
+        "en": "The specified number of instances you want to create.",
+        "zh-cn": "\u5b9e\u4f8b\u6570\u91cf\u3002"
+      },
+      "Type": "Number",
+      "Default": 1
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "approvalForRunInstances",
+      "Action": "ACS::Approve",
+      "Description": {
+        "en": "Approval to lunch ECS instances.",
+        "zh-cn": "\u9489\u9489\u5ba1\u6279\u3002"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "https://oapi.dingtalk.com/robot/send?access_token={{ accessToken }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "text",
+            "text": {
+              "content": "The ECS instances will be created"
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ECS::RunInstances",
+      "Description": {
+        "en": "Creates one or more ECS instances.",
+        "zh-cn": "\u521b\u5efa\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "imageId": "{{ imageId }}",
+        "instanceType": "{{ instanceType }}",
+        "securityGroupId": "{{ securityGroupId }}",
+        "vSwitchId": "{{ vSwitchId }}",
+        "amount": "{{ amount }}"
+      },
+      "Outputs": {
+        "instanceId": {
+          "ValueSelector": "instanceIds[0]",
+          "Type": "String"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceId": {
+      "Type": "String",
+      "Value": "{{ runInstances.instanceId }}"
+    }
+  }
+}

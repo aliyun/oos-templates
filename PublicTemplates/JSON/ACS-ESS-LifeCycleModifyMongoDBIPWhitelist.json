@@ -1,0 +1,158 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify the wait state of the specified scaling activity according to the result of setting the IP whitelist of the MongoDB instance.",
+    "zh-cn": "\u6839\u636e\u8bbe\u7f6eMongoDB\u5b9e\u4f8b\u767d\u540d\u5355\u7ed3\u679c\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u3002",
+    "name-en": "ACS-ESS-LifeCycleModifyMongoDBIPWhitelist",
+    "name-zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u8bbe\u7f6eMongoDB\u767d\u540d\u5355"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "Type": "String"
+    },
+    "instanceIds": {
+      "Description": {
+        "en": "The ID list of the ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868\u3002"
+      },
+      "Type": "List"
+    },
+    "dBInstanceId": {
+      "Description": {
+        "en": "The ID of MongoDB Instance.",
+        "zh-cn": "MongoDB\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String"
+    },
+    "modifyMode": {
+      "Description": {
+        "en": "Modification method.",
+        "zh-cn": "\u4fee\u6539\u767d\u540d\u5355\u65b9\u5f0f\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Append",
+        "Delete"
+      ]
+    },
+    "lifecycleHookId": {
+      "Description": {
+        "en": "The ID of the lifecycle hook.",
+        "zh-cn": "\u751f\u547d\u5468\u671fID."
+      },
+      "Type": "String"
+    },
+    "lifecycleActionToken": {
+      "Description": {
+        "en": "The token that indicates a specific scaling activity associated with an instance.",
+        "zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c\u3002"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstanceIpAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Gets ECS instance network type and ip address.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u7684\u7f51\u7edc\u7c7b\u578b\u548cIp\u5730\u5740\u3002"
+      },
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": "{{ instanceIds }}"
+        }
+      },
+      "Outputs": {
+        "Ips": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress+.InnerIpAddress.IpAddress|.[]"
+        }
+      }
+    },
+    {
+      "Name": "modifySecurityIps",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modifies the whitelist.",
+        "zh-cn": "\u4fee\u6539\u767d\u540d\u5355\u3002"
+      },
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Properties": {
+        "Service": "DDS",
+        "API": "ModifySecurityIps",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ModifyMode": "{{ modifyMode }}",
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "SecurityIps": {
+            "Fn::Join": [
+              ",",
+              "{{ getInstanceIpAddress.Ips }}"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForContinue",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle action for continue.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u7ee7\u7eed\u5b8c\u6210\u3002"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForAbandon",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Complete lifecycle action for Abandon.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u5f03\u7528\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "ABANDON"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "ipAddresses": {
+      "Type": "List",
+      "Value": "{{ getInstanceIpAddress.Ips }}"
+    }
+  }
+}

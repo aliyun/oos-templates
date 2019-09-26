@@ -1,0 +1,88 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Creates one or more ECS instances with approval.
+  zh-cn: 通过审批后创建ECS实例。
+  name-en: ACS-ECS-RunInstancesWithApproval
+  name-zh-cn: 通过审批后创建ECS实例
+Parameters:
+  accessToken:
+    Description:
+      en: Dingtalk access_token to be notified.
+      zh-cn: 钉钉访问令牌。
+    Type: String
+    AllowedPattern: '[A-Za-z0-9]*'
+  imageId:
+    Description:
+      en: The image ID for the ECS instances.
+      ah_cn: 镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+  instanceType:
+    Description:
+      en: The instance type for the ECS instances.
+      zh-cn: 实例类型。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+  securityGroupId:
+    Description:
+      en: The security group ID for the ECS instances.
+      zh-cn: 安全组ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
+  vSwitchId:
+    Description:
+      en: The virtual switch ID for the ECS instances。
+      zh-cn: 交换机ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
+    AssociationPropertyMetadata:
+      Filters:
+        - SecurityGroupId: securityGroupId
+  amount:
+    Description:
+      en: The specified number of instances you want to create.
+      zh-cn: 实例数量。
+    Type: Number
+    Default: 1
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: approvalForRunInstances
+  Action: ACS::Approve
+  Description:
+    en: Approval to lunch ECS instances.
+    zh-cn: 钉钉审批。
+  Properties:
+    NotifyType: WebHook
+    WebHook:
+      URI: https://oapi.dingtalk.com/robot/send?access_token={{ accessToken }}
+      Headers:
+        Content-Type: application/json
+      Content:
+        msgtype: text
+        text:
+          content: The ECS instances will be created
+- Name: runInstances
+  Action: ACS::ECS::RunInstances
+  Description:
+    en: Creates one or more ECS instances.
+    zh-cn: 创建实例。
+  Properties:
+    imageId: '{{ imageId }}'
+    instanceType: '{{ instanceType }}'
+    securityGroupId: '{{ securityGroupId }}'
+    vSwitchId: '{{ vSwitchId }}'
+    amount: '{{ amount }}'
+  Outputs:
+    instanceId:
+      ValueSelector: instanceIds[0]
+      Type: String
+Outputs:
+  instanceId:
+    Type: String
+    Value: '{{ runInstances.instanceId }}'

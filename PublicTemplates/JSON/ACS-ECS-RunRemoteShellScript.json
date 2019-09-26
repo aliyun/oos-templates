@@ -1,0 +1,109 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Run remote shell script.",
+    "zh-cn": "\u8fd0\u884c\u8fdc\u7aefshell\u811a\u672c\u3002",
+    "name-en": "ACS-ECS-RunRemoteShellScript",
+    "name-zh-cn": "\u8fd0\u884c\u8fdc\u7aefshell\u811a\u672c"
+  },
+  "Parameters": {
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS Instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "instanceRole": {
+      "Description": {
+        "en": "The ramRole attached on the instance.",
+        "zh-cn": "\u6302\u8f7d\u5230\u5b9e\u4f8b\u4e0a\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String"
+    },
+    "srcUrl": {
+      "Description": {
+        "en": "Current directory of the file in OSS.",
+        "zh-cn": "\u6587\u4ef6\u5728OOS\u4e2d\u7684\u76ee\u5f55\u3002"
+      },
+      "Type": "String"
+    },
+    "destUrl": {
+      "Description": {
+        "en": "Target directory for file copy in linux instance.",
+        "zh-cn": "\u6587\u4ef6\u590d\u5236\u5230ECS\u5b9e\u4f8b\u4e2d\u7684\u76ee\u5f55\u3002"
+      },
+      "Type": "String"
+    },
+    "workingDir": {
+      "Description": {
+        "en": "The directory where the created command runs on the ECS instances.",
+        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u547d\u4ee4\u7684\u76ee\u5f55\u3002"
+      },
+      "Type": "String",
+      "Default": "/root"
+    },
+    "timeout": {
+      "Description": {
+        "en": "The value of the invocation timeout period of a command on ECS instances.",
+        "zh-cn": "\u8fd0\u884c\u547d\u4ee4\u6700\u5927\u8d85\u65f6\u65f6\u95f4\u3002"
+      },
+      "Type": "Number",
+      "Default": 600
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "copyOSSFileToInstance",
+      "Description": {
+        "en": "Copies OSS file to linux instace.",
+        "zh-cn": "\u590d\u5236OOS\u4e2d\u7684\u6587\u4ef6\u5230Linux\u5b9e\u4f8b\u4e2d\u3002"
+      },
+      "Action": "ACS::ECS::CopyLinuxInstanceFileFromOSS",
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "instanceRole": "{{ instanceRole }}",
+        "srcUrl": "{{ srcUrl }}",
+        "destUrl": "{{ destUrl }}"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "commandContent": "/bin/bash {{ destUrl }}/{{ fileName }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutput }}"
+    }
+  }
+}

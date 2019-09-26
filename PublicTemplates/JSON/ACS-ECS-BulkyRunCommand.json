@@ -1,0 +1,112 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky run command on ECS instances.",
+    "zh-cn": "\u6279\u91cf\u5728\u591a\u53f0ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002",
+    "name-en": "ACS-ECS-BulkyRunCommand",
+    "name-zh-cn": "\u6279\u91cf\u5728ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4"
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ]
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "{{ commandType }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

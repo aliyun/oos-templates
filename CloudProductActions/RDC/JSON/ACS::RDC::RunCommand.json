@@ -1,0 +1,154 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Creates a cloud assistant command and triggers it on one ECS instance.",
+  "Parameters": {
+    "InstanceId": {
+      "Description": "The ID of ECS instance that will invoke command.",
+      "Type": "String",
+      "AllowedPattern": "i-[A-Za-z0-9]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "CommandContent": {
+      "Description": "The content cloud assistant command.",
+      "Type": "String"
+    },
+    "RegionId": {
+      "Description": "The ID of region.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Creates a cloud assistant command.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateCommand",
+        "Parameters": {
+          "CommandContent": {
+            "Fn::Base64Encode": "{{CommandContent}}"
+          },
+          "RegionId": "{{ RegionId }}",
+          "Name": "{{ ACS::ExecutionId }}",
+          "Type": "RunShellScript",
+          "WorkingDir": "/root",
+          "Timeout": 300
+        }
+      },
+      "Outputs": {
+        "CommandId": {
+          "Type": "String",
+          "ValueSelector": "CommandId"
+        }
+      }
+    },
+    {
+      "Name": "invokeCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Triggers a cloud assistant command on one ECS instances.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "InvokeCommand",
+        "Parameters": {
+          "CommandId": "{{ createCommand.CommandId }}",
+          "InstanceIds": [
+            "{{ InstanceId }}"
+          ],
+          "RegionId": "{{RegionId}}"
+        }
+      },
+      "Outputs": {
+        "InvokeId": {
+          "Type": "String",
+          "ValueSelector": "InvokeId"
+        }
+      },
+      "OnError": "deleteCommand"
+    },
+    {
+      "Name": "untilInvocationReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the command to be completed.",
+      "Delay": 20,
+      "Retries": 30,
+      "DelayType": "Constant",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocations",
+        "Parameters": {
+          "RegionId": "{{RegionId}}",
+          "InvokeId": "{{ invokeCommand.InvokeId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "StopRetryValues": [
+          "Failed"
+        ],
+        "PropertySelector": "Invocations.Invocation[].InvokeStatus"
+      },
+      "OnError": "deleteCommand"
+    },
+    {
+      "Name": "describeInvocationResults",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{RegionId}}",
+          "InvokeId": "{{ invokeCommand.InvokeId }}"
+        }
+      },
+      "Outputs": {
+        "InvocationResult": {
+          "Type": "String",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].Output"
+        }
+      },
+      "OnError": "deleteCommand"
+    },
+    {
+      "Name": "checkInvocationResult",
+      "Action": "ACS::CheckFor",
+      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{RegionId}}",
+          "InvokeId": "{{ invokeCommand.InvokeId }}"
+        },
+        "PropertySelector": "Invocation.InvocationResults.InvocationResult[].ExitCode",
+        "DesiredValues": [
+          0
+        ]
+      },
+      "OnError": "deleteCommand"
+    },
+    {
+      "Name": "deleteCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Deletes a cloud assistant command.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteCommand",
+        "Parameters": {
+          "RegionId": "{{ RegionId}}",
+          "CommandId": "{{ createCommand.commandId }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "InvocationOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::Base64Decode": "{{ describeInvocationResults.InvocationResult }}"
+      }
+    }
+  }
+}

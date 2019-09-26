@@ -1,0 +1,81 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Run shell script.",
+    "zh-cn": "\u8fd0\u884cshell\u811a\u672c",
+    "title": "ACS-ECS-RunShellScript",
+    "name-zh-cn": "\u8fd0\u884cshell\u811a\u672c"
+  },
+  "Parameters": {
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS Instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "commandContent": {
+      "Description": {
+        "en": "The content of command.",
+        "zh-cn": "\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "workingDir": {
+      "Description": {
+        "en": "The directory where the shell script runs on the ECS instances.",
+        "zh-cn": "ECS\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u547d\u4ee4\u7684\u76ee\u5f55\u3002"
+      },
+      "Type": "String"
+    },
+    "timeout": {
+      "Description": {
+        "en": "The value of the invocation timeout period of a command on ECS instances.",
+        "zh-cn": "\u6700\u5927\u8d85\u65f6\u65f6\u95f4\u3002"
+      },
+      "Type": "Number",
+      "Default": 600
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "runCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutput }}"
+    }
+  }
+}

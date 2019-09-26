@@ -1,0 +1,60 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky delete prepaid instances.The specified ECS instances must be in stopped status.
+  zh-cn: 批量删除ECS预付费实例。指定的ECS实例必须处于已停止状态。
+  name-en: ACS-ECS-BulkyDeletePrepaidInstances
+  name-zh-cn: 批量删除ECS预付费实例
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: modifyInstanceChargeType
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Modify the charge type for prepaid instances to postpaid.
+    zh-cn: 修改预付费实例付费方式为按量付费。
+  Properties:
+    Service: ECS
+    API: ModifyInstanceChargeType
+    Parameters:
+      InstanceIds: '{{ getInstance.instanceIds }}'
+      InstanceChargeType: PostPaid
+- Name: deleteInstance
+  Action: ACS::ECS::DeleteInstance
+  Description:
+    en: Deletes the ECS instance by instance ID.
+    zh-cn: 通过实例ID删除实例。
+  Properties:
+    instanceId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'

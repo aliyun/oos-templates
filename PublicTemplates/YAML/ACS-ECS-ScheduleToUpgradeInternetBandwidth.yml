@@ -1,0 +1,108 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedules to upgrade internet bandwidth for ECS instances.
+  zh-cn: 定时升级ECS实例临时带宽。
+  name-en: ACS-ECS-ScheduleToUpgradeInternetBandwidth
+  name-zh-cn: 定时升级ECS实例临时带宽
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  triggerCron:
+    Description:
+      en: "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm.\
+        \ The minimum interval is one minute."
+      zh-cn: 'cron表达式，详情参考：https://www.alibabacloud.com/help/zh/faq-detail/64769.htm'
+    Type: String
+    AssociationProperty: Cron
+    Default: 0 0 12 ? * *
+  triggerEndDate:
+    Description:
+      en: 'The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.'
+      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddThh:mm:ssZ'
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'YYYY-MM-DDThh:mm:ssZ'
+  maxBandwidthIn:
+    Description:
+      en: The maximum public network bandwidth for in-direction.
+      zh-cn: 公网最大入带宽。
+    Type: Number
+  maxBandwidthOut:
+    Description:
+      en: The maximum public network bandwidth for out-direction.
+      zh-cn: 公网最大出带宽。
+    Type: Number
+  startHourMinute:
+    Description: 'The start time of upgrade. Format: hh:mmZ'
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'hh:mmZ'
+    Default: '12:00Z'
+  durationHour:
+    Description:
+      en: The number of hours that the bandwidth upgrade lasts.
+      zh-cn: 带宽升级持续时间。
+    Type: Number
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: timerTrigger
+  Action: ACS::TimerTrigger
+  Description:
+    en: Triggers a task as scheduled by specifying Cron expression.
+    zh-cn: 通过指定Cron表达式按计划触发任务。
+  Properties:
+    Type: cron
+    Expression: '{{ triggerCron }}'
+    EndDate: '{{ triggerEndDate }}'
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: modifyInstanceNetworkSpec
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Modifies the temporary bandwidth of the instances.
+    zh-cn: 修改实例的临时带宽。
+  Properties:
+    Service: ECS
+    API: ModifyInstanceNetworkSpec
+    Parameters:
+      InstanceId: '{{ ACS::TaskLoopItem }}'
+      InternetMaxBandwidthIn: '{{ maxBandwidthIn }}'
+      InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'
+      StartTime: '{{ ACS::CurrentDate }}{{ startHourMinute }}'
+      EndTime:
+        Fn::FormatUTCTime:
+          - Fn::AddHour:
+              - '{{ ACS::CurrentDate}}{{ startHourMinute }}'
+              - '{{ durationHour }}'
+          - '%Y-%m-%dT%HZ'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'

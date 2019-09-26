@@ -1,0 +1,82 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky installs SLS agent on ECS instance.",
+    "zh-cn": "\u6279\u91cf\u5728ECS\u5b9e\u4f8b\u4e0a\u5b89\u88c5SLS\u4ee3\u7406\u3002",
+    "name-en": "ACS-ECS-BulkyInstallLogAgent",
+    "name-zh-cn": "\u6279\u91cf\u5b89\u88c5SLS\u65e5\u5fd7\u4ee3\u7406"
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "logTailUserDefinedId": {
+      "Description": {
+        "en": "The user defined Id write to /etc/ilogtail/user_defined_id.",
+        "zh-cn": "user_defined_id"
+      },
+      "Type": "String",
+      "MaxLength": 30,
+      "MinLength": 1
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "installLogtail",
+      "Action": "ACS::ECS::InstallLogtail",
+      "Description": {
+        "en": "Installs SLS agent on ECS instances.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u5b89\u88c5\u65e5\u5fd7\u670d\u52a1\u4ee3\u7406\u3002"
+      },
+      "Properties": {
+        "logTailUserDefinedId": "{{ logTailUserDefinedId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
+      }
+    }
+  ]
+}

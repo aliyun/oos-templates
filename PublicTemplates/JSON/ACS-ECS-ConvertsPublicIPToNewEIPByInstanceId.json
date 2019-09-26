@@ -1,0 +1,153 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address.",
+    "zh-cn": "\u5c06\u4e00\u53f0\u7f51\u7edc\u7c7b\u578b\u4e3a\u4e13\u6709\u7f51\u7edcVPC\u7684ECS\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP\u3002",
+    "name-en": "ACS-ECS-ConvertsPublicIPToNewEIPByInstanceId",
+    "name-zh-cn": "\u5c06\u4e00\u53f0\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP"
+  },
+  "Parameters": {
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyInstanceNetworkSpec",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modifies the network charge type of the ECS instance with the specified parameters.",
+        "zh-cn": "\u8f6c\u6362ECS\u5b9e\u4f8b\u7f51\u7edc\u4ed8\u8d39\u65b9\u5f0f\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceNetworkSpec",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}",
+          "NetworkChargeType": "PayByTraffic"
+        }
+      }
+    },
+    {
+      "Name": "convertNatPublicIpToEip",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address.",
+        "zh-cn": "\u5c06\u4e00\u53f0\u7f51\u7edc\u7c7b\u578b\u4e3a\u4e13\u6709\u7f51\u7edcVPC\u7684ECS\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5f39\u6027\u516c\u7f51IP\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ConvertNatPublicIpToEip",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "getInstanceEIP",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Gets ECS instance EIP.",
+        "zh-cn": "\u83b7\u53d6\u5b9e\u4f8b\u5f39\u6027\u516c\u7f51IP\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "allocationId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].EipAddress.AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "unassociateEipAddress",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Elastic public network IP (EIP) is unbound from an ECS instacne.",
+        "zh-cn": "\u5f39\u6027\u516c\u7f51IP\uff08EIP\uff09\u4ece\u7ed1\u5b9a\u7684ECS\u5b9e\u4f8b\u4e0a\u89e3\u7ed1\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "UnassociateEipAddress",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}",
+          "AllocationId": "{{ getInstanceEIP.allocationId }}"
+        }
+      }
+    },
+    {
+      "Name": "AllocateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Allocate an Eip address.",
+        "zh-cn": "\u7533\u8bf7\u4e00\u4e2a\u5f39\u6027\u516c\u7f51IP\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AllocateEipAddress",
+        "Parameters": null
+      },
+      "Outputs": {
+        "AllocationId": {
+          "Type": "String",
+          "ValueSelector": "AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "DescribeEipAddresses",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the Eip to enter Available status.",
+        "zh-cn": "\u7b49\u5f85EIP\u53ef\u7528\u3002"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "AllocationId": "{{ AllocateEipAddress.AllocationId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
+      }
+    },
+    {
+      "Name": "AssociateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Bind the new EIP to the ECS instance in the same region.",
+        "zh-cn": "\u7ed1\u5b9a\u65b0EIP\u5230\u540c\u5730\u57df\u7684ECS\u5b9e\u4f8b\u4e0a\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AssociateEipAddress",
+        "Parameters": {
+          "InstanceId": "{{ InstanceId }}",
+          "AllocationId": "{{ AllocateEipAddress.AllocationId }}"
+        }
+      }
+    }
+  ]
+}

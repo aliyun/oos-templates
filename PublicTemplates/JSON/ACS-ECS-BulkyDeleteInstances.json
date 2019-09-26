@@ -1,0 +1,85 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky delete ECS postpaid instances.",
+    "zh-cn": "\u6279\u91cf\u5220\u9664ECS\u6309\u91cf\u4ed8\u8d39\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-BulkyDeleteInstances",
+    "name-zh-cn": "\u6279\u91cf\u5220\u9664ECS\u5b9e\u4f8b"
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "force": {
+      "Description": {
+        "en": "Whether to force the release of a running instance.",
+        "zh-cn": "\u662f\u5426\u5f3a\u5236\u91ca\u653e\u6b63\u5728\u8fd0\u884c\u7684\u5b9e\u4f8b\u3002"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "deleteInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes ECS instance with the specified instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u5220\u9664\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteInstance",
+        "Parameters": {
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
+          "Force": "{{ force }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
+      }
+    }
+  ]
+}
