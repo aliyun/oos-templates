@@ -69,6 +69,24 @@
       }
     },
     {
+      "Name": "untilDiskIdReady",
+      "Action": "ACS::WaitFor",
+      "Description": "describe Disk",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "DiskIds": [
+            "{{ diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "In_use"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
+      }
+    },
+    {
       "Name": "startInstance",
       "Action": "ACS::ExecuteAPI",
       "Description": "Starts the ECS instance with specified Instace ID.",

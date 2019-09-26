@@ -1,52 +1,81 @@
 {
-  "Description": "Cross Region copy and run ECS instance by InstanceIds.",
   "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Cross Region copy and run ECS instance by InstanceIds.",
+    "zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b\u3002",
+    "title": "ACS-ECS-CloneInstancesAcrossRegion",
+    "name-zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b"
+  },
   "Parameters": {
     "instanceIds": {
-      "Description": "The ID list of the ECS instance.",
+      "Description": {
+        "en": "The ID list of the ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868\u3002"
+      },
       "Type": "List"
     },
     "regionId": {
-      "Description": "The Source Region Id.",
+      "Description": {
+        "en": "The Source Region Id.",
+        "zh-cn": "\u6e90\u5730\u57dfID\u3002"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetRegionId": {
-      "Description": "The Target Region Id.",
+      "Description": {
+        "en": "The Target Region Id.",
+        "zh-cn": "\u76ee\u6807\u5730\u57dfID\u3002"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetZoneId": {
-      "Description": "The Target Zone Id.",
+      "Description": {
+        "en": "The Target Zone Id.",
+        "zh-cn": "\u76ee\u6807\u53ef\u7528\u533aID\u3002"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetInstanceType": {
-      "Description": "The instance type for the ECS instances, ecs.g5.large, for example.",
+      "Description": {
+        "en": "The instance type for the ECS instances, ecs.g5.large, for example.",
+        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      },
       "Type": "String",
       "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetSecurityGroupId": {
-      "Description": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Description": {
+        "en": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      },
       "Type": "String",
       "AllowedPattern": "sg-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetVSwitchId": {
-      "Description": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Description": {
+        "en": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -56,7 +85,10 @@
     {
       "Name": "createImage",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Create Image.",
+      "Description": {
+        "en": "Create Image.",
+        "zh-cn": "\u521b\u5efa\u955c\u50cf\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CreateImage",
@@ -85,7 +117,10 @@
     {
       "Name": "untilCreateImageReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait For created images available.",
+      "Description": {
+        "en": "Wait For created images available.",
+        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u521b\u5efa\u6210\u529f\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeImages",
@@ -105,7 +140,10 @@
     {
       "Name": "copyImage",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Copy image.",
+      "Description": {
+        "en": "Copy image.",
+        "zh-cn": "\u590d\u5236\u955c\u50cf\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CopyImage",
@@ -134,7 +172,10 @@
     {
       "Name": "untilCopyImageReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for copied images available.",
+      "Description": {
+        "en": "Wait for copied images available.",
+        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u590d\u5236\u6210\u529f\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeImages",
@@ -154,7 +195,10 @@
     {
       "Name": "runInstances",
       "Action": "ACS::ExecuteAPI",
-      "Description": "run instances.",
+      "Description": {
+        "en": "run instances.",
+        "zh-cn": "\u521b\u5efa\u5b9e\u4f8b\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "RunInstances",
@@ -186,7 +230,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for instances running",
+      "Description": {
+        "en": "Wait for instances running",
+        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u521b\u5efa\u6210\u529f\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

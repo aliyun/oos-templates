@@ -1,39 +1,62 @@
 {
-  "Description": "Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.",
   "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.",
+    "zh-cn": "\u8de8\u53ef\u7528\u533a\u514b\u9686ECS\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-CloneInstancesAcrossAZ",
+    "name-zh-cn": "\u8de8\u53ef\u7528\u533a\u514b\u9686ECS\u5b9e\u4f8b"
+  },
   "Parameters": {
     "instanceIds": {
-      "Description": "The ID list of the ECS instance.",
+      "Description": {
+        "en": "The ID list of the ECS instance.",
+        "zh_ch": "ECS\u5b9e\u4f8bID\u5217\u8868\u3002"
+      },
       "Type": "List"
     },
     "regionId": {
-      "Description": "The Source Region Id.",
+      "Description": {
+        "en": "The Source Region Id.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetZoneId": {
-      "Description": "The target Zone Id.",
+      "Description": {
+        "en": "The target Zone Id.",
+        "zh-cn": "\u53ef\u7528\u53bbID\u3002"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetSecurityGroupId": {
-      "Description": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Description": {
+        "en": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
+        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002\u683c\u5f0f:sg-xxxxxxxxxxxxxxxxxxxx"
+      },
       "Type": "String",
       "AllowedPattern": "sg-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetVSwitchId": {
-      "Description": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+      "Description": {
+        "en": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
+        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -43,7 +66,10 @@
     {
       "Name": "queryInstancetype",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views the ECS instances' InstanceType.",
+      "Description": {
+        "en": "Views the ECS instances' InstanceType.",
+        "zh-cn": "\u83b7\u53d6\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -62,7 +88,10 @@
     {
       "Name": "createImage",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Create Image.",
+      "Description": {
+        "en": "Create Image.",
+        "zh-cn": "\u521b\u5efa\u955c\u50cf\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CreateImage",
@@ -91,7 +120,10 @@
     {
       "Name": "untilCreateImageReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for created images available.",
+      "Description": {
+        "en": "Wait for created images available.",
+        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u521b\u5efa\u6210\u529f\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeImages",
@@ -111,7 +143,10 @@
     {
       "Name": "runInstances",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Run Instances.",
+      "Description": {
+        "en": "Run Instances.",
+        "zh-cn": "\u521b\u5efa\u5b9e\u4f8b\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "RunInstances",
@@ -143,7 +178,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for instances running.",
+      "Description": {
+        "en": "Wait for instances running.",
+        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u5230Running\u72b6\u6001\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

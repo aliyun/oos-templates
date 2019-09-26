@@ -1,24 +1,36 @@
 FormatVersion: OOS-2019-06-01
-Description: Tag an ECS instance using Linux kernel version as tag value.
+Description:
+  en: Tag an ECS instance using Linux kernel version as tag value.
+  zh-cn: 通过Linux内核版本用作标记键标记一台ECS实例。
+  name-en: ACS-ECS-TagInstanceByLinuxKernelVersion
+  name-zh-cn: 批量根据Linux内核版本标记ECS实例
 Parameters:
   instanceId:
-    Description: Instance ID of the ECS to be tagged
+    Description:
+      en: Instance ID of the ECS to be tagged.
+      zh-cn: ECS实例ID。
     Type: String
     MaxLength: 30
     MinLength: 1
   tagKey:
-    Description: The tag key.
+    Description:
+      en: The tag key.
+      zh-cn: 标签键。
     Type: String
     Default: kernelVersion
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
-  Description: Checks ECS instance is in the running status.
+  Description:
+    en: Checks ECS instance is in the running status.
+    zh-cn: 检查ECS实例是否处于Running状态。
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -30,7 +42,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: queryInstanceKernelVersion
   Action: ACS::ECS::RunCommand
-  Description: Queries kernel version by RunCommand invocation result.
+  Description:
+    en: Queries kernel version by RunCommand invocation result.
+    zh-cn: 通过运行云助手命令获取实例内核版本。
   Properties:
     commandContent: uname -r | awk -F'-' '{print $1}'
     instanceId: '{{ instanceId }}'
@@ -41,7 +55,9 @@ Tasks:
       ValueSelector: invocationOutput
 - Name: tagResources
   Action: ACS::ExecuteApi
-  Description: Creates and attaches tag to ECS instance.
+  Description:
+   en: Creates and attaches tag to ECS instance.
+   zh-cn: 创建并挂载标签到ECS实例。
   Properties:
     Service: ECS
     API: TagResources

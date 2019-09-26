@@ -1,42 +1,58 @@
-Description: Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.
 FormatVersion: OOS-2019-06-01
+Description:
+  en: Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.
+  zh-cn: 跨可用区克隆ECS实例。
+  name-en: ACS-ECS-CloneInstancesAcrossAZ
+  name-zh-cn: 跨可用区克隆ECS实例
 Parameters:
   instanceIds:
-    Description: The ID list of the ECS instance.
+    Description:
+      en: The ID list of the ECS instance.
+      zh_ch: ECS实例ID列表。
     Type: List
   regionId:
-    Description: The Source Region Id.
+    Description:
+      en: The Source Region Id.
+      zh-cn: 地域ID。
     Type: String
     MinLength: 1
     MaxLength: 30
   targetZoneId:
-    Description: The target Zone Id.
+    Description:
+      en: The target Zone Id.
+      zh-cn: 可用去ID。
     Type: String
     MinLength: 1
     MaxLength: 30
   targetSecurityGroupId:
-    Description: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for
-      example.
+    Description:
+      en: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.
+      zh-cn: '安全组ID。格式:sg-xxxxxxxxxxxxxxxxxxxx'
     Type: String
     AllowedPattern: 'sg-[A-Za-z0-9]*'
     MinLength: 1
     MaxLength: 30
   targetVSwitchId:
-    Description: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for
-      example.
+    Description:
+      en: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.
+      zh-cn: 交换机ID。
     Type: String
     AllowedPattern: 'vsw-[A-Za-z0-9]*'
     MinLength: 1
     MaxLength: 30
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: queryInstancetype
     Action: 'ACS::ExecuteAPI'
-    Description: Views the ECS instances' InstanceType.
+    Description:
+      en: Views the ECS instances' InstanceType.
+      zh-cn: 获取实例类型。
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -49,7 +65,9 @@ Tasks:
         Type: String
   - Name: createImage
     Action: 'ACS::ExecuteAPI'
-    Description: Create Image.
+    Description:
+      en: Create Image.
+      zh-cn: 创建镜像。
     Properties:
       Service: ECS
       API: CreateImage
@@ -69,7 +87,9 @@ Tasks:
         Type: String
   - Name: untilCreateImageReady
     Action: 'ACS::WaitFor'
-    Description: Wait for created images available.
+    Description:
+      en: Wait for created images available.
+      zh-cn: 等待镜像创建成功。
     Properties:
       Service: ECS
       API: DescribeImages
@@ -83,7 +103,9 @@ Tasks:
       Items: '{{ createImage.ImageIds }}'
   - Name: runInstances
     Action: 'ACS::ExecuteAPI'
-    Description: Run Instances.
+    Description:
+      en: Run Instances.
+      zh-cn: 创建实例。
     Properties:
       Service: ECS
       API: RunInstances
@@ -106,7 +128,9 @@ Tasks:
         ValueSelector: 'InstanceIdSets.InstanceIdSet[]'
   - Name: untilInstanceReady
     Action: 'ACS::WaitFor'
-    Description: Wait for instances running.
+    Description:
+      en: Wait for instances running.
+      zh-cn: 等待实例到Running状态。
     Properties:
       Service: ECS
       API: DescribeInstances

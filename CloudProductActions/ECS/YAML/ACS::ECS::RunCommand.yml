@@ -17,6 +17,14 @@ Parameters:
     - RunBatScript
     - RunPowerShellScript
     - RunShellScript
+  workingDir:
+    Description: The directory where the created command runs on the ECS instances.
+    Type: String
+    Default: /root
+  timeout:
+    Description: The value of the invocation timeout period of a command on ECS instances.
+    Type: Number
+    Default: 600
 Tasks:
 - Name: createCommand
   Action: ACS::ExecuteAPI
@@ -29,6 +37,8 @@ Tasks:
         Fn::Base64Encode: '{{ commandContent }}'
       Name: '{{ ACS::ExecutionId }}'
       Type: '{{ commandType }}'
+      WorkingDir: '{{ workingDir }}'
+      Timeout: '{{ timeout }}'
   Outputs:
     commandId:
       Type: String
@@ -51,6 +61,10 @@ Tasks:
 - Name: untilInvocationReady
   Action: ACS::WaitFor
   Description: Waits for the command to be completed.
+  OnError: deleteCommand
+  Delay: 20
+  Retries: 30
+  DelayType: Constant
   Properties:
     Service: ECS
     API: DescribeInvocations
@@ -58,6 +72,8 @@ Tasks:
       InvokeId: '{{ invokeCommand.invokeId }}'
     DesiredValues:
     - Finished
+    StopRetryValues:
+    - Failed
     PropertySelector: Invocations.Invocation[].InvokeStatus
 - Name: describeInvocationResults
   Action: ACS::ExecuteAPI
@@ -72,12 +88,25 @@ Tasks:
     invocationResult:
       Type: String
       ValueSelector: Invocation.InvocationResults.InvocationResult[].Output
+- Name: checkInvocationResult
+  Action: ACS::CheckFor
+  Description: Check the command exitcode of a cloud assistant command.
+  OnError: deleteCommand
+  Properties:
+    Service: ECS
+    API: DescribeInvocationResults
+    Parameters:
+      InvokeId: '{{ invokeCommand.InvokeId }}'
+    PropertySelector: Invocation.InvocationResults.InvocationResult[].ExitCode
+    DesiredValues:
+    - 0
 - Name: deleteCommand
   Action: ACS::ExecuteAPI
   Description: Deletes a cloud assistant command.
   Properties:
     Service: ECS
     API: DeleteCommand
+    Risk: Normal
     Parameters:
       CommandId: '{{ createCommand.commandId }}'
 Outputs:

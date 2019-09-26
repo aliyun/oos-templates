@@ -1,9 +1,17 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Tag an ECS instance using OS type as tag value.",
+  "Description": {
+    "en": "Tag an ECS instance using OS type as tag value.",
+    "zh-cn": "\u5c06\u64cd\u4f5c\u7cfb\u7edf\u7c7b\u578b\u7528\u4f5c\u6807\u8bb0\u503c\u6807\u8bb0\u4e00\u53f0ECS\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-TagInstanceByOSType",
+    "name-zh-cn": "\u6839\u636e\u64cd\u4f5c\u7cfb\u7edf\u7c7b\u578b\u6807\u8bb0ECS\u5b9e\u4f8b"
+  },
   "Parameters": {
     "instanceId": {
-      "Description": "Instance ID of the ECS to be tagged",
+      "Description": {
+        "en": "Instance ID of the ECS to be tagged.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
       "Type": "String",
       "MaxLength": 30,
       "MinLength": 1
@@ -14,7 +22,10 @@
       "Default": "OSType"
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -24,7 +35,10 @@
     {
       "Name": "queryInstanceOSType",
       "Action": "ACS::ExecuteApi",
-      "Description": "Queries ECS instance OS type.",
+      "Description": {
+        "en": "Queries ECS instance OS type.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u7cfb\u7edf\u7c7b\u578b\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -44,7 +58,10 @@
     {
       "Name": "tagResources",
       "Action": "ACS::ExecuteApi",
-      "Description": "Creates and attaches tag to ECS instance.",
+      "Description": {
+        "en": "Creates and attaches tag to ECS instance.",
+        "zh-cn": "\u521b\u5efa\u5e76\u6302\u8f7d\u6807\u7b7e\u5230ECS\u5b9e\u4f8b\u3002"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "TagResources",

@@ -59,9 +59,27 @@
       },
       "Outputs": {
         "diskId": {
-          "Type": "List",
+          "Type": "String",
           "ValueSelector": "DiskId"
         }
+      }
+    },
+    {
+      "Name": "untilNewDiskReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the disks to be created successfully.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "DiskIds": [
+            "{{ replaceSystemDisk.diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "In_use"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
       }
     },
     {
@@ -75,6 +93,30 @@
           "InstanceId": "{{ instanceId }}"
         }
       }
+    },
+    {
+      "Name": "untilInstanceToRunning",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the ECS instance to enter running status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
     }
-  ]
+  ],
+  "Outputs": {
+    "newSystemDiskId": {
+      "Type": "String",
+      "Value": "{{ replaceSystemDisk.diskId }}"
+    }
+  }
 }

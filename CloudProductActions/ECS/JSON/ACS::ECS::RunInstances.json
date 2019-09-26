@@ -7,7 +7,7 @@
       "Type": "String",
       "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
       "MinLength": 1,
-      "MaxLength": 40
+      "MaxLength": 100
     },
     "instanceType": {
       "Description": "The type of the instance.",

@@ -1,16 +1,10 @@
 FormatVersion: OOS-2019-06-01
-Description: Resets a disk to its initial status.
+Description: Resets a disk to its initial status.The specified ECS instances should be in stopped status.
 Parameters:
   diskId:
     Description: The ID of disk you will re init.
     Type: String
     AllowedPattern: d-[A-Za-z0-9]*
-    MinLength: 1
-    MaxLength: 30
-  instanceId:
-    Description: ECS instance ID
-    Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
 Tasks:
@@ -26,18 +20,6 @@ Tasks:
     DesiredValues:
     - In_use
     PropertySelector: Disks.Disk[].Status
-- Name: checkInstanceReady
-  Action: ACS::CheckFor
-  Description: Checks whether the ECS instance is stooped status.
-  Properties:
-    Service: ECS
-    API: DescribeInstances
-    Parameters:
-      InstanceIds:
-      - '{{ instanceId }}'
-    DesiredValues:
-    - Stopped
-    PropertySelector: Instances.Instance[].Status
 - Name: reInitDisk
   Action: ACS::ExecuteAPI
   Description: Resets a disk to its initial status.
@@ -46,23 +28,15 @@ Tasks:
     API: ReInitDisk
     Parameters:
       DiskId: '{{ diskId }}'
-- Name: startInstance
-  Action: ACS::ExecuteAPI
-  Description: Starts an ECS instance.
-  Properties:
-    Service: ECS
-    API: StartInstance
-    Parameters:
-      InstanceId: '{{ instanceId }}'
-- Name: untilInstanceReady
+- Name: checkDiskStatus
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter running status.
+  Description: Waits for the system disk to enter In_use status.
   Properties:
     Service: ECS
-    API: DescribeInstances
+    API: DescribeDisks
     Parameters:
-      InstanceIds:
-      - '{{ instanceId }}'
+      DiskIds:
+      - '{{ diskId }}'
     DesiredValues:
-    - Running
-    PropertySelector: Instances.Instance[].Status
+    - In_use
+    PropertySelector: Disks.Disk[].Status

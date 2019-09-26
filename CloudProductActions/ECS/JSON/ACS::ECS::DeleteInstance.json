@@ -12,6 +12,24 @@
   },
   "Tasks": [
     {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks ECS instance is in the Stopped status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
       "Name": "deleteInstance",
       "Action": "ACS::ExecuteAPI",
       "Description": "Deletes ECS instance with the specified instance ID.",

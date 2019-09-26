@@ -28,15 +28,20 @@ Tasks:
       ValueSelector: InstanceIdSets.InstanceIdSet[]
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the created instances to be Running
+  Description: Waits for the created instances to be Running.
   Properties:
     Service: ECS
     API: DescribeInstances
     Parameters:
-      InstanceIds: '{{ runInstances.instanceIds }}'
+      InstanceIds:
+      - '{{ ACS::TaskLoopItem }}'
     DesiredValues:
     - Running
     PropertySelector: Instances.Instance[].Status
+  Loop:
+    MaxErrors: 0
+    Concurrency: 1
+    Items: '{{ runInstances.instanceIds }}'
 Outputs:
   instanceIds:
     Type: List

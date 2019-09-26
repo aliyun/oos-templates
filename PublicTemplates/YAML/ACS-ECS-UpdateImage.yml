@@ -1,61 +1,75 @@
 FormatVersion: OOS-2019-06-01
-Description: Updates an existing ECS image via ECS Cloud Assistant then creates a
-  ECS image.
+Description:
+  en: Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image.
+  zh-cn: 通过运行命令更新一个已存在的ECS镜像后创建一个新ECS镜像。
+  name-en: ACS-ECS-UpdateImage
+  name-zh-cn: 更新ECS镜像
 Parameters:
-  sourceImageId:
-    Description: The image ID for the ECS instances, centos_6_10_64_20G_alibase_20190326.vhd,
-      for example.
-    Type: String
-    AllowedPattern: '[A-Za-z0-9_\-\.]*'
-    MinLength: 1
-    MaxLength: 40
-  instanceType:
-    Description: The instance type for the ECS instances, ecs.g5.large, for example.
-    Type: String
-    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
-    MinLength: 1
-    MaxLength: 30
-  securityGroupId:
-    Description: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx,
-      for example.
-    Type: String
-    AllowedPattern: sg-[A-Za-z0-9]*
-    MinLength: 1
-    MaxLength: 30
-  vSwitchId:
-    Description: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx,
-      for example.
-    Type: String
-    AllowedPattern: vsw-[A-Za-z0-9]*
-    MinLength: 1
-    MaxLength: 30
-  commandContent:
-    Description: The content of command.
-    Type: String
-  commandType:
-    Description: The type of command to run in ECS instance.
-    Type: String
-    AllowedValues:
-    - RunBatScript
-    - RunPowerShellScript
-    - RunShellScript
-    MinLength: 1
-    MaxLength: 30
   targetImageName:
-    Description: The name of image.
+    Description:
+      en: The name of new image.
+      zh-cn: 新镜像的名称。
     Type: String
     AllowedPattern: '[A-Za-z0-9\-_]*'
     MinLength: 1
     MaxLength: 30
+  sourceImageId:
+    Description:
+      en: The image ID for the ECS instance.
+      zh-cn: 源镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+  instanceType:
+    Description:
+      en: The instance type for the ECS instances.
+      zh-cn: 实例类型。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+  securityGroupId:
+    Description:
+      en: The security group ID for the ECS instances.
+      zh-cn: 安全组ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
+  vSwitchId:
+    Description:
+      en: The virtual switch ID for the ECS instances。
+      zh-cn: 交换机ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
+    AssociationPropertyMetadata:
+      Filters:
+        - SecurityGroupId: securityGroupId
+  commandType:
+    Description:
+      en: The type of command.
+      zh-cn: 云助手命令类型。
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    MinLength: 1
+    MaxLength: 30
+  commandContent:
+    Description:
+      en: Command content to run in ECS instance.
+      zh-cn: 在ECS实例中执行的云助手命令。
+    Type: String
+    AssociationProperty: Code
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: checkNewImageName
   Action: ACS::CheckFor
-  Description: Check image name is available.
+  Description:
+    en: Check image name is available.
+    zh-cn: 检查镜像名称是可用的。
   Properties:
     Service: ECS
     API: DescribeImages
@@ -66,7 +80,9 @@ Tasks:
     PropertySelector: TotalCount
 - Name: runInstances
   Action: ACS::ECS::RunInstances
-  Description: Create a ECS instance for the cloud assistant.
+  Description:
+    en: Create a ECS instance with source image.
+    zh-en: 用源镜像创建一台ECS实例。
   Properties:
     imageId: '{{ sourceImageId }}'
     instanceType: '{{ instanceType }}'
@@ -78,21 +94,34 @@ Tasks:
       Type: String
 - Name: installCloudAssistant
   Action: ACS::ECS::InstallCloudAssistant
-  Description: Install cloud assostant for ECS instance.
+  Description:
+    en: Install cloud assostant for ECS instance.
+    zh-cn: 给实例安装云助手。
   OnError: deleteInstance
   Properties:
     instanceId: '{{ runInstances.instanceId }}'
 - Name: runCommand
   Action: ACS::ECS::RunCommand
-  Description: Run command on ECS instance.
+  Description:
+    en: Run cloud assostant command on ECS instance.
+    zh-cn: 在实例中运行云助手命令。
   OnError: deleteInstance
   Properties:
     commandContent: '{{ commandContent }}'
     commandType: '{{ commandType }}'
     instanceId: '{{ runInstances.instanceId }}'
+- Name: stopInstance
+  Action: ACS::ECS::StopInstance
+  Description:
+    en: Stops the ECS instance.
+    zh-cn: 停止ECS实例。
+  Properties:
+    instanceId: '{{ runInstances.instanceId }}'
 - Name: createImage
   Action: ACS::ECS::CreateImage
-  Description: Create image with the specified image name and instance ID.
+  Description:
+    en: Create new image with the specified image name and instance ID.
+    zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   OnError: deleteInstance
   Properties:
     imageName: '{{ targetImageName }}'
@@ -103,7 +132,9 @@ Tasks:
       Type: String
 - Name: deleteInstance
   Action: ACS::ExecuteAPI
-  Description: Deletes the ECS instance by the instance ID.
+  Description:
+    en: Deletes the ECS instance.
+    zh-cn: 删除ECS实例。
   Properties:
     Service: ECS
     API: DeleteInstance
