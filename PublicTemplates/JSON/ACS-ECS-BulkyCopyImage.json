@@ -1,0 +1,203 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Cross Regions copy image.",
+    "zh-cn": "\u6279\u91cf\u8de8\u5730\u57df\u514b\u9686\u955c\u50cf\u3002",
+    "name-en": "ACS-ECS-BulkyCopyImage",
+    "name-zh-cn": "\u6279\u91cf\u8de8\u5730\u57df\u514b\u9686\u955c\u50cf",
+    "categories": [
+      "image_manage"
+    ]
+  },
+  "Parameters": {
+    "imageId": {
+      "Description": {
+        "en": "The ID of the image to clone.",
+        "zh-cn": "\u6e90\u955c\u50cfID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+    },
+    "targetRegionIds": {
+      "Description": {
+        "en": "The Target Region Ids.",
+        "zh-cn": "\u76ee\u6807\u5730\u57dfID\u3002"
+      },
+      "Type": "List",
+      "AllowedValues": [
+        "all-regions",
+        "cn-qingdao",
+        "cn-beijing",
+        "cn-zhangjiakou",
+        "cn-huhehaote",
+        "cn-hangzhou",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "cn-chengdu",
+        "cn-hongkong",
+        "ap-northeast-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ap-southeast-5",
+        "ap-south-1",
+        "us-east-1",
+        "us-west-1",
+        "eu-west-1",
+        "me-east-1",
+        "eu-central-1"
+      ],
+      "Default": [
+        "all-regions"
+      ]
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency rate of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 15
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "queryAllAvailableRegions",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "View all available regions.",
+        "zh-cn": "\u67e5\u8be2\u5f53\u524d\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeRegions",
+        "Parameters": {
+          "RegionId": "{{ACS::RegionId}}"
+        }
+      },
+      "Outputs": {
+        "regionIds": {
+          "Type": "List",
+          "ValueSelector": "Regions.Region[]|.RegionId|select([scan(\"{{ACS::RegionId}}|test\")]|length<1)"
+        },
+        "allRegionsChosen": {
+          "Type": "String",
+          "ValueSelector": ".|{{targetRegionIds}}|sort|.[0]"
+        }
+      }
+    },
+    {
+      "Name": "whetherCloneToAllRegions",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by targetRegionIds Chosen.",
+        "zh-cn": "\u6839\u636e\u6240\u9009\u76ee\u7684\u5730\u57df\u5224\u65ad\u4e0b\u4e00\u6b65\u6267\u884c\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "copyImage",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "all-regions",
+                "{{ queryAllAvailableRegions.allRegionsChosen }}"
+              ]
+            },
+            "NextTask": "copyImageToAllRegions"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "copyImage",
+      "Action": "ACS::ECS::CopyImage",
+      "OnSuccess": "ACS::END",
+      "OnError": "ACS::END",
+      "Description": {
+        "en": "Copy image to regions chosen.",
+        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u88ab\u6307\u5b9a\u7684\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "imageId": "{{ imageId }}",
+        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ targetRegionIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "imageIdsWithRegion": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageIdWithRegion"
+          }
+        }
+      },
+      "Outputs": {
+        "imageIdWithRegion": {
+          "ValueSelector": ".|(.imageId),\"{{ ACS::TaskLoopItem }}\"",
+          "Type": "List"
+        }
+      }
+    },
+    {
+      "Name": "copyImageToAllRegions",
+      "Action": "ACS::ECS::CopyImage",
+      "Description": {
+        "en": "Copy image to all available regions.",
+        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "imageId": "{{ imageId }}",
+        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ queryAllAvailableRegions.regionIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "imageIdsWithRegion": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageIdWithRegion"
+          }
+        }
+      },
+      "Outputs": {
+        "imageIdWithRegion": {
+          "ValueSelector": ".|(.imageId),\"{{ ACS::TaskLoopItem }}\"",
+          "Type": "List"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "imageIds": {
+      "Type": "List",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "all-regions",
+              "{{ queryAllAvailableRegions.allRegionsChosen }}"
+            ]
+          },
+          "{{ copyImageToAllRegions.imageIdsWithRegion }}",
+          "{{ copyImage.imageIdsWithRegion }}"
+        ]
+      }
+    }
+  }
+}

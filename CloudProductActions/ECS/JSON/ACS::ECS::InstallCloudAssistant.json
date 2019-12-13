@@ -5,12 +5,115 @@
     "instanceId": {
       "Description": "The Id of ECS instance you will install cloud assistant.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     }
   },
   "Tasks": [
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks whether the ECS instance status is running or stopped.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "queryCloudAssistantReady",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the cloud assistanat status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeCloudAssistantStatus",
+        "Parameters": {
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "cloudAssistantStatus": {
+          "Type": "String",
+          "ValueSelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
+        }
+      }
+    },
+    {
+      "Name": "whetherCloudAssistantIsReady",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by CloudAssistant status.",
+      "Properties": {
+        "DefaultTask": "waitDataRecover",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ queryCloudAssistantReady.cloudAssistantStatus }}"
+              ]
+            },
+            "NextTask": "waitCloudAssistantStatusReachtrue"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "waitDataRecover",
+      "Action": "ACS::Sleep",
+      "Description": "Waits data recover.",
+      "Properties": {
+        "Duration": "PT1M"
+      }
+    },
+    {
+      "Name": "queryCloudAssistantStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the cloud assistanat status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeCloudAssistantStatus",
+        "Parameters": {
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "cloudAssistantStatus": {
+          "Type": "String",
+          "ValueSelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
+        }
+      }
+    },
+    {
+      "Name": "whetherCloudAssistantStatusIsTrue",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by CloudAssistant status.",
+      "Properties": {
+        "DefaultTask": "installCloudAssistant",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ queryCloudAssistantStatus.cloudAssistantStatus }}"
+              ]
+            },
+            "NextTask": "waitCloudAssistantStatusReachtrue"
+          }
+        ]
+      }
+    },
     {
       "Name": "installCloudAssistant",
       "Action": "ACS::ExecuteAPI",
@@ -56,10 +159,9 @@
       }
     },
     {
-      "Name": "describeCloudAssistantStatus",
-      "Action": "ACS::CheckFor",
-      "Description": "Check wether the cloud assistant status is true.",
-      "OnError": "ACS::END",
+      "Name": "waitCloudAssistantStatusReachtrue",
+      "Action": "ACS::WaitFor",
+      "Description": "Wait for the cloud assistant status reach true.",
       "Properties": {
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",

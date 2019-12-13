@@ -1,0 +1,61 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky modify the column creditspecification for the T5 series instance.
+  zh-cn: 批量修改T5系列实例的性能模式。
+  name-en: ACS-ECS-BulkyModifyT5InstanceCreditSpecification
+  name-zh-cn: 批量修改T5系列实例的性能模式
+  categories:
+    - instance_manage
+Parameters:
+  creditSpecification:
+    Description:
+      en: The creditSpecification of ECS isntance.
+      zh-cn: 性能模式。
+    Type: String
+    AllowedValues:
+      - Standard
+      - Unlimited
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: modifyCreditSpecification
+  Action: ACS::ECS::ModifyCreditSpecification
+  Description:
+    en: Modifies CreditSpecification of instance.
+    zh-cn: 修改性能模式。
+  Properties:
+    instanceId: '{{ ACS::TaskLoopItem }}'
+    creditSpecification: '{{ creditSpecification }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ getInstance.instanceIds }}'

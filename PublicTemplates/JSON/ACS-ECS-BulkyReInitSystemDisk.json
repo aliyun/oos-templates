@@ -1,0 +1,142 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky resets system disks to its initial state.The ECS instances must be in stopped status.",
+    "zh-cn": "\u6279\u91cf\u521d\u59cb\u5316\u7cfb\u7edf\u76d8\u3002\u78c1\u76d8\u6240\u5728\u5b9e\u4f8b\u5fc5\u987b\u4e3a\u505c\u6b62\u72b6\u6001\u3002",
+    "name-en": "ACS-ECS-BulkyReInitSystemDisk",
+    "name-zh-cn": "\u6279\u91cf\u521d\u59cb\u5316\u7cfb\u7edf\u76d8",
+    "categories": [
+      "instance_manage"
+    ]
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks ECS instances is in the stopped status.",
+        "zh-cn": "\u68c0\u67e5\u5b9e\u4f8b\u662f\u5426\u4e3a\u505c\u6b62\u72b6\u6001\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
+      }
+    },
+    {
+      "Name": "querySystemDisks",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Views system disk of the ECS instance.",
+        "zh-cn": "\u83b7\u53d6\u5b9e\u4f8b\u7cfb\u7edf\u76d8\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
+          "DiskType": "system"
+        }
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "diskIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "diskId"
+          }
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        }
+      }
+    },
+    {
+      "Name": "reInitSystemDisk",
+      "Action": "ACS::ECS::ReInitDisk",
+      "Description": {
+        "en": "Resets a disk to its initial state.",
+        "zh-cn": "\u521d\u59cb\u5316\u7cfb\u7edf\u76d8\u3002"
+      },
+      "Properties": {
+        "diskId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ querySystemDisks.diskIds }}"
+      }
+    }
+  ],
+  "Outputs": {
+    "diskIds": {
+      "Type": "List",
+      "Value": "{{ querySystemDisks.diskIds }}"
+    }
+  }
+}

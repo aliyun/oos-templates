@@ -1,0 +1,85 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Creates an ECS image.",
+    "zh-cn": "\u521b\u5efa\u4e00\u4e2aECS\u955c\u50cf\u3002",
+    "name-en": "ACS-ECS-CreateImage",
+    "name-zh-cn": "\u521b\u5efaECS\u955c\u50cf",
+    "categories": [
+      "image_manage"
+    ]
+  },
+  "Parameters": {
+    "imageName": {
+      "Description": {
+        "en": "The name of new image.",
+        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
+      },
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9\\-_]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkNewImageName",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Check image name is available.",
+        "zh-cn": "\u68c0\u67e5\u955c\u50cf\u540d\u79f0\u662f\u53ef\u7528\u7684\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "ImageName": "{{ imageName }}"
+        },
+        "DesiredValues": [
+          0
+        ],
+        "PropertySelector": "TotalCount"
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ECS::CreateImage",
+      "Description": {
+        "en": "Create new image with the specified image name and instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+      },
+      "Properties": {
+        "imageName": "{{ imageName }}",
+        "instanceId": "{{ instanceId }}"
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "imageId": {
+      "Type": "String",
+      "Value": "{{ createImage.imageId }}"
+    }
+  }
+}

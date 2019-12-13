@@ -4,7 +4,10 @@
     "en": "Run remote shell script.",
     "zh-cn": "\u8fd0\u884c\u8fdc\u7aefshell\u811a\u672c\u3002",
     "name-en": "ACS-ECS-RunRemoteShellScript",
-    "name-zh-cn": "\u8fd0\u884c\u8fdc\u7aefshell\u811a\u672c"
+    "name-zh-cn": "\u8fd0\u884c\u8fdc\u7aefshell\u811a\u672c",
+    "categories": [
+      "run_command"
+    ]
   },
   "Parameters": {
     "instanceId": {
@@ -23,10 +26,17 @@
       },
       "Type": "String"
     },
+    "fileName": {
+      "Description": {
+        "en": "The name of the file to execute.",
+        "zh-cn": "\u6267\u884c\u7684\u6587\u4ef6\u540d\u3002"
+      },
+      "Type": "String"
+    },
     "srcUrl": {
       "Description": {
         "en": "Current directory of the file in OSS.",
-        "zh-cn": "\u6587\u4ef6\u5728OOS\u4e2d\u7684\u76ee\u5f55\u3002"
+        "zh-cn": "\u6587\u4ef6\u5728OSS\u4e2d\u7684\u76ee\u5f55\u3002"
       },
       "Type": "String"
     },
@@ -68,13 +78,13 @@
       "Name": "copyOSSFileToInstance",
       "Description": {
         "en": "Copies OSS file to linux instace.",
-        "zh-cn": "\u590d\u5236OOS\u4e2d\u7684\u6587\u4ef6\u5230Linux\u5b9e\u4f8b\u4e2d\u3002"
+        "zh-cn": "\u590d\u5236OSS\u4e2d\u7684\u6587\u4ef6\u5230Linux\u5b9e\u4f8b\u4e2d\u3002"
       },
       "Action": "ACS::ECS::CopyLinuxInstanceFileFromOSS",
       "Properties": {
         "instanceId": "{{ instanceId }}",
         "instanceRole": "{{ instanceRole }}",
-        "srcUrl": "{{ srcUrl }}",
+        "srcUrl": "{{ srcUrl }}/{{ fileName }}",
         "destUrl": "{{ destUrl }}"
       }
     },

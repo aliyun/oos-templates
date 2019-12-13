@@ -1,0 +1,47 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Apply auto snapshot policy.",
+  "Parameters": {
+    "autoSnapshotPolicyId": {
+      "Description": "The ID of ECS AutoSnapshotPolicy.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of ECS instance.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getDiskIds",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views all disks of the ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "diskIds": {
+          "Type": "List",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        }
+      }
+    },
+    {
+      "Name": "applyAutoSnapshotPolicy",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Creates disks from all snapshots.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ApplyAutoSnapshotPolicy",
+        "Parameters": {
+          "autoSnapshotPolicyId": "{{ autoSnapshotPolicyId }}",
+          "diskIds": "{{ getDiskIds.diskIds }}"
+        }
+      }
+    }
+  ]
+}

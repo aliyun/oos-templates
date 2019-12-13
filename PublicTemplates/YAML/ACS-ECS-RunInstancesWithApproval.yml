@@ -4,6 +4,8 @@ Description:
   zh-cn: 通过审批后创建ECS实例。
   name-en: ACS-ECS-RunInstancesWithApproval
   name-zh-cn: 通过审批后创建ECS实例
+  categories:
+    - cost_manage
 Parameters:
   accessToken:
     Description:

@@ -1,0 +1,55 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky attaches instance ram role.
+  zh-cn: 批量授予实例Ram角色。
+  name-en: ACS-ECS-BulkyAttachInstanceRamRole
+  name-zh-cn: 批量授予实例Ram角色
+  categories:
+    - instance_manage
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  RamRoleName:
+    Description:
+      en: The name of Ramrole.
+      zh-cn: Ram角色名称。
+    Type: String
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: attachInstanceRamRole
+  Action: ACS::ExecuteApi
+  Description:
+    en: Attach instance ram role.
+    zh-cn: 授予实例Ram角色。
+  Properties:
+    Service: ECS
+    API: AttachInstanceRamRole
+    Parameters:
+      RamRoleName: '{{ RamRoleName }}'
+      InstanceIds: '{{ getInstance.instanceIds }}'
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ getInstance.instanceIds }}'

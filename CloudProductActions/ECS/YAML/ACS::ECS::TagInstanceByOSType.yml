@@ -1,0 +1,56 @@
+FormatVersion: OOS-2019-06-01
+Description: Tag an ECS instance using OS type as tag value.
+Parameters:
+  instanceId:
+    Description:
+      en: Instance ID of the ECS to be tagged.
+      zh-cn: ECS实例ID。
+    Type: String
+    MaxLength: 30
+    MinLength: 1
+  tagKey:
+    Description: The tag key.
+    Type: String
+    Default: OSType
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: queryInstanceOSType
+  Action: ACS::ExecuteApi
+  Description:
+    en: Queries ECS instance OS type.
+    zh-cn: 获取ECS实例系统类型。
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+  Outputs:
+    osType:
+      Type: String
+      ValueSelector: Instances.Instance[].OSType
+- Name: tagResources
+  Action: ACS::ExecuteApi
+  Description:
+    en: Creates and attaches tag to ECS instance.
+    zh-cn: 创建并挂载标签到ECS实例。
+  Properties:
+    Service: ECS
+    API: TagResources
+    Parameters:
+      ResourceIds:
+      - '{{ instanceId }}'
+      ResourceType: Instance
+      Tags:
+      - Key: '{{ tagKey }}'
+        Value: '{{ queryInstanceOsType.osType }}'
+Outputs:
+  osType:
+    Type: String
+    Value: '{{ queryInstanceOsType.osType }}'

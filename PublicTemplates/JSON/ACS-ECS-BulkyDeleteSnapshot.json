@@ -1,0 +1,73 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky delete snapshot.",
+    "zh-cn": "\u6279\u91cf\u5220\u9664\u5feb\u7167\u3002",
+    "name-en": "ACS-ECS-BulkyDeleteSnapshot",
+    "name-zh-cn": "\u6279\u91cf\u5220\u9664\u5feb\u7167",
+    "categories": [
+      "data_backup"
+    ]
+  },
+  "Parameters": {
+    "snapshotIds": {
+      "Description": {
+        "en": "The snapshot id.",
+        "zh-cn": "\u5feb\u7167 ID\u3002"
+      },
+      "Type": "List"
+    },
+    "force": {
+      "Description": {
+        "en": "Force deletion of snapshots associated with disks.",
+        "zh-cn": "\u662f\u5426\u5f3a\u5236\u5220\u9664\u6709\u78c1\u76d8\u5173\u8054\u7684\u5feb\u7167\u3002"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "deleteSnapshot",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Delete the specified snapshot.",
+        "zh-cn": "\u5220\u9664\u6307\u5b9a\u7684\u5feb\u7167\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteSnapshot",
+        "Parameters": {
+          "Force": "{{ force }}",
+          "SnapshotId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ snapshotIds }}"
+      }
+    }
+  ]
+}

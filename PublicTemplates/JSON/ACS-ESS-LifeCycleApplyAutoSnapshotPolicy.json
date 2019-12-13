@@ -1,0 +1,140 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify the wait state of the specified scaling activity according to the result of applies an automatic snapshot policy to one or more disks.",
+    "zh-cn": "\u6839\u636e\u4e3a\u4e00\u5757\u6216\u8005\u591a\u5757\u4e91\u76d8\u5e94\u7528\u81ea\u52a8\u5feb\u7167\u7b56\u7565\u7684\u7ed3\u679c\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u3002",
+    "name-en": "ACS-ESS-LifeCycleApplyAutoSnapshotPolicy",
+    "name-zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u7528\u81ea\u52a8\u5feb\u7167\u7b56\u7565",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "autoSnapshotPolicyId": {
+      "Description": {
+        "en": "The ID of the automatic snapshot policy.",
+        "zh-cn": "\u76ee\u6807\u81ea\u52a8\u5feb\u7167\u7b56\u7565ID\u3002"
+      },
+      "Type": "String"
+    },
+    "regionId": {
+      "Description": {
+        "en": "The ID of region.",
+        "zh-cn": "\u5730\u57dfID\uff0c\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${regionId}"
+      },
+      "Type": "String",
+      "Default": "${regionId}"
+    },
+    "instanceIds": {
+      "Description": {
+        "en": "The ID list of the ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c [\"${instanceId}\"]"
+      },
+      "Type": "List",
+      "Default": [
+        "${instanceIds}"
+      ]
+    },
+    "lifecycleHookId": {
+      "Description": {
+        "en": "The ID of the lifecycle hook.",
+        "zh-cn": "\u751f\u547d\u5468\u671fID,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleHookId}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleHookId}"
+    },
+    "lifecycleActionToken": {
+      "Description": {
+        "en": "The token that indicates a specific scaling activity associated with an instance.",
+        "zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleActionToken}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleActionToken}"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the created instances to be Running.",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Loop": {
+        "Concurrency": 1,
+        "Items": "{{ instanceIds }}"
+      }
+    },
+    {
+      "Name": "applyAutoSnapshotPolicy",
+      "Action": "ACS::ECS::ApplyAutoSnapshotPolicy",
+      "Description": "Apply AutoSnapshot policy.",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Properties": {
+        "autoSnapshotPolicyId": "{{ autoSnapshotPolicyId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Concurrency": 1,
+        "Items": "{{ instanceIds }}"
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForContinue",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle action for continue.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u7ee7\u7eed\u5b8c\u6210\u3002"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForAbandon",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Complete lifecycle action for Abandon.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u5f03\u7528\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "ABANDON"
+        }
+      }
+    }
+  ]
+}

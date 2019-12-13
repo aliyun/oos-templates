@@ -4,6 +4,8 @@ Description:
   zh-cn: 通过审批后删除ECS按量付费实例。
   name-en: ACS-ECS-BulkyDeleteInstancesWithApproval
   name-zh-cn: 通过审批后批量删除ECS实例
+  categories:
+    - cost_manage
 Parameters:
   targets:
     Type: Json
@@ -22,6 +24,10 @@ Parameters:
       zh-cn: 任务执行的并发比率。
     Type: Json
     AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.

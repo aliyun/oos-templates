@@ -4,7 +4,10 @@
     "en": "Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image.",
     "zh-cn": "\u901a\u8fc7\u8fd0\u884c\u547d\u4ee4\u66f4\u65b0\u4e00\u4e2a\u5df2\u5b58\u5728\u7684ECS\u955c\u50cf\u540e\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u3002",
     "name-en": "ACS-ECS-UpdateImage",
-    "name-zh-cn": "\u66f4\u65b0ECS\u955c\u50cf"
+    "name-zh-cn": "\u66f4\u65b0ECS\u955c\u50cf",
+    "categories": [
+      "image_manage"
+    ]
   },
   "Parameters": {
     "targetImageName": {
@@ -13,17 +16,15 @@
         "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
       },
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9\\-_]*",
       "MinLength": 1,
-      "MaxLength": 30
+      "Default": "UpdateImage_from_{{ sourceImageId }}_on_{{ ACS::ExecutionId }}"
     },
     "sourceImageId": {
       "Description": {
         "en": "The image ID for the ECS instance.",
         "zh-cn": "\u6e90\u955c\u50cfID\u3002"
       },
-      "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+      "Type": "String"
     },
     "instanceType": {
       "Description": {
@@ -31,7 +32,8 @@
         "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType"
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "Default": "ecs.g5.large"
     },
     "securityGroupId": {
       "Description": {
@@ -67,8 +69,7 @@
         "RunPowerShellScript",
         "RunShellScript"
       ],
-      "MinLength": 1,
-      "MaxLength": 30
+      "Default": "RunShellScript"
     },
     "commandContent": {
       "Description": {
@@ -76,7 +77,8 @@
         "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "Code"
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
     },
     "OOSAssumeRole": {
       "Description": {
@@ -113,7 +115,7 @@
       "Action": "ACS::ECS::RunInstances",
       "Description": {
         "en": "Create a ECS instance with source image.",
-        "zh-en": "\u7528\u6e90\u955c\u50cf\u521b\u5efa\u4e00\u53f0ECS\u5b9e\u4f8b\u3002"
+        "zh-cn": "\u7528\u6e90\u955c\u50cf\u521b\u5efa\u4e00\u53f0ECS\u5b9e\u4f8b\u3002"
       },
       "Properties": {
         "imageId": "{{ sourceImageId }}",

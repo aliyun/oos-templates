@@ -4,6 +4,8 @@ Description:
   zh-cn: 运行远端shell脚本。
   name-en: ACS-ECS-RunRemoteShellScript
   name-zh-cn: 运行远端shell脚本
+  categories:
+    - run_command
 Parameters:
   instanceId:
     Description:
@@ -17,10 +19,15 @@ Parameters:
       en: The ramRole attached on the instance.
       zh-cn: 挂载到实例上的RAM角色。
     Type: String
+  fileName:
+    Description:
+      en: The name of the file to execute.
+      zh-cn: 执行的文件名。
+    Type: String
   srcUrl:
     Description:
       en: Current directory of the file in OSS.
-      zh-cn: 文件在OOS中的目录。
+      zh-cn: 文件在OSS中的目录。
     Type: String
   destUrl:
     Description:
@@ -35,7 +42,9 @@ Parameters:
     Default: /root
   timeout:
     Description:
-      en: The value of the invocation timeout period of a command on ECS instances.
+      en: >-
+        The value of the invocation timeout period of a command on ECS
+        instances.
       zh-cn: 运行命令最大超时时间。
     Type: Number
     Default: 600
@@ -47,31 +56,31 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-- Name: copyOSSFileToInstance
-  Description:
-    en: Copies OSS file to linux instace.
-    zh-cn: 复制OOS中的文件到Linux实例中。
-  Action: ACS::ECS::CopyLinuxInstanceFileFromOSS
-  Properties:
-    instanceId: "{{ instanceId }}"
-    instanceRole: "{{ instanceRole }}"
-    srcUrl: "{{ srcUrl }}"
-    destUrl: "{{ destUrl }}"
-- Name: runCommand
-  Description:
-    en: Execute cloud assistant command.
-    zh-cn: 执行云助手命令。
-  Action: ACS::ECS::RunCommand
-  Properties:
-    commandContent: '/bin/bash {{ destUrl }}/{{ fileName }}'
-    instanceId: '{{ instanceId }}'
-    commandType: RunShellScript
-    workingDir: '{{ workingDir }}'
-    timeout: '{{ timeout }}'
-  Outputs:
-    commandOutput:
-      Type: String
-      ValueSelector: invocationOutput
+  - Name: copyOSSFileToInstance
+    Description:
+      en: Copies OSS file to linux instace.
+      zh-cn: 复制OSS中的文件到Linux实例中。
+    Action: 'ACS::ECS::CopyLinuxInstanceFileFromOSS'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      instanceRole: '{{ instanceRole }}'
+      srcUrl: '{{ srcUrl }}/{{ fileName }}'
+      destUrl: '{{ destUrl }}'
+  - Name: runCommand
+    Description:
+      en: Execute cloud assistant command.
+      zh-cn: 执行云助手命令。
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      commandContent: '/bin/bash {{ destUrl }}/{{ fileName }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
 Outputs:
   commandOutput:
     Type: String

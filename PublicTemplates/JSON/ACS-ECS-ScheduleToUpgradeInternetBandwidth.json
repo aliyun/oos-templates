@@ -1,10 +1,13 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Schedules to upgrade internet bandwidth for ECS instances.",
+    "en": "Schedule to upgrades internet bandwidth for ECS instances.",
     "zh-cn": "\u5b9a\u65f6\u5347\u7ea7ECS\u5b9e\u4f8b\u4e34\u65f6\u5e26\u5bbd\u3002",
     "name-en": "ACS-ECS-ScheduleToUpgradeInternetBandwidth",
-    "name-zh-cn": "\u5b9a\u65f6\u5347\u7ea7ECS\u5b9e\u4f8b\u4e34\u65f6\u5e26\u5bbd"
+    "name-zh-cn": "\u5b9a\u65f6\u5347\u7ea7ECS\u5b9e\u4f8b\u4e34\u65f6\u5e26\u5bbd",
+    "categories": [
+      "time_trigger"
+    ]
   },
   "Parameters": {
     "targets": {
@@ -17,7 +20,7 @@
     "triggerCron": {
       "Description": {
         "en": "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm. The minimum interval is one minute.",
-        "zh-cn": "cron\u8868\u8fbe\u5f0f\uff0c\u8be6\u60c5\u53c2\u8003\uff1ahttps://www.alibabacloud.com/help/zh/faq-detail/64769.htm"
+        "zh-cn": "UTC\u65f6\u95f4\u7684cron\u8868\u8fbe\u5f0f\uff0c\u8be6\u60c5\u53c2\u8003\uff1ahttps://www.alibabacloud.com/help/zh/faq-detail/64769.htm"
       },
       "Type": "String",
       "AssociationProperty": "Cron",
@@ -39,30 +42,38 @@
         "en": "The maximum public network bandwidth for in-direction.",
         "zh-cn": "\u516c\u7f51\u6700\u5927\u5165\u5e26\u5bbd\u3002"
       },
-      "Type": "Number"
+      "Type": "Number",
+      "MinValue": 1,
+      "MaxValue": 200
     },
     "maxBandwidthOut": {
       "Description": {
         "en": "The maximum public network bandwidth for out-direction.",
         "zh-cn": "\u516c\u7f51\u6700\u5927\u51fa\u5e26\u5bbd\u3002"
       },
-      "Type": "Number"
+      "Type": "Number",
+      "MinValue": 0,
+      "MaxValue": 100
     },
     "startHourMinute": {
-      "Description": "The start time of upgrade. Format: hh:mmZ",
+      "Description": {
+        "en": "The start time of upgrade. Format: hh:mmZ",
+        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u5f00\u59cb\u65f6\u95f4\uff0c\u683c\u5f0f\uff1ahh:mm:ssZ"
+      },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "hh:mmZ"
-      },
-      "Default": "12:00Z"
+        "Format": "hh:mm:ssZ"
+      }
     },
     "durationHour": {
       "Description": {
         "en": "The number of hours that the bandwidth upgrade lasts.",
         "zh-cn": "\u5e26\u5bbd\u5347\u7ea7\u6301\u7eed\u65f6\u95f4\u3002"
       },
-      "Type": "Number"
+      "Type": "Number",
+      "MinValue": 4,
+      "Default": 4
     },
     "rateControl": {
       "Description": {
@@ -70,7 +81,12 @@
         "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
       },
       "Type": "Json",
-      "AssociationProperty": "RateControl"
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
     },
     "OOSAssumeRole": {
       "Description": {
@@ -130,12 +146,27 @@
           "InstanceId": "{{ ACS::TaskLoopItem }}",
           "InternetMaxBandwidthIn": "{{ maxBandwidthIn }}",
           "InternetMaxBandwidthOut": "{{ maxBandwidthOut }}",
-          "StartTime": "{{ ACS::CurrentDate }}{{ startHourMinute }}",
+          "StartTime": {
+            "Fn::FormatUTCTime": [
+              {
+                "Fn::CalculateTimeByOpsWindow": [
+                  "{{ startHourMinute }}",
+                  "{{ startHourMinute }}"
+                ]
+              },
+              "%Y-%m-%dT%H:%MZ"
+            ]
+          },
           "EndTime": {
             "Fn::FormatUTCTime": [
               {
                 "Fn::AddHour": [
-                  "{{ ACS::CurrentDate}}{{ startHourMinute }}",
+                  {
+                    "Fn::CalculateTimeByOpsWindow": [
+                      "{{ startHourMinute }}",
+                      "{{ startHourMinute }}"
+                    ]
+                  },
                   "{{ durationHour }}"
                 ]
               },

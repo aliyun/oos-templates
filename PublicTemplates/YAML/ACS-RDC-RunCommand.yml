@@ -1,0 +1,53 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky run command on ECS instances.
+  zh-cn: 批量在多台实例上运行命令。
+  name-en: ACS-RDC-RunCommand
+  name-zh-cn: 云效跨地域批量运行命令
+Parameters:
+  instanceInfos:
+    Description: The infos list of the ECS instance.
+    Type: List
+  batchNumber:
+    Description: The number of times of wholesale distribution.
+    Type: Number
+    MinValue: 1
+    MaxValue: 10
+    Default: 5
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{OOSAssumeRole}}'
+Tasks:
+  - Name: loopRunCommand
+    Description: Bulky run cloud assistant command.
+    Action: 'ACS::RDC::NewRunCommand'
+    Properties:
+      InstanceId:
+        'Fn::Select':
+          - instanceId
+          - '{{ ACS::TaskLoopItem }}'
+      CommandContent:
+        'Fn::Select':
+          - commandContent
+          - '{{ ACS::TaskLoopItem }}'
+      RegionId:
+        'Fn::Select':
+          - regionId
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ instanceInfos }}'
+      MaxErrors: 1
+      Concurrency:
+        'Fn::CalculateBatch':
+          - '{{ batchNumber }}'
+          - '{{ instanceInfos }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: InvocationOutput

@@ -7,10 +7,33 @@ Parameters:
   instanceId:
     Description: The ID of ECS instance.
     Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
 Tasks:
+- Name: viewInstanceStatus
+  Action: ACS::ExecuteApi
+  Description: Views ECS instance status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+        - '{{ instanceId }}'
+  Outputs:
+    instanceStatus:
+      Type: String
+      ValueSelector: Instances.Instance[].Status
+- Name: whetherInstanceStatusIsRunning
+  Action: 'ACS::Choice'
+  Description: Choose next task by instance status.
+  Properties:
+    DefaultTask: stopInstance
+    Choices:
+      - When:
+          Fn::Equals:
+            - 'Stopped'
+            - '{{ viewInstanceStatus.instanceStatus }}'
+        NextTask: replaceSystemDisk
 - Name: stopInstance
   Action: ACS::ExecuteAPI
   Description: Stops the ECS instance with the specified instance ID.

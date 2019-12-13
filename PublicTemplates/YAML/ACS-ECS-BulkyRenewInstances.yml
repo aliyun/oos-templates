@@ -1,0 +1,77 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky renew ECS prepaid instances.
+  zh-cn: 批量续费ECS预付费实例。
+  name-en: ACS-ECS-BulkyRenewInstances
+  name-zh-cn: 批量续费ECS实例
+  categories:
+    - instance_manage
+Parameters:
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+  periodUnit:
+    Description:
+      en: The unit of the renewal period (Period).
+      zh-cn: '续费时长的时间单位，即参数Period的单位。PeriodUnit=Week时，Period取值：1~4，PeriodUnit=Month时，Period取值：1~12, 24, 36, 48, 60'
+    Type: String
+    AllowedValues:
+      - Week
+      - Month
+    Default: Month
+  period:
+    Description:
+      en: The renewal period of the subscription instance.
+      zh-cn: 包年包月续费时长。
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 60
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances.
+    zh-cn: 获取ECS实例。
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: renewInstance
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Renew ECS instance with the specified instance ID.
+    zh-cn: 通过指定实例ID续费实例。
+  Properties:
+    Service: ECS
+    API: RenewInstance
+    Parameters:
+      InstanceId: '{{ ACS::TaskLoopItem }}'
+      Period: '{{ period }}'
+      PeriodUnit: '{{ periodUnit }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'

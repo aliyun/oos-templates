@@ -9,7 +9,6 @@
     "instanceId": {
       "Description": "The instance ID you will handle.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
@@ -47,12 +46,6 @@
           "Stopped"
         ],
         "PropertySelector": "Instances.Instance[].Status"
-      },
-      "Outputs": {
-        "instanceIds": {
-          "Type": "List",
-          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
-        }
       }
     },
     {
@@ -103,12 +96,6 @@
           "Running"
         ],
         "PropertySelector": "Instances.Instance[].Status"
-      },
-      "Outputs": {
-        "instanceIds": {
-          "Type": "List",
-          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
-        }
       }
     }
   ],

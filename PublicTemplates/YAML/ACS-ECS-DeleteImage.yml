@@ -1,0 +1,34 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en:  Deletes an ECS image.
+  zh-cn: 删除一个ECS镜像。
+  name-en: ACS-ECS-DeleteImage
+  name-zh-cn: 删除ECS镜像
+  categories:
+    - image_manage
+Parameters:
+  imageId:
+    Description:
+      en: The image ID for the ECS instance.
+      zh-cn: 镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: deleteImage
+  Action: ACS::ECS::DeleteImage
+  Description:
+    en: Deletes the specified ECS image.
+    zh-cn: 删除指定的ECS镜像。
+  Properties:
+    imageId: '{{ imageId }}'
+  Outputs:
+    imageId:
+      ValueSelector: imageId
+      Type: String

@@ -4,7 +4,10 @@
     "en": "Bulky run command on ECS instances.",
     "zh-cn": "\u6279\u91cf\u5728\u591a\u53f0ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002",
     "name-en": "ACS-ECS-BulkyRunCommand",
-    "name-zh-cn": "\u6279\u91cf\u5728ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4"
+    "name-zh-cn": "\u6279\u91cf\u5728ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4",
+    "categories": [
+      "run_command"
+    ]
   },
   "Parameters": {
     "targets": {
@@ -24,7 +27,8 @@
         "RunBatScript",
         "RunPowerShellScript",
         "RunShellScript"
-      ]
+      ],
+      "Default": "RunShellScript"
     },
     "commandContent": {
       "Description": {
@@ -32,7 +36,8 @@
         "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "Code"
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
     },
     "rateControl": {
       "Description": {
@@ -40,7 +45,12 @@
         "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
       },
       "Type": "Json",
-      "AssociationProperty": "RateControl"
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
     },
     "OOSAssumeRole": {
       "Description": {

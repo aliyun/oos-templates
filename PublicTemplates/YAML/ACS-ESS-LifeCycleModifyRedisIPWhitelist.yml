@@ -1,21 +1,15 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Modify the wait state of the specified scaling activity according to the result of setting the IP whitelist of the MongoDB instance.
+  en: >-
+    Modify the wait state of the specified scaling activity according to the
+    result of setting the IP whitelist of the MongoDB instance.
   zh-cn: 根据设置Redis实例白名单结果修改伸缩活动的等待状态。
   name-en: ACS-ESS-LifeCycleModifyRedisIPWhitelist
   name-zh-cn: 弹性伸缩LifeCycleHook设置Redis白名单
+  categories:
+    - elastic_manage
 Parameters:
-  regionId:
-    Description:
-      en: The ID of region.
-      zh-cn: 地域ID。
-    Type: String
-  instanceIds:
-    Description:
-      en: The ID list of the ECS instance.
-      zh-cn: ECS实例ID列表。
-    Type: List
-  dBInstanceId:
+  dbInstanceId:
     Description:
       en: The ID of Redis Instance.
       zh-cn: Redis实例ID。
@@ -31,13 +25,30 @@ Parameters:
   lifecycleHookId:
     Description:
       en: The ID of the lifecycle hook.
-      zh-cn: 生命周期ID.
+      zh-cn: '生命周期ID, 请使用弹性伸缩系统默认值 ${lifecycleHookId}.'
     Type: String
+    Default: '${lifecycleHookId}'
   lifecycleActionToken:
     Description:
-      en: The token that indicates a specific scaling activity associated with an instance.
-      zh-cn: 实例关联的特定伸缩活动的令牌。
+      en: >-
+        The token that indicates a specific scaling activity associated with an
+        instance.
+      zh-cn: '实例关联的特定伸缩活动的令牌, 请使用弹性伸缩系统默认值 ${lifecycleActionToken}.'
     Type: String
+    Default: '${lifecycleActionToken}'
+  regionId:
+    Description:
+      en: The ID of region.
+      zh-cn: '地域ID, 请使用弹性伸缩系统默认值 ${regionId}.'
+    Type: String
+    Default: '${regionId}'
+  instanceIds:
+    Description:
+      en: The ID list of the ECS instance.
+      zh-cn: 'ECS实例ID列表。请使用弹性伸缩系统默认值 ["${instanceIds}"]. '
+    Type: List
+    Default:
+      - '${instanceIds}'
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -46,68 +57,69 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-- Name: getInstanceIpAddress
-  Action: ACS::ExecuteAPI
-  Description:
-    en: Gets ECS instance network type and ip address.
-    zh-cn: 获取ECS实例的网络类型和Ip地址。
-  OnError: CompleteLifecycleActionForAbandon
-  Properties:
-    Service: ECS
-    API: DescribeInstances
-    Parameters:
-      RegionId: '{{ regionId }}'
-      InstanceIds: '{{ instanceIds }}'
-  Outputs:
-    Ips:
-      Type: List
-      ValueSelector: >-
-        .Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress+.InnerIpAddress.IpAddress|.[]
-- Name: modifySecurityIps
-  Action: ACS::ExecuteAPI
-  Description:
-    en: Modifies the whitelist.
-    zh-cn: 修改白名单。
-  OnError: CompleteLifecycleActionForAbandon
-  OnSuccess: CompleteLifecycleActionForContinue
-  Properties:
-    Service: R-KVSTORE
-    API: ModifySecurityIps
-    Parameters:
-      RegionId: '{{ regionId }}'
-      ModifyMode: '{{ modifyMode }}'
-      InstanceId: '{{ dBInstanceId }}'
-      SecurityIps:
-        Fn::Join:
-          - ','
-          - '{{ getInstanceIpAddress.Ips }}'
-- Name: CompleteLifecycleActionForContinue
-  Action: ACS::ExecuteAPI
-  Description:
-    en: Modify lifecycle action for continue.
-    zh-cn: 修改伸缩活动的等待状态为继续完成。
-  OnSuccess: ACS::END
-  Properties:
-    Service: ESS
-    API: CompleteLifecycleAction
-    Parameters:
-      RegionId: '{{ regionId }}'
-      LifecycleHookId: '{{ lifecycleHookId }}'
-      LifecycleActionToken: '{{ lifecycleActionToken }}'
-- Name: CompleteLifecycleActionForAbandon
-  Action: ACS::ExecuteAPI
-  Description:
-    en: Complete lifecycle action for Abandon.
-    zh-cn: 修改伸缩活动的等待状态为弃用。
-  Properties:
-    Service: ESS
-    API: CompleteLifecycleAction
-    Parameters:
-      RegionId: '{{ regionId }}'
-      LifecycleHookId: '{{ lifecycleHookId }}'
-      LifecycleActionToken: '{{ lifecycleActionToken }}'
-      LifecycleActionResult: ABANDON
+  - Name: getInstanceIpAddress
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Gets ECS instance network type and ip address.
+      zh-cn: 获取ECS实例的网络类型和Ip地址。
+    OnError: CompleteLifecycleActionForAbandon
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds: '{{ instanceIds }}'
+    Outputs:
+      Ips:
+        Type: List
+        ValueSelector: >-
+          .Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress+.InnerIpAddress.IpAddress|.[]
+  - Name: modifySecurityIps
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modifies the whitelist.
+      zh-cn: 修改白名单。
+    OnError: CompleteLifecycleActionForAbandon
+    OnSuccess: CompleteLifecycleActionForContinue
+    Properties:
+      Service: R-KVSTORE
+      API: ModifySecurityIps
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ModifyMode: '{{ modifyMode }}'
+        InstanceId: '{{ dBInstanceId }}'
+        SecurityIps:
+          'Fn::Join':
+            - ','
+            - '{{ getInstanceIpAddress.Ips }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modify lifecycle action for continue.
+      zh-cn: 修改伸缩活动的等待状态为继续完成。
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+  - Name: CompleteLifecycleActionForAbandon
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Complete lifecycle action for Abandon.
+      zh-cn: 修改伸缩活动的等待状态为弃用。
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON
 Outputs:
   ipAddresses:
     Type: List
     Value: '{{ getInstanceIpAddress.Ips }}'
+

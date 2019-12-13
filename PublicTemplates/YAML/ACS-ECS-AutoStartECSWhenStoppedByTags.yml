@@ -1,0 +1,66 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Start ECS instance when instance enter stopped status with specified tag.
+  zh-cn: 当标签下实例关机时，自动启动该实例。
+  name-en: ACS-ECS-AutoStartECSWhenStoppedByTags
+  name-zh-cn: 指定标签下的实例关机时自动重启
+  categories:
+    - event-trigger
+Parameters:
+  tags:
+    Type: Json
+    Description:
+      en: The tags to select ECS instances.
+      zh-cn: 实例的标签。
+    AssociationProperty: Tags
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: eventTrigger
+    Description:
+      en: Monitor the ECS instance enter Stopped status.
+      zh-cn: 监控变为停止状态ECS实例。
+    Action: 'ACS::EventTrigger'
+    Properties:
+      Product: ECS
+      Name:
+        - 'Instance:StateChange'
+      Content:
+        state:
+          - Stopped
+    Outputs:
+      instanceId:
+        ValueSelector: .content.resourceId
+        Type: String
+
+  - Name: checkForInstances
+    Action: 'ACS::CheckFor'
+    Description:
+      en: Ensure there is specified tag on ECS instance.
+      zh-cn: 检查ECS实例有指定的tag。
+    OnError: 'ACS::END'
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        Tags: '{{ tags }}'
+        InstanceIds: '["{{ eventTrigger.instanceId }}"]'
+      PropertySelector: TotalCount
+      DesiredValues:
+        - 1
+  - Name: startInstance
+    Action: 'ACS::ECS::StartInstance'
+    Description:
+      en: Starts the ECS instance.
+      zh-cn: 启动实例。
+    Properties:
+      instanceId: '{{ eventTrigger.instanceId }}'
+Outputs:
+  instanceId:
+    Value: '{{ eventTrigger.instanceId  }}'
+    Type: String

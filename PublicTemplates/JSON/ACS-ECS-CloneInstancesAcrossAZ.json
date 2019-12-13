@@ -4,7 +4,10 @@
     "en": "Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.",
     "zh-cn": "\u8de8\u53ef\u7528\u533a\u514b\u9686ECS\u5b9e\u4f8b\u3002",
     "name-en": "ACS-ECS-CloneInstancesAcrossAZ",
-    "name-zh-cn": "\u8de8\u53ef\u7528\u533a\u514b\u9686ECS\u5b9e\u4f8b"
+    "name-zh-cn": "\u8de8\u53ef\u7528\u533a\u514b\u9686ECS\u5b9e\u4f8b",
+    "categories": [
+      "cross_region"
+    ]
   },
   "Parameters": {
     "instanceIds": {
@@ -138,7 +141,8 @@
       },
       "Loop": {
         "Items": "{{ createImage.ImageIds }}"
-      }
+      },
+      "Retries": 17
     },
     {
       "Name": "runInstances",

@@ -1,0 +1,78 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky create snapshot.",
+    "zh-cn": "\u6279\u91cf\u7ed9\u78c1\u76d8\u521b\u5efa\u5feb\u7167\u3002",
+    "name-en": "ACS-ECS-BulkyCreateSnapshot",
+    "name-zh-cn": "\u6279\u91cf\u521b\u5efa\u5feb\u7167",
+    "categories": [
+      "data_backup"
+    ]
+  },
+  "Parameters": {
+    "diskIds": {
+      "Description": {
+        "en": "The disk id.",
+        "zh-cn": "\u4e91\u76d8 ID\u3002"
+      },
+      "Type": "List"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "createSnapshot",
+      "Action": "ACS::ECS::CreateSnapshot",
+      "Description": {
+        "en": "Create a snapshot for a cloud disk.",
+        "zh-cn": "\u4e3a\u4e00\u5757\u4e91\u76d8\u521b\u5efa\u4e00\u4efd\u5feb\u7167\u3002"
+      },
+      "Properties": {
+        "diskId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Outputs": {
+        "snapshotId": {
+          "Type": "String",
+          "ValueSelector": ".snapshotId"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ diskIds }}",
+        "Outputs": {
+          "snapshotIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "snapshotId"
+          }
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "createdSnapshotIds": {
+      "Type": "List",
+      "Value": "{{ createSnapshot.snapshotIds }}"
+    }
+  }
+}

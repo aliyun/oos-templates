@@ -1,0 +1,146 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky run command on ECS instances of VServer group.",
+    "zh-cn": "\u6279\u91cf\u5728SLB\u865a\u62df\u670d\u52a1\u7ec4\u5185\u7684ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4\u3002",
+    "name-en": "ACS-ECS-BulkyRunCommandInSLBVServerGroup",
+    "name-zh-cn": "\u6279\u91cf\u5728SLB\u865a\u62df\u670d\u52a1\u7ec4\u5185\u7684ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4",
+    "categories": [
+      "slb_management"
+    ]
+  },
+  "Parameters": {
+    "VServerGroupId": {
+      "Description": {
+        "en": "The ID of the vserver group.",
+        "zh-cn": "\u670d\u52a1\u7ec4ID\u3002"
+      },
+      "Type": "String"
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "Default": "echo hello"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 1
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeVServerGroupAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Views vserver group attribute.",
+        "zh-cn": "\u83b7\u53d6\u670d\u52a1\u7ec4\u5c5e\u6027\u3002"
+      },
+      "Properties": {
+        "Service": "SLB",
+        "API": "DescribeVServerGroupAttribute",
+        "Parameters": {
+          "VServerGroupId": "{{ VServerGroupId }}"
+        }
+      },
+      "Outputs": {
+        "BackendServers": {
+          "Type": "List",
+          "ValueSelector": "BackendServers.BackendServer[]"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::ElegantRunCommandInSLBVServerGroup",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "VServerGroupId": "{{ VServerGroupId }}",
+        "commandContent": "{{ commandContent }}",
+        "commandType": "{{ commandType }}",
+        "serverId": {
+          "Fn::Select": [
+            "ServerId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "weight": {
+          "Fn::Select": [
+            "Weight",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "type": {
+          "Fn::Select": [
+            "Type",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "port": {
+          "Fn::Select": [
+            "Port",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ describeVServerGroupAttribute.BackendServers }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Enable action trail.",
+    "zh-cn": "\u5f00\u542f\u8ddf\u8e2a\u3002",
+    "name-en": "ACS-Actiontrail-EnableActionTrail",
+    "name-zh-cn": "\u5f00\u542f\u64cd\u4f5c\u5ba1\u8ba1\u8ddf\u8e2a",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "trailName": {
+      "Description": {
+        "en": "The name for trail.",
+        "zh-cn": "\u521b\u5efa\u7684\u8ddf\u8e2a\u540d\u79f0\u3002"
+      },
+      "Type": "String"
+    },
+    "ossBucketName": {
+      "Description": {
+        "en": "The OOS Bucket name for creating trail.",
+        "zh-cn": "\u8ddf\u8e2a\u5199\u5165\u7684 OSS bucket \u540d\u79f0\u3002"
+      },
+      "Type": "String"
+    },
+    "roleName": {
+      "Description": {
+        "en": "The name of the ram role that the user allows the actiontrail service to play.",
+        "zh-cn": "\u7528\u6237\u5141\u8bb8 ActionTrail\u670d\u52a1\u626e\u6f14\u7684RAM\u89d2\u8272\u540d\u79f0\u3002"
+      },
+      "Type": "String",
+      "Default": "aliyunactiontraildefaultrole"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "createTrail",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create trail.",
+        "zh-cn": "\u521b\u5efa\u8ddf\u8e2a\u3002"
+      },
+      "Properties": {
+        "Service": "Actiontrail",
+        "API": "CreateTrail",
+        "Parameters": {
+          "Name": "{{ trailName }}",
+          "OssBucketName": "{{ ossBucketName }}",
+          "RoleName": "{{ roleName }}"
+        }
+      }
+    }
+  ]
+}

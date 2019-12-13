@@ -1,9 +1,11 @@
 FormatVersion: OOS-2019-06-01
 Description:
-    en: Schedules to reboot the ECS instances.
+    en: Schedule to reboots the ECS instances.
     zh-cn: 定时重启ECS实例。
     name-en: ACS-ECS-ScheduleToRebootInstances
     name-zh-cn: 定时重启ECS实例
+    categories:
+      - time_trigger
 Parameters:
   cron:
     Description:
@@ -32,6 +34,10 @@ Parameters:
       zh-cn: 任务执行的并发比率。
     Type: Json
     AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.

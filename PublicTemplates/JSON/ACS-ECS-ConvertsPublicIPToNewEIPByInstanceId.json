@@ -4,7 +4,10 @@
     "en": "Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address.",
     "zh-cn": "\u5c06\u4e00\u53f0\u7f51\u7edc\u7c7b\u578b\u4e3a\u4e13\u6709\u7f51\u7edcVPC\u7684ECS\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP\u3002",
     "name-en": "ACS-ECS-ConvertsPublicIPToNewEIPByInstanceId",
-    "name-zh-cn": "\u5c06\u4e00\u53f0\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP"
+    "name-zh-cn": "\u5c06\u4e00\u53f0\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP",
+    "categories": [
+      "instance_manage"
+    ]
   },
   "Parameters": {
     "instanceId": {
@@ -111,6 +114,10 @@
         "AllocationId": {
           "Type": "String",
           "ValueSelector": "AllocationId"
+        },
+        "EipAddress": {
+          "Type": "String",
+          "ValueSelector": "EipAddress"
         }
       }
     },
@@ -149,5 +156,15 @@
         }
       }
     }
-  ]
+  ],
+  "Outputs": {
+    "AllocationId": {
+      "Type": "String",
+      "Value": "{{ AllocateEipAddress.AllocationId }}"
+    },
+    "EipAddress": {
+      "Type": "String",
+      "Value": "{{ AllocateEipAddress.EipAddress }}"
+    }
+  }
 }

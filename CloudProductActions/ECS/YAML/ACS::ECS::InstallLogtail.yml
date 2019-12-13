@@ -4,7 +4,6 @@ Parameters:
   instanceId:
     Description: The ID of instance to install ilogtail.
     Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MaxLength: 30
     MinLength: 1
   logTailUserDefinedId:
@@ -30,10 +29,6 @@ Tasks:
     DesiredValues:
     - Running
     PropertySelector: Instances.Instance[].Status
-  Outputs:
-    instanceIds:
-      Type: List
-      ValueSelector: InstanceIdSets.InstanceIdSet[]
 - Name: createCommand
   Action: ACS::ExecuteApi
   Description: Creates a cloud assistant command to install logtail agent.

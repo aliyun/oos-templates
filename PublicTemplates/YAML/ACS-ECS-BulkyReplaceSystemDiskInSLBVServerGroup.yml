@@ -1,0 +1,91 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky replaces system disk of ECS instances in Vserver group.
+  zh-cn: 批量替换SLB虚拟服务组内ECS实例的系统盘。
+  name-en: ACS-ECS-BulkyReplaceSystemDiskWithSLBVServerGroup
+  name-zh-cn: 批量替换SLB虚拟服务组内ECS实例的系统盘
+  categories:
+    - slb_management
+Parameters:
+  imageId:
+    Description:
+      en: The image ID for the ECS instance.
+      zh-cn: 源镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+  VServerGroupId:
+    Description:
+      en: The ID of the vserver group.
+      zh-cn: 服务组ID。
+    Type: String
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 1
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeVServerGroupAttribute
+    Action: ACS::ExecuteApi
+    Description:
+      en: Views vserver group attribute.
+      zh-cn: 获取服务组属性。
+    Properties:
+      Service: SLB
+      API: DescribeVServerGroupAttribute
+      Parameters:
+        VServerGroupId: '{{ VServerGroupId }}'
+    Outputs:
+      BackendServers:
+        Type: List
+        ValueSelector: BackendServers.BackendServer[]
+  - Name: replaceSystemDisk
+    Action: ACS::ECS::ElegantReplaceSystemDiskInSLBVServerGroup
+    Description:
+      en: Replaces the system disk of ECS instances.
+      zh-cn: 更换系统盘。
+    Properties:
+      VServerGroupId: '{{ vServerGroupId }}'
+      imageId: '{{ imageId }}'
+      serverId:
+        'Fn::Select':
+          - ServerId
+          - '{{ ACS::TaskLoopItem }}'
+      weight:
+        'Fn::Select':
+          - Weight
+          - '{{ ACS::TaskLoopItem }}'
+      type:
+        'Fn::Select':
+          - Type
+          - '{{ ACS::TaskLoopItem }}'
+      port:
+        'Fn::Select':
+          - Port
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ describeVServerGroupAttribute.BackendServers }}'
+      Outputs:
+        newSystemDiskIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: newSystemDiskId
+    Outputs:
+      newSystemDiskId:
+        Type: String
+        ValueSelector: newSystemDiskId
+Outputs:
+  newSystemDiskIds:
+    Type: List
+    Value: '{{ replaceSystemDisk.newSystemDiskIds }}'

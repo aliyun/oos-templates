@@ -1,0 +1,126 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky creates ECS image and exports them into OSS.",
+    "zh-cn": "\u6279\u91cf\u521b\u5efa\u5e76\u5bfc\u51fa\u955c\u50cf\u5230OSS-Bucket\u3002",
+    "name-en": "ACS-ECS-BulkyCreateAndExportImage",
+    "name-zh-cn": "\u6279\u91cf\u521b\u5efa\u5e76\u5bfc\u51fa\u955c\u50cf\u5230OSS-Bucket",
+    "categories": [
+      "image_manage"
+    ]
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "OSSBucket": {
+      "Description": {
+        "en": "The OSS bucket to which the image is to be exported.",
+        "zh-cn": "\u4fdd\u5b58\u5bfc\u51fa\u955c\u50cf\u7684OSS bucket\u3002"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ECS::CreateImage",
+      "Description": {
+        "en": "Create new image with the specified image name and instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "imageName": "image_of_{{ ACS::TaskLoopItem }}_{{ ACS::ExecutionId }}"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateContral": "{{ rateControl }}",
+        "Outputs": {
+          "imageIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageId"
+          }
+        }
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "importImageToOSS",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "EXport image to OSS bucket.",
+        "zh-cn": "\u5bfc\u51fa\u955c\u50cf\u5230OSS-Bucket\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ExportImage",
+        "Parameters": {
+          "ImageId": "{{ ACS::TaskLoopItem }}",
+          "OSSBucket": "{{ OSSBucket }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ createImage.imageIds }}",
+        "RateContral": "{{ rateControl }}"
+      }
+    }
+  ],
+  "Outputs": {
+    "imageIds": {
+      "Type": "List",
+      "Value": "{{ createImage.imageIds }}"
+    }
+  }
+}

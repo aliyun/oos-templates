@@ -1,0 +1,127 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to run Ansible playbooks on ECS Instance.",
+    "zh-cn": "\u4f7f\u7528\u8fd9\u4e2a\u6a21\u677f\u6267\u884cECS\u5b9e\u4f8b\u4e2d\u7684AnsibleBook \u5e2e\u52a9\u624b\u518c\u8bf7\u53c2\u8003https://yq.aliyun.com/articles/718185",
+    "name-en": "ACS-ECS-ApplyAnsiblePlayBooks",
+    "name-zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u6267\u884cAnsible PlayBook",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "playbookurl": {
+      "Type": "String",
+      "Description": {
+        "en": "You must specify a URL where the playbook is stored.You can specify the URL in the following formats: http://example.com/playbook.yml",
+        "zh-cn": "\u60a8\u5fc5\u987b\u6307\u5b9a\u7528\u4e8e\u5b58\u50a8\u5267\u672c\u7684URL\u3002\u53ef\u4ee5\u6309\u4ee5\u4e0b\u683c\u5f0f\u6307\u5b9aURL\uff1ahttp://example.com/playbook.yml"
+      },
+      "AllowedPattern": "^\\s*$|^(http|https)://[^']*$"
+    },
+    "hosts": {
+      "Type": "String",
+      "Description": "You must specify a hosts to run ansible playbook",
+      "Default": "local"
+    },
+    "extravars": {
+      "Type": "String",
+      "Description": {
+        "en": "Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime",
+        "zh-cn": "\u5176\u4ed6\u53d8\u91cf\u5728\u8fd0\u884c\u65f6\u4f20\u9012\u7ed9Ansible\u3002 \u8f93\u5165\u4ee5\u7a7a\u683c\u5206\u9694\u7684\u952e/\u503c\u5bf9\u5217\u8868\u3002 \u4f8b\u5982\uff1acolor = red flavour = lime"
+      },
+      "Default": "SSM = True",
+      "AllowedPattern": "^$|^\\w+\\=\\S+(\\s\\w+\\=\\S+)*$"
+    },
+    "check": {
+      "Type": "String",
+      "Description": {
+        "en": "Use the check parameter to perform a dry run of the Ansible execution.",
+        "zh-cn": "\u4f7f\u7528check\u53c2\u6570\u6267\u884cAnsible\u6267\u884c\u7684\u7a7a\u8fd0\u884c\u3002"
+      },
+      "AllowedValues": [
+        "True",
+        "False"
+      ],
+      "Default": "False"
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "commandContent": "ansible --version;\nif [ $? -ne 0 ]; then\n    echo \"Ansible is not installed. Please install Ansible and rerun the command\" >&2;\n    exit 1;\nfi\nif [[ \"{{playbookurl}}\" =~ ^http* ]]; then\n   wget -O playbook.yml '{{playbookurl}}'\n   echo $?\n   if [ $? -ne 0 ]; then\n     echo \"There was a problem downloading the playbook. Make sure the URL is correct and that the playbook exists.\">&2;\n     exit 1;\n   fi\nelse\n    echo \"The URL protocal is not http(s).\">&2;\n    exit 1\nfi\nif  [[ {{check}} == True ]] ; then\n   ansible-playbook --check -c {{hosts}} -e {{extravars}} playbook.yml;\nelse\n   ansible-playbook -c {{hosts}} -e {{extravars}} playbook.yml;\nfi",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "RunShellScript"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

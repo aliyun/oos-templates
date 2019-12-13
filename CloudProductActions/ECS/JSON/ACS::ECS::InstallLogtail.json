@@ -5,7 +5,6 @@
     "instanceId": {
       "Description": "The ID of instance to install ilogtail.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MaxLength": 30,
       "MinLength": 1
     },
@@ -39,12 +38,6 @@
           "Running"
         ],
         "PropertySelector": "Instances.Instance[].Status"
-      },
-      "Outputs": {
-        "instanceIds": {
-          "Type": "List",
-          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
-        }
       }
     },
     {

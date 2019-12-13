@@ -1,0 +1,155 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Schedule to run command on ECS instances.",
+    "zh-cn": "\u5b9a\u65f6\u6279\u91cf\u5728\u591a\u53f0ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002",
+    "name-en": "ACS-ECS-ScheduleToRunCommand",
+    "name-zh-cn": "\u5b9a\u65f6\u6279\u91cf\u5728ECS\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4",
+    "categories": [
+      "time_trigger"
+    ]
+  },
+  "Parameters": {
+    "triggerCron": {
+      "Description": {
+        "en": "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm. The minimum interval is one minute.",
+        "zh-cn": "cron\u8868\u8fbe\u5f0f\uff0c\u8be6\u60c5\u53c2\u8003\uff1ahttps://www.alibabacloud.com/help/zh/faq-detail/64769.htm"
+      },
+      "Type": "String",
+      "AssociationProperty": "Cron",
+      "Default": "0 0 12 ? * *"
+    },
+    "triggerEndDate": {
+      "Description": {
+        "en": "The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.",
+        "zh-cn": "\u65f6\u95f4\u89e6\u53d1\u5668\u7ed3\u675f\u65f6\u95f4\u3002\u683c\u5f0f\uff1ayyyy-MM-ddThh:mm:ssZ"
+      },
+      "Type": "String",
+      "AssociationProperty": "DateTime",
+      "AssociationPropertyMetadata": {
+        "Format": "YYYY-MM-DDThh:mm:ssZ"
+      }
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying Cron expression.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9aCron\u8868\u8fbe\u5f0f\u6309\u8ba1\u5212\u89e6\u53d1\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "Type": "cron",
+        "Expression": "{{ triggerCron }}",
+        "EndDate": "{{ triggerEndDate }}"
+      }
+    },
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "{{ commandType }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

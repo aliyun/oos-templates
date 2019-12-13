@@ -4,57 +4,63 @@ Parameters:
   diskId:
     Description: The ID of the disk.
     Type: String
-    AllowedPattern: d-[A-Za-z0-9]*
+    AllowedPattern: 'd-[A-Za-z0-9]*'
     MinLength: 1
     MaxLength: 30
-  instanceId:
-    Description: The ID of the instance.
-    Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
-    MinLength: 1
-    MaxLength: 30
-  snapshotName:
-    Description: The name of the snapshot.
-    Type: String
 Tasks:
-- Name: checkInstanceReady
-  Action: ACS::CheckFor
-  Description: Checks whether the ECS instance status is running or stopped.
-  Properties:
-    Service: ECS
-    API: DescribeInstances
-    Parameters:
-      InstanceIds:
-      - '{{ instanceId }}'
-    DesiredValues:
-    - Running
-    - Stopped
-    PropertySelector: Instances.Instance[].Status
-- Name: createSnapshot
-  Action: ACS::ExecuteAPI
-  Description: Create a snapshot with the specified disk ID and snapshot name.
-  Properties:
-    Service: ECS
-    API: CreateSnapshot
-    Parameters:
-      DiskId: '{{ diskId }}'
-      SnapshotName: '{{ snapshotName }}'
-  Outputs:
-    snapshotId:
-      Type: String
-      ValueSelector: SnapshotId
-- Name: untilSnapshotsReady
-  Action: ACS::WaitFor
-  Description: Waits for the snapshot to be accomplished.
-  Properties:
-    Service: ECS
-    API: DescribeSnapshots
-    Parameters:
-      SnapshotIds:
-      - '{{ createSnapshot.snapshotId }}'
-    DesiredValues:
-    - accomplished
-    PropertySelector: Snapshots.Snapshot[].Status
+  - Action: 'ACS::ExecuteAPI'
+    Name: describeDisks
+    Description: Query one or more cloud disks and local disks you have created.
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        DiskIds:
+          - '{{ diskId }}'
+    Outputs:
+      instanceIds:
+        Type: String
+        ValueSelector: 'Disks.Disk[].InstanceId'
+  - Name: waitUtilInstanceRunningOrStopped
+    Action: 'ACS::WaitFor'
+    Description: Waits for ECS instance status is running or stopped.
+    Delay: 20
+    Retries: 30
+    DelayType: Constant
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+          - '{{ describeDisks.instanceIds }}'
+      PropertySelector: 'Instances.Instance[].Status'
+      DesiredValues:
+        - Running
+        - Stopped
+  - Name: createSnapshot
+    Action: 'ACS::ExecuteAPI'
+    Description: Create a snapshot with the specified disk ID and snapshot name.
+    Properties:
+      Service: ECS
+      API: CreateSnapshot
+      Parameters:
+        DiskId: '{{ diskId }}'
+    Outputs:
+      snapshotId:
+        Type: String
+        ValueSelector: SnapshotId
+  - Name: untilSnapshotsReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the snapshot to be accomplished.
+    Properties:
+      Service: ECS
+      API: DescribeSnapshots
+      Parameters:
+        SnapshotIds:
+          - '{{ createSnapshot.snapshotId }}'
+      DesiredValues:
+        - accomplished
+      PropertySelector: 'Snapshots.Snapshot[].Status'
 Outputs:
   snapshotId:
     Type: String
