@@ -1,0 +1,62 @@
+FormatVersion: OOS-2019-06-01
+Description: Modify the column credit specification for the T5 series instance.
+Parameters:
+  instanceId:
+    Description: The instance ID you will handle.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  creditSpecification:
+    Description: The creditSpecification of instance.
+    Type: String
+    AllowedValues:
+      - Standard
+      - Unlimited
+Tasks:
+- Name: getInstanceCreditSpecification
+  Action: ACS::ExecuteApi
+  Description: Get instance credit specification.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+  Outputs:
+    creditSpecification:
+      Type: String
+      ValueSelector: Instances.Instance[].CreditSpecification
+- Name: chooseNextTask
+  Action: 'ACS::Choice'
+  Description: Choose next task by ECS instance creditSpecification.
+  Properties:
+    DefaultTask: modifyCreditSpecification
+    Choices:
+      - When:
+          'Fn::Equals':
+            - '{{ creditSpecification }}'
+            - '{{ getInstanceCreditSpecification.creditSpecification }}'
+        NextTask: untilInstanceReady
+- Name: modifyCreditSpecification
+  Action: ACS::ExecuteAPI
+  Description: Changes the type of creditSpecification instance.
+  Properties:
+    Service: ECS
+    API: ModifyInstanceAttribute
+    Parameters:
+      InstanceId: '{{ instanceId }}'
+      CreditSpecification: '{{ creditSpecification }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for the ECS instance to enter specified status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - '{{ creditSpecification }}'
+    PropertySelector: Instances.Instance[].CreditSpecification
+
+

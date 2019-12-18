@@ -1,0 +1,167 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Run command in the specified scaling activity instance",
+    "zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4",
+    "name-en": "ACS-ESS-LifeCycleRunCommand",
+    "name-zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "regionId": {
+      "Description": {
+        "en": "The ID of region.",
+        "zh-cn": "\u5730\u57dfID\uff0c\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${regionId}"
+      },
+      "Type": "String",
+      "Default": "${regionId}"
+    },
+    "instanceIds": {
+      "Description": {
+        "en": "The ID list of the ECS instance.",
+        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c [\"${instanceId}\"]"
+      },
+      "Type": "List",
+      "Default": [
+        "${instanceIds}"
+      ]
+    },
+    "lifecycleHookId": {
+      "Description": {
+        "en": "The ID of the lifecycle hook.",
+        "zh-cn": "\u751f\u547d\u5468\u671fID,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleHookId}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleHookId}"
+    },
+    "lifecycleActionToken": {
+      "Description": {
+        "en": "The token that indicates a specific scaling activity associated with an instance.",
+        "zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleActionToken}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleActionToken}"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "{{ commandType }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForContinue",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle action for continue.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u7ee7\u7eed\u5b8c\u6210\u3002"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForAbandon",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Complete lifecycle action for Abandon.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u5f03\u7528\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "ABANDON"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

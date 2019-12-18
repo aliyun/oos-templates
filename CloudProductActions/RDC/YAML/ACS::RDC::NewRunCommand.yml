@@ -1,0 +1,84 @@
+FormatVersion: OOS-2019-06-01
+Description: Creates a cloud assistant command and triggers it on one ECS instance.
+Parameters:
+  CommandContent:
+    Description: The content of command.
+    Type: String
+  InstanceId:
+    Description: The ID of ECS instance that will invoke command.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  RegionId:
+    Description: The ID of region.
+    Type: String
+Tasks:
+- Name: runCommand
+  Action: 'ACS::ExecuteAPI'
+  Description: Executes a cloud assistant command.
+  Properties:
+    Service: ECS
+    API: RunCommand
+    Parameters:
+      RegionId: '{{ RegionId }}'
+      CommandContent: '{{ CommandContent }}'
+      InstanceIds:
+        - '{{ InstanceId }}'
+      Name: '{{ ACS::ExecutionId }}'
+      Type: RunShellScript
+      Timeout: 900
+  Outputs:
+    InvokeId:
+      Type: String
+      ValueSelector: InvokeId
+- Name: untilInvocationReady
+  Action: 'ACS::WaitFor'
+  Description: Waits for the command to be completed.
+  Delay: 30
+  Retries: 40
+  DelayType: Constant
+  Properties:
+    Service: ECS
+    API: DescribeInvocations
+    Parameters:
+      RegionId: '{{ RegionId }}'
+      InvokeId: '{{ runCommand.InvokeId }}'
+    DesiredValues:
+      - Finished
+    StopRetryValues:
+      - Failed
+    PropertySelector: 'Invocations.Invocation[].InvokeStatus'
+- Name: describeInvocationResults
+  Action: 'ACS::ExecuteAPI'
+  Description: >-
+    Views the command output of a cloud assistant command in the specified ECS
+    instance.
+  Properties:
+    Service: ECS
+    API: DescribeInvocationResults
+    Parameters:
+      RegionId: '{{ RegionId }}'
+      InvokeId: '{{ runCommand.InvokeId }}'
+  Outputs:
+    InvocationResult:
+      Type: String
+      ValueSelector: 'Invocation.InvocationResults.InvocationResult[].Output'
+- Name: checkInvocationResult
+  Action: 'ACS::CheckFor'
+  Description: >-
+    Views the command output of a cloud assistant command in the specified ECS
+    instance.
+  Properties:
+    Service: ECS
+    API: DescribeInvocationResults
+    Parameters:
+      RegionId: '{{ RegionId }}'
+      InvokeId: '{{ runCommand.InvokeId }}'
+    PropertySelector: 'Invocation.InvocationResults.InvocationResult[].ExitCode'
+    DesiredValues:
+      - 0
+Outputs:
+  InvocationOutput:
+    Type: String
+    Value:
+      'Fn::Base64Decode': '{{ describeInvocationResults.InvocationResult }}'

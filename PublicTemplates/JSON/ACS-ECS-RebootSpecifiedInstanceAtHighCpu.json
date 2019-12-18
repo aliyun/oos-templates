@@ -1,0 +1,78 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Reboot the specified ECS instance when it's CPU utilization excceded threshold.The selected instance must already have the Cloud Monitor agent installed.",
+    "zh-cn": "\u5f53\u6307\u5b9aECS\u5b9e\u4f8b\u5728CPU\u5229\u7528\u7387\u8d85\u8fc7\u9608\u503c\u65f6\u6267\u884c\u5b9e\u4f8b\u91cd\u542f\u3002\u6240\u9009\u5b9e\u4f8b\u5fc5\u987b\u5df2\u5b89\u88c5\u4e91\u76d1\u63a7Agent\u3002",
+    "name-en": "ACS-ECS-RebootSpecifiedInstanceAtHighCpu",
+    "name-zh-cn": "\u5f53\u6307\u5b9aECS\u5b9e\u4f8b\u5728CPU\u5229\u7528\u7387\u8d85\u8fc7\u9608\u503c\u65f6\u6267\u884c\u5b9e\u4f8b\u91cd\u542f",
+    "categories": [
+      "alarm-trigger"
+    ]
+  },
+  "Parameters": {
+    "instanceId": {
+      "Type": "String",
+      "Description": {
+        "en": "The ID of ECS instance to be monitored.",
+        "zh-cn": "\u5f85\u76d1\u63a7\u7684ECS\u5b9e\u4f8bID\u3002"
+      }
+    },
+    "threshold": {
+      "Type": "Number",
+      "Description": {
+        "en": "The CPU utilization threshold.",
+        "zh-cn": "CPU\u5229\u7528\u7387\u9608\u503c\u3002"
+      }
+    },
+    "silenceTime": {
+      "Type": "Number",
+      "Description": {
+        "en": "The silence time of alarm (seconds).",
+        "zh-cn": "\u544a\u8b66\u901a\u9053\u6c89\u9ed8\u5468\u671f\uff08\u79d2\uff09\u3002"
+      },
+      "Default": 60
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "alarmTrigger",
+      "Action": "ACS::AlarmTrigger",
+      "Description": {
+        "en": "Set the CPU utilization alarm for specified ECS instance.",
+        "zh-cn": "\u5bf9\u6307\u5b9aECS\u5b9e\u4f8b\u7684CPU\u4f7f\u7528\u7387\u8fdb\u884c\u76d1\u63a7\u3002"
+      },
+      "Properties": {
+        "Namespace": "acs_ecs_dashboard",
+        "MetricName": "cpu_total",
+        "Statistics": "Average",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": "{{threshold}}",
+        "Resources": "[{\"instanceId\":\"{{ instanceId }}\"}]",
+        "SilenceTime": "{{silenceTime}}",
+        "Times": 1,
+        "Period": 60,
+        "Interval": 60
+      }
+    },
+    {
+      "Name": "RebootInstance",
+      "Action": "ACS::ECS::RebootInstance",
+      "Description": {
+        "en": "Restarts the ECS instances.",
+        "zh-cn": "\u91cd\u542f\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}"
+      }
+    }
+  ]
+}

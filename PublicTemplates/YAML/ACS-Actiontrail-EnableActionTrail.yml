@@ -1,0 +1,45 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Enable action trail.
+  zh-cn: 开启跟踪。
+  name-en: ACS-Actiontrail-EnableActionTrail
+  name-zh-cn: 开启操作审计跟踪
+  categories:
+    - security
+Parameters:
+  trailName:
+    Description:
+      en: The name for trail.
+      zh-cn: 创建的跟踪名称。
+    Type: String
+  ossBucketName:
+    Description:
+      en: The OOS Bucket name for creating trail.
+      zh-cn: 跟踪写入的 OSS bucket 名称。
+    Type: String
+  roleName:
+    Description:
+      en: The name of the ram role that the user allows the actiontrail service to play.
+      zh-cn: 用户允许 ActionTrail服务扮演的RAM角色名称。
+    Type: String
+    Default: aliyunactiontraildefaultrole
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: createTrail
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Create trail.
+      zh-cn: 创建跟踪。
+    Properties:
+      Service: Actiontrail
+      API: CreateTrail
+      Parameters:
+        Name: '{{ trailName }}'
+        OssBucketName: '{{ ossBucketName }}'
+        RoleName: '{{ roleName }}'

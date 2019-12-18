@@ -1,0 +1,236 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky install XDragon hardware detection plug-in, cloud monitor, smartmontools, or uninstall and update XDragon hardware detection plug-in.",
+    "zh-cn": "\u6279\u91cf\u5b89\u88c5\u795e\u9f99\u786c\u4ef6\u68c0\u6d4b\u63d2\u4ef6\u3001\u4e91\u76d1\u63a7\u3001smartmontools,\u4ee5\u53ca\u5378\u8f7d\u4e0e\u66f4\u65b0\u795e\u9f99\u786c\u4ef6\u68c0\u6d4b\u63d2\u4ef6\u3002",
+    "name-en": "ACS-ECS-InstallXDragonAndCloudMonitor",
+    "name-zh-cn": "\u6279\u91cf\u5b89\u88c5\u795e\u9f99\u76d1\u63a7\u63d2\u4ef6",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "action": {
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "update",
+        "remove"
+      ]
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": "Invokes ECS instance command and gets invocation output.",
+      "Properties": {
+        "commandContent": {
+          "Fn::Join": [
+            "\n",
+            [
+              "if [ \"{{action}}\" = \"install\" ] ; then",
+              "smart_version=`$(smartctl -V)`",
+              "if [ \"$smart_version\" = \"\" ]; then",
+              "    sys_version=$(echo `lsb_release -a`)",
+              "    if [ \"`echo $sys_version`\"=~\"CentOS\" ]; then",
+              "       yum -y install yum-utils",
+              "       yum -y install smartmontools",
+              "       echo `smartctl -V`",
+              "    fi",
+              "    if [ \"`echo $sys_version`\"=~\"Ubuntu\" ]; then",
+              "       apt-get update -y && apt-get upgrade -y && apt install smartmontools -y",
+              "    fi",
+              "fi",
+              "",
+              "aliyun_installer -i xdragon_hardware_detect_plugin -e 1.0.0",
+              "echo \"installing cms agent\"",
+              "",
+              "if [ -z \"${CMS_HOME}\" ]; then",
+              "  CMS_HOME=\"/usr/local/cloudmonitor\"",
+              "  [ ! -z \"`egrep -i coreos /etc/os-release`\" ] && CMS_HOME=\"/opt/cloudmonitor\"",
+              "fi",
+              "",
+              "if [ `uname -m` = \"x86_64\" ]; then",
+              "    ARCH=\"amd64\"",
+              "else",
+              "    ARCH=\"386\"",
+              "fi",
+              "",
+              "VERSION=\"2.1.57\"",
+              "ELF_NAME=CmsGoAgent.linux-${ARCH}",
+              "DOWNLOAD_PATH=\"cms-go-agent/${VERSION}/${ELF_NAME}\"",
+              "DEST_UPDATE_FILE=\"$CMS_HOME/${ELF_NAME}\"",
+              "",
+              "current_cms_version=\"0\"",
+              "# xdragon always x86 arch, judge version",
+              "if [ -f /usr/local/cloudmonitor/CmsGoAgent.linux-amd64 ]; then",
+              "    current_cms_version=\"$($DEST_UPDATE_FILE version)\"",
+              "fi",
+              "",
+              "if [ $current_cms_version = \"2.1.57\" ]; then",
+              "    echo \"CmsGoAgent already installed\"",
+              "    echo \"Installation success.\"",
+              "    exit 0",
+              "fi",
+              "",
+              "if [ -z \"${REGION_ID}\" ]; then",
+              "  REGION_ID=\"$(wget -q --timeout=1 -t 1 -O - 'http://100.100.100.200/latest/meta-data/region-id')\"",
+              "fi",
+              "",
+              "",
+              "if [ -d $CMS_HOME ] ; then",
+              "  if [ -f $CMS_HOME/wrapper/bin/cloudmonitor.sh ] ; then",
+              "    $CMS_HOME/wrapper/bin/cloudmonitor.sh remove;",
+              "    rm -rf $CMS_HOME;",
+              "  elif [ -f $DEST_UPDATE_FILE ]; then",
+              "    $DEST_UPDATE_FILE stop",
+              "    #$DEST_UPDATE_FILE uninstall",
+              "    ps aux | grep -v grep | grep $ELF_NAME",
+              "  fi",
+              "fi",
+              "",
+              "download()",
+              "{",
+              "  if [ -z \"${REGION_ID}\" ]; then",
+              "    echo \"networkType is classic\"",
+              "    OSS_URL=\"http://cms-agent-cn-hangzhou.oss-cn-hangzhou-internal.aliyuncs.com/$DOWNLOAD_PATH\"",
+              "  else",
+              "    echo \"networkType is vpc, REGION_ID: $REGION_ID\"",
+              "    if [ \"$REGION_ID\" = \"cn-shenzhen-finance-1\" ]; then",
+              "      OSS_URL=\"http://cms-download.aliyun.com/$DOWNLOAD_PATH\"",
+              "      CMS_PROXY=\"szcmsproxy.aliyun.com:3128\"",
+              "    elif [ \"$REGION_ID\" = \"cn-shanghai-finance-1\" ]; then",
+              "      OSS_URL=\"http://cms-agent-$REGION_ID.oss-$REGION_ID-pub-internal.aliyuncs.com/$DOWNLOAD_PATH\"",
+              "    elif [ \"$REGION_ID\" = \"ap-south-1\" ]; then",
+              "      OSS_URL=\"http://cms-download.aliyun.com/$DOWNLOAD_PATH\"",
+              "      CMS_PROXY=\"cmsproxy-ap-south-1.aliyuncs.com:8080\"",
+              "    elif [ \"$REGION_ID\" = \"ap-southeast-3\" -o \"$REGION_ID\" = \"me-east-1\" -o \"$REGION_ID\" = \"cn-chengdu\" ]; then",
+              "      OSS_URL=\"http://cms-download.aliyun.com/$DOWNLOAD_PATH\"",
+              "    else",
+              "      OSS_URL=\"http://cms-agent-$REGION_ID.oss-$REGION_ID-internal.aliyuncs.com/$DOWNLOAD_PATH\"",
+              "    fi",
+              "  fi",
+              "  echo download from \"$OSS_URL\"",
+              "  wget -q -e \"http_proxy=$CMS_PROXY\" \"$OSS_URL\" -O \"$DEST_UPDATE_FILE\" -t 3 --connect-timeout=2",
+              "  if [ $? != 0 ]; then",
+              "    echo \"download fail, retry...\"",
+              "    CMS_PROXY=\"vpc-opencmsproxy.aliyun.com:8080\";",
+              "    OSS_URL=\"http://cms-download.aliyun.com/$DOWNLOAD_PATH\"",
+              "    wget -q -e \"http_proxy=$CMS_PROXY\" \"$OSS_URL\" -O \"$DEST_UPDATE_FILE\" -t 3 --connect-timeout=2",
+              "  fi",
+              "  if [ $? != 0 ]; then",
+              "    echo \"download fail, retry...\"",
+              "    CMS_PROXY=\"opencmsproxy.aliyun.com:8080\";",
+              "    OSS_URL=\"http://cms-download.aliyun.com/$DOWNLOAD_PATH\"",
+              "    wget -q -e \"http_proxy=$CMS_PROXY\" \"$OSS_URL\" -O \"$DEST_UPDATE_FILE\" -t 3 --connect-timeout=2",
+              "  fi",
+              "}",
+              "",
+              "mkdir -p $CMS_HOME && \\",
+              "chown -R root:root $CMS_HOME && \\",
+              "download && \\",
+              "chmod a+x $DEST_UPDATE_FILE",
+              "$DEST_UPDATE_FILE check",
+              "RC=$?",
+              "if [ ${RC} -ne 0 ]; then",
+              "    echo CmsGoAgent install failed, your platform is not supported",
+              "    exit ${RC}",
+              "fi",
+              "",
+              "$DEST_UPDATE_FILE install >/dev/null 2>&1 || true",
+              "$DEST_UPDATE_FILE start",
+              "ps aux | grep -v grep | grep $ELF_NAME",
+              "",
+              "ACT_VERSION=`$DEST_UPDATE_FILE version`",
+              "if [ -n \"$ACT_VERSION\" ]; then",
+              "    echo CmsGoAgent v$ACT_VERSION installed",
+              "else",
+              "    echo CmsGoAgent install failed",
+              "    exit 1",
+              "fi",
+              "elif [ \"{{action}}\" = \"update\" ] ; then",
+              " aliyun_installer -d xdragon_hardware_detect_plugin",
+              "elif [ \"{{action}}\" = \"remove\" ] ; then",
+              " aliyun_installer -u xdragon_hardware_detect_plugin",
+              "fi"
+            ]
+          ]
+        },
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "RunShellScript"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Deletes an ECS image.",
+    "zh-cn": "\u5220\u9664\u4e00\u4e2aECS\u955c\u50cf\u3002",
+    "name-en": "ACS-ECS-DeleteImage",
+    "name-zh-cn": "\u5220\u9664ECS\u955c\u50cf",
+    "categories": [
+      "image_manage"
+    ]
+  },
+  "Parameters": {
+    "imageId": {
+      "Description": {
+        "en": "The image ID for the ECS instance.",
+        "zh-cn": "\u955c\u50cfID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "deleteImage",
+      "Action": "ACS::ECS::DeleteImage",
+      "Description": {
+        "en": "Deletes the specified ECS image.",
+        "zh-cn": "\u5220\u9664\u6307\u5b9a\u7684ECS\u955c\u50cf\u3002"
+      },
+      "Properties": {
+        "imageId": "{{ imageId }}"
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    }
+  ]
+}

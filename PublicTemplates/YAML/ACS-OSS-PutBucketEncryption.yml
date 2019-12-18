@@ -1,0 +1,85 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Encryption rules for configuring buckets.
+  zh-cn: 配置OSSBucket的加密规则。
+  name-en: ACS-OSS-PutBucketEncryption
+  name-zh-cn: 配置OSSBucket加密规则
+  categories:
+    - security
+Parameters:
+  SSEAlgorithm:
+    Description:
+      en: Set the default encryption method of the server.
+      zh-cn: 设置服务端默认加密方式。
+    Type: String
+    AllowedValues:
+      - KMS
+      - AES256
+  KMSMasterKeyID:
+    Description:
+      en: >-
+        When the ssealgorithm value is KMS, you need to enter the key ID,
+        otherwise, it must be empty(Default No is empty).
+      zh-cn: 当SSEAlgorithm值为KMS时，需输入KMSMasterKeyID。其他情况下，必须为空(No 代表为空)。
+    Type: String
+    Default: No
+  BucketName:
+    Description:
+      en: The bucket name.
+      zh-cn: OOS bucket 名称。
+    Type: String
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: chooseWetherHasKMSMasterKeyIDTask
+    Action: 'ACS::Choice'
+    Properties:
+      DefaultTask: putBucketEncryptionNoKeyId
+      Choices:
+        - When:
+            'Fn::Equals':
+              - KMS
+              - '{{ SSEAlgorithm }}'
+          NextTask: putBucketEncryption
+        - When:
+            'Fn::Equals':
+              - AES256
+              - '{{ SSEAlgorithm }}'
+          NextTask: putBucketEncryptionNoKeyId
+  - Name: putBucketEncryptionNoKeyId
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: 'Encryption rules for configuring buckets(AES256).'
+      zh-cn: 用于配置Bucket的加密规则（AES256）。
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: OSS
+      API: PutBucketEncryption
+      Method: PUT
+      URI: /
+      Headers: {}
+      Parameters:
+        BucketName: '{{ BucketName }}'
+        SSEAlgorithm: '{{ SSEAlgorithm }}'
+      Body: ''
+  - Name: putBucketEncryption
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Encryption rules for configuring buckets(KMS).
+      zh-cn: 用于配置Bucket的加密规则（KMS）。
+    Properties:
+      Service: OSS
+      API: PutBucketEncryption
+      Method: PUT
+      URI: /
+      Headers: {}
+      Parameters:
+        BucketName: '{{ BucketName }}'
+        SSEAlgorithm: '{{ SSEAlgorithm }}'
+        KMSMasterKeyID: '{{ KMSMasterKeyID }}'
+      Body: ''

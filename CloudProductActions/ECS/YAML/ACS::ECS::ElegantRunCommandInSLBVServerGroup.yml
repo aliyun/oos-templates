@@ -1,0 +1,83 @@
+FormatVersion: OOS-2019-06-01
+Description: Run the command in the instance of the SLB  Verver group.
+Parameters:
+  VServerGroupId:
+    Description: The ID of ECS vserver group.
+    Type: String
+  serverId:
+    Description: The ID of ECS instance.
+    Type: String
+  weight:
+    Description: The weight of server.
+    Type: Number
+  type:
+    Description: The type of server.
+    Type: String
+  port:
+    Description: The port of server.
+    Type: Number
+  commandType:
+    Description: The type of command.
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    Default: RunShellScript
+  commandContent:
+    Description: Command content to run in ECS instance.
+    Type: String
+Tasks:
+  - Name: setServerWeightToZero
+    Action: 'ACS::ExecuteApi'
+    Description: Sets server weight to zero.
+    OnError: recoverServerWeight
+    Properties:
+      Service: SLB
+      API: SetVServerGroupAttribute
+      Parameters:
+        BackendServers:
+          'Fn::MergeMapToList':
+            - ServerId:
+                - '{{ serverId }}'
+            - Weight:
+                - 0
+            - Type:
+                - '{{ type }}'
+            - Port:
+                - '{{ port }}'
+        VServerGroupId: '{{ VServerGroupId }}'
+  - Name: runCommand
+    Action: 'ACS::ECS::RunCommand'
+    Description: Execute cloud assistant command.
+    OnError: recoverServerWeight
+    Properties:
+      instanceId: '{{ serverId }}'
+      commandType: '{{ commandType }}'
+      commandContent: '{{ commandContent }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: recoverServerWeight
+    Action: 'ACS::ExecuteApi'
+    Description: Set the server weight to the original value.
+    Properties:
+      Service: SLB
+      API: SetVServerGroupAttribute
+      Parameters:
+        BackendServers:
+          'Fn::MergeMapToList':
+            - ServerId:
+                - '{{ serverId }}'
+            - Weight:
+                - '{{ weight }}'
+            - Type:
+                - '{{ type }}'
+            - Port:
+                - '{{ port }}'
+        VServerGroupId: '{{ VServerGroupId }}'
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ runCommand.commandOutput }}'

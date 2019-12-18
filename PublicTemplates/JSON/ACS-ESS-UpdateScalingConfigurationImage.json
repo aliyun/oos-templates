@@ -1,0 +1,238 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image and updates scaling configuration image ID.",
+    "zh-cn": "\u901a\u8fc7\u8fd0\u884c\u547d\u4ee4\u66f4\u65b0\u4e00\u4e2a\u5df2\u5b58\u5728\u7684ECS\u955c\u50cf\u540e\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u5e76\u66f4\u65b0\u4f38\u7f29\u914d\u7f6e\u4e2d\u7684\u955c\u50cfID\u3002",
+    "name-en": "ACS-ESS-UpdateScalingConfigurationImage",
+    "name-zh-cn": "\u66f4\u65b0\u5f39\u6027\u4f38\u7f29\u914d\u7f6e\u955c\u50cf",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "targetImageName": {
+      "Description": {
+        "en": "The name of new image.",
+        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
+      },
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9\\-_]*",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "sourceImageId": {
+      "Description": {
+        "en": "The image ID for the ECS instance.",
+        "zh-cn": "\u6e90\u955c\u50cfID\u3002"
+      },
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The instance type for the ECS instances.",
+        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType"
+    },
+    "securityGroupId": {
+      "Description": {
+        "en": "The security group ID for the ECS instances.",
+        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
+    },
+    "vSwitchId": {
+      "Description": {
+        "en": "The virtual switch ID for the ECS instances\u3002",
+        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
+      "AssociationPropertyMetadata": {
+        "Filters": [
+          {
+            "SecurityGroupId": "securityGroupId"
+          }
+        ]
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "scalingConfigurationIds": {
+      "Description": {
+        "en": "The ID list of the scaling configuration to be modified.",
+        "zh-cn": "\u5f85\u4fee\u6539\u7684\u4f38\u7f29\u914d\u7f6eIDs\u3002"
+      },
+      "Type": "List"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkNewImageName",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Check image name is available.",
+        "zh-cn": "\u68c0\u67e5\u955c\u50cf\u540d\u79f0\u662f\u53ef\u7528\u7684\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "ImageName": "{{ targetImageName }}"
+        },
+        "DesiredValues": [
+          0
+        ],
+        "PropertySelector": "TotalCount"
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ECS::RunInstances",
+      "Description": {
+        "en": "Create a ECS instance with source image.",
+        "zh-cn": "\u7528\u6e90\u955c\u50cf\u521b\u5efa\u4e00\u53f0ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "imageId": "{{ sourceImageId }}",
+        "instanceType": "{{ instanceType }}",
+        "securityGroupId": "{{ securityGroupId }}",
+        "vSwitchId": "{{ vSwitchId }}"
+      },
+      "Outputs": {
+        "instanceId": {
+          "ValueSelector": "instanceIds[0]",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "installCloudAssistant",
+      "Action": "ACS::ECS::InstallCloudAssistant",
+      "Description": {
+        "en": "Install cloud assostant for ECS instance.",
+        "zh-cn": "\u7ed9\u5b9e\u4f8b\u5b89\u88c5\u4e91\u52a9\u624b\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run cloud assostant command on ECS instance.",
+        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "commandType": "{{ commandType }}",
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stops the ECS instance.",
+        "zh-cn": "\u505c\u6b62ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ECS::CreateImage",
+      "Description": {
+        "en": "Create new image with the specified image name and instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "imageName": "{{ targetImageName }}",
+        "instanceId": "{{ runInstances.instanceId }}"
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "deleteInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes the ECS instance.",
+        "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteInstance",
+        "Risk": "Normal",
+        "Parameters": {
+          "InstanceId": "{{ runInstances.instanceId }}",
+          "Force": true
+        }
+      }
+    },
+    {
+      "Name": "modifyScalingConfiguration",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify scaling configuration.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyScalingConfiguration",
+        "Parameters": {
+          "ScalingConfigurationId": "{{ ACS::TaskLoopItem }}",
+          "ImageId": "{{ createImage.imageId }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ scalingConfigurationIds }}"
+      }
+    }
+  ],
+  "Outputs": {
+    "imageId": {
+      "Type": "String",
+      "Value": "{{ createImage.imageId }}"
+    }
+  }
+}

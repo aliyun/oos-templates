@@ -1,0 +1,104 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: >-
+    Modify the wait state of the specified scaling activity according to the
+    result of applies an automatic snapshot policy to one or more disks.
+  zh-cn: 根据为一块或者多块云盘应用自动快照策略的结果修改伸缩活动的等待状态。
+  name-en: ACS-ESS-LifeCycleApplyAutoSnapshotPolicy
+  name-zh-cn: 弹性伸缩LifeCycleHook用自动快照策略
+  categories:
+    - elastic_manage
+Parameters:
+  autoSnapshotPolicyId:
+    Description:
+      en: The ID of the automatic snapshot policy.
+      zh-cn: 目标自动快照策略ID。
+    Type: String
+  regionId:
+    Description:
+      en: The ID of region.
+      zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
+    Type: String
+    Default: '${regionId}'
+  instanceIds:
+    Description:
+      en: The ID list of the ECS instance.
+      zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
+    Type: List
+    Default:
+      - '${instanceIds}'
+  lifecycleHookId:
+    Description:
+      en: The ID of the lifecycle hook.
+      zh-cn: '生命周期ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
+    Type: String
+    Default: '${lifecycleHookId}'
+  lifecycleActionToken:
+    Description:
+      en: >-
+        The token that indicates a specific scaling activity associated with an
+        instance.
+      zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
+    Type: String
+    Default: '${lifecycleActionToken}'
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: untilInstanceReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the created instances to be Running.
+    OnError: CompleteLifecycleActionForAbandon
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+          - '{{ ACS::TaskLoopItem }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+    Loop:
+      Concurrency: 1
+      Items: '{{ instanceIds }}'
+  - Name: applyAutoSnapshotPolicy
+    Action: ACS::ECS::ApplyAutoSnapshotPolicy
+    Description: Apply AutoSnapshot policy.
+    OnError: CompleteLifecycleActionForAbandon
+    OnSuccess: CompleteLifecycleActionForContinue
+    Properties:
+      autoSnapshotPolicyId: '{{ autoSnapshotPolicyId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Concurrency: 1
+      Items: '{{ instanceIds }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modify lifecycle action for continue.
+      zh-cn: 修改伸缩活动的等待状态为继续完成。
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+  - Name: CompleteLifecycleActionForAbandon
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Complete lifecycle action for Abandon.
+      zh-cn: 修改伸缩活动的等待状态为弃用。
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON

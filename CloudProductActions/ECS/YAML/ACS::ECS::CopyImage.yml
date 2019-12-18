@@ -1,0 +1,54 @@
+FormatVersion: OOS-2019-06-01
+Description: Cross Region copy images.
+Parameters:
+  imageId:
+    Description: The image to clone.
+    Type: String
+  regionId:
+    Description: The Source Region Id.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  targetRegionId:
+    Description: The Target Region Id.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: copyImage
+    Action: 'ACS::ExecuteAPI'
+    Description: Copy image.
+    Properties:
+      Service: ECS
+      API: CopyImage
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ imageId }}'
+        DestinationRegionId: '{{ targetRegionId }}'
+        DestinationImageName: '{{ imageId }}-{{ACS::ExecutionId}}'
+    Outputs:
+      imageId:
+        ValueSelector: ImageId
+        Type: String
+  - Name: untilCopyImageReady
+    Action: 'ACS::WaitFor'
+    Description: Wait for copied image available.
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ targetRegionId }}'
+        ImageId: '{{ copyImage.imageId }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'Images.Image[].Status'
+    Retries: 17
+Outputs:
+  imageId:
+    Value: '{{ copyImage.imageId }}'
+    Type: String

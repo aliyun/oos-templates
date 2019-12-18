@@ -1,0 +1,368 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image and copy new image.",
+    "zh-cn": "\u901a\u8fc7\u8fd0\u884c\u547d\u4ee4\u66f4\u65b0\u4e00\u4e2a\u5df2\u5b58\u5728\u7684ECS\u955c\u50cf\u540e\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u5e76\u4e14\u514b\u9686\u65b0\u955c\u50cf\u5230\u5176\u4ed6\u5730\u57df\u3002",
+    "name-en": "ACS-ECS-UpdateAndCopyImage",
+    "name-zh-cn": "\u66f4\u65b0ECS\u955c\u50cf\u5e76\u540c\u6b65\u5230\u5176\u5b83\u5730\u57df",
+    "categories": [
+      "image_manage"
+    ]
+  },
+  "Parameters": {
+    "targetImageName": {
+      "Description": {
+        "en": "The name of new image.",
+        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
+      },
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9\\-_]*",
+      "MinLength": 1
+    },
+    "sourceImageId": {
+      "Description": {
+        "en": "The image ID for the ECS instance.",
+        "zh-cn": "\u6e90\u955c\u50cfID\u3002"
+      },
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The instance type for the ECS instances.",
+        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "Default": "ecs.g5.large"
+    },
+    "securityGroupId": {
+      "Description": {
+        "en": "The security group ID for the ECS instances.",
+        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
+    },
+    "vSwitchId": {
+      "Description": {
+        "en": "The virtual switch ID for the ECS instances\u3002",
+        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
+      "AssociationPropertyMetadata": {
+        "Filters": [
+          {
+            "SecurityGroupId": "securityGroupId"
+          }
+        ]
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
+    },
+    "targetRegionIds": {
+      "Description": {
+        "en": "The Target Region Ids.",
+        "zh-cn": "\u76ee\u6807\u5730\u57dfID\u3002"
+      },
+      "Type": "List",
+      "AllowedValues": [
+        "all-regions",
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-zhangjiakou",
+        "cn-huhehaote",
+        "cn-hangzhou",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "cn-chengdu",
+        "cn-hongkong",
+        "ap-northeast-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ap-southeast-5",
+        "ap-south-1",
+        "us-east-1",
+        "us-west-1",
+        "eu-west-1",
+        "me-east-1",
+        "eu-central-1"
+      ],
+      "Default": [
+        "all-regions"
+      ]
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkNewImageName",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Check image name is available.",
+        "zh-cn": "\u68c0\u67e5\u955c\u50cf\u540d\u79f0\u662f\u53ef\u7528\u7684\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "ImageName": "{{ targetImageName }}"
+        },
+        "DesiredValues": [
+          0
+        ],
+        "PropertySelector": "TotalCount"
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ECS::RunInstances",
+      "Description": {
+        "en": "Create a ECS instance with source image.",
+        "zh-cn": "\u7528\u6e90\u955c\u50cf\u521b\u5efa\u4e00\u53f0ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "imageId": "{{ sourceImageId }}",
+        "instanceType": "{{ instanceType }}",
+        "securityGroupId": "{{ securityGroupId }}",
+        "vSwitchId": "{{ vSwitchId }}"
+      },
+      "Outputs": {
+        "instanceId": {
+          "ValueSelector": "instanceIds[0]",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "installCloudAssistant",
+      "Action": "ACS::ECS::InstallCloudAssistant",
+      "Description": {
+        "en": "Install cloud assostant for ECS instance.",
+        "zh-cn": "\u7ed9\u5b9e\u4f8b\u5b89\u88c5\u4e91\u52a9\u624b\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run cloud assostant command on ECS instance.",
+        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "commandContent": "{{ commandContent }}",
+        "commandType": "{{ commandType }}",
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stops the ECS instance.",
+        "zh-cn": "\u505c\u6b62ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ECS::CreateImage",
+      "Description": {
+        "en": "Create new image with the specified image name and instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "imageName": "{{ targetImageName }}",
+        "instanceId": "{{ runInstances.instanceId }}"
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "deleteInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes the ECS instance.",
+        "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteInstance",
+        "Risk": "Normal",
+        "Parameters": {
+          "InstanceId": "{{ runInstances.instanceId }}",
+          "Force": true
+        }
+      }
+    },
+    {
+      "Name": "queryAllAvailableRegions",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "View all available regions.",
+        "zh-cn": "\u67e5\u8be2\u5f53\u524d\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeRegions",
+        "Parameters": {
+          "RegionId": "{{ACS::RegionId}}"
+        }
+      },
+      "Outputs": {
+        "regionIds": {
+          "Type": "List",
+          "ValueSelector": "Regions.Region[]|.RegionId|select([scan(\"{{ACS::RegionId}}|test\")]|length<1)"
+        },
+        "allRegionsChosen": {
+          "Type": "String",
+          "ValueSelector": ".|{{targetRegionIds}}|sort|.[0]"
+        }
+      }
+    },
+    {
+      "Name": "whetherCloneToAllRegions",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by targetRegionIds Chosen.",
+        "zh-cn": "\u6839\u636e\u6240\u9009\u76ee\u7684\u5730\u57df\u5224\u65ad\u4e0b\u4e00\u6b65\u6267\u884c\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "copyImage",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "all-regions",
+                "{{ queryAllAvailableRegions.allRegionsChosen }}"
+              ]
+            },
+            "NextTask": "copyImageToAllRegions"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "copyImage",
+      "Action": "ACS::ECS::CopyImage",
+      "OnSuccess": "ACS::END",
+      "OnError": "ACS::END",
+      "Description": {
+        "en": "Copy image to regions chosen.",
+        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u88ab\u6307\u5b9a\u7684\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "imageId": "{{ createImage.imageId }}",
+        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ targetRegionIds }}",
+        "Concurrency": 15,
+        "Outputs": {
+          "imageIdsWithRegion": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageIdWithRegion"
+          }
+        }
+      },
+      "Outputs": {
+        "imageIdWithRegion": {
+          "ValueSelector": ".|(.imageId),\"{{ ACS::TaskLoopItem }}\"",
+          "Type": "List"
+        }
+      }
+    },
+    {
+      "Name": "copyImageToAllRegions",
+      "Action": "ACS::ECS::CopyImage",
+      "Description": {
+        "en": "Copy image to all available regions.",
+        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "imageId": "{{ createImage.imageId }}",
+        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ queryAllAvailableRegions.regionIds }}",
+        "Concurrency": 15,
+        "Outputs": {
+          "imageIdsWithRegion": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageIdWithRegion"
+          }
+        }
+      },
+      "Outputs": {
+        "imageIdWithRegion": {
+          "ValueSelector": ".|(.imageId),\"{{ ACS::TaskLoopItem }}\"",
+          "Type": "List"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "updatedImageId": {
+      "Type": "String",
+      "Value": "{{ createImage.imageId }}"
+    },
+    "imageIdAndRegion": {
+      "Type": "List",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "all-regions",
+              "{{ queryAllAvailableRegions.allRegionsChosen }}"
+            ]
+          },
+          "{{ copyImageToAllRegions.imageIdsWithRegion }}",
+          "{{ copyImage.imageIdsWithRegion }}"
+        ]
+      }
+    }
+  }
+}

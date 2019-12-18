@@ -1,0 +1,75 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Reboot ECS instance with specified tag when its CPU utilization exceeded threshold.The selected instance must already have the Cloud Monitor agent installed.
+  zh-cn: 按tag在ECS实例CPU利用率超过阈值时执行实例重启。所选实例必须已安装云监控Agent。
+  name-en: ACS-ECS-RebootInstanceAtHighCpuByTags
+  name-zh-cn: 按tag在ECS实例CPU利用率超过阈值时执行实例重启
+  categories:
+    - alarm-trigger
+Parameters:
+  tags:
+    Type: Json
+    Description:
+      en: The tags to select ECS instances.
+      zh-cn: 实例的标签。
+    AssociationProperty: Tags
+  threshold:
+    Type: Number
+    Description:
+      en: The CPU utilization threshold.
+      zh-cn: CPU利用率阈值。
+  silenceTime:
+    Type: Number
+    Description:
+      en: The silence time of alarm (seconds).
+      zh-cn: 告警通道沉默周期（秒）。
+    Default: 60
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: alarmTrigger
+    Action: 'ACS::AlarmTrigger'
+    Description:
+      en: Set the CPU utilization alarm for ECS instance.
+      zh-cn: 对ECS实例的CPU使用率进行监控。
+    Properties:
+      Namespace: acs_ecs_dashboard
+      MetricName: cpu_total
+      Statistics: Average
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '{{threshold}}'
+      Times: 1
+      SilenceTime: '{{ silenceTime }}'
+      Period: 60
+      Interval: 60
+    Outputs:
+      InstanceId:
+        Type: String
+        ValueSelector: .instanceId
+  - Name: CheckForInstances
+    Action: 'ACS::CheckFor'
+    Description:
+      en: Check ECS instance has specified tag.
+      zh-cn: 检查ECS实例有指定的tag。
+    OnError: 'ACS::END'
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        Tags: '{{ tags }}'
+        InstanceIds: '["{{ alarmTrigger.instanceId }}"]'
+      PropertySelector: TotalCount
+      DesiredValues:
+        - 1
+  - Name: RebootInstance
+    Action: 'ACS::ECS::RebootInstance'
+    Description:
+      en: Restarts the ECS instances.
+      zh-cn: 重启实例。
+    Properties:
+      instanceId: '{{ alarmTrigger.instanceId }}'

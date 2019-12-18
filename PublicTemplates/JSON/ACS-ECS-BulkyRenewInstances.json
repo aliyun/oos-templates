@@ -1,0 +1,108 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky renew ECS prepaid instances.",
+    "zh-cn": "\u6279\u91cf\u7eed\u8d39ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-BulkyRenewInstances",
+    "name-zh-cn": "\u6279\u91cf\u7eed\u8d39ECS\u5b9e\u4f8b",
+    "categories": [
+      "instance_manage"
+    ]
+  },
+  "Parameters": {
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance"
+      }
+    },
+    "periodUnit": {
+      "Description": {
+        "en": "The unit of the renewal period (Period).",
+        "zh-cn": "\u7eed\u8d39\u65f6\u957f\u7684\u65f6\u95f4\u5355\u4f4d\uff0c\u5373\u53c2\u6570Period\u7684\u5355\u4f4d\u3002PeriodUnit=Week\u65f6\uff0cPeriod\u53d6\u503c\uff1a1~4\uff0cPeriodUnit=Month\u65f6\uff0cPeriod\u53d6\u503c\uff1a1~12, 24, 36, 48, 60"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month"
+      ],
+      "Default": "Month"
+    },
+    "period": {
+      "Description": {
+        "en": "The renewal period of the subscription instance.",
+        "zh-cn": "\u5305\u5e74\u5305\u6708\u7eed\u8d39\u65f6\u957f\u3002"
+      },
+      "Type": "Number",
+      "Default": 1,
+      "MinValue": 1,
+      "MaxValue": 60
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "renewInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Renew ECS instance with the specified instance ID.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u7eed\u8d39\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "RenewInstance",
+        "Parameters": {
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
+          "Period": "{{ period }}",
+          "PeriodUnit": "{{ periodUnit }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
+      }
+    }
+  ]
+}
