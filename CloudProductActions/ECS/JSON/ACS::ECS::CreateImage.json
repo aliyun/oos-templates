@@ -9,7 +9,6 @@
     "instanceId": {
       "Description": "The ID of the instance.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     }

@@ -8,7 +8,6 @@ Parameters:
   instanceId:
     Description: The instance ID you will handle.
     Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
   instanceType:
@@ -35,10 +34,6 @@ Tasks:
     DesiredValues:
     - Stopped
     PropertySelector: Instances.Instance[].Status
-  Outputs:
-    instanceIds:
-      Type: List
-      ValueSelector: InstanceIdSets.InstanceIdSet[]
 - Name: modifyPrepayInstanceSpec
   Action: ACS::ExecuteAPI
   Description: Changes the type of your subscription instance.
@@ -73,10 +68,6 @@ Tasks:
     DesiredValues:
     - Running
     PropertySelector: Instances.Instance[].Status
-  Outputs:
-    instanceIds:
-      Type: List
-      ValueSelector: InstanceIdSets.InstanceIdSet[]
 Outputs:
   orderId:
     Type: String

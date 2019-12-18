@@ -4,7 +4,6 @@ Parameters:
   instanceId:
     Description: The ID of ECS instance you will reboot.
     Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
 Tasks:

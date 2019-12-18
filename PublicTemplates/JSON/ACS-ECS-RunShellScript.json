@@ -4,7 +4,10 @@
     "en": "Run shell script.",
     "zh-cn": "\u8fd0\u884cshell\u811a\u672c",
     "title": "ACS-ECS-RunShellScript",
-    "name-zh-cn": "\u8fd0\u884cshell\u811a\u672c"
+    "name-zh-cn": "\u8fd0\u884cshell\u811a\u672c",
+    "categories": [
+      "run_command"
+    ]
   },
   "Parameters": {
     "instanceId": {

@@ -14,7 +14,6 @@ Parameters:
     Description: Creates a subscription disk and the system automatically attaches
       it to a subscription instance with the InstanceId you specified.
     Type: String
-    AllowedPattern: i-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
   size:

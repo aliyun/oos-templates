@@ -9,7 +9,6 @@
     "instanceId": {
       "Description": "The ID of ECS instance that will invoke command.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
@@ -25,7 +24,7 @@
     "workingDir": {
       "Description": "The directory where the created command runs on the ECS instances.",
       "Type": "String",
-      "Default": "/root"
+      "Default": ""
     },
     "timeout": {
       "Description": "The value of the invocation timeout period of a command on ECS instances.",
@@ -35,42 +34,21 @@
   },
   "Tasks": [
     {
-      "Name": "createCommand",
+      "Name": "runCommand",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Creates a cloud assistant command.",
+      "Description": "Executes a cloud assistant command.",
       "Properties": {
         "Service": "ECS",
-        "API": "CreateCommand",
+        "API": "RunCommand",
         "Parameters": {
-          "CommandContent": {
-            "Fn::Base64Encode": "{{ commandContent }}"
-          },
+          "CommandContent": "{{ commandContent }}",
+          "InstanceIds": [
+            "{{instanceId}}"
+          ],
           "Name": "{{ ACS::ExecutionId }}",
           "Type": "{{ commandType }}",
           "WorkingDir": "{{ workingDir }}",
           "Timeout": "{{ timeout }}"
-        }
-      },
-      "Outputs": {
-        "commandId": {
-          "Type": "String",
-          "ValueSelector": "CommandId"
-        }
-      }
-    },
-    {
-      "Name": "invokeCommand",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Triggers a cloud assistant command on one ECS instances.",
-      "OnError": "deleteCommand",
-      "Properties": {
-        "Service": "ECS",
-        "API": "InvokeCommand",
-        "Parameters": {
-          "CommandId": "{{ createCommand.commandId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
         }
       },
       "Outputs": {
@@ -84,7 +62,7 @@
       "Name": "untilInvocationReady",
       "Action": "ACS::WaitFor",
       "Description": "Waits for the command to be completed.",
-      "OnError": "deleteCommand",
+      "OnError": "ACS::END",
       "Delay": 20,
       "Retries": 30,
       "DelayType": "Constant",
@@ -92,7 +70,7 @@
         "Service": "ECS",
         "API": "DescribeInvocations",
         "Parameters": {
-          "InvokeId": "{{ invokeCommand.invokeId }}"
+          "InvokeId": "{{ runCommand.invokeId }}"
         },
         "DesiredValues": [
           "Finished"
@@ -111,7 +89,7 @@
         "Service": "ECS",
         "API": "DescribeInvocationResults",
         "Parameters": {
-          "InvokeId": "{{ invokeCommand.invokeId }}"
+          "InvokeId": "{{ runCommand.invokeId }}"
         }
       },
       "Outputs": {
@@ -125,30 +103,17 @@
       "Name": "checkInvocationResult",
       "Action": "ACS::CheckFor",
       "Description": "Check the command exitcode of a cloud assistant command.",
-      "OnError": "deleteCommand",
+      "OnError": "ACS::END",
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInvocationResults",
         "Parameters": {
-          "InvokeId": "{{ invokeCommand.InvokeId }}"
+          "InvokeId": "{{ runCommand.InvokeId }}"
         },
         "PropertySelector": "Invocation.InvocationResults.InvocationResult[].ExitCode",
         "DesiredValues": [
           0
         ]
-      }
-    },
-    {
-      "Name": "deleteCommand",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Deletes a cloud assistant command.",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DeleteCommand",
-        "Risk": "Normal",
-        "Parameters": {
-          "CommandId": "{{ createCommand.commandId }}"
-        }
       }
     }
   ],

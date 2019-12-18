@@ -4,7 +4,10 @@
     "en": "Bulky starts the ECS instances.",
     "zh-cn": "\u6279\u91cf\u542f\u52a8ECS\u5b9e\u4f8b\u3002",
     "name-en": "ACS-ECS-BulkyStartInstances",
-    "name-zh-cn": "\u6279\u91cf\u542f\u52a8ECS\u5b9e\u4f8b"
+    "name-zh-cn": "\u6279\u91cf\u542f\u52a8ECS\u5b9e\u4f8b",
+    "categories": [
+      "instance_manage"
+    ]
   },
   "Parameters": {
     "targets": {
@@ -20,7 +23,12 @@
         "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
       },
       "Type": "Json",
-      "AssociationProperty": "RateControl"
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
     },
     "OOSAssumeRole": {
       "Description": {

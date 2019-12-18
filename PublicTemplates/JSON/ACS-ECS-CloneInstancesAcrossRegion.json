@@ -4,7 +4,10 @@
     "en": "Cross Region copy and run ECS instance by InstanceIds.",
     "zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b\u3002",
     "title": "ACS-ECS-CloneInstancesAcrossRegion",
-    "name-zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b"
+    "name-zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b",
+    "categories": [
+      "cross_region"
+    ]
   },
   "Parameters": {
     "instanceIds": {
@@ -135,7 +138,8 @@
       },
       "Loop": {
         "Items": "{{ createImage.ImageIds }}"
-      }
+      },
+      "Retries": 17
     },
     {
       "Name": "copyImage",

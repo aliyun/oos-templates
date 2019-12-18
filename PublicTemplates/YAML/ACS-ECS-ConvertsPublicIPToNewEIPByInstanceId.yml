@@ -4,6 +4,8 @@ Description:
   zh-cn: 将一台网络类型为专有网络VPC的ECS实例的公网IP转化为其它弹性公网IP。
   name-en: ACS-ECS-ConvertsPublicIPToNewEIPByInstanceId
   name-zh-cn: 将一台实例的公网IP转化为其它弹性公网IP
+  categories:
+    - instance_manage
 Parameters:
   instanceId:
     Description:
@@ -78,6 +80,9 @@ Tasks:
     AllocationId:
       Type: String
       ValueSelector: AllocationId
+    EipAddress:
+      Type: String
+      ValueSelector: EipAddress
 - Name: DescribeEipAddresses
   Action: ACS::WaitFor
   Description:
@@ -102,3 +107,10 @@ Tasks:
     Parameters:
       InstanceId: '{{ InstanceId }}'
       AllocationId: '{{ AllocateEipAddress.AllocationId }}'
+Outputs:
+  AllocationId:
+    Type: String
+    Value: '{{ AllocateEipAddress.AllocationId }}'
+  EipAddress:
+    Type: String
+    Value: '{{ AllocateEipAddress.EipAddress }}'

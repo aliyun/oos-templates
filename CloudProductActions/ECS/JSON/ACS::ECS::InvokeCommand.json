@@ -9,7 +9,6 @@
     "instanceId": {
       "Description": "The ID of ECS instance where the command need to be executed.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     }

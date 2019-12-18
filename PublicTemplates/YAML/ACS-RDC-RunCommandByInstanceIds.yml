@@ -1,47 +1,48 @@
 FormatVersion: OOS-2019-06-01
-Description:
-  en: Bulky run command on ECS instances.
-  zh-cn: 批量在多台实例上运行命令。
-  name-en: ACS-RDC-BulkyRunCommand
-  name-zh-cn: 云效批量运行命令
 Parameters:
   instanceInfos:
-    Description:
-      en: The infos list of the ECS instances.
-      zh_cn: ECS实例信息列表。
+    Description: The infos list of the ECS instance.
     Type: List
-  rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
-    Type: Json
-    AssociationProperty: RateControl
+  batchNumber:
+    Description: The number of times of wholesale distribution.
+    Type: Number
+    MinValue: 1
+    MaxValue: 10
+    Default: 5
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Description: The RAM role to be assumed by OOS.
     Type: String
     Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
+RamRole: '{{OOSAssumeRole}}'
 Tasks:
   - Name: loopRunCommand
-    Description:
-      en: Bulky run cloud assistant command.
-      zh-cn: 批量运行命令。
-    Action: ACS::RDC::RunCommand
+    Description: Bulky run cloud assistant command.
+    Action: 'ACS::RDC::RunCommand'
     Properties:
       InstanceId:
-        Fn::Select:
+        'Fn::Select':
           - instanceId
           - '{{ ACS::TaskLoopItem }}'
       CommandContent:
-        Fn::Select:
+        'Fn::Select':
           - commandContent
           - '{{ ACS::TaskLoopItem }}'
       RegionId:
-        Fn::Select:
+        'Fn::Select':
           - regionId
           - '{{ ACS::TaskLoopItem }}'
     Loop:
       Items: '{{ instanceInfos }}'
-      RateControl: {{ rateControl }}
+      MaxErrors: 1
+      Concurrency:
+        'Fn::CalculateBatch':
+          - '{{ batchNumber }}'
+          - '{{ instanceInfos }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: InvocationOutput

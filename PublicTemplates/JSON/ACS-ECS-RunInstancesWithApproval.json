@@ -4,7 +4,10 @@
     "en": "Creates one or more ECS instances with approval.",
     "zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b\u3002",
     "name-en": "ACS-ECS-RunInstancesWithApproval",
-    "name-zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b"
+    "name-zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b",
+    "categories": [
+      "cost_manage"
+    ]
   },
   "Parameters": {
     "accessToken": {

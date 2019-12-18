@@ -5,7 +5,6 @@
     "InstanceId": {
       "Description": "The ID of ECS instance that will invoke command.",
       "Type": "String",
-      "AllowedPattern": "i-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
@@ -34,7 +33,7 @@
           "Name": "{{ ACS::ExecutionId }}",
           "Type": "RunShellScript",
           "WorkingDir": "/root",
-          "Timeout": 300
+          "Timeout": 900
         }
       },
       "Outputs": {
@@ -71,8 +70,8 @@
       "Name": "untilInvocationReady",
       "Action": "ACS::WaitFor",
       "Description": "Waits for the command to be completed.",
-      "Delay": 20,
-      "Retries": 30,
+      "Delay": 30,
+      "Retries": 40,
       "DelayType": "Constant",
       "Properties": {
         "Service": "ECS",

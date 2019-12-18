@@ -4,6 +4,8 @@ Description:
   zh-cn: 运行shell脚本
   title: ACS-ECS-RunShellScript
   name-zh-cn: 运行shell脚本
+  categories:
+    - run_command
 Parameters:
   instanceId:
     Description:

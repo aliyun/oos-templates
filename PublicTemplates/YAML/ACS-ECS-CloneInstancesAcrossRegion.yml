@@ -4,6 +4,8 @@ Description:
   zh-cn: 跨地域克隆ECS实例。
   title: ACS-ECS-CloneInstancesAcrossRegion
   name-zh-cn: 跨地域克隆ECS实例
+  categories:
+    - cross_region
 Parameters:
   instanceIds:
     Description:
@@ -101,6 +103,7 @@ Tasks:
       PropertySelector: 'Images.Image[].Status'
     Loop:
       Items: '{{ createImage.ImageIds }}'
+    Retries: 17
   - Name: copyImage
     Action: 'ACS::ExecuteAPI'
     Description:
