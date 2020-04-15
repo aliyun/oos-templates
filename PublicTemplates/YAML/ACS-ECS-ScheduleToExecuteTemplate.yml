@@ -1,0 +1,60 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedules to execute specified template.
+  zh-cn: 定时执行指定模板。
+  name-en: ACS-ECS-ScheduleToExecuteTemplate
+  name-zh-cn: 定时执行指定模板
+  categories:
+    - time_trigger
+Parameters:
+  timerTrigger:
+    Type: Json
+  templateName:
+    Type: String
+    AssociationProperty: TemplateName
+  templateParameters:
+    Description:
+      en: Template paremeters to execute with.
+      zh-cn: 触发执行模板的参数。
+    Type: Json
+    AssociationProperty: TemplateParameter
+    AssociationPropertyMetadata:
+      TemplateName: $templateName
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: timerTrigger
+    Action: 'ACS::TimerTrigger'
+    Description:
+      en: Triggers a task as scheduled by specifying type and expression.
+      zh-cn: 通过指定触发类型和表达式按计划触发任务。
+    Properties:
+      Type:
+        'Fn::Select':
+          - type
+          - '{{timerTrigger}}'
+      Expression:
+        'Fn::Select':
+          - expression
+          - '{{timerTrigger}}'
+      EndDate:
+        'Fn::Select':
+          - endDate
+          - '{{ timerTrigger }}'
+      TimeZone:
+        'Fn::Select':
+          - timeZone
+          - '{{ timerTrigger }}'
+  - Name: executeTemplate
+    Action: 'ACS::Template'
+    Description:
+      en: Execute template.
+      zh-cn: 执行模板。
+    Properties:
+      TemplateName: '{{ templateName }}'
+      Parameters: '{{ templateParameters }}'

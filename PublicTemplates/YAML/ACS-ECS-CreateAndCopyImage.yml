@@ -1,0 +1,217 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Creates an ECS image and copy new image.
+  zh-cn: 创建一个新ECS镜像并且克隆新镜像到其他地域。
+  name-en: ACS-ECS-CreateAndCopyImage
+  name-zh-cn: 创建ECS镜像并同步到其它地域
+  categories:
+    - image_manage
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The id of ECS instance.
+      zh-cn: ECS实例ID。
+    Type: String
+  targetImageName:
+    Description:
+      en: The name of new image.
+      zh-cn: 新镜像的名称。
+    Type: String
+    MinLength: 1
+    Default: 'CreateImage_from_{{ ACS::ExecutionId }}'
+  commandType:
+    Description:
+      en: The type of cloud assistant command.
+      zh-cn: 云助手执行的运维脚本的语言类型。
+    Type: String
+    AllowedValues:
+      - RunShellScript
+      - RunBatScript
+      - RunPowerShellScript
+    Default: RunShellScript
+  commandContent:
+    Description:
+      en: The command to run.Command is not executed when value is empty
+      zh-cn: 云助手要执行的命令。命令为空时不会执行命令。
+    Type: String
+    AssociationProperty: Code
+    Default: ''
+  targetRegionIds:
+    Description:
+      en: The Target Region Ids.
+      zh-cn: 目标地域ID。
+    Type: List
+    AllowedValues:
+      - all-regions
+      - cn-beijing
+      - cn-qingdao
+      - cn-zhangjiakou
+      - cn-huhehaote
+      - cn-hangzhou
+      - cn-shanghai
+      - cn-shenzhen
+      - cn-chengdu
+      - cn-hongkong
+      - ap-northeast-1
+      - ap-southeast-1
+      - ap-southeast-2
+      - ap-southeast-3
+      - ap-southeast-5
+      - ap-south-1
+      - us-east-1
+      - us-west-1
+      - eu-west-1
+      - me-east-1
+      - eu-central-1
+    Default: []
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 5
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: whetherToRunCommand
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task.
+    zn-cn: 选择下一个任务。
+  Properties:
+    DefaultTask: runCommand
+    Choices:
+      - When:
+          'Fn::Equals':
+            - ''
+            - '{{ commandContent }}'
+        NextTask: createImage
+- Name: runCommand
+  Action: 'ACS::ECS::RunCommand'
+  Description:
+    en: Run cloud assistant command on ECS instance.
+    zh-cn: 在实例中运行云助手命令。
+  Properties:
+    instanceId: '{{ instanceId }}'
+    commandContent: '{{ commandContent }}'
+    commandType: '{{ commandType }}'
+  Outputs:
+    commandOutput:
+      Type: String
+      ValueSelector: invocationOutput
+- Name: createImage
+  Action: 'ACS::ECS::CreateImage'
+  Description:
+    en: Create new image with the specified image name and instance ID.
+    zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ instanceId }}'
+    imageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
+  Outputs:
+    imageId:
+      ValueSelector: imageId
+      Type: String
+- Name: queryAllAvailableRegions
+  Action: 'ACS::ExecuteAPI'
+  Description:
+    en: View all available regions.
+    zh-cn: 查询当前所有可用地域。
+  Properties:
+    Service: ECS
+    API: DescribeRegions
+    Parameters:
+      RegionId: '{{ACS::RegionId}}'
+  Outputs:
+    regionIds:
+      Type: List
+      ValueSelector: 'Regions.Region[]|.RegionId|select([scan("{{ACS::RegionId}}|test")]|length<1)'
+    allRegionsChosen:
+      Type: String
+      ValueSelector: '.|{{targetRegionIds}}|sort|.[0]'
+- Name: whetherCloneToAllRegions
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by targetRegionIds Chosen.
+    zh-cn: 根据所选目的地域判断下一步执行。
+  Properties:
+    DefaultTask: copyImage
+    Choices:
+      - When:
+          'Fn::Equals':
+            - all-regions
+            - '{{ queryAllAvailableRegions.allRegionsChosen }}'
+        NextTask: copyImageToAllRegions
+- Name: copyImage
+  Action: 'ACS::ECS::CopyImage'
+  OnSuccess: 'ACS::END'
+  OnError: 'ACS::END'
+  Description:
+    en: Copy image to regions chosen.
+    zh-cn: 复制镜像到被指定的地域。
+  Properties:
+    regionId: '{{ ACS::RegionId }}'
+    imageId: '{{ createImage.imageId }}'
+    targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
+    targetRegionId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    Items: '{{ targetRegionIds }}'
+    RateControl: '{{ rateControl }}'
+    Outputs:
+      imageIdsWithRegion:
+        AggregateType: 'Fn::ListJoin'
+        AggregateField: imageIdWithRegion
+  Outputs:
+    imageIdWithRegion:
+      ValueSelector: '.|(.imageId),"{{ ACS::TaskLoopItem }}"'
+      Type: List
+- Name: copyImageToAllRegions
+  Action: 'ACS::ECS::CopyImage'
+  Description:
+    en: Copy image to all available regions.
+    zh-cn: 复制镜像到所有可用地域。
+  Properties:
+    regionId: '{{ ACS::RegionId }}'
+    imageId: '{{ createImage.imageId }}'
+    targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
+    targetRegionId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    Items: '{{ queryAllAvailableRegions.regionIds }}'
+    RateControl: '{{ rateControl }}'
+    Outputs:
+      imageIdsWithRegion:
+        AggregateType: 'Fn::ListJoin'
+        AggregateField: imageIdWithRegion
+  Outputs:
+    imageIdWithRegion:
+      ValueSelector: '.|(.imageId),"{{ ACS::TaskLoopItem }}"'
+      Type: List
+Outputs:
+  imageIds:
+    Type: List
+    Value: '{{ createImage.imageId }}'
+  imageIdAndRegion:
+    Type: List
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - all-regions
+            - '{{ queryAllAvailableRegions.allRegionsChosen }}'
+        - '{{ copyImageToAllRegions.imageIdsWithRegion }}'
+        - '{{ copyImage.imageIdsWithRegion }}'

@@ -1,0 +1,128 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to install or unistall package on ecs",
+    "zh-cn": "\u4f7f\u7528\u8fd9\u4e2a\u6a21\u677f\u6279\u91cf\u7684\u5728ECS\u5b89\u88c5\u6216\u5378\u8f7dyum/apt\u5305",
+    "name-en": "ACS-ECS-ConfigurePackage",
+    "name-zh-cn": "\u6279\u91cf\u5b89\u88c5\u6216\u5378\u8f7d\u5305",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "installer": {
+      "Type": "String",
+      "Default": "apt-get",
+      "AllowedValues": [
+        "apt-get",
+        "yum"
+      ]
+    },
+    "action": {
+      "Type": "String",
+      "Default": "install",
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ]
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "packageName": {
+      "Type": "String",
+      "Description": {
+        "en": "The package you want to yum/apt-get install/uninstall",
+        "zh-cn": "yum/apt-get\u5b89\u88c5\u7684\u5305\u540d"
+      }
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "commandContent": "#!/bin/bash\nif [ \"{{installer}}\" = \"yum\" ]; then\n    if [ \"{{action}}\" = \"install\" ]; then\n        yum install -y {{packageName}}\n        if [ $? -ne 0 ]; then\n            echo \"Package is install failed. Please check your command\" >&2;\n            exit 1;\n        fi\n        exit 0;\n    elif [ \"{{action}}\" = \"uninstall\" ]; then\n        yum remove -y {{packageName}}\n        if [ $? -ne 0 ]; then\n            echo \"Package uninstall failed. Please check your command\" >&2;\n            exit 1;\n        fi\n        exit 0;\n    else\n        echo \"Package command must be install or uninstall\" >& 2\n        exit 1;\n    fi\nelif [ \"{{installer}}\" = \"apt-get\" ]; then\n    if [ \"{{action}}\" = \"install\" ]; then\n        apt-get -y install {{packageName}}\n        if [ $? -ne 0 ]; then\n            echo \"Package is install failed. Please check your command\" >&2;\n            exit 1;\n        fi\n        exit 0;\n    elif [ \"{{action}}\" = \"uninstall\" ]; then\n        apt-get -y remove {{packageName}}\n        if [ $? -ne 0 ]; then\n            echo \"Package uninstall failed. Please check your command\" >&2;\n            exit 1;\n        fi\n        exit 0;\n    else\n        echo \"Package command must be install or uninstall\" >& 2\n        exit 1;\n    fi\nelse\n    echo \"Unknown pakcage installer. Only support yum/apt-get\" >&2;\n    exit 1;\nfi",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  }
+}

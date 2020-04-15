@@ -1,0 +1,338 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Create ECS instances by ROS with approval.
+  zh-cn: 审批通过ROS创建ECS。
+  name-en: ACS-ECS-ApproveROSCreateInstances
+  name-zh-cn: 审批通过ROS创建ECS
+  categories:
+    - cost_manage
+Parameters:
+  imageId:
+    Description:
+      en: The image id of ECS instance to create.
+      zh-cn: 将创建实例的镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+  instanceType:
+    Description:
+      en:  The instance type of ECS instance to create.
+      zh-cn: 将创建实例的规格。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+  zoneId:
+    Description:
+      en: The zone id of VSwitch to create.
+      zh-cn: 将创建交换机的可用区ID。
+    Type: String
+  webHookUrl:
+    Description:
+      en: >-
+        The webhook url of dingtalk group assistant,
+        e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.
+      zh-cn: >-
+        钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。
+    Type: String
+  atMobiles:
+    Description:
+      en: The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.
+      zh-cn: 审批通知中被@的群成员的钉钉手机号，比如138ALBB1234。
+    Type: List
+  atAll:
+    Description:
+      en: 'Whether assistant @ all members in dingtalk group or not notification comes'
+      zh-cn: 当群助手向钉钉群中发送审批通知时是否@所有人。
+    Type: String
+    Default: 'false'
+  approvers:
+    Description:
+      en: The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.
+      zh-cn: 可以审批任务的用户。用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可。
+    Type: List
+    AssociationProperty: ALIYUN::RAM::User
+  minRequiredApprovals:
+    Description:
+          en: The min required count of approvals.
+          zh-cn: 最低需要通过审批的数量
+    Type: Number
+    Default: 1
+  instancesCount:
+    Description:
+      en: The count of ECS instance to create.
+      zh-cn: 将创建实例的数量。
+    Type: Number
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: approveCreateInstances
+    Action: 'ACS::Approve'
+    Description:
+      en: Approve task creating ECS instances.
+      zh-cn: 审批后批量创建ECS实例。
+    Properties:
+      Approvers: '{{approvers}}'
+      MinRequiredApprovals: '{{minRequiredApprovals}}'
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{webhookUrl}}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: text
+          text:
+            content: >-
+              Notify: Please approve the task execution to create ECS instance sent by
+              {{ACS::RegionId}} oos {{ACS::ExecutionId}}.
+          at:
+            atMobiles: '{{atMobiles}}'
+            isAtAll: '{{atAll}}'
+
+  - Name: createStack
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Create a resource stack.
+      zh-cn: 创建资源栈。
+    Properties:
+      Service: ROS
+      API: CreateStack
+      Parameters:
+        StackName: 'OOS-{{ACS::ExecutionId}}'
+        TimeoutInMinutes: 10
+        DisableRollback: false
+        Parameters:
+          - ParameterKey: instanceType
+            ParameterValue: '{{ instanceType }}'
+          - ParameterKey: zoneId
+            ParameterValue: '{{ zoneId }}'
+          - ParameterKey: regionId
+            ParameterValue: '{{ ACS::RegionId  }}'
+          - ParameterKey: imageId
+            ParameterValue: '{{imageId}}'
+          - ParameterKey: executionId
+            ParameterValue: '{{ ACS::ExecutionId }}'
+          - ParameterKey: instancesCount
+            ParameterValue: '{{ instancesCount }}'
+        TemplateBody: |
+            {
+              "Description": "Create VPC ECS instance",
+              "Parameters": {
+                "imageId": {
+                  "Type": "String"
+                },
+                "instanceType": {
+                  "Type": "String"
+                },
+                "executionId": {
+                  "Type": "String"
+                },
+                "instancesCount": {
+                  "Type": "String"
+                },
+                "zoneId": {
+                  "Type": "String"
+                },
+                "regionId": {
+                  "Type": "String"
+                },
+                "resourcePrefix": {
+                  "Type": "String",
+                  "Default": "oos-generated"
+                }
+              },
+              "ROSTemplateFormatVersion": "2015-09-01",
+              "Outputs": {
+                "ecs_instance_id": {
+                  "Value": {
+                    "Fn::GetAtt": [
+                      "ecs",
+                      "InstanceIds"
+                    ]
+                  }
+                }
+              },
+              "Resources": {
+                "vswitch": {
+                  "Type": "ALIYUN::ECS::VSwitch",
+                  "Properties": {
+                    "VpcId": {
+                      "Ref": "vpc"
+                    },
+                    "Description": {
+                      "Fn::Join": [
+                        " ",
+                        [
+                          "OOS execution id is",
+                          {
+                            "Ref": "executionId"
+                          }
+                        ]
+                      ]
+                    },
+                    "ZoneId": {
+                      "Ref": "zoneId"
+                    },
+                    "CidrBlock": "192.168.0.0/16"
+                  }
+                },
+                "sg": {
+                  "Type": "ALIYUN::ECS::SecurityGroup",
+                  "Properties": {
+                    "Tags": [
+                      {
+                        "Key": "oos-generated",
+                        "Value": {
+                          "Ref": "executionId"
+                        }
+                      },
+                      {
+                        "Key": "region",
+                        "Value": {
+                          "Ref": "regionId"
+                        }
+                      }
+                    ],
+                    "VpcId": {
+                      "Ref": "vpc"
+                    },
+                    "SecurityGroupName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          {
+                            "Ref": "resourcePrefix"
+                          },
+                          "sg"
+                        ]
+                      ]
+                    },
+                    "SecurityGroupEgress": [
+                      {
+                        "PortRange": "-1/-1",
+                        "Priority": 1,
+                        "IpProtocol": "all",
+                        "DestCidrIp": "0.0.0.0/0",
+                        "NicType": "intranet"
+                      }
+                    ]
+                  }
+                },
+                "vpc": {
+                  "Type": "ALIYUN::ECS::VPC",
+                  "Properties": {
+                    "CidrBlock": "192.168.0.0/16",
+                    "Description": {
+                      "Fn::Join": [
+                        " ",
+                        [
+                          "OOS execution id is",
+                          {
+                            "Ref": "executionId"
+                          }
+                        ]
+                      ]
+                    },
+                    "VpcName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          {
+                            "Ref": "resourcePrefix"
+                          },
+                          "vpc"
+                        ]
+                      ]
+                    }
+                  }
+                },
+                "ecs": {
+                  "Type": "ALIYUN::ECS::InstanceGroup",
+                  "Properties": {
+                    "ImageId": {
+                      "Ref": "imageId"
+                    },
+                    "SecurityGroupId": {
+                      "Ref": "sg"
+                    },
+                    "VpcId": {
+                      "Ref": "vpc"
+                    },
+                    "VSwitchId": {
+                      "Ref": "vswitch"
+                    },
+                    "InstanceType": {
+                      "Ref": "instanceType"
+                    },
+                    "MinAmount": {
+                      "Ref": "instancesCount"
+                    },
+                    "MaxAmount": {
+                      "Ref": "instancesCount"
+                    },
+                    "Tags": [
+                      {
+                        "Key": "oos-generated",
+                        "Value": {
+                          "Ref": "executionId"
+                        }
+                      },
+                      {
+                        "Key": "region",
+                        "Value": {
+                          "Ref": "regionId"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+    Outputs:
+      StackId:
+        Type: String
+        ValueSelector: StackId
+
+  - Name: untilStackReady
+    OnSuccess: ACS::END
+    OnError: deleteStack
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Wait for the stack status CREATE_COMPLETE.
+      zh-cn: 等待资源栈至创建成功状态。
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+      DesiredValues:
+        - CREATE_COMPLETE
+      StopRetryValues:
+        - CREATE_FAILED
+        - CHECK_FAILED
+        - ROLLBACK_FAILED
+        - ROLLBACK_COMPLETE
+        - CREATE_ROLLBACK_COMPLETE
+      PropertySelector: Status
+    Outputs:
+      instanceIds:
+        Type: String
+        ValueSelector: 'Outputs[0].OutputValue'
+  - Name: deleteStack
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Delete the stack.
+      zh-cn: 删除资源栈。
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ untilStackReady.instanceIds }}'

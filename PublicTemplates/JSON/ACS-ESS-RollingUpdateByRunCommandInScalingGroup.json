@@ -1,0 +1,439 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Rolling update ECS instances that in scaling group by run command.",
+    "zh-cn": "\u901a\u8fc7\u6267\u884c\u547d\u4ee4\u7684\u65b9\u5f0f\u6eda\u52a8\u66f4\u65b0\u4f38\u7f29\u7ec4\u5185\u7684ECS\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ESS-RollingUpdateByRunCommandInScalingGroup",
+    "name-zh-cn": "\u901a\u8fc7\u6267\u884c\u547d\u4ee4\u7684\u65b9\u5f0f\u6eda\u52a8\u66f4\u65b0\u4f38\u7f29\u7ec4\u5185\u7684ECS\u5b9e\u4f8b",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "invokeType": {
+      "Description": {
+        "en": "The type of invoke.",
+        "zh-cn": "\u6267\u884c\u64cd\u4f5c\u7c7b\u578b."
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "invoke",
+        "rollback"
+      ]
+    },
+    "scalingGroupId": {
+      "Description": {
+        "en": "The id of scaling group.",
+        "zh-cn": "\u4f38\u7f29\u7ec4ID\u3002"
+      },
+      "Type": "String"
+    },
+    "enterProcess": {
+      "Description": {
+        "en": "The enter process of scaling group.",
+        "zh-cn": "\u6267\u884c\u5f00\u59cb\u8981\u6682\u505c\u7684\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Type": "List",
+      "Default": [
+        "ScaleIn",
+        "ScaleOut",
+        "HealthCheck",
+        "AlarmNotification",
+        "ScheduledAction"
+      ]
+    },
+    "exitProcess": {
+      "Description": {
+        "en": "The exit process of scaling group.",
+        "zh-cn": "\u6267\u884c\u7ed3\u675f\u8981\u6062\u590d\u7684\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Type": "List",
+      "Default": [
+        "ScaleIn",
+        "ScaleOut",
+        "HealthCheck",
+        "AlarmNotification",
+        "ScheduledAction"
+      ]
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "invokeScript": {
+      "Description": {
+        "en": "The script of task to invoke.",
+        "zh-cn": "\u6267\u884c\u64cd\u4f5c\u89e6\u53d1\u7684\u811a\u672c\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "rollbackScript": {
+      "Description": {
+        "en": "The script of task to rollback.",
+        "zh-cn": "\u56de\u6eda\u64cd\u4f5c\u6267\u884c\u7684\u811a\u672c"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "sourceExecutionId": {
+      "Description": {
+        "en": "The id of source execution.",
+        "zh-cn": "\u56de\u6eda\u64cd\u4f5c\u6267\u884c\u7684\u76ee\u6807OOS\u6267\u884cID\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "batchPauseOption": {
+      "Description": {
+        "en": "The type of batches in batch execution.",
+        "zh-cn": "\u5206\u6279\u6a21\u5f0f\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Automatic",
+        "FirstBatchPause",
+        "EveryBatchPause"
+      ],
+      "Default": "Automatic"
+    },
+    "batchNumber": {
+      "Description": {
+        "en": "The number of batches in batch execution.",
+        "zh-cn": "\u5206\u6279\u6267\u884c\u4e2d\u7684\u6279\u6b21\u3002"
+      },
+      "Type": "Number",
+      "MinValue": 1,
+      "MaxValue": 10,
+      "Default": 5
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "choiceNextTask",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by invoke type.",
+      "Properties": {
+        "DefaultTask": "whetherTosuspendProcess",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "rollback",
+                "{{ invokeType }}"
+              ]
+            },
+            "NextTask": "getResourceIds"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherTosuspendProcess",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by process.",
+        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6682\u505c\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "suspendProcess",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ enterProcess }}"
+              ]
+            },
+            "NextTask": "getInstance"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "suspendProcess",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Suspend process.",
+        "zh-cn": "\u6682\u505c\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "SuspendProcesses",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "Process": "{{ enterProcess }}"
+        }
+      }
+    },
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingInstances",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "LifecycleState": "InService"
+        }
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "ScalingInstances.ScalingInstance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "invokeByRunCommand",
+      "Action": "ACS::ESS::RunCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "commandContent": "{{ invokeScript }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "{{ commandType }}",
+        "scalingGroupId": "{{ scalingGroupId }}"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "BatchPauseOption": "{{ batchPauseOption }}",
+        "Concurrency": {
+          "Fn::CalculateBatch": [
+            "{{ batchNumber }}",
+            "{{ getInstance.instanceIds }}"
+          ]
+        },
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "whetherToResumeProcesses",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by process.",
+        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6062\u590d\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "resumeProcesses",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ exitProcess }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "resumeProcesses",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Resume process.",
+        "zh-cn": "\u6062\u590d\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ResumeProcesses",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "Process": "{{ exitProcess }}"
+        }
+      }
+    },
+    {
+      "Name": "getResourceIds",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Views resource instance.",
+        "zh-cn": "\u83b7\u53d6\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListExecutions",
+        "Parameters": {
+          "ParentExecutionId": "{{ sourceExecutionId }}"
+        }
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Executions[].Parameters.instanceId"
+        }
+      }
+    },
+    {
+      "Name": "getRollbackProcess",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Views resource parameters.",
+        "zh-cn": "\u83b7\u53d6\u6e90\u6267\u884c\u7684\u53c2\u6570\u3002"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListExecutions",
+        "Parameters": {
+          "ExecutionId": "{{ sourceExecutionId }}"
+        }
+      },
+      "Outputs": {
+        "enterProcess": {
+          "Type": "List",
+          "ValueSelector": "Executions[].Parameters.enterProcess[]"
+        },
+        "exitProcess": {
+          "Type": "List",
+          "ValueSelector": "Executions[].Parameters.exitProcess[]"
+        }
+      }
+    },
+    {
+      "Name": "suspendProcessWithRollBack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Suspend process.",
+        "zh-cn": "\u6682\u505c\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "SuspendProcesses",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "Process": "{{ getRollbackProcess.enterProcess }}"
+        }
+      }
+    },
+    {
+      "Name": "rollbackByRunCommand",
+      "Action": "ACS::ESS::RunCommand",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "commandContent": "{{ rollbackScript }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "commandType": "RunShellScript",
+        "scalingGroupId": "{{ scalingGroupId }}",
+        "rollBack": "true"
+      },
+      "Loop": {
+        "Items": "{{ getResourceIds.instanceIds }}",
+        "BatchPauseOption": "{{ batchPauseOption }}",
+        "Concurrency": {
+          "Fn::CalculateBatch": [
+            "{{ batchNumber }}",
+            "{{ getResourceIds.instanceIds }}"
+          ]
+        },
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "whetherToResumeProcessesWithRollback",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by process.",
+        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6062\u590d\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "resumeProcessesWithRollback",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ getRollbackProcess.exitProcess }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "resumeProcessesWithRollback",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Resume process.",
+        "zh-cn": "\u6062\u590d\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ResumeProcesses",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "Process": "{{ getRollbackProcess.exitProcess }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "invoke",
+              "{{ invokeType }}"
+            ]
+          },
+          "{{ invokeByRunCommand.commandOutputs }}",
+          "{{ rollbackByRunCommand.commandOutputs }}"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky run command on ECS instances.",
+    "zh-cn": "\u6279\u91cf\u5728\u591a\u53f0\u5b9e\u4f8b\u4e0a\u8fd0\u884c\u547d\u4ee4\u3002",
+    "name-en": "ACS-RDC-RunCommandByStaragent",
+    "name-zh-cn": "\u4e91\u6548\u6279\u91cf\u8fd0\u884c\u547d\u4ee4"
+  },
+  "Parameters": {
+    "instanceInfos": {
+      "Description": "The infos list of the ECS instance.",
+      "Type": "List"
+    },
+    "batchNumber": {
+      "Description": "The number of times of wholesale distribution.",
+      "Type": "Number",
+      "MinValue": 1,
+      "MaxValue": 10,
+      "Default": 5
+    },
+    "Executor": {
+      "Type": "String",
+      "Default": "aliyun_057966"
+    },
+    "DeployId": {
+      "Type": "String",
+      "Default": "1"
+    },
+    "RdcRegionId": {
+      "Type": "String",
+      "Default": "1"
+    },
+    "CorpIdentifier": {
+      "Type": "String",
+      "Default": "53082708-5ec4-4734-9299-dc986cb1845f"
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{OOSAssumeRole}}",
+  "Tasks": [
+    {
+      "Name": "loopRunCommand",
+      "Description": "Bulky run cloud assistant command.",
+      "Action": "ACS::RDC::RunCommandByStaragent",
+      "Properties": {
+        "ServiceTags": {
+          "Fn::Select": [
+            "instanceId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "CommandContent": {
+          "Fn::Select": [
+            "commandContent",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "RdcRegionId": "{{RdcRegionId}}",
+        "CorpIdentifier": "{{CorpIdentifier}}",
+        "Executor": "{{Executor}}",
+        "DeployId": "{{DeployId}}"
+      },
+      "Loop": {
+        "Items": "{{ instanceInfos }}",
+        "MaxErrors": 1,
+        "Concurrency": {
+          "Fn::CalculateBatch": [
+            "{{ batchNumber }}",
+            "{{ instanceInfos }}"
+          ]
+        },
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "InvocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ loopRunCommand.commandOutputs }}"
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Approve Bulky RunCommand.",
+    "zh-cn": "\u5ba1\u6279\u540e\u6279\u91cf\u6267\u884c\u547d\u4ee4\u3002",
+    "name-en": "ACS-ECS-ApproveBulkyRunCommand",
+    "name-zh-cn": "\u5ba1\u6279\u540e\u6279\u91cf\u6267\u884c\u547d\u4ee4",
+    "categories": [
+      "instance_manage"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "region id of instances.",
+        "zh-cn": "\u5b9e\u4f8b\u6240\u5728\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command.",
+        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance.",
+        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "webHookUrl": {
+      "Description": {
+        "en": "The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
+        "zh-cn": "\u9489\u9489\u7fa4\u52a9\u624b\u7684webhook\u5730\u5740\uff0c\u5f62\u5982https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414\uff0c\u5177\u4f53\u9489\u9489WebHook\u83b7\u53d6\u8bf7\u53c2\u8003https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5\u3002"
+      },
+      "Type": "String"
+    },
+    "atMobiles": {
+      "Description": {
+        "en": "The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.",
+        "zh-cn": "\u5ba1\u6279\u901a\u77e5\u4e2d\u88ab@\u7684\u7fa4\u6210\u5458\u7684\u9489\u9489\u624b\u673a\u53f7\uff0c\u6bd4\u5982138ALBB1234\u3002"
+      },
+      "Type": "List"
+    },
+    "atAll": {
+      "Description": {
+        "en": "Whether assistant @ all members in dingtalk group or not notification comes",
+        "zh-cn": "\u5f53\u7fa4\u52a9\u624b\u5411\u9489\u9489\u7fa4\u4e2d\u53d1\u9001\u5ba1\u6279\u901a\u77e5\u65f6\u662f\u5426@\u6240\u6709\u4eba\u3002"
+      },
+      "Type": "String",
+      "Default": "false"
+    },
+    "approvers": {
+      "Description": {
+        "en": "The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.",
+        "zh-cn": "\u53ef\u4ee5\u5ba1\u6279\u4efb\u52a1\u7684\u7528\u6237\u3002\u7528\u6237\u540d\u662fRAM\u5b50\u7528\u6237\u540d\u79f0\u4e2d@\u524d\u9762\u7684\u90e8\u5206\uff0c\u6bd4\u5982RAM\u5b50\u7528\u6237\u4e3auser001@companyAlias.onaliyun.com,\u90a3\u4e48\u5217\u8868\u4e2d\u586b\u5199user001\u5373\u53ef\u3002"
+      },
+      "Type": "List",
+      "AssociationProperty": "ALIYUN::RAM::User"
+    },
+    "minRequiredApprovals": {
+      "Description": {
+        "en": "The min required count of approvals.",
+        "zh-cn": "\u6700\u4f4e\u9700\u8981\u901a\u8fc7\u5ba1\u6279\u7684\u6570\u91cf"
+      },
+      "Type": "Number",
+      "Default": 1
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "approveBulkyRuncommand",
+      "Action": "ACS::Approve",
+      "Description": {
+        "en": "Approve operation task runcommand.",
+        "zh-cn": "\u5ba1\u6279\u8fd0\u7ef4\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "Approvers": "{{approvers}}",
+        "MinRequiredApprovals": "{{minRequiredApprovals}}",
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{webhookUrl}}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "text",
+            "text": {
+              "content": "Notify: Please approve the task execution to create ECS instance sent by {{ACS::RegionId}} oos {{ACS::ExecutionId}} ."
+            },
+            "at": {
+              "atMobiles": "{{atMobiles}}",
+              "isAtAll": "{{atAll}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "bulkyRunCommand",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Execute cloud assistant command.",
+        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "TemplateName": "ACS-ECS-BulkyRunCommand",
+        "Parameters": {
+          "regionId": "{{ regionId }}",
+          "commandContent": "{{ commandContent }}",
+          "commandType": "{{ commandType }}",
+          "targets": "{{ targets }}",
+          "rateControl": "{{ rateControl }}"
+        }
+      },
+      "Outputs": {
+        "commandOutputs": {
+          "Type": "List",
+          "ValueSelector": "commandOutputs"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ bulkyRunCommand.commandOutputs }}"
+    }
+  }
+}

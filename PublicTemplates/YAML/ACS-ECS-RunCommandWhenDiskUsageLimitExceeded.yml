@@ -1,0 +1,90 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Run command when disk usage limit is exceeded.
+  zh-cn: 当某磁盘使用率过高时执行某命令。
+  name-en: ACS-ECS-RunCommandWhenDiskUsageLimitExceeded
+  name-zh-cn: 当某磁盘使用率超过阈值时执行命令。
+  categories:
+    - alarm-trigger
+Parameters:
+  instanceId:
+    Type: String
+    Description:
+      en: The ECS instance ID to be monitored.
+      zh-cn: 将要监控的实例。
+  threshold:
+    Type: String
+    Description:
+      en: The threshold of diskusage_utilization,e.g. 80 means 80%.
+      zh-cn: 磁盘使用率阈值，如80，则意味着80%的磁盘使用率。
+  diskPartition:
+    Type: String
+    Description:
+      en: disk partition to monitor, e.g."/dev/vda1"or"C:\\".
+      zh-cn: 要监控的磁盘分区名称，如/dev/vda1或者C:\\。
+  commandType:
+    Description:
+      en: The type of cloud assistant command.
+      zh-cn: 云助手执行的运维脚本的语言类型。
+    Type: String
+    AllowedValues:
+      - RunShellScript
+      - RunBatScript
+      - RunPowerShellScript
+  commandToRun:
+    Type: String
+    Description:
+      en: The command to run when disk usage exceeds threshold.
+      zh-cn: 当磁盘使用量超过阈值时，您打算执行的命令。
+  silenceTime:
+    Type: Number
+    Description:
+      en: The silence time of alarm (seconds).
+      zh-cn: 告警通道沉默周期（秒），当监控数据持续超过报警规则阈值时，每个沉默周期内只发送1次报警通知。
+    Default: 300
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: alarmTrigger
+    Action: 'ACS::AlarmTrigger'
+    Description:
+      en: Set the diskusage_utilization alarm for specified disk partition.
+      zh-cn: 设置对某磁盘分区的使用率进行监控。
+    Properties:
+        Namespace: 'acs_ecs_dashboard'
+        MetricName: 'diskusage_utilization'
+        Statistics: 'Maximum'
+        ComparisonOperator: 'GreaterThanThreshold'
+        Threshold: '{{threshold}}'
+        Resources: '[{"instanceId":"{{ instanceId }}","device":"{{ diskPartition }}"}]'
+        Times: 1
+        SilenceTime: '{{silenceTime}}'
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: .instanceId
+  - Name: runCommand
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Run cloud assistant command on ECS instance.
+      zh-cn: 在实例中运行云助手命令。
+    Properties:
+      commandContent: '{{ commandToRun }}'
+      commandType: '{{ commandType }}'
+      instanceId: '{{ instanceId }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  instanceId:
+    Value: '{{ alarmTrigger.instanceId }}'
+    Type: String
+  commandOutput:
+    Type: String
+    Value: '{{ runCommand.commandOutput }}'

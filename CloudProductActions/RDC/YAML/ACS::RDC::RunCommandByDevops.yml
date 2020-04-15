@@ -1,0 +1,81 @@
+Description: 'Example template, describe instances in some status'
+FormatVersion: OOS-2019-06-01
+Parameters:
+  CorpIdentifier:
+    Type: String
+    Default: 53082708-5ec4-4734-9299-dc986cb1845f
+  CommandContent:
+    Type: String
+    Default: echo hello
+  RdcRegionId:
+    Type: String
+    Default: '1799'
+  Executor:
+    Type: String
+    Default: aliyun_057966
+  DeployId:
+    Type: String
+    Default: '1'
+  ServiceTags:
+    Type: String
+    Default: be430824-bc3b-4cca-b81c-8da0f8a25a90
+Tasks:
+  - Name: runCommand
+    Action: 'ACS::ExecuteAPI'
+    Properties:
+      Service: devops-inner
+      API: RunStaragentCommand
+      Parameters:
+        CorpIdentifier: '{{CorpIdentifier}}'
+        CommandContent: '{{CommandContent}}'
+        RdcRegionId: '{{RdcRegionId}}'
+        Executor: '{{Executor}}'
+        DeployId: '{{DeployId}}'
+        ServiceTags: '{{ServiceTags}}'
+    Outputs:
+      InvokeId:
+        Type: String
+        ValueSelector: 'Data.tasks[].uid'
+  - Name: untilInvocationReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the command to be completed.
+    Delay: 5
+    Retries: 240
+    DelayType: Constant
+    OnError: getRunCommandResult
+    Properties:
+      Service: devops-inner
+      API: DescribeStaragentCommand
+      Parameters:
+        CorpIdentifier: '{{CorpIdentifier}}'
+        RdcRegionId: '{{RdcRegionId}}'
+        Executor: '{{Executor}}'
+        DeployId: '{{DeployId}}'
+        Uid: '{{runCommand.InvokeId}}'
+        ServiceTag: '{{ServiceTags}}'
+      DesiredValues:
+        - Success
+      StopRetryValues:
+        - Failed
+      PropertySelector: Data.status
+  - Name: getRunCommandResult
+    Action: 'ACS::ExecuteApi'
+    Description: Gets the command result.
+    Properties:
+      Service: devops-inner
+      API: DescribeStaragentCommand
+      Parameters:
+        CorpIdentifier: '{{CorpIdentifier}}'
+        RdcRegionId: '{{RdcRegionId}}'
+        Executor: '{{Executor}}'
+        DeployId: '{{DeployId}}'
+        Uid: '{{runCommand.InvokeId}}'
+        ServiceTag: '{{ServiceTags}}'
+    Outputs:
+      InvocationOutput:
+        Type: String
+        ValueSelector: Data.jobResult
+Outputs:
+  InvocationOutput:
+    Type: String
+    Value: '{{ getRunCommandResult.InvocationOutput }}'

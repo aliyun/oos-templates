@@ -1,0 +1,49 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Invoke the function and return the result.
+  zh-cn: 执行函数计算，并返回函数计算的结果。
+  name-en: ACS-FC-InvokeFunction
+  name-zh-cn: 执行函数计算
+Parameters:
+  serviceName:
+    Description:
+      en: Service name To Invoke.
+      zh-cn: 需要被执行函数的服务名称。
+    Type: String
+  functionName:
+    Description:
+      en: Function name To Invoke.
+      zh-cn: 需要被执行函数的函数名称。
+    Type: String
+  parameters:
+    Description:
+      en: The parameters required by the function to invoke.
+      zh-cn: 函数计算内部的执行函数需要的参数。
+    Type: String
+    Default: ''
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: invokeFunction
+    Action: ACS::FC::InvokeFunction
+    Description:
+      en: Invoke the function.
+      zh-cn: 执行函数计算。
+    Properties:
+      functionName: '{{ functionName }}'
+      serviceName: '{{ serviceName }}'
+      invocationType: Sync
+      event: '{{ parameters }}'
+    Outputs:
+      invokeData:
+        Type: String
+        ValueSelector: data
+Outputs:
+  invokeData:
+    Type: String
+    Value: '{{ invokeFunction.invokeData }}'

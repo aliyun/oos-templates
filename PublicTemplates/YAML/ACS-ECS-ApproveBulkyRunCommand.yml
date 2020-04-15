@@ -1,0 +1,132 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Approve Bulky RunCommand.
+  zh-cn: 审批后批量执行命令。
+  name-en: ACS-ECS-ApproveBulkyRunCommand
+  name-zh-cn: 审批后批量执行命令
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: region id of instances.
+      zh-cn: 实例所在地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  commandType:
+    Description:
+      en: The type of command.
+      zh-cn: 云助手命令类型。
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    Default: RunShellScript
+  commandContent:
+    Description:
+      en: Command content to run in ECS instance.
+      zh-cn: 在ECS实例中执行的云助手命令。
+    Type: String
+    AssociationProperty: Code
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  webHookUrl:
+    Description:
+      en: >-
+        The webhook url of dingtalk group assistant,
+        e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.
+      zh-cn: >-
+        钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。
+    Type: String
+  atMobiles:
+    Description:
+      en: The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.
+      zh-cn: 审批通知中被@的群成员的钉钉手机号，比如138ALBB1234。
+    Type: List
+  atAll:
+    Description:
+      en: 'Whether assistant @ all members in dingtalk group or not notification comes'
+      zh-cn: 当群助手向钉钉群中发送审批通知时是否@所有人。
+    Type: String
+    Default: 'false'
+  approvers:
+    Description:
+      en: The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.
+      zh-cn: 可以审批任务的用户。用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可。
+    Type: List
+    AssociationProperty: ALIYUN::RAM::User
+  minRequiredApprovals:
+    Description:
+          en: The min required count of approvals.
+          zh-cn: 最低需要通过审批的数量
+    Type: Number
+    Default: 1
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: approveBulkyRuncommand
+    Action: 'ACS::Approve'
+    Description:
+      en: Approve operation task runcommand.
+      zh-cn: 审批运维任务。
+    Properties:
+      Approvers: '{{approvers}}'
+      MinRequiredApprovals: '{{minRequiredApprovals}}'
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{webhookUrl}}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: text
+          text:
+            content: >-
+              Notify: Please approve the task execution to create ECS instance sent by
+              {{ACS::RegionId}} oos {{ACS::ExecutionId}} .
+          at:
+            atMobiles: '{{atMobiles}}'
+            isAtAll: '{{atAll}}'
+
+  - Name: bulkyRunCommand
+    Action: ACS::Template
+    Description:
+      en: Execute cloud assistant command.
+      zh-cn: 执行云助手命令。
+    Properties:
+      TemplateName: ACS-ECS-BulkyRunCommand
+      Parameters:
+        regionId: '{{ regionId }}'
+        commandContent: '{{ commandContent }}'
+        commandType: '{{ commandType }}'
+        targets: '{{ targets }}'
+        rateControl: '{{ rateControl }}'
+    Outputs:
+      commandOutputs:
+        Type: List
+        ValueSelector: commandOutputs
+Outputs:
+  commandOutputs:
+    Type: List
+    Value: '{{ bulkyRunCommand.commandOutputs }}'

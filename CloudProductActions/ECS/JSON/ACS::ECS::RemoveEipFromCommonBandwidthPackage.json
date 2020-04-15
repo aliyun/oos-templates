@@ -1,0 +1,79 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Remove EIP from common bandwidth package.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "eipAddress": {
+      "Description": "The list of Eip address.",
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getEipAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Views the id of Eip.",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "EipAddress": "{{ eipAddress }}"
+        }
+      },
+      "Outputs": {
+        "allocationId": {
+          "Type": "String",
+          "ValueSelector": "EipAddresses.EipAddress[].AllocationId"
+        },
+        "bandwidthPackageId": {
+          "Type": "String",
+          "ValueSelector": "EipAddresses.EipAddress[].BandwidthPackageId"
+        }
+      }
+    },
+    {
+      "Name": "whetherEipInPackage",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by Eip status.",
+      "Properties": {
+        "DefaultTask": "removeCommonBandwidthPackageEip",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "",
+                "{{ getEipAttribute.bandwidthPackageId }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "removeCommonBandwidthPackageEip",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Removes Eip from CommonBandwidthPackage.",
+      "Properties": {
+        "Service": "VPC",
+        "API": "RemoveCommonBandwidthPackageIp",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "BandwidthPackageId": "{{ getEipAttribute.bandwidthPackageId }}",
+          "IpInstanceId": "{{ getEipAttribute.allocationId }}"
+        }
+      }
+    }
+  ]
+}

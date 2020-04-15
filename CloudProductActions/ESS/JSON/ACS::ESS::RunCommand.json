@@ -1,0 +1,274 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Creates a cloud assistant command and triggers it on one ECS instance.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "rollBack": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false"
+    },
+    "commandContent": {
+      "Description": "The content of command.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of ECS instance that will invoke command.",
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "commandType": {
+      "Description": "The type of command.",
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript"
+      ]
+    },
+    "workingDir": {
+      "Description": "The directory where the created command runs on the ECS instances.",
+      "Type": "String",
+      "Default": ""
+    },
+    "timeout": {
+      "Description": "The value of the invocation timeout period of a command on ECS instances.",
+      "Type": "Number",
+      "Default": 600
+    },
+    "scalingGroupId": {
+      "Description": "The id of scaling group.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "viewInstanceLifecycleState",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Views ECS instance lifecycle status.",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId1": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "lifecycleState": {
+          "Type": "String",
+          "ValueSelector": "ScalingInstances.ScalingInstance[].LifecycleState"
+        }
+      }
+    },
+    {
+      "Name": "whetherLifecycleStateIsStandby",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by lifecycle status.",
+      "Properties": {
+        "DefaultTask": "enterStandby",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Standby",
+                "{{ viewInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "runCommand"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "enterStandby",
+      "Action": "ACS::WaitFor",
+      "Description": "Enter standby.",
+      "Retries": 15,
+      "Delay": 10,
+      "Properties": {
+        "Service": "ESS",
+        "API": "EnterStandby",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Executes a cloud assistant command.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "RunCommand",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "CommandContent": "{{ commandContent }}",
+          "InstanceIds": [
+            "{{instanceId}}"
+          ],
+          "Name": "{{ ACS::ExecutionId }}",
+          "Type": "{{ commandType }}",
+          "WorkingDir": "{{ workingDir }}",
+          "Timeout": "{{ timeout }}"
+        }
+      },
+      "Outputs": {
+        "invokeId": {
+          "Type": "String",
+          "ValueSelector": "InvokeId"
+        }
+      }
+    },
+    {
+      "Name": "untilInvocationReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the command to be completed.",
+      "OnError": "ACS::END",
+      "Retries": 20,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocations",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.invokeId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "StopRetryValues": [
+          "Failed"
+        ],
+        "PropertySelector": "Invocations.Invocation[].InvokeStatus"
+      }
+    },
+    {
+      "Name": "describeInvocationResults",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.invokeId }}"
+        }
+      },
+      "Outputs": {
+        "invocationResult": {
+          "Type": "String",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].Output"
+        }
+      }
+    },
+    {
+      "Name": "checkInvocationResult",
+      "Action": "ACS::CheckFor",
+      "Description": "Check the command exitcode of a cloud assistant command.",
+      "OnError": "ACS::END",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.InvokeId }}"
+        },
+        "PropertySelector": "Invocation.InvocationResults.InvocationResult[].ExitCode",
+        "DesiredValues": [
+          0
+        ]
+      }
+    },
+    {
+      "Name": "whetherToRollbackExitStandBy",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by rollback status.",
+      "Properties": {
+        "DefaultTask": "whetherToExitStandBy",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ rollBack }}"
+              ]
+            },
+            "NextTask": "exitStandBy"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherToExitStandBy",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by lifecycle status.",
+      "Properties": {
+        "DefaultTask": "exitStandBy",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Standby",
+                "{{ viewInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "exitStandBy",
+      "Action": "ACS::WaitFor",
+      "Description": "Exit standby.",
+      "Retries": 15,
+      "Delay": 10,
+      "Properties": {
+        "Service": "ESS",
+        "API": "ExitStandBy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    }
+  ],
+  "Outputs": {
+    "invocationOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::Base64Decode": "{{ describeInvocationResults.invocationResult }}"
+      }
+    }
+  }
+}

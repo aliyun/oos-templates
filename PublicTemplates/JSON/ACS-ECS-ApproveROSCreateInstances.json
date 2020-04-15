@@ -1,0 +1,227 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Create ECS instances by ROS with approval.",
+    "zh-cn": "\u5ba1\u6279\u901a\u8fc7ROS\u521b\u5efaECS\u3002",
+    "name-en": "ACS-ECS-ApproveROSCreateInstances",
+    "name-zh-cn": "\u5ba1\u6279\u901a\u8fc7ROS\u521b\u5efaECS",
+    "categories": [
+      "cost_manage"
+    ]
+  },
+  "Parameters": {
+    "imageId": {
+      "Description": {
+        "en": "The image id of ECS instance to create.",
+        "zh-cn": "\u5c06\u521b\u5efa\u5b9e\u4f8b\u7684\u955c\u50cfID\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The instance type of ECS instance to create.",
+        "zh-cn": "\u5c06\u521b\u5efa\u5b9e\u4f8b\u7684\u89c4\u683c\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType"
+    },
+    "zoneId": {
+      "Description": {
+        "en": "The zone id of VSwitch to create.",
+        "zh-cn": "\u5c06\u521b\u5efa\u4ea4\u6362\u673a\u7684\u53ef\u7528\u533aID\u3002"
+      },
+      "Type": "String"
+    },
+    "webHookUrl": {
+      "Description": {
+        "en": "The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
+        "zh-cn": "\u9489\u9489\u7fa4\u52a9\u624b\u7684webhook\u5730\u5740\uff0c\u5f62\u5982https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414\uff0c\u5177\u4f53\u9489\u9489WebHook\u83b7\u53d6\u8bf7\u53c2\u8003https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5\u3002"
+      },
+      "Type": "String"
+    },
+    "atMobiles": {
+      "Description": {
+        "en": "The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.",
+        "zh-cn": "\u5ba1\u6279\u901a\u77e5\u4e2d\u88ab@\u7684\u7fa4\u6210\u5458\u7684\u9489\u9489\u624b\u673a\u53f7\uff0c\u6bd4\u5982138ALBB1234\u3002"
+      },
+      "Type": "List"
+    },
+    "atAll": {
+      "Description": {
+        "en": "Whether assistant @ all members in dingtalk group or not notification comes",
+        "zh-cn": "\u5f53\u7fa4\u52a9\u624b\u5411\u9489\u9489\u7fa4\u4e2d\u53d1\u9001\u5ba1\u6279\u901a\u77e5\u65f6\u662f\u5426@\u6240\u6709\u4eba\u3002"
+      },
+      "Type": "String",
+      "Default": "false"
+    },
+    "approvers": {
+      "Description": {
+        "en": "The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.",
+        "zh-cn": "\u53ef\u4ee5\u5ba1\u6279\u4efb\u52a1\u7684\u7528\u6237\u3002\u7528\u6237\u540d\u662fRAM\u5b50\u7528\u6237\u540d\u79f0\u4e2d@\u524d\u9762\u7684\u90e8\u5206\uff0c\u6bd4\u5982RAM\u5b50\u7528\u6237\u4e3auser001@companyAlias.onaliyun.com,\u90a3\u4e48\u5217\u8868\u4e2d\u586b\u5199user001\u5373\u53ef\u3002"
+      },
+      "Type": "List",
+      "AssociationProperty": "ALIYUN::RAM::User"
+    },
+    "minRequiredApprovals": {
+      "Description": {
+        "en": "The min required count of approvals.",
+        "zh-cn": "\u6700\u4f4e\u9700\u8981\u901a\u8fc7\u5ba1\u6279\u7684\u6570\u91cf"
+      },
+      "Type": "Number",
+      "Default": 1
+    },
+    "instancesCount": {
+      "Description": {
+        "en": "The count of ECS instance to create.",
+        "zh-cn": "\u5c06\u521b\u5efa\u5b9e\u4f8b\u7684\u6570\u91cf\u3002"
+      },
+      "Type": "Number"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "approveCreateInstances",
+      "Action": "ACS::Approve",
+      "Description": {
+        "en": "Approve task creating ECS instances.",
+        "zh-cn": "\u5ba1\u6279\u540e\u6279\u91cf\u521b\u5efaECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Approvers": "{{approvers}}",
+        "MinRequiredApprovals": "{{minRequiredApprovals}}",
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{webhookUrl}}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "text",
+            "text": {
+              "content": "Notify: Please approve the task execution to create ECS instance sent by {{ACS::RegionId}} oos {{ACS::ExecutionId}}."
+            },
+            "at": {
+              "atMobiles": "{{atMobiles}}",
+              "isAtAll": "{{atAll}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create a resource stack.",
+        "zh-cn": "\u521b\u5efa\u8d44\u6e90\u6808\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "StackName": "OOS-{{ACS::ExecutionId}}",
+          "TimeoutInMinutes": 10,
+          "DisableRollback": false,
+          "Parameters": [
+            {
+              "ParameterKey": "instanceType",
+              "ParameterValue": "{{ instanceType }}"
+            },
+            {
+              "ParameterKey": "zoneId",
+              "ParameterValue": "{{ zoneId }}"
+            },
+            {
+              "ParameterKey": "regionId",
+              "ParameterValue": "{{ ACS::RegionId  }}"
+            },
+            {
+              "ParameterKey": "imageId",
+              "ParameterValue": "{{imageId}}"
+            },
+            {
+              "ParameterKey": "executionId",
+              "ParameterValue": "{{ ACS::ExecutionId }}"
+            },
+            {
+              "ParameterKey": "instancesCount",
+              "ParameterValue": "{{ instancesCount }}"
+            }
+          ],
+          "TemplateBody": "{\n  \"Description\": \"Create VPC ECS instance\",\n  \"Parameters\": {\n    \"imageId\": {\n      \"Type\": \"String\"\n    },\n    \"instanceType\": {\n      \"Type\": \"String\"\n    },\n    \"executionId\": {\n      \"Type\": \"String\"\n    },\n    \"instancesCount\": {\n      \"Type\": \"String\"\n    },\n    \"zoneId\": {\n      \"Type\": \"String\"\n    },\n    \"regionId\": {\n      \"Type\": \"String\"\n    },\n    \"resourcePrefix\": {\n      \"Type\": \"String\",\n      \"Default\": \"oos-generated\"\n    }\n  },\n  \"ROSTemplateFormatVersion\": \"2015-09-01\",\n  \"Outputs\": {\n    \"ecs_instance_id\": {\n      \"Value\": {\n        \"Fn::GetAtt\": [\n          \"ecs\",\n          \"InstanceIds\"\n        ]\n      }\n    }\n  },\n  \"Resources\": {\n    \"vswitch\": {\n      \"Type\": \"ALIYUN::ECS::VSwitch\",\n      \"Properties\": {\n        \"VpcId\": {\n          \"Ref\": \"vpc\"\n        },\n        \"Description\": {\n          \"Fn::Join\": [\n            \" \",\n            [\n              \"OOS execution id is\",\n              {\n                \"Ref\": \"executionId\"\n              }\n            ]\n          ]\n        },\n        \"ZoneId\": {\n          \"Ref\": \"zoneId\"\n        },\n        \"CidrBlock\": \"192.168.0.0/16\"\n      }\n    },\n    \"sg\": {\n      \"Type\": \"ALIYUN::ECS::SecurityGroup\",\n      \"Properties\": {\n        \"Tags\": [\n          {\n            \"Key\": \"oos-generated\",\n            \"Value\": {\n              \"Ref\": \"executionId\"\n            }\n          },\n          {\n            \"Key\": \"region\",\n            \"Value\": {\n              \"Ref\": \"regionId\"\n            }\n          }\n        ],\n        \"VpcId\": {\n          \"Ref\": \"vpc\"\n        },\n        \"SecurityGroupName\": {\n          \"Fn::Join\": [\n            \"-\",\n            [\n              {\n                \"Ref\": \"resourcePrefix\"\n              },\n              \"sg\"\n            ]\n          ]\n        },\n        \"SecurityGroupEgress\": [\n          {\n            \"PortRange\": \"-1/-1\",\n            \"Priority\": 1,\n            \"IpProtocol\": \"all\",\n            \"DestCidrIp\": \"0.0.0.0/0\",\n            \"NicType\": \"intranet\"\n          }\n        ]\n      }\n    },\n    \"vpc\": {\n      \"Type\": \"ALIYUN::ECS::VPC\",\n      \"Properties\": {\n        \"CidrBlock\": \"192.168.0.0/16\",\n        \"Description\": {\n          \"Fn::Join\": [\n            \" \",\n            [\n              \"OOS execution id is\",\n              {\n                \"Ref\": \"executionId\"\n              }\n            ]\n          ]\n        },\n        \"VpcName\": {\n          \"Fn::Join\": [\n            \"-\",\n            [\n              {\n                \"Ref\": \"resourcePrefix\"\n              },\n              \"vpc\"\n            ]\n          ]\n        }\n      }\n    },\n    \"ecs\": {\n      \"Type\": \"ALIYUN::ECS::InstanceGroup\",\n      \"Properties\": {\n        \"ImageId\": {\n          \"Ref\": \"imageId\"\n        },\n        \"SecurityGroupId\": {\n          \"Ref\": \"sg\"\n        },\n        \"VpcId\": {\n          \"Ref\": \"vpc\"\n        },\n        \"VSwitchId\": {\n          \"Ref\": \"vswitch\"\n        },\n        \"InstanceType\": {\n          \"Ref\": \"instanceType\"\n        },\n        \"MinAmount\": {\n          \"Ref\": \"instancesCount\"\n        },\n        \"MaxAmount\": {\n          \"Ref\": \"instancesCount\"\n        },\n        \"Tags\": [\n          {\n            \"Key\": \"oos-generated\",\n            \"Value\": {\n              \"Ref\": \"executionId\"\n            }\n          },\n          {\n            \"Key\": \"region\",\n            \"Value\": {\n              \"Ref\": \"regionId\"\n            }\n          }\n        ]\n      }\n    }\n  }\n}\n"
+        }
+      },
+      "Outputs": {
+        "StackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilStackReady",
+      "OnSuccess": "ACS::END",
+      "OnError": "deleteStack",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the stack status CREATE_COMPLETE.",
+        "zh-cn": "\u7b49\u5f85\u8d44\u6e90\u6808\u81f3\u521b\u5efa\u6210\u529f\u72b6\u6001\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "String",
+          "ValueSelector": "Outputs[0].OutputValue"
+        }
+      }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Delete the stack.",
+        "zh-cn": "\u5220\u9664\u8d44\u6e90\u6808\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceIds": {
+      "Type": "List",
+      "Value": "{{ untilStackReady.instanceIds }}"
+    }
+  }
+}

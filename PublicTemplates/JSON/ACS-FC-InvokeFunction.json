@@ -1,0 +1,70 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Invoke the function and return the result.",
+    "zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97\uff0c\u5e76\u8fd4\u56de\u51fd\u6570\u8ba1\u7b97\u7684\u7ed3\u679c\u3002",
+    "name-en": "ACS-FC-InvokeFunction",
+    "name-zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97"
+  },
+  "Parameters": {
+    "serviceName": {
+      "Description": {
+        "en": "Service name To Invoke.",
+        "zh-cn": "\u9700\u8981\u88ab\u6267\u884c\u51fd\u6570\u7684\u670d\u52a1\u540d\u79f0\u3002"
+      },
+      "Type": "String"
+    },
+    "functionName": {
+      "Description": {
+        "en": "Function name To Invoke.",
+        "zh-cn": "\u9700\u8981\u88ab\u6267\u884c\u51fd\u6570\u7684\u51fd\u6570\u540d\u79f0\u3002"
+      },
+      "Type": "String"
+    },
+    "parameters": {
+      "Description": {
+        "en": "The parameters required by the function to invoke.",
+        "zh-cn": "\u51fd\u6570\u8ba1\u7b97\u5185\u90e8\u7684\u6267\u884c\u51fd\u6570\u9700\u8981\u7684\u53c2\u6570\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "invokeFunction",
+      "Action": "ACS::FC::InvokeFunction",
+      "Description": {
+        "en": "Invoke the function.",
+        "zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97\u3002"
+      },
+      "Properties": {
+        "functionName": "{{ functionName }}",
+        "serviceName": "{{ serviceName }}",
+        "invocationType": "Sync",
+        "event": "{{ parameters }}"
+      },
+      "Outputs": {
+        "invokeData": {
+          "Type": "String",
+          "ValueSelector": "data"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "invokeData": {
+      "Type": "String",
+      "Value": "{{ invokeFunction.invokeData }}"
+    }
+  }
+}

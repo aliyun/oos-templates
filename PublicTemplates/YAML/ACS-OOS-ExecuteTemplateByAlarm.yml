@@ -1,0 +1,93 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Execute specified template when alarm is raised according to alarm rule. AlarmTrigger will always run until being canceled.
+  zh-cn: 指定告警规则，当告警发生时执行指定的模板。在主动取消前告警触发器会一直运行。
+  name-en: ACS-OOS-ExecuteTemplateByAlarm
+  name-zh-cn: 在告警发生时执行指定的模板
+  categories:
+    - alarm-trigger
+Parameters:
+  alarmTriggerProperties:
+    Description:
+      en: The properties of alarm trigger task.
+      zh-cn: 告警触发任务的属性。
+    Type: Json
+  alarmOutputTransformer:
+    Description:
+      en: The transformer from alarm message to template parameters.
+      zh-cn: 告警消息体到调用模板参数的转换器。
+    Type: Json
+  templateName:
+    Description:
+      en: The name of template to trigger.
+      zh-cn: 触发的模板名称。
+    Type: String
+    AssociationProperty: TemplateName
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: alarmTrigger
+    Action: 'ACS::AlarmTrigger'
+    Properties:
+      Namespace:
+        'Fn::Select':
+          - namespace
+          - '{{ alarmTriggerProperties }}'
+      MetricName:
+        'Fn::Select':
+          - metricName
+          - '{{ alarmTriggerProperties }}'
+      Statistics:
+        'Fn::Select':
+          - statistics
+          - '{{ alarmTriggerProperties }}'
+      ComparisonOperator:
+        'Fn::Select':
+          - comparisonOperator
+          - '{{ alarmTriggerProperties }}'
+      Threshold:
+        'Fn::Select':
+          - threshold
+          - '{{ alarmTriggerProperties }}'
+      Resources:
+        'Fn::Select':
+          - resources
+          - '{{ alarmTriggerProperties }}'
+      Times:
+        'Fn::Select':
+          - times
+          - '{{ alarmTriggerProperties }}'
+      Period:
+        'Fn::Select':
+          - period
+          - '{{ alarmTriggerProperties }}'
+      Interval:
+        'Fn::Select':
+          - interval
+          - '{{ alarmTriggerProperties }}'
+      SilenceTime:
+        'Fn::Select':
+          - silenceTime
+          - '{{ alarmTriggerProperties }}'
+      EffectiveInterval:
+        'Fn::Select':
+          - effectiveInterval
+          - '{{ alarmTriggerProperties }}'
+      OutputTransformer: '{{ alarmOutputTransformer }}'
+    Outputs:
+      templateParameters:
+        Type: Json
+        ValueSelector: .
+  - Name: executeTemplate
+    Action: 'ACS::Template'
+    Description:
+      en: Execute template.
+      zh-cn: 执行模板。
+    Properties:
+      TemplateName: '{{ templateName }}'
+      Parameters: '{{ alarmTrigger.templateParameters }}'

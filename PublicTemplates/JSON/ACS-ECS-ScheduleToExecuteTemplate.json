@@ -1,0 +1,89 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Schedules to execute specified template.",
+    "zh-cn": "\u5b9a\u65f6\u6267\u884c\u6307\u5b9a\u6a21\u677f\u3002",
+    "name-en": "ACS-ECS-ScheduleToExecuteTemplate",
+    "name-zh-cn": "\u5b9a\u65f6\u6267\u884c\u6307\u5b9a\u6a21\u677f",
+    "categories": [
+      "time_trigger"
+    ]
+  },
+  "Parameters": {
+    "timerTrigger": {
+      "Type": "Json"
+    },
+    "templateName": {
+      "Type": "String",
+      "AssociationProperty": "TemplateName"
+    },
+    "templateParameters": {
+      "Description": {
+        "en": "Template paremeters to execute with.",
+        "zh-cn": "\u89e6\u53d1\u6267\u884c\u6a21\u677f\u7684\u53c2\u6570\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "TemplateParameter",
+      "AssociationPropertyMetadata": {
+        "TemplateName": "$templateName"
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying type and expression.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u89e6\u53d1\u7c7b\u578b\u548c\u8868\u8fbe\u5f0f\u6309\u8ba1\u5212\u89e6\u53d1\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "Type": {
+          "Fn::Select": [
+            "type",
+            "{{timerTrigger}}"
+          ]
+        },
+        "Expression": {
+          "Fn::Select": [
+            "expression",
+            "{{timerTrigger}}"
+          ]
+        },
+        "EndDate": {
+          "Fn::Select": [
+            "endDate",
+            "{{ timerTrigger }}"
+          ]
+        },
+        "TimeZone": {
+          "Fn::Select": [
+            "timeZone",
+            "{{ timerTrigger }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "executeTemplate",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Execute template.",
+        "zh-cn": "\u6267\u884c\u6a21\u677f\u3002"
+      },
+      "Properties": {
+        "TemplateName": "{{ templateName }}",
+        "Parameters": "{{ templateParameters }}"
+      }
+    }
+  ]
+}

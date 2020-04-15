@@ -1,0 +1,145 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedule to start and stop ECS instances.
+  zh-cn: 定时开启和停止ECS实例。
+  name-en: ACS-ECS-ScheduleToStartAndStopInstances
+  name-zh-cn: 定时开启和停止ECS实例
+  categories:
+    - time_trigger
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  dailyStartTime:
+    Description:
+      en: Daily start instance time.
+      zh-cn: 每天开启实例的时间。
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'HH:mm:ssZ'
+  dailyStopTime:
+    Description:
+      en: Daily stop instance time.
+      zh-cn: 每天停止实例的时间。
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'HH:mm:ssZ'
+  weekdays:
+    Description:
+      en: 'The Cycle of task，* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday，refer them here: https://www.alibabacloud.com/help/doc-detail/64769.htm'
+      zh-cn: '任务执行的周期，*表示每天，MON表示仅周一，MON-FRI表示周一到周五。详情参考：https://www.alibabacloud.com/help/zh/faq-detail/64769.htm'
+    Type: String
+    Default: MON-FRI
+  targets:
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  stoppedMode:
+    Description:
+      en: Indicates whether the ECS instance is still charged after it is stopped.
+      zh-cn: 停止按量付费ECS实例后，是否继续计费.
+    Type: String
+    AllowedValues:
+      - StopCharging
+      - KeepCharging
+      - ''
+    Default: ''
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 100%
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: timerTrigger
+    Action: 'ACS::TimerTrigger'
+    Description:
+      en: Triggers a task as scheduled by specifying Cron expression.
+      zh-cn: 通过指定Cron表达式按计划触发任务。
+    Properties:
+      Type: cron
+      EndDate: '2099-12-01T00:00:00Z'
+      Expression:
+        'Fn::Join':
+          - ' '
+          - - '0'
+            - 'Fn::Select':
+                - 1
+                - 'Fn::Split':
+                    - ':'
+                    - '{{ dailyStartTime }}'
+            - 'Fn::Select':
+                - 0
+                - 'Fn::Split':
+                    - ':'
+                    - '{{ dailyStartTime }}'
+            - '?'
+            - '*'
+            - '{{ weekdays }}'
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances.
+      zh-cn: 获取ECS实例。
+    Action: 'ACS::SelectTargets'
+    Properties:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: 'Instances.Instance[].InstanceId'
+  - Name: startInstance
+    Action: 'ACS::ECS::StartInstance'
+    Description:
+      en: Starts the ECS instances.
+      zh-cn: 开启实例。
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+  - Name: sleepToSpecifiedTime
+    Description:
+      en: Sleep to instance stop time.
+      zh-cn: 睡眠到实例停止时间。
+    Action: 'ACS::Sleep'
+    Properties:
+      EndDate:
+        'Fn::FormatUTCTime':
+          - 'Fn::CalculateTimeByOpsWindow':
+              - '{{ dailyStopTime }}'
+              - '{{ dailyStopTime }}'
+          - '%Y-%m-%dT%H:%M:%SZ'
+  - Name: stopInstance
+    Action: 'ACS::ECS::StopInstance'
+    Description:
+      en: Stops the ECS instances.
+      zh-cn: 停止实例。
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      stoppedMode: '{{ stoppedMode }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'

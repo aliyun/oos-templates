@@ -1,0 +1,838 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "When using ECS instances, some situations can lead to system disk corruption, such as instances being forced to stop or restart, or sudden downtime, failure to update /etc/fstab when the disk is unloaded, or even loss or corruption of /etc/fstab or initrd files. When the instance cannot be accessed, the state of the instance displayed in the ECS instance console may still be Running, but the application in the instance cannot be accessed, the network in the instance cannot be reached, and the connection cannot be established through workbench or SSH. If you can connect to an instance from the console with VNC, you will probably see a page that indicates a system startup failure. At this point, you can consider executing the template to cure the damaged instance. The cure process is that the system disk of the damaged instance will be mounted to the newly created temporary instance, then a cure script will be executed in the temporary instance, and finally the cured system disk will be mounted back to the original instance.",
+    "zh-cn": "\u4f7f\u7528ECS\u5b9e\u4f8b\u65f6\uff0c\u6709\u4e9b\u60c5\u51b5\u53ef\u80fd\u5bfc\u81f4\u7cfb\u7edf\u76d8\u635f\u4f24\uff0c\u6bd4\u5982\u5b9e\u4f8b\u88ab\u5f3a\u5236\u5730\u505c\u6b62\u6216\u91cd\u542f\uff0c\u6291\u6216\u7a81\u7136\u53d1\u751f\u4e86\u5b95\u673a\uff0c\u4ee5\u53ca\u6570\u636e\u76d8\u88ab\u5378\u8f7d\u540e\u672a\u66f4\u65b0/etc/fstab\uff0c\u751a\u81f3\u4e8e/etc/fstab\u6216initrd\u6587\u4ef6\u4e22\u5931\u6216\u635f\u574f\u3002\u5f53\u65e0\u6cd5\u8bbf\u95ee\u5b9e\u4f8b\u65f6\uff0c\u8be5\u5b9e\u4f8b\u5728ECS\u5b9e\u4f8b\u63a7\u5236\u53f0\u663e\u793a\u7684\u72b6\u6001\u53ef\u80fd\u8fd8\u662f\u8fd0\u884c\u4e2d\uff0c\u4f46\u5b9e\u4f8b\u5185\u7684\u5e94\u7528\u4e0d\u53ef\u8bbf\u95ee\uff0c\u5b9e\u4f8b\u5185\u7684\u7f51\u7edc\u4e0d\u53ef\u8fbe\uff0c\u66f4\u65e0\u6cd5\u901a\u8fc7workbench\u6216\u8005ssh\u5efa\u7acb\u8fde\u63a5\u3002\u5982\u679c\u60a8\u5728\u63a7\u5236\u53f0\u901a\u8fc7vnc\u80fd\u8fde\u63a5\u4e0a\u5b9e\u4f8b\uff0c\u770b\u5230\u7684\u9875\u9762\u5927\u6982\u662f\u7cfb\u7edf\u542f\u52a8\u5931\u8d25\u7684\u63d0\u793a\u4fe1\u606f\u3002\u6b64\u65f6\u60a8\u53ef\u8003\u8651\u6267\u884c\u8be5\u6a21\u7248\u5bf9\u635f\u4f24\u5b9e\u4f8b\u8fdb\u884c\u6551\u6cbb\uff0c\u6551\u6cbb\u6d41\u7a0b\u4e3b\u8981\u662f\u635f\u4f24\u7684\u5b9e\u4f8b\u7684\u7cfb\u7edf\u76d8\u5c06\u88ab\u6302\u8f7d\u5230\u65b0\u521b\u5efa\u7684\u4e34\u65f6\u5b9e\u4f8b\u4e0a\uff0c\u63a5\u7740\u5728\u4e34\u65f6\u5b9e\u4f8b\u4e2d\u4f1a\u6267\u884c\u4e00\u6bb5\u6551\u6cbb\u811a\u672c\uff0c\u6700\u540e\u6551\u6cbb\u8fc7\u7684\u7cfb\u7edf\u76d8\u5c06\u88ab\u6302\u8f7d\u56de\u539f\u5b9e\u4f8b\u3002",
+    "name-en": "ACS-ECS-RescueUnreachableInstance-Linux",
+    "name-zh-cn": "\u81ea\u52a9\u6551\u6cbb\u635f\u4f24\u7684ECS\u5b9e\u4f8bLinux\u7cfb\u7edf\u76d8",
+    "categories": [
+      "diagnose"
+    ]
+  },
+  "Parameters": {
+    "unreachableInstanceId": {
+      "Description": {
+        "en": "ID of your unreachable ECS instance.",
+        "zh-cn": "\u5c06\u81ea\u6551\u7684ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String"
+    },
+    "credentialType": {
+      "Description": {
+        "en": "Credential Type for your unreachable ECS instance after being rescued, either KeyPairName or Password type can be chosen.",
+        "zh-cn": "\u5f53\u6267\u884c\u81ea\u6551ECS\u5b9e\u4f8b\u540e\uff0c\u5b9e\u4f8broot\u767b\u5f55\u51ed\u8bc1\u7c7b\u578b\uff0c\u53ef\u9009\u62e9\u5bc6\u94a5\u5bf9\u6216\u81ea\u5b9a\u4e49\u5bc6\u7801\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "KeyPairName",
+        "Password"
+      ]
+    },
+    "credentialValue": {
+      "Description": {
+        "en": "Credential value for your unreachable ECS instance after being rescued, the value of KeyPairName or Password.",
+        "zh-cn": "\u5f53\u6267\u884c\u81ea\u6551ECS\u5b9e\u4f8b\u540e\uff0c\u5b9e\u4f8broot\u767b\u5f55\u51ed\u8bc1\u503c\uff0c\u5982\u679c\u51ed\u8bc1\u7c7b\u578b\u9009\u62e9\u5bc6\u94a5\u5bf9\uff0c\u5219\u6b64\u5904\u586b\u5199\u5bc6\u94a5\u5bf9\u540d\u79f0\uff1b\u5982\u679c\u51ed\u8bc1\u7c7b\u578b\u9009\u62e9\u4e86\u81ea\u5b9a\u4e49\u5bc6\u7801\uff0c\u5219\u6b64\u5904\u586b\u5199\u5c06\u8bbe\u7f6e\u7684\u5bc6\u7801\u3002"
+      },
+      "Type": "String"
+    },
+    "imagePrefix": {
+      "Description": {
+        "en": "The prefix for backup image name.",
+        "zh-cn": "\u7528\u6765\u5907\u4efdECS\u5b9e\u4f8b\u7684\u955c\u50cf\u540d\u79f0\u7684\u524d\u7f00\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSRescueBackup-"
+    },
+    "helperInstanceTypes": {
+      "Description": {
+        "en": "The instance types for the helper instance are being selected from to check the available one in current zone by task.",
+        "zh-cn": "\u81ea\u6551\u6267\u884c\u8fc7\u7a0b\u4e2d\uff0c\u88ab\u521b\u5efa\u7684\u4e34\u65f6\u5b9e\u4f8b\u89c4\u683c\u7684\u9009\u62e9\u8303\u56f4\u3002"
+      },
+      "Type": "List",
+      "Default": [
+        "ecs.t6-c4m1.large",
+        "ecs.t5-lc1m1.small",
+        "ecs.t5-lc1m2.small",
+        "ecs.s6-c1m1.small",
+        "ecs.s6-c1m2.small",
+        "ecs.n1.small",
+        "ecs.mn4.small",
+        "ecs.e3.small",
+        "ecs.e4.small",
+        "ecs.n2.small",
+        "ecs.n4.small",
+        "ecs.t5-lc1m2.large",
+        "ecs.c6.large",
+        "ecs.sn2ne.large"
+      ]
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks ECS instance is linux os.",
+        "zh-cn": "\u786e\u8ba4\u5c06\u6551\u6cbbECS\u5b9e\u4f8b\u4e3aLinux\u7cfb\u7edf\u7684\u3002"
+      },
+      "OnError": "ACS::END",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ unreachableInstanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "linux"
+        ],
+        "PropertySelector": "Instances.Instance[].OSType"
+      },
+      "Outputs": {
+        "status": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].Status"
+        },
+        "vSwitchId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].VpcAttributes.VSwitchId"
+        },
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].ZoneId"
+        },
+        "oSNameEn": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSNameEn"
+        },
+        "oSName": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSName"
+        },
+        "imageID": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].ImageId"
+        }
+      }
+    },
+    {
+      "Name": "querySystemDisks",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks system disk of the ECS instance.",
+        "zh-cn": "\u68c0\u67e5\u5c06\u6551\u6cbb\u7684\u7cfb\u7edf\u76d8\u60c5\u51b5\u3002"
+      },
+      "OnError": "ACS::END",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "InstanceId": "{{ unreachableInstanceId }}",
+          "DiskType": "system"
+        },
+        "DesiredValues": [
+          "true"
+        ],
+        "PropertySelector": ".Disks.Disk[] as $disk|$disk.Category|startswith(\"cloud\") and ($disk.Encrypted|not)|tostring"
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        },
+        "category": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].Category"
+        },
+        "encrypted": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].Encrypted"
+        }
+      }
+    },
+    {
+      "Name": "whetherStopInstance",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by Instance status.",
+        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u72b6\u6001\u9009\u62e9\u8981\u6267\u884c\u7684\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "stopInstance",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Stopped",
+                "{{ checkInstanceReady.status }}"
+              ]
+            },
+            "NextTask": "checkAvailableInstanceTypesExist"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Stops the ECS instances.",
+        "zh-cn": "\u505c\u6b62\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ unreachableInstanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "Sleep3Minutes",
+      "Description": {
+        "en": "Wait instance Stopped.",
+        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u505c\u6b62\u6210\u529f\u3002"
+      },
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "PT3M"
+      }
+    },
+    {
+      "Name": "queryUnreachableInstanceStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query status of unreachable instance.",
+        "zh-cn": "\u67e5\u8be2\u635f\u4f24\u7cfb\u7edf\u76d8\u7684\u5b9e\u4f8b\u72b6\u6001\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ unreachableInstanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "status": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].Status"
+        }
+      }
+    },
+    {
+      "Name": "whetherForceStopInstance",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by Instance status.",
+        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u72b6\u6001\u9009\u62e9\u8981\u6267\u884c\u7684\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "forceStopInstance",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Stopped",
+                "{{ queryUnreachableInstanceStatus.status }}"
+              ]
+            },
+            "NextTask": "checkAvailableInstanceTypesExist"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "forceStopInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Stops the ECS instances forcibly.",
+        "zh-cn": "\u5f3a\u5236\u505c\u6b62\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ unreachableInstanceId }}",
+          "ForceStop": "true"
+        }
+      }
+    },
+    {
+      "Name": "untilStopUnreachableInstanceSuccess",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the ECS instance to enter stoped status.",
+        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u505c\u6b62\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ unreachableInstanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "checkAvailableInstanceTypesExist",
+      "Action": "ACS::Template",
+      "OnError": "ACS::END",
+      "Description": {
+        "en": "Query current available instance type for creating helper instance in the zone of the unreachable.",
+        "zh-cn": "\u67e5\u8be2\u5c06\u521b\u5efa\u7684\u76ee\u6807\u4e34\u65f6\u5b9e\u4f8b\u89c4\u683c\u662f\u5426\u6709\u5e93\u5b58\u3002"
+      },
+      "Properties": {
+        "TemplateName": "ACS::ECS::CheckAvailableInstanceTypes",
+        "Parameters": {
+          "zoneId": "{{ checkInstanceReady.zoneId }}",
+          "instanceTypes": "{{ helperInstanceTypes }}"
+        }
+      },
+      "Outputs": {
+        "availableInstanceType": {
+          "Type": "String",
+          "ValueSelector": ".availableInstanceTypes[0]"
+        }
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Creates a custom image.",
+        "zh-cn": "\u521b\u5efa\u4e00\u4e2a\u81ea\u5b9a\u4e49\u955c\u50cf\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateImage",
+        "Parameters": {
+          "ImageName": "{{imagePrefix}}{{ ACS::ExecutionId }}",
+          "InstanceId": "{{ unreachableInstanceId }}",
+          "Tag": [
+            {
+              "Key": "instance_to_rescue",
+              "Value": "{{unreachableInstanceId}}"
+            },
+            {
+              "Key": "oos_exec",
+              "Value": "{{ ACS::ExecutionId }}"
+            }
+          ]
+        }
+      },
+      "Outputs": {
+        "imageId": {
+          "Type": "String",
+          "ValueSelector": "ImageId"
+        }
+      }
+    },
+    {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create a Ros resource stack.",
+        "zh-cn": "\u521b\u5efaRos\u8d44\u6e90\u6808\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "StackName": "OOS-{{ACS::ExecutionId}}",
+          "TimeoutInMinutes": 10,
+          "DisableRollback": false,
+          "Parameters": [
+            {
+              "ParameterKey": "helperInstanceType",
+              "ParameterValue": "{{checkAvailableInstanceTypesExist.availableInstanceType}}"
+            },
+            {
+              "ParameterKey": "zoneId",
+              "ParameterValue": "{{ checkInstanceReady.zoneId }}"
+            },
+            {
+              "ParameterKey": "resourcePrefix",
+              "ParameterValue": "OOS-{{ACS::ExecutionId}}"
+            },
+            {
+              "ParameterKey": "imageId",
+              "ParameterValue": "centos_8_0_x64_20G_alibase_20191225.vhd"
+            },
+            {
+              "ParameterKey": "instanceIdToRescue",
+              "ParameterValue": "{{unreachableInstanceId}}"
+            },
+            {
+              "ParameterKey": "executionId",
+              "ParameterValue": "{{ ACS::ExecutionId }}"
+            }
+          ],
+          "TemplateURL": "https://oos-debug.oss-cn-hangzhou.aliyuncs.com/ros_template.json"
+        }
+      },
+      "Outputs": {
+        "StackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilImageReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the image to be available.",
+        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u521b\u5efa\u6210\u529f\u3002"
+      },
+      "OnError": "deleteStack",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "ImageId": "{{ createImage.imageId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Images.Image[].Status"
+      },
+      "Retries": 50,
+      "Delay": 36,
+      "DelayType": "Constant"
+    },
+    {
+      "Name": "untilStackReady",
+      "Action": "ACS::WaitFor",
+      "OnError": "queryStackStatusReason",
+      "OnSuccess": "putRTToHelperInstance",
+      "Description": {
+        "en": "Wait for the stack status CREATE_COMPLETE.",
+        "zh-cn": "\u7b49\u5f85\u8d44\u6e90\u6808\u521b\u5efa\u6210\u529f\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "helperInstanceId": {
+          "Type": "String",
+          "ValueSelector": "Outputs[0].OutputValue"
+        },
+        "statusReason": {
+          "Type": "String",
+          "ValueSelector": "StatusReason"
+        }
+      }
+    },
+    {
+      "Name": "queryStackStatusReason",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "deleteStack",
+      "OnSuccess": "deleteStack",
+      "Description": {
+        "en": "Query the reson of failed created stack.",
+        "zh-cn": "\u67e5\u8be2\u8d44\u6e90\u6808\u672a\u521b\u5efa\u6210\u529f\u7684\u539f\u56e0\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      },
+      "Outputs": {
+        "statusReason": {
+          "Type": "String",
+          "ValueSelector": "StatusReason"
+        }
+      }
+    },
+    {
+      "Name": "putRTToHelperInstance",
+      "Action": "ACS::ECS::RunCommand",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Run cloud assistant command on ECS instance to download rt.",
+        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u4e0b\u8f7d\u4fee\u590d\u811a\u672c\u3002"
+      },
+      "Properties": {
+        "commandContent": "cd /tmp ; wget https://oos-debug.oss-cn-hangzhou.aliyuncs.com/guestos-scripts-0.0.1.tar.gz; tar -zxvf guestos-scripts-0.0.1.tar.gz",
+        "commandType": "RunShellScript",
+        "instanceId": "{{ untilStackReady.helperInstanceId }}"
+      }
+    },
+    {
+      "Name": "addTags",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Add Tags of system disk to instance to rescue.",
+        "zh-cn": "\u7ed9\u8981\u6551\u6cbb\u7684\u5b9e\u4f8b\u6dfb\u52a0\u4e0a\u5176\u7cfb\u7edf\u76d8\u4fe1\u606f\u7684\u6807\u7b7e\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AddTags",
+        "Parameters": {
+          "ResourceType": "instance",
+          "ResourceId": "{{ unreachableInstanceId }}",
+          "Tag": [
+            {
+              "Key": "source_sys_disk",
+              "Value": "{{ querySystemDisks.diskId }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Name": "detachDisk",
+      "Action": "ACS::ECS::DetachDisk",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Detaches the system disk from unreachable instance.",
+        "zh-cn": "\u5378\u8f7d\u6709\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ unreachableInstanceId }}",
+        "diskId": "{{ querySystemDisks.diskId }}"
+      }
+    },
+    {
+      "Name": "attachAsDataDisk",
+      "Action": "ACS::ECS::AttachDisk",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Attaches the system disk to the helper instance as a data disk.",
+        "zh-cn": "\u5c06\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u4f5c\u4e3a\u6570\u636e\u76d8\u6302\u8f7d\u5230\u4e34\u65f6\u5b9e\u4f8b\u4e0a\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ untilStackReady.helperInstanceId }}",
+        "diskId": "{{ querySystemDisks.diskId }}"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Run a cloud assistant command of rescuing disk on ECS instance.",
+        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u901a\u8fc7\u4e91\u52a9\u624b\u8fd0\u884c\u6551\u6cbb\u635f\u4f24\u76d8\u7684\u811a\u672c\u3002"
+      },
+      "Properties": {
+        "commandContent": "cd /tmp/guestos-scripts-0.0.1;./rescue_system_disk.sh",
+        "commandType": "RunShellScript",
+        "instanceId": "{{ untilStackReady.helperInstanceId }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "forceStopHelperInstance",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Stops the helper instance forcibly.",
+        "zh-cn": "\u5f3a\u5236\u505c\u6b62\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "StopInstance",
+        "Parameters": {
+          "InstanceId": "{{ untilStackReady.helperInstanceId }}",
+          "ForceStop": "true"
+        }
+      }
+    },
+    {
+      "Name": "untilforceStopHelperInstanceSuccess",
+      "Action": "ACS::WaitFor",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Waits for the helper instance to enter stoped status.",
+        "zh-cn": "\u7b49\u5f85\u4e34\u65f6\u5b9e\u4f8b\u505c\u6b62\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ untilStackReady.helperInstanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "detachHelperInstanceDataDisk",
+      "Action": "ACS::ECS::DetachDisk",
+      "OnError": "deleteStack",
+      "Description": {
+        "en": "Detaches data disk from the helper instance.",
+        "zh-cn": "\u5378\u8f7d\u4e34\u65f6\u5b9e\u4f8b\u7684\u6570\u636e\u76d8\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ untilStackReady.helperInstanceId }}",
+        "diskId": "{{ querySystemDisks.diskId }}"
+      }
+    },
+    {
+      "Name": "untilUnreachableInstanceSystemDiskAvailable",
+      "Action": "ACS::WaitFor",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Waits for the disk to be detached.",
+        "zh-cn": "\u7b49\u5f85\u78c1\u76d8\u5378\u8f7d\u6210\u529f\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "DiskIds": [
+            "{{ querySystemDisks.diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
+      }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteApi",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Delete the ros resource stack.",
+        "zh-cn": "\u5220\u9664Ros\u8d44\u6e90\u6808\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      }
+    },
+    {
+      "Name": "untilStackDeleted",
+      "Action": "ACS::WaitFor",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Wait for the ros stack status DELETE_COMPLETE.",
+        "zh-cn": "\u7b49\u5f85Ros\u8d44\u6e90\u6808\u81f3\u5220\u9664\u6210\u529f\u3002"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "DELETE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "DELETE_FAILED",
+          "CHECK_FAILED"
+        ],
+        "PropertySelector": "Status"
+      }
+    },
+    {
+      "Name": "checkForUnreachableInstanceSystemDiskAvailable",
+      "Action": "ACS::CheckFor",
+      "OnError": "ACS::END",
+      "Description": {
+        "en": "Check for the disk to be detached.",
+        "zh-cn": "\u68c0\u67e5\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u662f\u5426\u53ef\u6302\u8f7d\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "DiskIds": [
+            "{{ querySystemDisks.diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
+      }
+    },
+    {
+      "Name": "whetherCredentialTypeIsKeyPairName",
+      "Action": "ACS::Choice",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Choose next task by credential type input.",
+        "zh-cn": "\u6839\u636e\u8f93\u5165\u7684\u767b\u5f55\u51ed\u8bc1\u7c7b\u578b\u786e\u5b9a\u540e\u7eed\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "attachAsSysDiskWithKeyPairName",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Password",
+                "{{ credentialType }}"
+              ]
+            },
+            "NextTask": "attachAsSysDisk"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "attachAsSysDiskWithKeyPairName",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "untilDiskAttached",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Attaches the source system disk to unreachable instance and set PairName credential type for root.",
+        "zh-cn": "\u5c06\u6551\u6cbb\u8fc7\u7684\u635f\u4f24\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\uff0c\u5e76\u4e14\u4e3aroot\u8bbe\u7f6e\u5bc6\u94a5\u5bf9\u5f62\u5f0f\u7684\u767b\u5f55\u51ed\u8bc1\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AttachDisk",
+        "Parameters": {
+          "DiskId": "{{ querySystemDisks.diskId }}",
+          "InstanceId": "{{ unreachableInstanceId }}",
+          "Bootable": "true",
+          "KeyPairName": "{{credentialValue}}"
+        }
+      }
+    },
+    {
+      "Name": "attachAsSysDisk",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Attaches the source system disk to unreachable instance and set Password credential type for root.",
+        "zh-cn": "\u5c06\u6551\u6cbb\u8fc7\u7684\u635f\u4f24\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\uff0c\u5e76\u4e14\u4e3aroot\u8bbe\u7f6e\u81ea\u5b9a\u4e49\u5bc6\u7801\u5f62\u5f0f\u7684\u767b\u5f55\u51ed\u8bc1\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AttachDisk",
+        "Parameters": {
+          "DiskId": "{{ querySystemDisks.diskId }}",
+          "InstanceId": "{{ unreachableInstanceId }}",
+          "Bootable": "true",
+          "Password": "{{credentialValue}}"
+        }
+      }
+    },
+    {
+      "Name": "untilDiskAttached",
+      "Action": "ACS::WaitFor",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Waits for the system disk to be attached.",
+        "zh-cn": "\u7b49\u5f85\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\u6210\u529f\u3002"
+      },
+      "Retries": 7,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "DiskIds": [
+            "{{ querySystemDisks.diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "In_use"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
+      }
+    },
+    {
+      "Name": "whetherStartUnreachableInstance",
+      "Action": "ACS::Choice",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Choose next task by original instance status.",
+        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u521d\u59cb\u72b6\u6001\u9009\u62e9\u540e\u7eed\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Running",
+                "{{ checkInstanceReady.status }}"
+              ]
+            },
+            "NextTask": "startUnreachableInstance"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "startUnreachableInstance",
+      "Action": "ACS::ECS::StartInstance",
+      "Description": {
+        "en": "Starts the unreachable instance.",
+        "zh-cn": "\u542f\u52a8\u88ab\u6551\u6cbb\u7684\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "instanceId": "{{ unreachableInstanceId}}"
+      }
+    }
+  ],
+  "Outputs": {
+    "diskId": {
+      "Type": "String",
+      "Value": "{{ querySystemDisks.diskId }}"
+    },
+    "imageId": {
+      "Type": "String",
+      "Value": "{{ createImage.imageId }}"
+    },
+    "rtCommandOutput": {
+      "Type": "String",
+      "Value": "{{ runcommand.commandOutput }}"
+    },
+    "finalHelperInstanceType": {
+      "Type": "String",
+      "Value": "{{checkAvailableInstanceTypesExist.availableInstanceType}}"
+    }
+  }
+}

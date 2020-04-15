@@ -1,0 +1,106 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Add a security group policy to multiple security groups.
+  zh-cn: 将一条安全组策略添加至多个安全组。
+  name-en: ACS-ECS-BulkyAuthorizeSecurityGroup
+  name-zh-cn: 批量授权安全组策略
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  securityGroupIds:
+    Description:
+      en: The security group id.
+      zh-cn: 安全组ID。
+    Type: List
+  ipProtocol:
+    Description:
+      en: Transport layer protocol.
+      zh-cn: 传输层协议。
+    Type: String
+    AllowedValues:
+      - tcp
+      - udp
+      - icmp
+      - gre
+      - all
+  portRange:
+    Description:
+      en: Transport layer protocol, correct style:1/200, error style:200/1. ranges:(TCP/UDP:1~65535, ICMP:-1/-1, GRE:-1/-1, IpProtocol value is all:-1/-1).
+      zh-cn: 传输层协议端口范围，正确样式：1/200, 错误样式200/1：。取值范围:(TCP/UDP：1~65535, ICMP协议：-1/-1, GRE协议：-1/-1, IpProtocol取值为all：-1/-1)。
+    Type: String
+  nicType:
+    Description:
+      en: Network card type (internet:public network card, intrant:inner network card).
+      zh-cn: 网卡类型（internet：公网网卡，intranet：内网网卡）。
+    Type: String
+    AllowedValues:
+      - internet
+      - intranet
+    Default: intranet
+  policy:
+    Description:
+      en: Set access(accept:Accept interview, drop:Access denied).
+      zh-cn: 设置访问权限(accept:接受访问,drop:拒绝访问)。
+    Type: String
+    AllowedValues:
+      - accept
+      - drop
+    Default: accept
+  priority:
+    Description:
+      en: Security group rule priority.
+      zh-cn: 安全组规则优先级。取值范围：1~100。
+    Type: Number
+    MinValue: 1
+    MaxValue: 100
+    Default: 1
+  sourceCidrIp:
+    Description:
+      en: Source IPv4 CIDR address segment, for example:10.0.0.0/8.
+      zh-cn: 源端IPv4 CIDR地址段, 例如：10.0.0.0/8。
+    Type: String
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: AuthorizeSecurityGroup
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Authorize Security Group Policy to multiple Security Group.
+      zh-cn: 授权安全组策略至多个安全组。
+    Properties:
+      Service: ECS
+      API: AuthorizeSecurityGroup
+      Parameters:
+        RegionId: '{{ regionId }}'
+        IpProtocol: '{{ ipProtocol }}'
+        PortRange: '{{ portRange }}'
+        NicType: '{{ nicType }}'
+        Policy: '{{ policy }}'
+        Priority: '{{ priority }}'
+        SourceCidrIp: '{{ sourceCidrIp }}'
+        SecurityGroupId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ securityGroupIds }}'

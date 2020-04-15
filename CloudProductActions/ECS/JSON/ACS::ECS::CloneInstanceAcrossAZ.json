@@ -1,0 +1,343 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Cross available zone copy and run ECS instance.",
+  "Parameters": {
+    "instanceId": {
+      "Description": "The source id of the ECS instance.",
+      "Type": "String"
+    },
+    "regionId": {
+      "Description": "The source region id.",
+      "Type": "String",
+      "Default": "{{ACS::RegionId}}"
+    },
+    "imageName": {
+      "Description": "The image name for source instance.",
+      "Type": "String"
+    },
+    "targetSecurityGroupId": {
+      "Description": "The security group id for the new ECS instance",
+      "Type": "String"
+    },
+    "targetVSwitchId": {
+      "Description": "The virtual switch id for the new ECS instance.",
+      "Type": "String"
+    },
+    "targetDeploymentSetId": {
+      "Description": "The deploymentset id for the new ECS instance.",
+      "Type": "String"
+    },
+    "targetResourceGroupId": {
+      "Description": "The target resource group id that the new ECS instance is to add in.",
+      "Type": "String"
+    },
+    "targetInstanceType": {
+      "Description": "The instance type for the new ECS instance.",
+      "Type": "String"
+    },
+    "targetInstanceChargeType": {
+      "Description": "The charge type for ECS new instance.",
+      "Type": "String"
+    },
+    "targetPeriodUnit": {
+      "Description": "Please select the PeriodUnit when charge type of new instance is PrePaid,the default is Month.",
+      "Type": "String"
+    },
+    "targetPeriod": {
+      "Description": "Please fill in the Period when charge type of ECS new instance is PrePaid.",
+      "Type": "Number"
+    },
+    "tags": {
+      "Description": "The tags of new ECS instance to add on.",
+      "Type": "Json",
+      "AssociationProperty": "Tags"
+    },
+    "targetInstanceName": {
+      "Description": "The instance name for new ECS instance.",
+      "Type": "String"
+    },
+    "targetHostName": {
+      "Description": "The host name for new ECS instance.",
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "queryInstanceInfo",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the ECS instance's Info.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "deploymentSetId": {
+          "ValueSelector": "Instances.Instance[0].DeploymentSetId",
+          "Type": "String"
+        },
+        "instanceName": {
+          "ValueSelector": "Instances.Instance[0].InstanceName",
+          "Type": "String"
+        },
+        "hostName": {
+          "ValueSelector": "Instances.Instance[0].HostName",
+          "Type": "String"
+        },
+        "instanceType": {
+          "ValueSelector": "Instances.Instance[0].InstanceType",
+          "Type": "String"
+        },
+        "resourceGroupId": {
+          "ValueSelector": "Instances.Instance[0].ResourceGroupId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "queryVSwitchInfo",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the VSwitch Info.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeVSwitches",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VSwitchId": "{{ targetVSwitchId }}"
+        }
+      },
+      "Outputs": {
+        "zoneId": {
+          "ValueSelector": "VSwitches.VSwitch[0].ZoneId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "checkTargetInstanceTypeAvailable",
+      "Action": "ACS::Template",
+      "Description": "Check the specified target InstanceType Available.",
+      "Properties": {
+        "TemplateName": "ACS::ECS::CheckAvailableInstanceTypes",
+        "Parameters": {
+          "zoneId": "{{ queryVSwitchInfo.zoneId }}",
+          "regionId": "{{ regionId }}",
+          "instanceTypes": [
+            "{{ targetInstanceType }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "deleteImage",
+      "Description": "Create image for source instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageName": "{{ imageName }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "ImageId": {
+          "ValueSelector": "ImageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "untilCreateImageReady",
+      "Action": "ACS::WaitFor",
+      "OnError": "deleteImage",
+      "Description": "Wait for created image available.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ createImage.ImageId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Images.Image[].Status"
+      },
+      "Retries": 17
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "deleteImage",
+      "Description": "Run instance in new availbable zone.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "RunInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ createImage.ImageId }}",
+          "InstanceType": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  " ",
+                  "{{ targetInstanceType }}"
+                ]
+              },
+              "{{queryInstanceInfo.instanceType}}",
+              "{{ targetInstanceType }}"
+            ]
+          },
+          "SecurityGroupId": "{{ targetSecurityGroupId }}",
+          "VSwitchId": "{{ targetVSwitchId }}",
+          "ResourceGroupId": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  " ",
+                  "{{targetResourceGroupId}}"
+                ]
+              },
+              "{{queryInstanceInfo.resourceGroupId}}",
+              "{{targetResourceGroupId}}"
+            ]
+          },
+          "InstanceChargeType": "{{targetInstanceChargeType}}",
+          "PeriodUnit": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "PrePaid",
+                  "{{targetInstanceChargeType}}"
+                ]
+              },
+              {
+                "Fn::If": [
+                  {
+                    "Fn::Equals": [
+                      " ",
+                      "{{targetPeriodUnit}}"
+                    ]
+                  },
+                  "Month",
+                  "{{targetPeriodUnit}}"
+                ]
+              },
+              ""
+            ]
+          },
+          "Period": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "PrePaid",
+                  "{{targetInstanceChargeType}}"
+                ]
+              },
+              "{{targetPeriod}}",
+              ""
+            ]
+          },
+          "InstanceName": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  " ",
+                  "{{targetInstanceName}}"
+                ]
+              },
+              "{{queryInstanceInfo.instanceName}}",
+              "{{targetInstanceName}}"
+            ]
+          },
+          "HostName": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  " ",
+                  "{{targetHostName}}"
+                ]
+              },
+              "{{queryInstanceInfo.hostName}}",
+              "{{targetHostName}}"
+            ]
+          },
+          "DeploymentSetId": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  " ",
+                  "{{targetDeploymentSetId}}"
+                ]
+              },
+              "{{queryInstanceInfo.deploymentSetId}}",
+              "{{targetDeploymentSetId}}"
+            ]
+          },
+          "Tags": "{{ tags }}"
+        }
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": "InstanceIdSets.InstanceIdSet[]"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "OnError": "deleteImage",
+      "Description": "Wait for new instance running.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ runInstances.instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "deleteImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Delete the temporary image.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Risk": "Normal",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ createImage.ImageId }}",
+          "Force": true
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceId": {
+      "Type": "String",
+      "Value": "{{ runInstances.instanceId }}"
+    }
+  }
+}

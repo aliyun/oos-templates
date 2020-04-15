@@ -1,0 +1,52 @@
+FormatVersion: OOS-2019-06-01
+Description: 'Check the available instance types that exist in the list of instanceTypes parameter.'
+Parameters:
+  instanceTypes:
+    Description: The source instance types to check.
+    Type: List
+  regionId:
+    Description: The source region id.
+    Type: String
+    Default: '{{ACS::RegionId}}'
+  zoneId:
+    Description: The source zone id.
+    Type: String
+  instanceChargeType:
+    Description: The source instance charge type.
+    Type: String
+    Default: PostPaid
+  networkCategory:
+    Description: The resource type.
+    Type: String
+    Default: vpc
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: checkAvailableInstanceTypesExist
+    Action: 'ACS::CheckFor'
+    OnError: 'ACS::END'
+    Description: Query current available resource in instance types input.
+    Properties:
+      Service: ECS
+      API: DescribeAvailableResource
+      Parameters:
+        RegionId: '{{regionId}}'
+        ZoneId: '{{ zoneId }}'
+        DestinationResource: InstanceType
+        ResourceType: instance
+        InstanceChargeType: '{{instanceChargeType}}'
+        NetworkCategory: '{{networkCategory}}'
+      DesiredValues:
+        - 'true'
+      PropertySelector: '.AvailableZones.AvailableZone[0].AvailableResources.AvailableResource[0].SupportedResources.SupportedResource|map(select(.StatusCategory=="WithStock" or .StatusCategory=="ClosedWithStock")|.Value)|map({(.):null})|add as $available_types|$available_types|{{instanceTypes}}|map(.|in($available_types))|any|tostring'
+    Outputs:
+      availableInstanceTypes:
+        Type: List
+        ValueSelector: '.AvailableZones.AvailableZone[0].AvailableResources.AvailableResource[0].SupportedResources.SupportedResource|map(select(.StatusCategory=="WithStock" or .StatusCategory=="ClosedWithStock")|.Value)|map({(.):null})|add as $available_types|{{instanceTypes}} as $user_types |$user_types|map(.|in($available_types)) as $result|$result|select(any)|index(true) as $index|$user_types[$index]'
+Outputs:
+  availableInstanceTypes:
+    Type: List
+    Value: '{{ checkAvailableInstanceTypesExist.availableInstanceTypes }}'

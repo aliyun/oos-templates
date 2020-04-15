@@ -1,0 +1,208 @@
+FormatVersion: OOS-2019-06-01
+Description: Replaces the system disk of an ECS instance.
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  rollBack:
+    Description: The ID of region.
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
+  imageId:
+    Description: The ID of image.
+    Type: String
+  instanceId:
+    Description: The ID of ECS instance.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  scalingGroupId:
+    Description: The id of scaling group.
+    Type: String
+Tasks:
+- Name: viewInstanceLifecycleState
+  Action: ACS::ExecuteApi
+  Description: Views ECS instance lifecycle status.
+  Properties:
+    Service: ESS
+    API: DescribeScalingInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId1: '{{ instanceId }}'
+  Outputs:
+    lifecycleState:
+      Type: String
+      ValueSelector: ScalingInstances.ScalingInstance[].LifecycleState
+- Name: whetherLifecycleStateIsStandby
+  Action: 'ACS::Choice'
+  Description: Choose next task by lifecycle status.
+  Properties:
+    DefaultTask: enterStandby
+    Choices:
+      - When:
+          Fn::Equals:
+            - 'Standby'
+            - '{{ viewInstanceLifecycleState.lifecycleState }}'
+        NextTask: viewInstanceStatus
+- Name: enterStandby
+  Action: ACS::WaitFor
+  Description: Enter standby.
+  Retries: 15
+  Delay: 10
+  Properties:
+    Service: ESS
+    API: EnterStandby
+    Parameters:
+      RegionId: '{{ regionId }}'
+      ScalingGroupId: '{{ scalingGroupId }}'
+      InstanceId:
+        - '{{ instanceId }}'
+    DesiredValues:
+      - CodeNotExists
+    StopRetryValues:
+      - OtherCodes
+    PropertySelector: '.| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end'
+- Name: viewInstanceStatus
+  Action: ACS::ExecuteApi
+  Description: Views ECS instance status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceIds:
+        - '{{ instanceId }}'
+  Outputs:
+    instanceStatus:
+      Type: String
+      ValueSelector: Instances.Instance[].Status
+- Name: whetherInstanceStatusIsRunning
+  Action: 'ACS::Choice'
+  Description: Choose next task by instance status.
+  Properties:
+    DefaultTask: stopInstance
+    Choices:
+      - When:
+          Fn::Equals:
+            - 'Stopped'
+            - '{{ viewInstanceStatus.instanceStatus }}'
+        NextTask: replaceSystemDisk
+- Name: stopInstance
+  Action: ACS::ExecuteAPI
+  Description: Stops the ECS instance with the specified instance ID.
+  Properties:
+    Service: ECS
+    API: StopInstance
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ instanceId }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description: Waits for the ECS instance to enter stopped status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Stopped
+    PropertySelector: Instances.Instance[].Status
+- Name: replaceSystemDisk
+  Action: ACS::ExecuteAPI
+  Description: Replaces the system disk of an ECS instance.
+  Properties:
+    Service: ECS
+    API: ReplaceSystemDisk
+    Parameters:
+      RegionId: '{{ regionId }}'
+      ImageId: '{{ imageId }}'
+      InstanceId: '{{ instanceId }}'
+  Outputs:
+    diskId:
+      Type: String
+      ValueSelector: DiskId
+- Name: untilNewDiskReady
+  Action: ACS::WaitFor
+  Description: Waits for the disks to be created successfully.
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DiskIds:
+      - '{{ replaceSystemDisk.diskId }}'
+    DesiredValues:
+    - In_use
+    PropertySelector: Disks.Disk[].Status
+- Name: startInstance
+  Action: ACS::ExecuteAPI
+  Description: Starts an ECS instance.
+  Properties:
+    Service: ECS
+    API: StartInstance
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ instanceId }}'
+- Name: untilInstanceToRunning
+  Action: ACS::WaitFor
+  Description: Waits for the ECS instance to enter running status.
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceIds:
+      - '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Instances.Instance[].Status
+- Name: whetherToRollbackExitStandBy
+  Action: 'ACS::Choice'
+  Description: Choose next task by rollback status.
+  Properties:
+    DefaultTask: whetherToExitStandBy
+    Choices:
+      - When:
+          Fn::Equals:
+            - 'true'
+            - '{{ rollBack }}'
+        NextTask: exitStandBy
+- Name: whetherToExitStandBy
+  Action: 'ACS::Choice'
+  Description: Choose next task by lifecycle status.
+  Properties:
+    DefaultTask: exitStandBy
+    Choices:
+      - When:
+          Fn::Equals:
+            - 'Standby'
+            - '{{ viewInstanceLifecycleState.lifecycleState }}'
+        NextTask: ACS::END
+- Name: exitStandBy
+  Action: ACS::WaitFor
+  Description: Exit standby.
+  Retries: 15
+  Delay: 10
+  Properties:
+    Service: ESS
+    API: ExitStandBy
+    Parameters:
+      RegionId: '{{ regionId }}'
+      ScalingGroupId: '{{ scalingGroupId }}'
+      InstanceId:
+        - '{{ instanceId }}'
+    DesiredValues:
+      - CodeNotExists
+    StopRetryValues:
+      - OtherCodes
+    PropertySelector: '.| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end'
+Outputs:
+  newSystemDiskId:
+    Type: String
+    Value: '{{ replaceSystemDisk.diskId }}'
