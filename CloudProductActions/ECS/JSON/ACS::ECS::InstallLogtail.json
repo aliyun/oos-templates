@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Installs SLS agent on ECS instance by running a cloud assistant command.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The ID of instance to install ilogtail.",
       "Type": "String",
@@ -30,6 +35,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -48,6 +54,7 @@
         "Service": "ECS",
         "API": "CreateCommand",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "CommandContent": {
             "Fn::Base64Encode": "wget http://logtail-release-{{ ACS::RegionId }}.oss-{{ ACS::RegionId }}-internal.aliyuncs.com/linux64/logtail.sh -O logtail.sh; chmod 755 logtail.sh; ./logtail.sh install {{ ACS::RegionId }}; echo {{ logTailUserDefinedId }} > /etc/ilogtail/user_defined_id"
           },
@@ -71,6 +78,7 @@
         "Service": "ECS",
         "API": "InvokeCommand",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "CommandId": "{{ createCommand.commandId }}",
           "InstanceIds": [
             "{{ instanceId }}"
@@ -93,6 +101,7 @@
         "Service": "ECS",
         "API": "DescribeInvocations",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InvokeId": "{{ invokeCommand.invokeId }}"
         },
         "DesiredValues": [
@@ -109,6 +118,7 @@
         "Service": "ECS",
         "API": "DescribeInvocationResults",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InvokeId": "{{ invokeCommand.invokeId }}"
         }
       },
@@ -132,6 +142,7 @@
         "API": "DeleteCommand",
         "Risk": "Normal",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "CommandId": "{{ createCommand.commandId }}"
         }
       }

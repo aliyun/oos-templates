@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Creates backups of a RDS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   backupMethod:
     Description: Logical
     Type: String
@@ -15,6 +19,7 @@ Tasks:
     Service: RDS
     API: CreateBackup
     Parameters:
+      RegionId: '{{ regionId }}'
       BackupMethod: '{{ backupMethod }}'
       DBInstanceId: '{{ instanceId }}'
   Outputs:

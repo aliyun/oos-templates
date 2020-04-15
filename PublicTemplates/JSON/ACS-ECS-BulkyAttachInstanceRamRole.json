@@ -10,12 +10,14 @@
     ]
   },
   "Parameters": {
-    "targets": {
-      "Type": "Json",
-      "AssociationProperty": "Targets",
-      "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
-      }
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
     },
     "RamRoleName": {
       "Description": {
@@ -23,6 +25,27 @@
         "zh-cn": "Ram\u89d2\u8272\u540d\u79f0\u3002"
       },
       "Type": "String"
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
     },
     "OOSAssumeRole": {
       "Description": {
@@ -43,6 +66,7 @@
       },
       "Action": "ACS::SelectTargets",
       "Properties": {
+        "RegionId": "{{ regionId }}",
         "ResourceType": "ALIYUN::ECS::Instance",
         "Filters": [
           "{{ targets }}"
@@ -66,9 +90,16 @@
         "Service": "ECS",
         "API": "AttachInstanceRamRole",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "RamRoleName": "{{ RamRoleName }}",
-          "InstanceIds": "{{ getInstance.instanceIds }}"
+          "InstanceIds": [
+            "{{ ACS::TaskLoopItem }}"
+          ]
         }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
       }
     }
   ],

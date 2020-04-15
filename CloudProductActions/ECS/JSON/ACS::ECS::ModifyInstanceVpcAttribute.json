@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Modifies the VPC attributes of an ECS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The ID of the instance.",
       "Type": "String",
@@ -25,6 +30,7 @@
         "Service": "ECS",
         "API": "StopInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -37,6 +43,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -55,6 +62,7 @@
         "Service": "ECS",
         "API": "ModifyInstanceVpcAttribute",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}",
           "VSwitchId": "{{ vSwitchId }}"
         }

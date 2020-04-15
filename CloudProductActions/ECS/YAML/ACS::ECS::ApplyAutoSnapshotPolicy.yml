@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Apply auto snapshot policy.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   autoSnapshotPolicyId:
     Description: The ID of ECS AutoSnapshotPolicy.
     Type: String
@@ -15,6 +19,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
   Outputs:
     diskIds:
@@ -27,5 +32,6 @@ Tasks:
     Service: ECS
     API: ApplyAutoSnapshotPolicy
     Parameters:
+      RegionId: '{{ regionId }}'
       autoSnapshotPolicyId: '{{ autoSnapshotPolicyId }}'
       diskIds: '{{ getDiskIds.diskIds }}'

@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Tag an ECS instance using Linux kernel version as tag value.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": {
         "en": "Instance ID of the ECS to be tagged.",
@@ -41,6 +46,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -59,6 +65,7 @@
         "zh-cn": "\u901a\u8fc7\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u83b7\u53d6\u5b9e\u4f8b\u5185\u6838\u7248\u672c\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": "uname -r | awk -F'-' '{print $1}'",
         "instanceId": "{{ instanceId }}",
         "commandType": "RunShellScript"
@@ -81,6 +88,7 @@
         "Service": "ECS",
         "API": "TagResources",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ResourceIds": [
             "{{ instanceId }}"
           ],

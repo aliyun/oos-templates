@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Upgrades the database version of an instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "dBInstanceId": {
       "Description": "The ID of DB instance will handle.",
       "Type": "String"
@@ -20,6 +25,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstanceAttribute",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         },
         "DesiredValues": [
@@ -36,6 +42,7 @@
         "Service": "RDS",
         "API": "UpgradeDBInstanceEngineVersion",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}",
           "EngineVersion": "{{ engineVersion }}"
         }

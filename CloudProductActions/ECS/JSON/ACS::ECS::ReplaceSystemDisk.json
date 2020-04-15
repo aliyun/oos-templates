@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Replaces the system disk of an ECS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageId": {
       "Description": "The ID of image.",
       "Type": "String"
@@ -22,6 +27,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -61,6 +67,7 @@
         "Service": "ECS",
         "API": "StopInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -73,6 +80,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -91,6 +99,7 @@
         "Service": "ECS",
         "API": "ReplaceSystemDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}",
           "InstanceId": "{{ instanceId }}"
         }
@@ -110,6 +119,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ replaceSystemDisk.diskId }}"
           ]
@@ -128,6 +138,7 @@
         "Service": "ECS",
         "API": "StartInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -140,6 +151,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]

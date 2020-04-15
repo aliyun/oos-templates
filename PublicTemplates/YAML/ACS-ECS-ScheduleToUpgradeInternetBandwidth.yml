@@ -7,11 +7,19 @@ Description:
   categories:
     - time_trigger
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
   triggerCron:
     Description:
       en: "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm.\
@@ -22,12 +30,20 @@ Parameters:
     Default: 0 0 12 ? * *
   triggerEndDate:
     Description:
-      en: 'The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.'
-      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddThh:mm:ssZ'
+      en: 'The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.'
+      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddTHH:mm:ssZ'
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
-      Format: 'YYYY-MM-DDThh:mm:ssZ'
+      Format: 'YYYY-MM-DDTHH:mm:ssZ'
+    Default: '2021-12-01T00:00:00Z'
+  timeZone:
+    Description:
+      en: The time zone.
+      zh-cn: 时区。
+    Type: String
+    AssociationProperty: TimeZone
+    Default: UTC
   maxBandwidthIn:
     Description:
       en: The maximum public network bandwidth for in-direction.
@@ -35,6 +51,7 @@ Parameters:
     Type: Number
     MinValue: 1
     MaxValue: 200
+    Default: 10
   maxBandwidthOut:
     Description:
       en: The maximum public network bandwidth for out-direction.
@@ -42,14 +59,16 @@ Parameters:
     Type: Number
     MinValue: 0
     MaxValue: 100
+    Default: 10
   startHourMinute:
     Description:
-      en: 'The start time of upgrade. Format: hh:mmZ'
-      zh-cn: '临时带宽升级开始时间，格式：hh:mm:ssZ'
+      en: 'The start time of upgrade. Format: HH:mm:ssZ'
+      zh-cn: '临时带宽升级开始时间，格式：HH:mm:ssZ'
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
-      Format: 'hh:mm:ssZ'
+      Format: 'HH:mm:ssZ'
+    Default: 08:00:00Z
   durationHour:
     Description:
       en: The number of hours that the bandwidth upgrade lasts.
@@ -84,6 +103,7 @@ Tasks:
     Type: cron
     Expression: '{{ triggerCron }}'
     EndDate: '{{ triggerEndDate }}'
+    TimeZone: '{{ timeZone }}'
 - Name: getInstance
   Description:
     en: Views the ECS instances.
@@ -91,6 +111,7 @@ Tasks:
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
     Filters:
       - '{{ targets }}'
   Outputs:
@@ -106,6 +127,7 @@ Tasks:
     Service: ECS
     API: ModifyInstanceNetworkSpec
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ ACS::TaskLoopItem }}'
       InternetMaxBandwidthIn: '{{ maxBandwidthIn }}'
       InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'

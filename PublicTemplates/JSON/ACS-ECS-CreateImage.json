@@ -10,20 +10,26 @@
     ]
   },
   "Parameters": {
-    "imageName": {
-      "Description": {
-        "en": "The name of new image.",
-        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
-      },
+    "regionId": {
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9\\-_]*",
-      "MinLength": 1,
-      "MaxLength": 30
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
       "Description": {
         "en": "The ID of ECS instance.",
         "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      },
+      "Type": "String"
+    },
+    "imageName": {
+      "Description": {
+        "en": "The name of new image.",
+        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
       },
       "Type": "String"
     },
@@ -49,6 +55,7 @@
         "Service": "ECS",
         "API": "DescribeImages",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}"
         },
         "DesiredValues": [
@@ -65,6 +72,7 @@
         "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "imageName": "{{ imageName }}",
         "instanceId": "{{ instanceId }}"
       },

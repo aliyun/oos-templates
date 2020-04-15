@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Creates a custom image.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageName": {
       "Description": "The image name.",
       "Type": "String"
@@ -22,6 +27,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -41,6 +47,7 @@
         "Service": "ECS",
         "API": "CreateImage",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}",
           "InstanceId": "{{ instanceId }}"
         }
@@ -60,6 +67,7 @@
         "Service": "ECS",
         "API": "DescribeImages",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ImageId": "{{ createImage.imageId }}"
         },
         "DesiredValues": [

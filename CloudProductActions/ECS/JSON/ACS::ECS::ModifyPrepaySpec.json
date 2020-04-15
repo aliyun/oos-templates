@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Changes the type of your subscription instance. The new instance type will take effect for the entire lifecycle of the instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "autoPay": {
       "Description": "The pay type you will modify.",
       "Type": "String"
@@ -26,6 +31,7 @@
         "Service": "ECS",
         "API": "StopInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -38,6 +44,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -56,6 +63,7 @@
         "Service": "ECS",
         "API": "ModifyPrepayInstanceSpec",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "AutoPay": "{{ autoPay }}",
           "InstanceId": "{{ instanceId }}",
           "InstanceType": "{{ instanceType }}"
@@ -76,6 +84,7 @@
         "Service": "ECS",
         "API": "StartInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -88,6 +97,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]

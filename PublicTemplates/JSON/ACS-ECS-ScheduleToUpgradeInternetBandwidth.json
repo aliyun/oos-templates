@@ -10,11 +10,21 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "triggerCron": {
@@ -28,14 +38,24 @@
     },
     "triggerEndDate": {
       "Description": {
-        "en": "The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.",
-        "zh-cn": "\u65f6\u95f4\u89e6\u53d1\u5668\u7ed3\u675f\u65f6\u95f4\u3002\u683c\u5f0f\uff1ayyyy-MM-ddThh:mm:ssZ"
+        "en": "The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.",
+        "zh-cn": "\u65f6\u95f4\u89e6\u53d1\u5668\u7ed3\u675f\u65f6\u95f4\u3002\u683c\u5f0f\uff1ayyyy-MM-ddTHH:mm:ssZ"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "YYYY-MM-DDThh:mm:ssZ"
-      }
+        "Format": "YYYY-MM-DDTHH:mm:ssZ"
+      },
+      "Default": "2021-12-01T00:00:00Z"
+    },
+    "timeZone": {
+      "Description": {
+        "en": "The time zone.",
+        "zh-cn": "\u65f6\u533a\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "TimeZone",
+      "Default": "UTC"
     },
     "maxBandwidthIn": {
       "Description": {
@@ -44,7 +64,8 @@
       },
       "Type": "Number",
       "MinValue": 1,
-      "MaxValue": 200
+      "MaxValue": 200,
+      "Default": 10
     },
     "maxBandwidthOut": {
       "Description": {
@@ -53,18 +74,20 @@
       },
       "Type": "Number",
       "MinValue": 0,
-      "MaxValue": 100
+      "MaxValue": 100,
+      "Default": 10
     },
     "startHourMinute": {
       "Description": {
-        "en": "The start time of upgrade. Format: hh:mmZ",
-        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u5f00\u59cb\u65f6\u95f4\uff0c\u683c\u5f0f\uff1ahh:mm:ssZ"
+        "en": "The start time of upgrade. Format: HH:mm:ssZ",
+        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u5f00\u59cb\u65f6\u95f4\uff0c\u683c\u5f0f\uff1aHH:mm:ssZ"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "hh:mm:ssZ"
-      }
+        "Format": "HH:mm:ssZ"
+      },
+      "Default": "08:00:00Z"
     },
     "durationHour": {
       "Description": {
@@ -109,7 +132,8 @@
       "Properties": {
         "Type": "cron",
         "Expression": "{{ triggerCron }}",
-        "EndDate": "{{ triggerEndDate }}"
+        "EndDate": "{{ triggerEndDate }}",
+        "TimeZone": "{{ timeZone }}"
       }
     },
     {
@@ -121,6 +145,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -143,6 +168,7 @@
         "Service": "ECS",
         "API": "ModifyInstanceNetworkSpec",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ ACS::TaskLoopItem }}",
           "InternetMaxBandwidthIn": "{{ maxBandwidthIn }}",
           "InternetMaxBandwidthOut": "{{ maxBandwidthOut }}",

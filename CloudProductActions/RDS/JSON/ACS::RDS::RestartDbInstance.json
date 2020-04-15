@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Restarts an RDS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "dBInstanceId": {
       "Description": "The ID of DB Instance that will be restarted.",
       "Type": "String"
@@ -16,6 +21,7 @@
         "Service": "RDS",
         "API": "RestartDBInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         }
       }
@@ -28,6 +34,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         },
         "DesiredValues": [

@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Modify the column credit specification for the T5 series instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The instance ID you will handle.
     Type: String
@@ -20,6 +24,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
   Outputs:
@@ -44,6 +49,7 @@ Tasks:
     Service: ECS
     API: ModifyInstanceAttribute
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
       CreditSpecification: '{{ creditSpecification }}'
 - Name: untilInstanceReady
@@ -53,6 +59,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

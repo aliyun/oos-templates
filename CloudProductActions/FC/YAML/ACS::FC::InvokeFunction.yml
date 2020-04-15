@@ -14,6 +14,10 @@ Parameters:
       - Sync
       - Async
     Default: Sync
+  event:
+    Description: The parameters of the function are inside the event.
+    Type: String
+    Default: ''
   OOSAssumeRole:
     Description: The RAM role to be assumed by OOS.
     Type: String
@@ -32,10 +36,11 @@ Tasks:
         X-Fc-Invocation-Type: '{{ invocationType }}'
       Parameters:
         AccountId: '{{ acs::accountid }}'
+      Body: '{{event}}'
     Outputs:
       data:
         Type: String
-        ValueSelector: .
+        ValueSelector: .data
 Outputs:
   data:
     Type: String

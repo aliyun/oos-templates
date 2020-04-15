@@ -7,12 +7,21 @@ Description:
   categories:
     - image_manage
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description:
       en: The ID of the image to clone.
       zh-cn: 源镜像ID。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   targetRegionIds:
     Description:
       en: The Target Region Ids.
@@ -51,7 +60,7 @@ Parameters:
     Default:
       Mode: Concurrency
       MaxErrors: 0
-      Concurrency: 15
+      Concurrency: 5
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -99,7 +108,7 @@ Tasks:
       en: Copy image to regions chosen.
       zh-cn: 复制镜像到被指定的地域。
     Properties:
-      regionId: '{{ ACS::RegionId }}'
+      regionId: '{{ regionId }}'
       imageId: '{{ imageId }}'
       targetRegionId: '{{ ACS::TaskLoopItem }}'
     Loop:
@@ -119,7 +128,7 @@ Tasks:
       en: Copy image to all available regions.
       zh-cn: 复制镜像到所有可用地域。
     Properties:
-      regionId: '{{ ACS::RegionId }}'
+      regionId: '{{ regionId }}'
       imageId: '{{ imageId }}'
       targetRegionId: '{{ ACS::TaskLoopItem }}'
     Loop:

@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Run the command in the instance of the SLB default service group.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   loadBalancerId:
     Description: The ID of the SLB instance.
     Type: String
@@ -36,6 +40,7 @@ Tasks:
       Service: SLB
       API: SetBackendServers
       Parameters:
+        RegionId: '{{ regionId }}'
         BackendServers:
           'Fn::MergeMapToList':
             - ServerId:
@@ -52,6 +57,7 @@ Tasks:
     Description: Execute cloud assistant command.
     OnError: recoverServerWeight
     Properties:
+      regionId: '{{ regionId }}'
       instanceId: '{{ serverId }}'
       commandType: '{{ commandType }}'
       commandContent: "{{ commandContent }}"
@@ -66,6 +72,7 @@ Tasks:
       Service: SLB
       API: SetBackendServers
       Parameters:
+        RegionId: '{{ regionId }}'
         BackendServers:
           'Fn::MergeMapToList':
             - ServerId:

@@ -7,6 +7,13 @@ Description:
   categories:
     - image_manage
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targetImageName:
     Description:
       en: The name of new image.
@@ -19,6 +26,7 @@ Parameters:
       en: The image ID for the ECS instance.
       zh-cn: 源镜像ID。
     Type: String
+    AllowedPattern: '[A-Za-z0-9_\-\.]*'
   instanceType:
     Description:
       en: The instance type for the ECS instances.
@@ -32,6 +40,8 @@ Parameters:
       zh-cn: 安全组ID。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   vSwitchId:
     Description:
       en: The virtual switch ID for the ECS instances。
@@ -39,6 +49,7 @@ Parameters:
     Type: String
     AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
     AssociationPropertyMetadata:
+      RegionId: regionId
       Filters:
         - SecurityGroupId: securityGroupId
   commandType:
@@ -75,6 +86,7 @@ Tasks:
     Service: ECS
     API: DescribeImages
     Parameters:
+      RegionId: '{{ regionId }}'
       ImageName: '{{ targetImageName }}'
     DesiredValues:
     - 0
@@ -85,6 +97,7 @@ Tasks:
     en: Create a ECS instance with source image.
     zh-cn: 用源镜像创建一台ECS实例。
   Properties:
+    regionId: '{{ regionId }}'
     imageId: '{{ sourceImageId }}'
     instanceType: '{{ instanceType }}'
     securityGroupId: '{{ securityGroupId }}'
@@ -100,6 +113,7 @@ Tasks:
     zh-cn: 给实例安装云助手。
   OnError: deleteInstance
   Properties:
+    regionId: '{{ regionId }}'
     instanceId: '{{ runInstances.instanceId }}'
 - Name: runCommand
   Action: ACS::ECS::RunCommand
@@ -108,6 +122,7 @@ Tasks:
     zh-cn: 在实例中运行云助手命令。
   OnError: deleteInstance
   Properties:
+    regionId: '{{ regionId }}'
     commandContent: '{{ commandContent }}'
     commandType: '{{ commandType }}'
     instanceId: '{{ runInstances.instanceId }}'
@@ -117,6 +132,7 @@ Tasks:
     en: Stops the ECS instance.
     zh-cn: 停止ECS实例。
   Properties:
+    regionId: '{{ regionId }}'
     instanceId: '{{ runInstances.instanceId }}'
 - Name: createImage
   Action: ACS::ECS::CreateImage
@@ -125,6 +141,7 @@ Tasks:
     zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   OnError: deleteInstance
   Properties:
+    regionId: '{{ regionId }}'
     imageName: '{{ targetImageName }}'
     instanceId: '{{ runInstances.instanceId }}'
   Outputs:
@@ -141,6 +158,7 @@ Tasks:
     API: DeleteInstance
     Risk: Normal
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ runInstances.instanceId }}'
       Force: true
 Outputs:

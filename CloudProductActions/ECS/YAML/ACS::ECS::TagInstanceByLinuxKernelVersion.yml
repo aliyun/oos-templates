@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Tag an ECS instance using Linux kernel version as tag value.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
       en: Instance ID of the ECS to be tagged.
@@ -31,6 +35,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -42,6 +47,7 @@ Tasks:
     en: Queries kernel version by RunCommand invocation result.
     zh-cn: 通过运行云助手命令获取实例内核版本。
   Properties:
+    regionId: '{{ regionId }}'
     commandContent: uname -r | awk -F'-' '{print $1}'
     instanceId: '{{ instanceId }}'
     commandType: RunShellScript
@@ -58,6 +64,7 @@ Tasks:
     Service: ECS
     API: TagResources
     Parameters:
+      RegionId: '{{ regionId }}'
       ResourceIds:
       - '{{ instanceId }}'
       ResourceType: Instance

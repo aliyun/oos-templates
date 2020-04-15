@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Deletes ECS instance by specifying instance ID.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The ID of ECS instance.",
       "Type": "String",
@@ -18,6 +23,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -36,6 +42,7 @@
         "Service": "ECS",
         "API": "DeleteInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }

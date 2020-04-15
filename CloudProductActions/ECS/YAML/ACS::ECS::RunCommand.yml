@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Creates a cloud assistant command and triggers it on one ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   commandContent:
     Description: The content of command.
     Type: String
@@ -32,6 +36,7 @@ Tasks:
     Service: ECS
     API: RunCommand
     Parameters:
+      RegionId: '{{ regionId }}'
       CommandContent: '{{ commandContent }}'
       InstanceIds:
         - '{{instanceId}}'
@@ -47,13 +52,12 @@ Tasks:
   Action: ACS::WaitFor
   Description: Waits for the command to be completed.
   OnError: ACS::END
-  Delay: 20
-  Retries: 30
-  DelayType: Constant
+  Retries: 20
   Properties:
     Service: ECS
     API: DescribeInvocations
     Parameters:
+      RegionId: '{{ regionId }}'
       InvokeId: '{{ runCommand.invokeId }}'
     DesiredValues:
     - Finished
@@ -68,6 +72,7 @@ Tasks:
     Service: ECS
     API: DescribeInvocationResults
     Parameters:
+      RegionId: '{{ regionId }}'
       InvokeId: '{{ runCommand.invokeId }}'
   Outputs:
     invocationResult:
@@ -81,6 +86,7 @@ Tasks:
     Service: ECS
     API: DescribeInvocationResults
     Parameters:
+      RegionId: '{{ regionId }}'
       InvokeId: '{{ runCommand.InvokeId }}'
     PropertySelector: 'Invocation.InvocationResults.InvocationResult[].ExitCode'
     DesiredValues:

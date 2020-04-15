@@ -1,10 +1,39 @@
 FormatVersion: OOS-2019-06-01
 Description: Starts an ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of ECS instance.
     Type: String
 Tasks:
+- Name: getInstanceStatus
+  Description: Views the ECS instances status.
+  Action: ACS::ExecuteApi
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceIds:
+        - '{{ instanceId }}'
+  Outputs:
+    status:
+      Type: String
+      ValueSelector: Instances.Instance[].Status
+- Name: whetherInstanceIsReady
+  Action: 'ACS::Choice'
+  Description: Choose next task by instance status.
+  Properties:
+    DefaultTask: startInstance
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'Running'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: ACS::END
 - Name: startInstance
   Action: ACS::ExecuteAPI
   Description: Starts an ECS instance.
@@ -12,6 +41,7 @@ Tasks:
     Service: ECS
     API: StartInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -20,6 +50,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

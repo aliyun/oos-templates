@@ -1,10 +1,43 @@
 FormatVersion: OOS-2019-06-01
 Description: Stops an ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of ECS instance.
     Type: String
+  stoppedMode:
+    Description: Indicates whether the ECS instance is still charged after it is stopped.
+    Type: String
+    Default: ''
 Tasks:
+- Name: getInstanceStatus
+  Description: Views the ECS instances status.
+  Action: ACS::ExecuteApi
+  Properties:
+    Service: ECS
+    API: DescribeInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceIds:
+        - '{{ instanceId }}'
+  Outputs:
+    status:
+      Type: String
+      ValueSelector: Instances.Instance[].Status
+- Name: whetherInstanceIsReady
+  Action: 'ACS::Choice'
+  Description: Choose next task by instance status.
+  Properties:
+    DefaultTask: stopInstance
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'Stopped'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: ACS::END
 - Name: stopInstance
   Action: ACS::ExecuteAPI
   Description: Stops an ECS instance.
@@ -12,7 +45,9 @@ Tasks:
     Service: ECS
     API: StopInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
+      StoppedMode: '{{ stoppedMode }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
   Description: Waits for the ECS instance to enter stooped status.
@@ -20,6 +55,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

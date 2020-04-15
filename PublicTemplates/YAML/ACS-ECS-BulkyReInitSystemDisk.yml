@@ -7,11 +7,19 @@ Description:
   categories:
     - instance_manage
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -37,6 +45,7 @@ Tasks:
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
     Filters:
       - '{{ targets }}'
   Outputs:
@@ -52,6 +61,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ ACS::TaskLoopItem }}'
     DesiredValues:
@@ -69,6 +79,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ ACS::TaskLoopItem }}'
       DiskType: system
   Loop:
@@ -87,6 +98,7 @@ Tasks:
     en: Resets a disk to its initial state.
     zh-cn: 初始化系统盘。
   Properties:
+    regionId: '{{ regionId }}'
     diskId: '{{ ACS::TaskLoopItem }}'
   Loop:
     RateControl: '{{ rateControl }}'

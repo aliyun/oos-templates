@@ -7,6 +7,13 @@ Description:
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   action:
     Type: String
     AllowedValues:
@@ -19,6 +26,7 @@ Parameters:
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -42,26 +50,87 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
       instanceIds:
         Type: List
         ValueSelector: 'Instances.Instance[].InstanceId'
+      instanceInfos:
+        Type: List
+        ValueSelector: '.Instances.Instance[] | {"osType":.OSType, "instanceId":.InstanceId}'
   - Name: runCommand
     Action: 'ACS::ECS::RunCommand'
     Properties:
-      commandContent: >-
-        wget http://logtail-release-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/linux64/logtail.sh -O logtail.sh; chmod 755 logtail.sh; 
-        if [ "{{action}}" = "install" ]; then
-            ./logtail.sh install {{ACS::RegionId}}
-        elif [ "{{action}}" = "upgrade" ]; then
-            ./logtail.sh upgrade
-        else
-            ./logtail.sh uninstall
-        fi
+      commandContent:
+        'Fn::If':
+          - 'Fn::Equals':
+              - 'Fn::Jq':
+                  - First
+                  - '.|map(select(.instanceId == "{{ ACS::TaskLoopItem }}").osType)[]'
+                  - '{{ getInstance.instanceInfos }}'
+              - linux
+          - |-
+            wget http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/linux64/logtail.sh -O logtail.sh; chmod 755 logtail.sh;  if [ "{{action}}" = "install" ]; then
+                ./logtail.sh install {{ regionId }}
+            elif [ "{{action}}" = "upgrade" ]; then
+                ./logtail.sh upgrade
+            else
+                ./logtail.sh uninstall
+            fi
+          - |-
+            $action="{{ action }}"
+
+            $pathExistOrNot = Test-Path -Path "C:\Users\Administrator\OOSPackages"
+            if ($pathExistOrNot)
+            {
+              cd C:\Users\Administrator\OOSPackages
+            } else
+            {
+              mkdir C:\Users\Administrator\OOSPackages
+              cd C:\Users\Administrator\OOSPackages
+              echo 'File created'
+            }
+
+            $client = new-object System.Net.WebClient
+            $client.DownloadFile('http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/win/logtail_installer.zip', 'C:\Users\Administrator\OOSPackages\logtail_installer.zip')
+            Expand-Archive -Force -Path C:\Users\Administrator\OOSPackages\logtail_installer.zip -DestinationPath C:\Users\Administrator\OOSPackages
+            switch($action)
+            {
+                "install" {
+                    .\logtail_installer.exe install {{ regionId }}
+                    echo 'Install complete'
+                }
+                "upgrade" {
+                    .\logtail_installer.exe uninstall
+                    .\logtail_installer.exe install {{ regionId }}
+                    echo 'upgrade complete'
+                }
+                "uninstall" {
+                    .\logtail_installer.exe uninstall
+                    echo 'uninstall complete'
+                }
+            }
+            $allFile = Get-ChildItem -Path "C:\Users\Administrator\OOSPackages"
+            foreach($file in $allFile)
+            {
+              Remove-Item $file.FullName -Recurse -Force
+            }
+            cd ..
+            del C:\Users\Administrator\OOSPackages
       instanceId: '{{ ACS::TaskLoopItem }}'
-      commandType: RunShellScript
+      regionId: '{{ regionId }}'
+      commandType:
+        'Fn::If':
+          - 'Fn::Equals':
+              - 'Fn::Jq':
+                  - First
+                  - '.|map(select(.instanceId == "{{ ACS::TaskLoopItem }}").osType)[]'
+                  - '{{ getInstance.instanceInfos }}'
+              - linux
+          - RunShellScript
+          - RunPowerShellScript
     Loop:
       Items: '{{ getInstance.instanceIds }}'
       RateControl: '{{ rateControl }}'
@@ -77,4 +146,3 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutputs }}'
-

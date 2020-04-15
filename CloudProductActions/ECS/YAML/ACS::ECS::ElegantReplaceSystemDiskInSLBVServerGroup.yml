@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Run the command in the instance of the SLB Vserver group.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description: The ID of image.
     Type: String
@@ -28,6 +32,7 @@ Tasks:
       Service: SLB
       API: SetVServerGroupAttribute
       Parameters:
+        RegionId: '{{ regionId }}'
         BackendServers:
           'Fn::MergeMapToList':
             - ServerId:
@@ -43,6 +48,7 @@ Tasks:
     Action: 'ACS::ECS::ReplaceSystemDisk'
     Description: Replaces the system disk of ECS instances.
     Properties:
+      regionId: '{{ regionId }}'
       instanceId: '{{ serverId }}'
       imageId: '{{ imageId }}'
     Outputs:
@@ -56,6 +62,7 @@ Tasks:
       Service: SLB
       API: SetVServerGroupAttribute
       Parameters:
+        RegionId: '{{ regionId }}'
         BackendServers:
           'Fn::MergeMapToList':
             - ServerId:

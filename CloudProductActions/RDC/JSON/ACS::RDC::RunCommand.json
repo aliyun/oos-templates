@@ -70,8 +70,8 @@
       "Name": "untilInvocationReady",
       "Action": "ACS::WaitFor",
       "Description": "Waits for the command to be completed.",
-      "Delay": 30,
-      "Retries": 40,
+      "Delay": 5,
+      "Retries": 240,
       "DelayType": "Constant",
       "Properties": {
         "Service": "ECS",

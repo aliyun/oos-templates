@@ -10,13 +10,25 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageId": {
       "Description": {
         "en": "The ID of the image to clone.",
         "zh-cn": "\u6e90\u955c\u50cfID\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "targetRegionIds": {
       "Description": {
@@ -61,7 +73,7 @@
       "Default": {
         "Mode": "Concurrency",
         "MaxErrors": 0,
-        "Concurrency": 15
+        "Concurrency": 5
       }
     },
     "OOSAssumeRole": {
@@ -132,7 +144,7 @@
         "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u88ab\u6307\u5b9a\u7684\u5730\u57df\u3002"
       },
       "Properties": {
-        "regionId": "{{ ACS::RegionId }}",
+        "regionId": "{{ regionId }}",
         "imageId": "{{ imageId }}",
         "targetRegionId": "{{ ACS::TaskLoopItem }}"
       },
@@ -161,7 +173,7 @@
         "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
       },
       "Properties": {
-        "regionId": "{{ ACS::RegionId }}",
+        "regionId": "{{ regionId }}",
         "imageId": "{{ imageId }}",
         "targetRegionId": "{{ ACS::TaskLoopItem }}"
       },

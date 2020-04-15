@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Copies the file from OSS to linux instance by RunCommand.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The ID of ECS Instance.",
       "Type": "String",
@@ -30,6 +35,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -48,6 +54,7 @@
         "Service": "ECS",
         "API": "DescribeInstanceRAMRole",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ],
@@ -64,6 +71,7 @@
       "Action": "ACS::ECS::RunCommand",
       "Description": "Invokes ECS instance runcommand and gets invocation output.",
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": {
           "Fn::Join": [
             " ",

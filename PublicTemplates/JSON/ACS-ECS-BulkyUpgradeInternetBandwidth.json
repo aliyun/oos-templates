@@ -37,24 +37,24 @@
     },
     "startTime": {
       "Description": {
-        "en": "The start time of upgrade. Format: yyyy-MM-ddThh:mmZ.",
-        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u5f00\u59cb\u65f6\u95f4\u3002\u6309\u7167ISO8601\u6807\u51c6\u8868\u793a\uff0c\u5e76\u4f7f\u7528UTC +0\u65f6\u95f4\uff0c\u683c\u5f0f\u4e3ayyyy-MM-ddThh:mmZ\u3002\u7cbe\u786e\u5230\u5206\u949f\uff08mm\uff09\u3002"
+        "en": "The start time of upgrade.",
+        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u5f00\u59cb\u65f6\u95f4\u3002"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "yyyy-MM-ddThh:mmZ"
+        "Format": "YYYY-MM-DDTHH:mmZ"
       }
     },
     "endTime": {
       "Description": {
-        "en": "The end time of upgrade. Format: yyyy-MM-ddThhZ.",
-        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u7ed3\u675f\u65f6\u95f4\u3002\u6309\u7167ISO8601\u6807\u51c6\u8868\u793a\uff0c\u5e76\u4f7f\u7528UTC +0\u65f6\u95f4\uff0c\u683c\u5f0f\u4e3ayyyy-MM-ddThhZ\u3002\u7cbe\u786e\u5230\u5c0f\u65f6\uff08hh\uff09\u3002"
+        "en": "The end time of upgrade.",
+        "zh-cn": "\u4e34\u65f6\u5e26\u5bbd\u5347\u7ea7\u7ed3\u675f\u65f6\u95f4\u3002"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "yyyy-MM-ddThhZ"
+        "Format": "YYYY-MM-DDTHHZ"
       }
     },
     "rateControl": {

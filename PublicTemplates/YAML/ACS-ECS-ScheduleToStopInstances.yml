@@ -7,6 +7,13 @@ Description:
   categories:
     - time_trigger
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   cron:
     Description:
       en: "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm.\
@@ -17,17 +24,25 @@ Parameters:
     Default: 0 0 12 ? * *
   endDate:
     Description:
-      en: 'The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.'
-      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddThh:mm:ssZ'
+      en: 'The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.'
+      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddTHH:mm:ssZ'
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
-      Format: 'YYYY-MM-DDThh:mm:ssZ'
+      Format: 'YYYY-MM-DDTHH:mm:ssZ'
+  timeZone:
+    Description:
+      en: The time zone.
+      zh-cn: 时区。
+    Type: String
+    AssociationProperty: TimeZone
+    Default: UTC
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -55,6 +70,7 @@ Tasks:
     Type: cron
     Expression: '{{ cron }}'
     EndDate: '{{ endDate }}'
+    TimeZone: '{{ timeZone }}'
 - Name: getInstance
   Description:
     en: Views the ECS instances.
@@ -62,6 +78,7 @@ Tasks:
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
     Filters:
       - '{{ targets }}'
   Outputs:
@@ -74,6 +91,7 @@ Tasks:
     en: Stops the ECS instances.
     zh-cn: 停止实例
   Properties:
+    regionId: '{{ regionId }}'
     instanceId: '{{ ACS::TaskLoopItem }}'
   Loop:
     RateControl: '{{ rateControl }}'

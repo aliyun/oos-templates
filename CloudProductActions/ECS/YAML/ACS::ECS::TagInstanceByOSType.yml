@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Tag an ECS instance using OS type as tag value.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
       en: Instance ID of the ECS to be tagged.
@@ -29,6 +33,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
   Outputs:
@@ -44,6 +49,7 @@ Tasks:
     Service: ECS
     API: TagResources
     Parameters:
+      RegionId: '{{ regionId }}'
       ResourceIds:
       - '{{ instanceId }}'
       ResourceType: Instance

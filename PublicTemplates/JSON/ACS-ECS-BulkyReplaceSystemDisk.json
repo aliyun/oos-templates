@@ -10,19 +10,32 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageId": {
       "Description": {
         "en": "The ID of image.",
         "zh-cn": "\u955c\u50cfID\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
@@ -58,6 +71,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -77,6 +91,7 @@
         "zh-cn": "\u66f4\u6362\u7cfb\u7edf\u76d8\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "imageId": "{{ imageId }}"
       },

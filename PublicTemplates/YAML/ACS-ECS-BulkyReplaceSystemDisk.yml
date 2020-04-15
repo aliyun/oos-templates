@@ -7,17 +7,27 @@ Description:
   categories:
     - instance_manage
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description:
       en: The ID of image.
       zh-cn: 镜像ID。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -43,6 +53,7 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
@@ -55,6 +66,7 @@ Tasks:
       en: Replaces the system disk of ECS instances.
       zh-cn: 更换系统盘。
     Properties:
+      regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       imageId: '{{ imageId }}'
     Loop:

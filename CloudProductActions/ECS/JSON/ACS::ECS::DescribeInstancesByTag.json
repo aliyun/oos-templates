@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Views the ECS instances by specifying tag.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "tagKey": {
       "Description": "The tag key for query ECS instances.",
       "Type": "String"
@@ -20,6 +25,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "Tags": [
             {
               "Key": "{{ tagKey }}",

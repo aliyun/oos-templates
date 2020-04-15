@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Tag a Linux ECS using RunCommand invocation result as tag value.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
       en: Instance ID of the Linux ECS.
@@ -35,6 +39,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -46,6 +51,7 @@ Tasks:
     en: Invokes cloud assisant command and gets invocation output.
     zh-cn: 获取云助手命令的执行结果。
   Properties:
+    regionId: '{{ regionId }}'
     commandContent: '{{ commandContent }}'
     instanceId: '{{ instanceId }}'
     commandType: RunShellScript
@@ -62,6 +68,7 @@ Tasks:
     Service: ECS
     API: TagResources
     Parameters:
+      RegionId: '{{ regionId }}'
       ResourceIds:
       - '{{ instanceId }}'
       ResourceType: Instance

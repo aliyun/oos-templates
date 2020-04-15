@@ -10,11 +10,21 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
@@ -50,6 +60,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -69,6 +80,7 @@
         "zh-cn": "\u505c\u6b62\u5b9e\u4f8b\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}"
       },
       "Loop": {

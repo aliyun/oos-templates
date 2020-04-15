@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Extends the size of a cloud disk.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "diskId": {
       "Description": "The ID of the disk will resize.",
       "Type": "String",
@@ -29,6 +34,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -48,6 +54,7 @@
         "Service": "ECS",
         "API": "ResizeDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}",
           "NewSize": "{{ newSize }}"
         }
@@ -61,6 +68,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]
@@ -79,6 +87,7 @@
         "Service": "ECS",
         "API": "RebootInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -91,6 +100,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]

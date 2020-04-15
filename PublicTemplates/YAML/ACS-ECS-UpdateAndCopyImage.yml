@@ -12,13 +12,14 @@ Parameters:
       en: The name of new image.
       zh-cn: 新镜像的名称。
     Type: String
-    AllowedPattern: '[A-Za-z0-9\-_]*'
     MinLength: 1
+    Default: UpdateImage_from_{{ sourceImageId }}_on_{{ ACS::ExecutionId }}
   sourceImageId:
     Description:
       en: The image ID for the ECS instance.
       zh-cn: 源镜像ID。
     Type: String
+    AllowedPattern: '[A-Za-z0-9\-_]*'
   instanceType:
     Description:
       en: The instance type for the ECS instances.
@@ -85,8 +86,17 @@ Parameters:
       - eu-west-1
       - me-east-1
       - eu-central-1
+    Default: []
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
     Default:
-      - all-regions
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 5
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -95,19 +105,6 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-- Name: checkNewImageName
-  Action: ACS::CheckFor
-  Description:
-    en: Check image name is available.
-    zh-cn: 检查镜像名称是可用的。
-  Properties:
-    Service: ECS
-    API: DescribeImages
-    Parameters:
-      ImageName: '{{ targetImageName }}'
-    DesiredValues:
-    - 0
-    PropertySelector: TotalCount
 - Name: runInstances
   Action: ACS::ECS::RunInstances
   Description:
@@ -154,7 +151,7 @@ Tasks:
     zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   OnError: deleteInstance
   Properties:
-    imageName: '{{ targetImageName }}'
+    imageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
     instanceId: '{{ runInstances.instanceId }}'
   Outputs:
     imageId:
@@ -214,9 +211,10 @@ Tasks:
     regionId: '{{ ACS::RegionId }}'
     imageId: '{{ createImage.imageId }}'
     targetRegionId: '{{ ACS::TaskLoopItem }}'
+    targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
   Loop:
     Items: '{{ targetRegionIds }}'
-    Concurrency: 15
+    RateControl: '{{ rateControl }}'
     Outputs:
       imageIdsWithRegion:
         AggregateType: 'Fn::ListJoin'
@@ -234,9 +232,10 @@ Tasks:
     regionId: '{{ ACS::RegionId }}'
     imageId: '{{ createImage.imageId }}'
     targetRegionId: '{{ ACS::TaskLoopItem }}'
+    targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
   Loop:
     Items: '{{ queryAllAvailableRegions.regionIds }}'
-    Concurrency: 15
+    RateControl: '{{ rateControl }}'
     Outputs:
       imageIdsWithRegion:
         AggregateType: 'Fn::ListJoin'

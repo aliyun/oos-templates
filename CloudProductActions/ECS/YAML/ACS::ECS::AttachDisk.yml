@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Attaches a data disk to an ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of the instance.
     Type: String
@@ -20,6 +24,7 @@ Tasks:
     Service: ECS
     API: AttachDisk
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskId: '{{ diskId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilDiskAttached
@@ -29,6 +34,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskIds:
       - '{{ diskId }}'
     DesiredValues:

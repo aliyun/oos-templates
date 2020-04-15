@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Deletes DB instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   dBInstanceId:
     Description: The ID of DB Instance that will be deleted.
     Type: String
@@ -12,6 +16,7 @@ Tasks:
     Service: RDS
     API: DescribeDBInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       DBInstanceId: '{{ dBInstanceId }}'
     DesiredValues:
     - Running
@@ -24,6 +29,7 @@ Tasks:
     API: DeleteDBInstance
     Risk: Normal
     Parameters:
+      RegionId: '{{ regionId }}'
       DBInstanceId: '{{ dBInstanceId }}'
 - Name: untilInstanceDeleting
   Action: ACS::WaitFor
@@ -32,6 +38,7 @@ Tasks:
     Service: RDS
     API: DescribeDBInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       DBInstanceId: '{{ dBInstanceId }}'
     PropertySelector: Items.DBInstance[].DBInstanceStatus
     NotDesiredValues:

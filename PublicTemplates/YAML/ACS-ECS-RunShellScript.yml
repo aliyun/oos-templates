@@ -7,6 +7,13 @@ Description:
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
       en: The ID of ECS Instance.
@@ -27,8 +34,8 @@ Parameters:
     Type: String
   timeout:
     Description:
-      en: The value of the invocation timeout period of a command on ECS instances.
-      zh-cn: 最大超时时间。
+      en: The number of the invocation timeout period of a command on ECS instances in seconds.
+      zh-cn: 最大超时时间，时间单位是秒。
     Type: Number
     Default: 600
   OOSAssumeRole:
@@ -45,6 +52,7 @@ Tasks:
     zh-cn: 执行云助手命令。
   Action: ACS::ECS::RunCommand
   Properties:
+    regionId: '{{ regionId }}'
     commandContent: "{{ commandContent }}"
     instanceId: '{{ instanceId }}'
     commandType: RunShellScript

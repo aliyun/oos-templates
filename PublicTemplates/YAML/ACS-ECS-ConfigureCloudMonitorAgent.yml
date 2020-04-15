@@ -7,11 +7,25 @@ Description:
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  action:
+    Type: String
+    Default: install
+    AllowedValues:
+      - install
+      - uninstall
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -35,20 +49,111 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
       instanceIds:
         Type: List
         ValueSelector: 'Instances.Instance[].InstanceId'
+      instanceInfos:
+        Type: List
+        ValueSelector: '.Instances.Instance[] | {"osType":.OSType, "instanceId":.InstanceId}'
   - Name: runCommand
     Action: 'ACS::ECS::RunCommand'
     Properties:
-      commandContent: |-
-        #!/bin/bash
-        VERSION=2.1.56 /bin/bash -c "$(curl -s https://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/cms_go_agent_install-1.4.sh)"
+      commandContent:
+        'Fn::If':
+          - 'Fn::Equals':
+              - 'Fn::Jq':
+                  - First
+                  - '.|map(select(.instanceId == "{{ ACS::TaskLoopItem }}").osType)[]'
+                  - '{{ getInstance.instanceInfos }}'
+              - linux
+          - |-
+            #!/bin/bash
+            if [ "{{action}}" = "install" ]; then
+               VERSION=2.1.56 /bin/bash -c "$(curl -s https://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/cms_go_agent_install-1.4.sh)"
+            elif [ "{{action}}" = "uninstall" ]; then
+               if [ `uname -m` = "x86_64" ]; then
+                   ARCH="amd64"
+               else
+                   ARCH="386"
+               fi
+               /usr/local/cloudmonitor/CmsGoAgent.linux-${ARCH} uninstall && rm -rf /usr/local/cloudmonitor && echo "cloud monitor uninstall success." >& 2
+            else
+               echo "command must be install or uninstall" >& 2
+               exit 1;
+            fi
+          - |-
+            $uname=Get-WmiObject Win32_OperatingSystem |Select-Object -ExpandProperty OSArchitecture
+            if ($uname.contains("64"))
+            {
+              $ARCH="amd64"
+            } else
+            {
+              $ARCH="386"
+            }
+            $pathExistOrNot = Test-Path -Path "C:\Program Files\Alibaba\cloudmonitor\CmsGoAgent.windows-$ARCH.exe"
+            $dictoryExisOrNot = Test-Path -Path "C:\Program Files\Alibaba\cloudmonitor"
+            if ($dictoryExisOrNot)
+            {
+              echo ""
+            } else
+            {
+              mkdir C:\Program Files\Alibaba\cloudmonitor
+              echo 'create dictory'
+            }
+            if ($pathExistOrNot)
+            {
+              cd "C:\Program Files\Alibaba\cloudmonitor"
+            } else
+            {
+              cd "C:\Program Files\Alibaba\cloudmonitor"
+              $client = new-object System.Net.WebClient
+              $client.DownloadFile("http://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/2.1.56/CmsGoAgent.windows-$ARCH.exe", "C:\Program Files\Alibaba\cloudmonitor\CmsGoAgent.windows-$ARCH.exe")
+            }
+            $action="{{ action }}"
+            switch($action)
+            {
+                "install" {
+                    if ($ARCH -eq "amd64")
+                    {
+                      .\CmsGoAgent.windows-amd64.exe install
+                      .\CmsGoAgent.windows-amd64.exe start
+                    } else
+                    {
+                      .\CmsGoAgent.windows-386.exe install
+                      .\CmsGoAgent.windows-386.exe start
+                    }
+                    echo "install complete"
+                }
+                "uninstall" {
+                   if ($ARCH -eq "amd64")
+                   {
+                      .\CmsGoAgent.windows-amd64.exe stop
+                      .\CmsGoAgent.windows-amd64.exe uninstall
+                   } else
+                   {
+                      .\CmsGoAgent.windows-386.exe stop
+                      .\CmsGoAgent.windows-386.exe uninstall
+                   }
+                    echo "uninstall complete"
+                }
+            }
+
       instanceId: '{{ ACS::TaskLoopItem }}'
-      commandType: RunShellScript
+      regionId: '{{ regionId }}'
+      commandType:
+        'Fn::If':
+          - 'Fn::Equals':
+              - 'Fn::Jq':
+                  - First
+                  - '.|map(select(.instanceId == "{{ ACS::TaskLoopItem }}").osType)[]'
+                  - '{{ getInstance.instanceInfos }}'
+              - linux
+          - RunShellScript
+          - RunPowerShellScript
     Loop:
       Items: '{{ getInstance.instanceIds }}'
       RateControl: '{{ rateControl }}'
@@ -64,4 +169,3 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutputs }}'
-

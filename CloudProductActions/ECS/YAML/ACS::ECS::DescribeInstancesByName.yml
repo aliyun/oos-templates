@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Views the ECS instances by specifying instance name.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceName:
     Description: The name for query ECS instances.
     Type: String
@@ -12,6 +16,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceName: '{{ instanceName }}'
   Outputs:
     instanceIds:

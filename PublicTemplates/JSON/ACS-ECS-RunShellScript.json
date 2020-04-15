@@ -10,6 +10,15 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": {
         "en": "The ID of ECS Instance.",
@@ -36,8 +45,8 @@
     },
     "timeout": {
       "Description": {
-        "en": "The value of the invocation timeout period of a command on ECS instances.",
-        "zh-cn": "\u6700\u5927\u8d85\u65f6\u65f6\u95f4\u3002"
+        "en": "The number of the invocation timeout period of a command on ECS instances in seconds.",
+        "zh-cn": "\u6700\u5927\u8d85\u65f6\u65f6\u95f4\uff0c\u65f6\u95f4\u5355\u4f4d\u662f\u79d2\u3002"
       },
       "Type": "Number",
       "Default": 600
@@ -61,6 +70,7 @@
       },
       "Action": "ACS::ECS::RunCommand",
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": "{{ commandContent }}",
         "instanceId": "{{ instanceId }}",
         "commandType": "RunShellScript",

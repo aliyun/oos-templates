@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Tag a Linux ECS using RunCommand invocation result as tag value.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": {
         "en": "Instance ID of the Linux ECS.",
@@ -47,6 +52,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -65,6 +71,7 @@
         "zh-cn": "\u83b7\u53d6\u4e91\u52a9\u624b\u547d\u4ee4\u7684\u6267\u884c\u7ed3\u679c\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": "{{ commandContent }}",
         "instanceId": "{{ instanceId }}",
         "commandType": "RunShellScript"
@@ -87,6 +94,7 @@
         "Service": "ECS",
         "API": "TagResources",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ResourceIds": [
             "{{ instanceId }}"
           ],

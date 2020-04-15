@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Installs cloud assistant on ECS instance by specifying instanceId.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The Id of ECS instance you will install cloud assistant.",
       "Type": "String",
@@ -18,6 +23,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -36,6 +42,7 @@
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": [
             "{{ instanceId }}"
           ]
@@ -83,6 +90,7 @@
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": [
             "{{ instanceId }}"
           ]
@@ -122,6 +130,7 @@
         "Service": "ECS",
         "API": "InstallCloudAssistant",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -136,6 +145,7 @@
         "Service": "ECS",
         "API": "RebootInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -148,6 +158,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -166,6 +177,7 @@
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]

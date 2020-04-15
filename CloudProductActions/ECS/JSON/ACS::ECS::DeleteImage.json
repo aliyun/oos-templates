@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Deletes ECS image by specifying imageId.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageId": {
       "Description": "The ID of ECS image.",
       "Type": "String"
@@ -17,6 +22,7 @@
         "API": "DeleteImage",
         "Risk": "Normal",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}"
         }
       }

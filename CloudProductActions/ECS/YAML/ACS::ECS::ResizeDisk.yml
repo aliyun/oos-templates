@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Extends the size of a cloud disk.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   diskId:
     Description: The ID of the disk will resize.
     Type: String
@@ -23,6 +27,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -36,6 +41,7 @@ Tasks:
     Service: ECS
     API: ResizeDisk
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskId: '{{ diskId }}'
       NewSize: '{{ newSize }}'
 - Name: untilDiskIdReady
@@ -45,6 +51,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskIds:
       - '{{ diskId }}'
     DesiredValues:
@@ -57,6 +64,7 @@ Tasks:
     Service: ECS
     API: RebootInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -65,6 +73,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

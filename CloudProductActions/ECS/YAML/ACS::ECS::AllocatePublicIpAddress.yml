@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Assigns a public IP address to an instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of the instance to be allocated an IP address.
     Type: String
@@ -14,6 +18,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -27,6 +32,7 @@ Tasks:
     Service: ECS
     API: AllocatePublicIpAddress
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
   Outputs:
     ipAddress:
@@ -39,6 +45,7 @@ Tasks:
     Service: ECS
     API: RebootInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -47,6 +54,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

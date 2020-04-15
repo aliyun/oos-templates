@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Creates an RDS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "dBInstanceClass": {
       "Description": "The instance type (specifications).",
       "Type": "String"
@@ -40,6 +45,7 @@
         "Service": "RDS",
         "API": "CreateDBInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceClass": "{{ dBInstanceClass }}",
           "DBInstanceNetType": "{{ dBInstanceNetType }}",
           "DBInstanceStorage": "{{ dBInstanceStorage }}",
@@ -64,6 +70,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ createDBInstance.dBInstanceId }}"
         },
         "DesiredValues": [

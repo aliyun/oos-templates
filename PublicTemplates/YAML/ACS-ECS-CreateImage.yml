@@ -7,18 +7,22 @@ Description:
   categories:
     - image_manage
 Parameters:
-  imageName:
-    Description:
-      en: The name of new image.
-      zh-cn: 新镜像的名称。
+  regionId:
     Type: String
-    AllowedPattern: '[A-Za-z0-9\-_]*'
-    MinLength: 1
-    MaxLength: 30
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
       en: The ID of ECS instance.
       zh-cn: ECS实例ID。
+    Type: String
+  imageName:
+    Description:
+      en: The name of new image.
+      zh-cn: 新镜像的名称。
     Type: String
   OOSAssumeRole:
     Description:
@@ -37,6 +41,7 @@ Tasks:
     Service: ECS
     API: DescribeImages
     Parameters:
+      RegionId: '{{ regionId }}'
       ImageName: '{{ imageName }}'
     DesiredValues:
     - 0
@@ -47,6 +52,7 @@ Tasks:
     en: Create new image with the specified image name and instance ID.
     zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   Properties:
+    regionId: '{{ regionId }}'
     imageName: '{{ imageName }}'
     instanceId: '{{ instanceId }}'
   Outputs:

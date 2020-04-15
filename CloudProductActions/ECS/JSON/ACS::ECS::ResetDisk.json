@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Rolls back a disk to the specific disk status by using one of its snapshots.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "diskId": {
       "Description": "The ID of disk.",
       "Type": "String",
@@ -32,6 +37,7 @@
         "Service": "ECS",
         "API": "StopInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -44,6 +50,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -62,6 +69,7 @@
         "Service": "ECS",
         "API": "ResetDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}",
           "SnapshotId": "{{ snapshotId }}"
         }
@@ -75,6 +83,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]
@@ -93,6 +102,7 @@
         "Service": "ECS",
         "API": "StartInstance",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}"
         }
       }
@@ -105,6 +115,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]

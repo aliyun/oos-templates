@@ -16,15 +16,16 @@
         "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
       },
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9\\-_]*",
-      "MinLength": 1
+      "MinLength": 1,
+      "Default": "UpdateImage_from_{{ sourceImageId }}_on_{{ ACS::ExecutionId }}"
     },
     "sourceImageId": {
       "Description": {
         "en": "The image ID for the ECS instance.",
         "zh-cn": "\u6e90\u955c\u50cfID\u3002"
       },
-      "Type": "String"
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9\\-_]*"
     },
     "instanceType": {
       "Description": {
@@ -109,9 +110,20 @@
         "me-east-1",
         "eu-central-1"
       ],
-      "Default": [
-        "all-regions"
-      ]
+      "Default": []
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 5
+      }
     },
     "OOSAssumeRole": {
       "Description": {
@@ -124,25 +136,6 @@
   },
   "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
-    {
-      "Name": "checkNewImageName",
-      "Action": "ACS::CheckFor",
-      "Description": {
-        "en": "Check image name is available.",
-        "zh-cn": "\u68c0\u67e5\u955c\u50cf\u540d\u79f0\u662f\u53ef\u7528\u7684\u3002"
-      },
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeImages",
-        "Parameters": {
-          "ImageName": "{{ targetImageName }}"
-        },
-        "DesiredValues": [
-          0
-        ],
-        "PropertySelector": "TotalCount"
-      }
-    },
     {
       "Name": "runInstances",
       "Action": "ACS::ECS::RunInstances",
@@ -209,7 +202,7 @@
       },
       "OnError": "deleteInstance",
       "Properties": {
-        "imageName": "{{ targetImageName }}",
+        "imageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}",
         "instanceId": "{{ runInstances.instanceId }}"
       },
       "Outputs": {
@@ -295,11 +288,12 @@
       "Properties": {
         "regionId": "{{ ACS::RegionId }}",
         "imageId": "{{ createImage.imageId }}",
-        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+        "targetRegionId": "{{ ACS::TaskLoopItem }}",
+        "targetImageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}"
       },
       "Loop": {
         "Items": "{{ targetRegionIds }}",
-        "Concurrency": 15,
+        "RateControl": "{{ rateControl }}",
         "Outputs": {
           "imageIdsWithRegion": {
             "AggregateType": "Fn::ListJoin",
@@ -324,11 +318,12 @@
       "Properties": {
         "regionId": "{{ ACS::RegionId }}",
         "imageId": "{{ createImage.imageId }}",
-        "targetRegionId": "{{ ACS::TaskLoopItem }}"
+        "targetRegionId": "{{ ACS::TaskLoopItem }}",
+        "targetImageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}"
       },
       "Loop": {
         "Items": "{{ queryAllAvailableRegions.regionIds }}",
-        "Concurrency": 15,
+        "RateControl": "{{ rateControl }}",
         "Outputs": {
           "imageIdsWithRegion": {
             "AggregateType": "Fn::ListJoin",

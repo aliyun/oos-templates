@@ -2,10 +2,14 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Creates a snapshot for a disk.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "diskId": {
       "Description": "The ID of the disk.",
       "Type": "String",
-      "AllowedPattern": "d-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     }
@@ -19,6 +23,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]
@@ -42,6 +47,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ describeDisks.instanceIds }}"
           ]
@@ -61,6 +67,7 @@
         "Service": "ECS",
         "API": "CreateSnapshot",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}"
         }
       },
@@ -79,6 +86,7 @@
         "Service": "ECS",
         "API": "DescribeSnapshots",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "SnapshotIds": [
             "{{ createSnapshot.snapshotId }}"
           ]

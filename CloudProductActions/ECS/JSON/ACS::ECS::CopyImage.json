@@ -18,6 +18,11 @@
       "MinLength": 1,
       "MaxLength": 30
     },
+    "targetImageName": {
+      "Description": "The Target image name.",
+      "Type": "String",
+      "Default": "{{ imageId }}-{{ACS::ExecutionId}}"
+    },
     "OOSAssumeRole": {
       "Description": "The RAM role to be assumed by OOS.",
       "Type": "String",
@@ -37,7 +42,7 @@
           "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}",
           "DestinationRegionId": "{{ targetRegionId }}",
-          "DestinationImageName": "{{ imageId }}-{{ACS::ExecutionId}}"
+          "DestinationImageName": "{{ targetImageName }}"
         }
       },
       "Outputs": {

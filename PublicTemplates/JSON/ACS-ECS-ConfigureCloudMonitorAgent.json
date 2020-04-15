@@ -10,11 +10,29 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "action": {
+      "Type": "String",
+      "Default": "install",
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ]
+    },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
@@ -47,6 +65,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -55,6 +74,10 @@
         "instanceIds": {
           "Type": "List",
           "ValueSelector": "Instances.Instance[].InstanceId"
+        },
+        "instanceInfos": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[] | {\"osType\":.OSType, \"instanceId\":.InstanceId}"
         }
       }
     },
@@ -62,9 +85,44 @@
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
       "Properties": {
-        "commandContent": "#!/bin/bash\nVERSION=2.1.56 /bin/bash -c \"$(curl -s https://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/cms_go_agent_install-1.4.sh)\"",
+        "commandContent": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".|map(select(.instanceId == \"{{ ACS::TaskLoopItem }}\").osType)[]",
+                    "{{ getInstance.instanceInfos }}"
+                  ]
+                },
+                "linux"
+              ]
+            },
+            "#!/bin/bash\nif [ \"{{action}}\" = \"install\" ]; then\n   VERSION=2.1.56 /bin/bash -c \"$(curl -s https://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/cms_go_agent_install-1.4.sh)\"\nelif [ \"{{action}}\" = \"uninstall\" ]; then\n   if [ `uname -m` = \"x86_64\" ]; then\n       ARCH=\"amd64\"\n   else\n       ARCH=\"386\"\n   fi\n   /usr/local/cloudmonitor/CmsGoAgent.linux-${ARCH} uninstall && rm -rf /usr/local/cloudmonitor && echo \"cloud monitor uninstall success.\" >& 2\nelse\n   echo \"command must be install or uninstall\" >& 2\n   exit 1;\nfi",
+            "$uname=Get-WmiObject Win32_OperatingSystem |Select-Object -ExpandProperty OSArchitecture\nif ($uname.contains(\"64\"))\n{\n  $ARCH=\"amd64\"\n} else\n{\n  $ARCH=\"386\"\n}\n$pathExistOrNot = Test-Path -Path \"C:\\Program Files\\Alibaba\\cloudmonitor\\CmsGoAgent.windows-$ARCH.exe\"\n$dictoryExisOrNot = Test-Path -Path \"C:\\Program Files\\Alibaba\\cloudmonitor\"\nif ($dictoryExisOrNot)\n{\n  echo \"\"\n} else\n{\n  mkdir C:\\Program Files\\Alibaba\\cloudmonitor\n  echo 'create dictory'\n}\nif ($pathExistOrNot)\n{\n  cd \"C:\\Program Files\\Alibaba\\cloudmonitor\"\n} else\n{\n  cd \"C:\\Program Files\\Alibaba\\cloudmonitor\"\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile(\"http://cms-agent-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/cms-go-agent/2.1.56/CmsGoAgent.windows-$ARCH.exe\", \"C:\\Program Files\\Alibaba\\cloudmonitor\\CmsGoAgent.windows-$ARCH.exe\")\n}\n$action=\"{{ action }}\"\nswitch($action)\n{\n    \"install\" {\n        if ($ARCH -eq \"amd64\")\n        {\n          .\\CmsGoAgent.windows-amd64.exe install\n          .\\CmsGoAgent.windows-amd64.exe start\n        } else\n        {\n          .\\CmsGoAgent.windows-386.exe install\n          .\\CmsGoAgent.windows-386.exe start\n        }\n        echo \"install complete\"\n    }\n    \"uninstall\" {\n       if ($ARCH -eq \"amd64\")\n       {\n          .\\CmsGoAgent.windows-amd64.exe stop\n          .\\CmsGoAgent.windows-amd64.exe uninstall\n       } else\n       {\n          .\\CmsGoAgent.windows-386.exe stop\n          .\\CmsGoAgent.windows-386.exe uninstall\n       }\n        echo \"uninstall complete\"\n    }\n}"
+          ]
+        },
         "instanceId": "{{ ACS::TaskLoopItem }}",
-        "commandType": "RunShellScript"
+        "regionId": "{{ regionId }}",
+        "commandType": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".|map(select(.instanceId == \"{{ ACS::TaskLoopItem }}\").osType)[]",
+                    "{{ getInstance.instanceInfos }}"
+                  ]
+                },
+                "linux"
+              ]
+            },
+            "RunShellScript",
+            "RunPowerShellScript"
+          ]
+        }
       },
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",

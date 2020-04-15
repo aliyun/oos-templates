@@ -10,11 +10,21 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
@@ -50,6 +60,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -72,6 +83,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ ACS::TaskLoopItem }}"
           ]
@@ -97,6 +109,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ ACS::TaskLoopItem }}",
           "DiskType": "system"
         }
@@ -125,6 +138,7 @@
         "zh-cn": "\u521d\u59cb\u5316\u7cfb\u7edf\u76d8\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "diskId": "{{ ACS::TaskLoopItem }}"
       },
       "Loop": {

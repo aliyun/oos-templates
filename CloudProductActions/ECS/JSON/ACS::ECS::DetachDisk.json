@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Detaches a disk from an ECS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "instanceId": {
       "Description": "The ID of the ECS instance.",
       "Type": "String",
@@ -25,6 +30,7 @@
         "Service": "ECS",
         "API": "DetachDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}",
           "InstanceId": "{{ instanceId }}"
         }
@@ -38,6 +44,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]

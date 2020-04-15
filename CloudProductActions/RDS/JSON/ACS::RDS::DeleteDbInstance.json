@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Deletes DB instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "dBInstanceId": {
       "Description": "The ID of DB Instance that will be deleted.",
       "Type": "String"
@@ -16,6 +21,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         },
         "DesiredValues": [
@@ -33,6 +39,7 @@
         "API": "DeleteDBInstance",
         "Risk": "Normal",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         }
       }
@@ -45,6 +52,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         },
         "PropertySelector": "Items.DBInstance[].DBInstanceStatus",

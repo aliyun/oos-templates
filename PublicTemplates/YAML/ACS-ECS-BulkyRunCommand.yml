@@ -7,11 +7,19 @@ Description:
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   commandType:
     Description:
       en: The type of command.
@@ -29,6 +37,12 @@ Parameters:
     Type: String
     AssociationProperty: Code
     Default: echo hello
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances.
+      zh-cn: ECS实例中执行命令的超时时间。
+    Type: Number
+    Default: 600
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -54,6 +68,7 @@ Tasks:
     Action: ACS::SelectTargets
     Properties:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
@@ -66,9 +81,11 @@ Tasks:
       en: Execute cloud assistant command.
       zh-cn: 执行云助手命令。
     Properties:
+      regionId: '{{ regionId }}'
       commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       commandType: '{{ commandType }}'
+      timeout: '{{ timeout }}'
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ getInstance.instanceIds }}'

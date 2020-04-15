@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Creates a new database in an instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "characterSetName": {
       "Description": "The charset name of database.",
       "Type": "String"
@@ -24,6 +29,7 @@
         "Service": "RDS",
         "API": "DescribeDBInstanceAttribute",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}"
         },
         "DesiredValues": [
@@ -40,6 +46,7 @@
         "Service": "RDS",
         "API": "CreateDatabase",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "CharacterSetName": "{{ characterSetName }}",
           "DBInstanceId": "{{ dBInstanceId }}",
           "DBName": "{{ dBName }}"
@@ -54,6 +61,7 @@
         "Service": "RDS",
         "API": "DescribeDatabases",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DBInstanceId": "{{ dBInstanceId }}",
           "DBName": "{{ dBName }}"
         },

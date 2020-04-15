@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Restarts the ECS instance by specifying instanceId.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of ECS instance you will reboot.
     Type: String
@@ -14,6 +18,7 @@ Tasks:
     Service: ECS
     API: RebootInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -22,6 +27,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Creates a disk and attaches a data disk to an ECS instance.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "diskName": {
       "Description": "The name of the disk.",
       "Type": "String"
@@ -34,6 +39,7 @@
         "Service": "ECS",
         "API": "DescribeInstances",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceIds": [
             "{{ instanceId }}"
           ]
@@ -53,6 +59,7 @@
         "Service": "ECS",
         "API": "CreateDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskCategory": "{{ diskCategory }}",
           "DiskName": "{{ diskName }}",
           "Size": "{{ size }}",
@@ -74,6 +81,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ createDisk.diskId }}"
           ]
@@ -92,6 +100,7 @@
         "Service": "ECS",
         "API": "AttachDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ createDisk.diskId }}",
           "InstanceId": "{{ instanceId }}"
         }

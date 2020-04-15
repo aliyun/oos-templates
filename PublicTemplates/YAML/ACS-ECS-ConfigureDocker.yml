@@ -7,6 +7,13 @@ Description:
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   action:
     Type: String
     Default: install
@@ -18,6 +25,7 @@ Parameters:
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -41,6 +49,7 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:

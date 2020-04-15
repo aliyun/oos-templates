@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Replaces the system disk of an ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description: The ID of image.
     Type: String
@@ -17,6 +21,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
         - '{{ instanceId }}'
   Outputs:
@@ -41,6 +46,7 @@ Tasks:
     Service: ECS
     API: StopInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -49,6 +55,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -61,6 +68,7 @@ Tasks:
     Service: ECS
     API: ReplaceSystemDisk
     Parameters:
+      RegionId: '{{ regionId }}'
       ImageId: '{{ imageId }}'
       InstanceId: '{{ instanceId }}'
   Outputs:
@@ -74,6 +82,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskIds:
       - '{{ replaceSystemDisk.diskId }}'
     DesiredValues:
@@ -86,6 +95,7 @@ Tasks:
     Service: ECS
     API: StartInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceToRunning
   Action: ACS::WaitFor
@@ -94,6 +104,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

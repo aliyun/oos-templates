@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Creates one or more ECS instances.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description: The ID of the image resource that you specify when you create the
       instance.
@@ -30,6 +34,14 @@ Parameters:
     Description: The specified number of instances you want to create.
     Type: Number
     Default: 1
+  internetMaxBandwidthIn:
+    Description: The maximum inbound public bandwidth.
+    Type: Number
+    Default: 200
+  internetMaxBandwidthOut:
+    Description: The maximum outbound public bandwidth.
+    Type: Number
+    Default: 0
 Tasks:
 - Name: runInstances
   Action: ACS::ExecuteAPI
@@ -38,11 +50,14 @@ Tasks:
     Service: ECS
     API: RunInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       Amount: '{{ amount }}'
       ImageId: '{{ imageId }}'
       InstanceType: '{{ instanceType }}'
       SecurityGroupId: '{{ securityGroupId }}'
       VSwitchId: '{{ vSwitchId }}'
+      InternetMaxBandwidthIn: '{{ internetMaxBandwidthIn }}'
+      InternetMaxBandwidthOut: '{{ internetMaxBandwidthOut }}'
   Outputs:
     instanceIds:
       Type: List
@@ -54,6 +69,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ ACS::TaskLoopItem }}'
     DesiredValues:

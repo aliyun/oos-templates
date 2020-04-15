@@ -10,6 +10,15 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "cron": {
       "Description": {
         "en": "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm. The minimum interval is one minute.",
@@ -21,20 +30,30 @@
     },
     "endDate": {
       "Description": {
-        "en": "The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.",
-        "zh-cn": "\u65f6\u95f4\u89e6\u53d1\u5668\u7ed3\u675f\u65f6\u95f4\u3002\u683c\u5f0f\uff1ayyyy-MM-ddThh:mm:ssZ"
+        "en": "The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.",
+        "zh-cn": "\u65f6\u95f4\u89e6\u53d1\u5668\u7ed3\u675f\u65f6\u95f4\u3002\u683c\u5f0f\uff1ayyyy-MM-ddTHH:mm:ssZ"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
       "AssociationPropertyMetadata": {
-        "Format": "YYYY-MM-DDThh:mm:ssZ"
+        "Format": "YYYY-MM-DDTHH:mm:ssZ"
       }
+    },
+    "timeZone": {
+      "Description": {
+        "en": "The time zone.",
+        "zh-cn": "\u65f6\u533a\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "TimeZone",
+      "Default": "UTC"
     },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
@@ -71,7 +90,8 @@
       "Properties": {
         "Type": "cron",
         "Expression": "{{ cron }}",
-        "EndDate": "{{ endDate }}"
+        "EndDate": "{{ endDate }}",
+        "TimeZone": "{{ timeZone }}"
       }
     },
     {
@@ -83,6 +103,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -102,6 +123,7 @@
         "zh-cn": "\u542f\u52a8\u5b9e\u4f8b\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}"
       },
       "Loop": {

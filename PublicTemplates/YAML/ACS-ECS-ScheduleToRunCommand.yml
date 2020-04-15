@@ -7,6 +7,13 @@ Description:
   categories:
     - time_trigger
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   triggerCron:
     Description:
       en: >-
@@ -19,17 +26,25 @@ Parameters:
     Default: 0 0 12 ? * *
   triggerEndDate:
     Description:
-      en: 'The end date of time trigger. Format: yyyy-MM-ddThh:mm:ssZ.'
-      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddThh:mm:ssZ'
+      en: 'The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.'
+      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddTHH:mm:ssZ'
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
-      Format: 'YYYY-MM-DDThh:mm:ssZ'
+      Format: 'YYYY-MM-DDTHH:mm:ssZ'
+  timeZone:
+    Description:
+      en: The time zone.
+      zh-cn: 时区。
+    Type: String
+    AssociationProperty: TimeZone
+    Default: UTC
   targets:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   commandType:
     Description:
       en: The type of command.
@@ -74,6 +89,7 @@ Tasks:
       Type: cron
       Expression: '{{ triggerCron }}'
       EndDate: '{{ triggerEndDate }}'
+      TimeZone: '{{ timeZone }}'
   - Name: getInstance
     Description:
       en: Views the ECS instances.
@@ -81,6 +97,7 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
@@ -93,6 +110,7 @@ Tasks:
       en: Execute cloud assistant command.
       zh-cn: 执行云助手命令。
     Properties:
+      regionId: '{{ regionId }}'
       commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       commandType: '{{ commandType }}'

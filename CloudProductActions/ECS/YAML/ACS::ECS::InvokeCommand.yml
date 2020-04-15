@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Triggers an exisiting cloud assistant command on one ECS instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   commandId:
     Description: The ID of the cloud assistant command.
     Type: String
@@ -17,6 +21,7 @@ Tasks:
     Service: ECS
     API: InvokeCommand
     Parameters:
+      RegionId: '{{ regionId }}'
       CommandId: '{{ commandId }}'
       InstanceIds:
       - '{{ instanceId }}'
@@ -31,6 +36,7 @@ Tasks:
     Service: ECS
     API: DescribeInvocations
     Parameters:
+      RegionId: '{{ regionId }}'
       InvokeId: '{{ invokeCommand.invokeId }}'
     DesiredValues:
     - Finished
@@ -43,6 +49,7 @@ Tasks:
     Service: ECS
     API: DescribeInvocationResults
     Parameters:
+      RegionId: '{{ regionId }}'
       InvokeId: '{{ invokeCommand.invokeId }}'
   Outputs:
     invocationResult:

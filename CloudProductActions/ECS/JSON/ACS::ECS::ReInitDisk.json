@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Resets a disk to its initial status.The specified ECS instances should be in stopped status.",
   "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "diskId": {
       "Description": "The ID of disk you will re init.",
       "Type": "String",
@@ -19,6 +24,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]
@@ -37,6 +43,7 @@
         "Service": "ECS",
         "API": "ReInitDisk",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}"
         }
       }
@@ -49,6 +56,7 @@
         "Service": "ECS",
         "API": "DescribeDisks",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "DiskIds": [
             "{{ diskId }}"
           ]

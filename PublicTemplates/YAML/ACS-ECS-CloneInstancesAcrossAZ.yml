@@ -1,47 +1,118 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Cross available zone copy and run ECS instance of same InstanceType by InstanceIds.
-  zh-cn: 跨可用区克隆ECS实例。
+  en: Cross available zone clone and bulky run ECS instance.
+  zh-cn: 跨可用区批量克隆ECS实例。
   name-en: ACS-ECS-CloneInstancesAcrossAZ
-  name-zh-cn: 跨可用区克隆ECS实例
+  name-zh-cn: 跨可用区批量克隆ECS实例
   categories:
     - cross_region
 Parameters:
-  instanceIds:
-    Description:
-      en: The ID list of the ECS instance.
-      zh_ch: ECS实例ID列表。
-    Type: List
   regionId:
-    Description:
-      en: The Source Region Id.
-      zh-cn: 地域ID。
     Type: String
-    MinLength: 1
-    MaxLength: 30
-  targetZoneId:
+    Description: region id
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
     Description:
-      en: The target Zone Id.
-      zh-cn: 可用去ID。
-    Type: String
-    MinLength: 1
-    MaxLength: 30
+      en: instances to clone.
+      zh-cn: 将克隆的实例
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   targetSecurityGroupId:
     Description:
-      en: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.
-      zh-cn: '安全组ID。格式:sg-xxxxxxxxxxxxxxxxxxxx'
+      en: 'The security group id for the new ECS instances'
+      zh-cn: '新实例的安全组ID。'
     Type: String
-    AllowedPattern: 'sg-[A-Za-z0-9]*'
-    MinLength: 1
-    MaxLength: 30
+    AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   targetVSwitchId:
     Description:
-      en: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.
-      zh-cn: 交换机ID。
+      en: 'The virtual switch id for the new ECS instances,target zone id will be chosen when targetVSwitchId parameter is filled in'
+      zh-cn: 新实例的交换机ID，填写本参数时将会决定目的可用区。
     Type: String
-    AllowedPattern: 'vsw-[A-Za-z0-9]*'
-    MinLength: 1
-    MaxLength: 30
+    AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      Filters:
+        - SecurityGroupId: targetSecurityGroupId
+  targetResourceGroupId:
+    Description:
+      en: The target resource group id that the new ECS instance is to add in.
+      zh-cn: 新实例将加入的目的资源组ID。
+    Type: String
+    Default: ' '
+  targetInstanceType:
+    Description:
+      en: 'The instance type for the new ECS instances.'
+      zh-cn: '新实例规格。'
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Default: ' '
+  targetTags:
+    Description:
+      en: The tags for new ECS instances.
+      zh-cn: 新实例的标签。
+    Type: Json
+    AssociationProperty: Tags
+  targetInstanceChargeType:
+    Description:
+      en: The charge type for new ECS instances,the default is PostPaid.
+      zh-cn: 新实例的付费模式，默认按量付费。
+    Type: String
+    AllowedValues:
+      - PrePaid
+      - PostPaid
+    Default: PostPaid
+  targetPeriodUnit:
+    Description:
+      en: Please select the PeriodUnit when charge type of ECS new instances is PrePaid,the default is Month.
+      zh-cn: 当新实例的付费方式选择包年包月时，请在此处选择时长单位，默认单位是月。
+    Type: String
+    AllowedValues:
+      - Week
+      - Month
+      - ' '
+    Default: ' '
+  targetPeriod:
+    Description:
+      en: Please fill in the Period when charge type of ECS new instances is PrePaid,the default is 1.
+      zh-cn: 当新实例的付费方式选择包年包月时，请在此处填写时长数，默认值为1。
+    Type: Number
+    Default: 1
+  targetDeploymentSetId:
+    Description:
+      en: The deploymentset id for the new ECS instances.
+      zh-cn: 新实例的部署集ID。
+    Type: String
+    Default: ' '
+  targetInstanceName:
+    Description:
+      en: The instance name for new ECS instances.
+      zh-cn: 新实例的名称。
+    Type: String
+    Default: ' '
+  targetHostName:
+    Description:
+      en: The host name for new ECS instances.
+      zh-cn: 新实例的主机名称。
+    Type: String
+    Default: ' '
+  rateControl:
+    Description:
+      en: Concurrency rate and MaxErrors of loop task execution.
+      zh-cn: 循环任务执行的并发率及容错数。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -50,100 +121,56 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-  - Name: queryInstancetype
-    Action: 'ACS::ExecuteAPI'
+  - Name: getInstance
     Description:
-      en: Views the ECS instances' InstanceType.
-      zh-cn: 获取实例类型。
+      en: Views the ECS instances.
+      zh-cn: 获取ECS实例。
+    Action: 'ACS::SelectTargets'
     Properties:
-      Service: ECS
-      API: DescribeInstances
-      Parameters:
-        RegionId: '{{ regionId }}'
-        InstanceIds: '{{ instanceIds }}'
+      RegionId: '{{regionId}}'
+      ResourceType: 'ALIYUN::ECS::Instance'
+      Filters:
+        - '{{ targets }}'
     Outputs:
-      instanceType:
-        ValueSelector: Instances.Instance[0].InstanceType
-        Type: String
-  - Name: createImage
-    Action: 'ACS::ExecuteAPI'
+      instanceIds:
+        Type: List
+        ValueSelector: 'Instances.Instance[].InstanceId'
+
+  - Name: cloneInstancesAcrossAZ
+    Action: 'ACS::Template'
     Description:
-      en: Create Image.
-      zh-cn: 创建镜像。
+      en: Clone instances.
+      zh-cn: 克隆实例。
     Properties:
-      Service: ECS
-      API: CreateImage
+      TemplateName: 'ACS::ECS::CloneInstanceAcrossAZ'
       Parameters:
-        RegionId: '{{ regionId }}'
-        ImageName: 'img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}'
-        InstanceId: '{{ ACS::TaskLoopItem }}'
+        imageName: 'img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}'
+        instanceId: '{{ ACS::TaskLoopItem }}'
+        targetSecurityGroupId: '{{ targetSecurityGroupId }}'
+        targetResourceGroupId: '{{ targetResourceGroupId }}'
+        targetVSwitchId: '{{ targetVSwitchId }}'
+        regionId: '{{ regionId }}'
+        targetInstanceName: '{{ targetInstanceName }}'
+        targetInstanceChargeType: '{{ targetInstanceChargeType }}'
+        targetPeriodUnit: '{{ targetPeriodUnit }}'
+        targetPeriod: '{{ targetPeriod }}'
+        targetInstanceType: '{{ targetInstanceType }}'
+        targetHostName: '{{ targetHostName }}'
+        targetDeploymentSetId: '{{ targetDeploymentSetId }}'
+        tags: '{{ targetTags }}'
+        OOSAssumeRole: '{{OOSAssumeRole}}'
     Loop:
-      Items: '{{ instanceIds }}'
-      Outputs:
-        ImageIds:
-          AggregateType: 'Fn::ListJoin'
-          AggregateField: ImageId
-    Outputs:
-      ImageId:
-        ValueSelector: ImageId
-        Type: String
-  - Name: untilCreateImageReady
-    Action: 'ACS::WaitFor'
-    Description:
-      en: Wait for created images available.
-      zh-cn: 等待镜像创建成功。
-    Properties:
-      Service: ECS
-      API: DescribeImages
-      Parameters:
-        RegionId: '{{ regionId }}'
-        ImageId: '{{ ACS::TaskLoopItem }}'
-      DesiredValues:
-        - Available
-      PropertySelector: 'Images.Image[].Status'
-    Loop:
-      Items: '{{ createImage.ImageIds }}'
-    Retries: 17
-  - Name: runInstances
-    Action: 'ACS::ExecuteAPI'
-    Description:
-      en: Run Instances.
-      zh-cn: 创建实例。
-    Properties:
-      Service: ECS
-      API: RunInstances
-      Parameters:
-        RegionId: '{{ regionId }}'
-        ZoneId: '{{ targetZoneId }}'
-        ImageId: '{{ ACS::TaskLoopItem }}'
-        InstanceType: '{{ queryInstancetype.instanceType }}'
-        SecurityGroupId: '{{ targetSecurityGroupId }}'
-        VSwitchId: '{{ targetVSwitchId }}'
-    Loop:
-      Items: '{{ createImage.ImageIds }}'
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
       Outputs:
         instanceIds:
           AggregateType: 'Fn::ListJoin'
           AggregateField: instanceId
     Outputs:
       instanceId:
+        ValueSelector: instanceId
         Type: String
-        ValueSelector: 'InstanceIdSets.InstanceIdSet[]'
-  - Name: untilInstanceReady
-    Action: 'ACS::WaitFor'
-    Description:
-      en: Wait for instances running.
-      zh-cn: 等待实例到Running状态。
-    Properties:
-      Service: ECS
-      API: DescribeInstances
-      Parameters:
-        RegionId: '{{ regionId }}'
-        InstanceIds: '{{ runInstances.instanceIds }}'
-      DesiredValues:
-        - Running
-      PropertySelector: 'Instances.Instance[].Status'
 Outputs:
   instanceIds:
-    Value: '{{ runInstances.instanceIds }}'
+    Value: '{{ cloneInstancesAcrossAZ.instanceIds }}'
     Type: List

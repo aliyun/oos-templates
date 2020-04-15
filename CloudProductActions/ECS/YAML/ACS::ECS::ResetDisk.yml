@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Rolls back a disk to the specific disk status by using one of its snapshots.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   diskId:
     Description: The ID of disk.
     Type: String
@@ -26,6 +30,7 @@ Tasks:
     Service: ECS
     API: StopInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceStopped
   Action: ACS::WaitFor
@@ -34,6 +39,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -46,6 +52,7 @@ Tasks:
     Service: ECS
     API: ResetDisk
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskId: '{{ diskId }}'
       SnapshotId: '{{ snapshotId }}'
 - Name: untilDiskIdReady
@@ -55,6 +62,7 @@ Tasks:
     Service: ECS
     API: DescribeDisks
     Parameters:
+      RegionId: '{{ regionId }}'
       DiskIds:
       - '{{ diskId }}'
     DesiredValues:
@@ -67,6 +75,7 @@ Tasks:
     Service: ECS
     API: StartInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
@@ -75,6 +84,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:

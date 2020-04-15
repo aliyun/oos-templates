@@ -1,6 +1,10 @@
 FormatVersion: OOS-2019-06-01
 Description: Creates an elastic network interface (ENI) and attaches to an instance.
 Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
   instanceId:
     Description: The ID of the ECS instance.
     Type: String
@@ -26,6 +30,7 @@ Tasks:
     Service: ECS
     API: DescribeInstances
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceIds:
       - '{{ instanceId }}'
     DesiredValues:
@@ -39,6 +44,7 @@ Tasks:
     Service: ECS
     API: CreateNetworkInterface
     Parameters:
+      RegionId: '{{ regionId }}'
       SecurityGroupId: '{{ securityGroupId }}'
       VSwitchId: '{{ vSwitchId }}'
   Outputs:
@@ -52,6 +58,7 @@ Tasks:
     Service: ECS
     API: AttachNetworkInterface
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
       NetworkInterfaceId: '{{ createNetworkInterface.networkInterfaceId }}'
 Outputs:
