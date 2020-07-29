@@ -1,0 +1,109 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use lifecycleHook to allocate EIP and attach them to the instance (only supports elastic expansion activities).
+  zh-cn: 使用生命周期挂钩批量创建弹性IP并将其绑定到实例上(仅支持弹性扩张活动)。
+  name-en: ACS-ESS-LifeCycleAllocateEipAddressAndAttachToInstance
+  name-zh-cn: 使用生命周期挂钩创建EIP并绑定到实例上
+  categories:
+    - elastic_manage
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region.
+      zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
+    Type: String
+    Default: '${regionId}'
+  instanceIds:
+    Description:
+      en: The ID list of the ECS instance.
+      zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
+    Type: List
+    Default:
+      - '${instanceIds}'
+  lifecycleHookId:
+    Description:
+      en: The ID of the lifecycle hook.
+      zh-cn: '生命周期ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
+    Type: String
+    Default: '${lifecycleHookId}'
+  lifecycleActionToken:
+    Description:
+      en: The token that indicates a specific scaling activity associated with an instance.
+      zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
+    Type: String
+    Default: '${lifecycleActionToken}'
+  internetChargeType:
+    Description:
+      en: EIP measurement method.
+      zh-cn: 'EIP的计量方式（PayByBandwidth：按带宽计费，PayByTraffic：按流量计费）。'
+    Type: String
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+    Default: PayByBandwidth
+  bandwidth:
+    Description:
+      en: 'Peak bandwidth of eip, unit: Mbps.'
+      zh-cn: 'EIP的带宽峰值（Mbps）。'
+    Type: Number
+    Default: 5
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 5
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: createNetWorkInterfaceAndEipAndAttachToInstance
+    Action: 'ACS::ECS::AllocateEipAddressAndAttachToInstance'
+    OnSuccess: CompleteLifecycleActionForContinue
+    OnError: CompleteLifecycleActionForAbandon
+    Description:
+      en: Create the eip and attach to instace.
+      zh-cn: 创建弹性IP并将其绑定到实例上。
+    Properties:
+      regionId: '{{ regionId }}'
+      internetChargeType: '{{ internetChargeType }}'
+      bandwidth: '{{ bandwidth }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceIds }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modify lifecycle action for continue.
+      zh-cn: 修改伸缩活动的等待状态为继续完成。
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
+  - Name: CompleteLifecycleActionForAbandon
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Complete lifecycle action for Abandon.
+      zh-cn: 修改伸缩活动的等待状态为弃用。
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON

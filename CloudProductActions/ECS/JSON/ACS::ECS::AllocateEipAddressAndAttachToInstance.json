@@ -1,0 +1,185 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Create the eip and bind the to instance.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ecs instance id.",
+      "Type": "String"
+    },
+    "internetChargeType": {
+      "Description": "EIP measurement method.",
+      "Type": "String",
+      "AllowedValues": [
+        "PayByBandwidth",
+        "PayByTraffic"
+      ],
+      "Default": "PayByBandwidth"
+    },
+    "bandwidth": {
+      "Description": "Peak bandwidth of eip.",
+      "Type": "Number",
+      "Default": 5
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "waitInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Delay": 15,
+      "Retries": 7,
+      "DelayType": "Constant",
+      "Description": "Wait ECS instance is in the running or stopped status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running",
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "allocateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Apply for eip.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "AllocateEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InternetChargeType": "{{ internetChargeType }}",
+          "Bandwidth": "{{ bandwidth }}"
+        }
+      },
+      "Outputs": {
+        "allocationId": {
+          "Type": "String",
+          "ValueSelector": ".AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "waitEipAddressReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the eip util Available.",
+      "Delay": 15,
+      "Retries": 7,
+      "DelayType": "Constant",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
+      }
+    },
+    {
+      "Name": "associateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Bind the eip to instance.",
+      "OnError": "unassociateEipAddress",
+      "Properties": {
+        "Service": "ECS",
+        "API": "AssociateEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "waitEipAddressInUse",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the eip util Available.",
+      "Delay": 15,
+      "Retries": 7,
+      "DelayType": "Constant",
+      "OnSuccess": "ACS::END",
+      "OnError": "unassociateEipAddress",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        },
+        "DesiredValues": [
+          "InUse"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
+      }
+    },
+    {
+      "Name": "unassociateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Unasscocatie the eip from network interface.",
+      "OnError": "waitEipAddressAvailable",
+      "Properties": {
+        "Service": "ECS",
+        "API": "UnassociateEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "waitEipAddressAvailable",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the eip util Available.",
+      "Delay": 15,
+      "Retries": 7,
+      "DelayType": "Constant",
+      "OnError": "releaseEipAddress",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
+      }
+    },
+    {
+      "Action": "ACS::ExecuteAPI",
+      "Name": "releaseEipAddress",
+      "Description": "Release the eip.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ReleaseEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceAndAllocationId": {
+      "Type": "String",
+      "Value": "{instanceId:{{ instanceId }}, allocationId: {{ allocateEipAddress.allocationId }}}"
+    }
+  }
+}

@@ -1,0 +1,431 @@
+FormatVersion: OOS-2019-06-01
+Description: Run kubectl command on CS command.
+Parameters:
+  clusterId:
+    Description: The ID of cluster.
+    Type: String
+  commandContent:
+    Description: The content of command.
+    Type: String
+    AssociationProperty: Code
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getUserKubeconfig
+    Action: 'ACS::ExecuteAPI'
+    Description: Views the Kubeconfig of specified cluster.
+    Properties:
+      Service: CS
+      API: DescribeClusterV2UserKubeconfig
+      Method: GET
+      URI: '/api/v2/k8s/{{clusterId}}/user_config'
+    Outputs:
+      kubeconfig:
+        Type: String
+        ValueSelector: .config
+  - Name: getService
+    Action: 'ACS::ExecuteAPI'
+    Description: Views specified service's status.
+    OnError: getVPC
+    OnSuccess: createInvokerStack
+    Properties:
+      Service: FC
+      API: GetService
+      Method: GET
+      URI: '/services/OOS-CS-Kubectl-{{clusterId}}'
+      Headers: Null
+      Parameters:
+        AccountId: '{{ ACS::AccountId }}'
+      Body: Null
+  - Name: getVPC
+    Action: 'ACS::ExecuteAPI'
+    Description: Views cluster's kubeconfig.
+    Properties:
+      Service: CS
+      API: DescribeClusters
+      Method: GET
+      URI: '/clusters/{{clusterId}}'
+    Outputs:
+      VPCId:
+        Type: String
+        ValueSelector: .vpc_id
+      securityGroupId:
+        Type: String
+        ValueSelector: security_group_id
+  - Name: getCidrBlock
+    Action: 'ACS::ExecuteAPI'
+    Description: Views VPC's CidrBlock.
+    Properties:
+      Service: VPC
+      API: DescribeVpcAttribute
+      Parameters:
+        VpcId: '{{ getVPC.vpcId }}'
+    Outputs:
+      cidrBlock:
+        Type: String
+        ValueSelector: .CidrBlock
+  - Name: createVSwitch
+    Action: 'ACS::ExecuteAPI'
+    Description: Create a VSwitch.
+    Properties:
+      Service: VPC
+      API: CreateVSwitch
+      Parameters:
+        CidrBlock:
+          'Fn::Join':
+            - .
+            - - 'Fn::Select':
+                  - 0
+                  - 'Fn::Split':
+                      - .
+                      - '{{ getCidrBlock.cidrBlock }}'
+              - 'Fn::Select':
+                  - 1
+                  - 'Fn::Split':
+                      - .
+                      - '{{ getCidrBlock.cidrBlock }}'
+              - '222'
+              - 'Fn::Join':
+                  - /
+                  - - 'Fn::Select':
+                        - 0
+                        - 'Fn::Split':
+                            - /
+                            - 'Fn::Select':
+                                - 3
+                                - 'Fn::Split':
+                                    - .
+                                    - '{{ getCidrBlock.cidrBlock }}'
+                    - '24'
+        VpcId: '{{ getVPC.vpcId }}'
+        ZoneId:
+          'Fn::If':
+            - 'Fn::Equals':
+                - cn-hangzhou
+                - '{{ ACS::RegionId }}'
+            - cn-hangzhou-g
+            - 'Fn::If':
+                - 'Fn::Equals':
+                    - cn-beijing
+                    - '{{ ACS::RegionId }}'
+                - cn-beijing-c
+                - 'Fn::If':
+                    - 'Fn::Equals':
+                        - cn-shanghai
+                        - '{{ ACS::RegionId }}'
+                    - cn-shanghai-e
+                    - 'Fn::If':
+                        - 'Fn::Equals':
+                            - cn-zhangjiakou
+                            - '{{ ACS::RegionId }}'
+                        - cn-zhangjiakou-b
+                        - 'Fn::If':
+                            - 'Fn::Equals':
+                                - cn-huhehaote
+                                - '{{ ACS::RegionId }}'
+                            - cn-huhehaote-a
+                            - 'Fn::If':
+                                - 'Fn::Equals':
+                                    - cn-shenzhen
+                                    - '{{ ACS::RegionId }}'
+                                - cn-shenzhen-d
+                                - 'Fn::If':
+                                    - 'Fn::Equals':
+                                        - cn-hongkong
+                                        - '{{ ACS::RegionId }}'
+                                    - cn-hongkong-c
+                                    - 'Fn::If':
+                                        - 'Fn::Equals':
+                                            - ap-southeast-1
+                                            - '{{ ACS::RegionId }}'
+                                        - ap-southeast-1a
+                                        - 'Fn::If':
+                                            - 'Fn::Equals':
+                                                - ap-southeast-2
+                                                - '{{ ACS::RegionId }}'
+                                            - ap-southeast-2a
+                                            - 'Fn::If':
+                                                - 'Fn::Equals':
+                                                    - ap-southeast-5
+                                                    - '{{ ACS::RegionId }}'
+                                                - ap-southeast-5a
+                                                - 'Fn::If':
+                                                    - 'Fn::Equals':
+                                                        - ap-northeast-1
+                                                        - '{{ ACS::RegionId }}'
+                                                    - ap-northeast-1b
+                                                    - 'Fn::If':
+                                                        - 'Fn::Equals':
+                                                            - eu-central-1
+                                                            - '{{ ACS::RegionId }}'
+                                                        - eu-central-1a
+                                                        - 'Fn::If':
+                                                            - 'Fn::Equals':
+                                                                - us-east-1
+                                                                - '{{ ACS::RegionId }}'
+                                                            - us-east-1a
+                                                            - 'Fn::If':
+                                                                - 'Fn::Equals':
+                                                                    - ap-south-1
+                                                                    - '{{ ACS::RegionId }}'
+                                                                - ap-south-1a
+                                                                - ''
+    Outputs:
+      vSwitchId:
+        Type: String
+        ValueSelector: VSwitchId
+  - Name: untilVSwitchReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the VSwitch to be available.
+    Properties:
+      Service: ECS
+      API: DescribeVSwitches
+      Parameters:
+        VSwitchId: '{{ createVSwitch.vSwitchId }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'VSwitches.VSwitch[].Status'
+  - Name: createStack
+    Action: 'ACS::ExecuteAPI'
+    Description: Create a resource stack.
+    Properties:
+      Service: ROS
+      API: CreateStack
+      Parameters:
+        StackName: 'OOS-{{ clusterId }}'
+        TimeoutInMinutes: 10
+        DisableRollback: true
+        Parameters:
+          - ParameterKey: Event
+            ParameterValue:
+              'Fn::Base64Encode':
+                'Fn::Join':
+                  - '&'
+                  - - '{{ getUserKubeconfig.Kubeconfig }}'
+                    - '{{ commandContent }}'
+                    - 'wget https://oos-fc.oss-cn-beijing.aliyuncs.com/kubectl;export KUBECONFIG=/tmp/kubeconfig;chmod +x /tmp/kubectl;export PATH=$PATH:/tmp;/bin/bash /tmp/script.sh'
+        TemplateBody: |-
+          {
+            "ROSTemplateFormatVersion": "2015-09-01",
+            "Parameters": {
+              "ServiceName": {
+                "Type": "String",
+                "Default": "OOS-CS-Kubectl-{{ clusterId }}"
+              },
+              "FunctionName": {
+                "Type": "String",
+                "Default": "OOS-CS-Kubectl-{{ clusterId }}"
+              },
+              "ExecuteVersion": {
+                "Type": "Number",
+                "Default": 1
+              },
+              "Event": {
+                "Type": "String",
+              }
+            },
+            "Resources": {
+              "Service": {
+                "Type": "ALIYUN::FC::Service",
+                "Properties": {
+                  "ServiceName": {
+                        "Ref": "ServiceName"
+                    },
+                  "VpcConfig": {
+                    "VpcId": "{{ getVPC.VPCId }}",
+                    "SecurityGroupId": "{{ getVPC.securityGroupId }}",
+                    "VSwitchIds": [
+                      "{{ createVSwitch.vSwitchId }}"
+                    ]
+                  },
+                  "Role": "acs:ram::{{ACS::AccountId}}:role/OOSServiceRole"
+                }
+              },
+              "Function": {
+                "Type": "ALIYUN::FC::Function",
+                "DependsOn": "Service",
+                "Properties": {
+                  "ServiceName": {
+                         "Ref": "ServiceName"
+                    },
+                  "FunctionName": {
+                        "Ref": "FunctionName"
+                    },
+                  "Code":  {
+                      "SourceCode": "# -*- coding: utf-8 -*-   \nimport subprocess\nimport os\nimport base64\n\ndef handler(event, context):\n    os.chdir('/tmp')\n    event = str(base64.b64decode(event), encoding='utf-8')\n    events = event.split('&')\n    with open('/tmp/kubeconfig', 'w') as f:\n        f.write(events[0])\n    with open('/tmp/script.sh', 'w') as f:\n        f.write(events[1])\n    with open('/tmp/invoke.sh', 'w') as f:\n        f.write(events[2])\n    ret = subprocess.check_output(['bash', '/tmp/invoke.sh'])\n    return ret"
+                  },
+                  "Handler": "index.handler",
+                  "Runtime": "python3",
+                  "Timeout": 180
+                }
+              },
+              "FunctionInvoker": {
+                "Type": "ALIYUN::FC::FunctionInvoker",
+                "DependsOn": "Function",
+                "Properties": {
+                  "ServiceName": {
+                         "Ref": "ServiceName"
+                  },
+                  "FunctionName": {
+                        "Ref": "FunctionName"
+                  },
+                  "Async": false,
+                  "Event": {
+                         "Ref": "Event"
+                  },
+                  "ExecuteVersion":  {
+                         "Ref": "ExecuteVersion"
+                  }
+                }
+              }
+            },
+            "Outputs": {
+              "Result": {
+                "Description": "Depends on result type:\nNoResult: Async invoke has no result.\nSuccess: The response of run function. It\u2019s in binary format. Users can interpret the data according to their function implementation.\nFailure: Error Message.",
+                "Value": {
+                    "Fn::GetAtt": [
+                        "FunctionInvoker",
+                        "Result"
+                    ]
+                }
+              }
+            }
+          }
+    Outputs:
+      StackId:
+        Type: String
+        ValueSelector: StackId
+  - Name: untilStackReady
+    Action: 'ACS::WaitFor'
+    OnSuccess: 'ACS::END'
+    Description: Wait the stack status util CREATE_COMPLETE.
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+      DesiredValues:
+        - CREATE_COMPLETE
+      StopRetryValues:
+        - CREATE_FAILED
+        - CHECK_FAILED
+        - ROLLBACK_FAILED
+        - ROLLBACK_COMPLETE
+      PropertySelector: Status
+    Outputs:
+      result:
+        Type: String
+        ValueSelector: 'Outputs[].OutputValue'
+  - Name: createInvokerStack
+    Action: 'ACS::ExecuteAPI'
+    Description: Create a resource stack.
+    Properties:
+      Service: ROS
+      API: CreateStack
+      Parameters:
+        StackName: 'OOS-{{ clusterId }}-invoker'
+        TimeoutInMinutes: 10
+        DisableRollback: true
+        Parameters:
+          - ParameterKey: Event
+            ParameterValue:
+              'Fn::Base64Encode':
+                'Fn::Join':
+                  - '&'
+                  - - '{{ getUserKubeconfig.Kubeconfig }}'
+                    - '{{ commandContent }}'
+                    - 'wget https://oos-fc.oss-cn-beijing.aliyuncs.com/kubectl;export KUBECONFIG=/tmp/kubeconfig;chmod +x /tmp/kubectl;export PATH=$PATH:/tmp;/bin/bash /tmp/script.sh'
+        TemplateBody: |-
+          {
+            "ROSTemplateFormatVersion": "2015-09-01",
+            "Parameters": {
+              "ServiceName": {
+                "Type": "String",
+                "Default": "OOS-CS-Kubectl-{{ clusterId }}"
+              },
+              "FunctionName": {
+                "Type": "String",
+                "Default": "OOS-CS-Kubectl-{{ clusterId }}"
+              },
+              "ExecuteVersion": {
+                "Type": "Number",
+                "Default": 1
+              },
+              "Event": {
+                "Type": "String",
+              }
+            },
+            "Resources": {
+              "FunctionInvoker": {
+                "Type": "ALIYUN::FC::FunctionInvoker",
+                "Properties": {
+                  "ServiceName": {
+                         "Ref": "ServiceName"
+                  },
+                  "FunctionName": {
+                        "Ref": "FunctionName"
+                  },
+                  "Async": false,
+                  "Event": {
+                         "Ref": "Event"
+                  },
+                  "ExecuteVersion":  {
+                         "Ref": "ExecuteVersion"
+                  }
+                }
+              }
+            },
+            "Outputs": {
+              "Result": {
+                "Description": "Depends on result type:\nNoResult: Async invoke has no result.\nSuccess: The response of run function. It\u2019s in binary format. Users can interpret the data according to their function implementation.\nFailure: Error Message.",
+                "Value": {
+                    "Fn::GetAtt": [
+                        "FunctionInvoker",
+                        "Result"
+                    ]
+                }
+              }
+            }
+          }
+    Outputs:
+      StackId:
+        Type: String
+        ValueSelector: StackId
+  - Name: untilInvokerStackReady
+    Action: 'ACS::WaitFor'
+    OnError: deleteStack
+    Description: Wait the stack status util CREATE_COMPLETE.
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createInvokerStack.StackId}}'
+      DesiredValues:
+        - CREATE_COMPLETE
+      StopRetryValues:
+        - CREATE_FAILED
+        - CHECK_FAILED
+        - ROLLBACK_FAILED
+        - ROLLBACK_COMPLETE
+      PropertySelector: Status
+    Outputs:
+      result:
+        Type: String
+        ValueSelector: 'Outputs[].OutputValue'
+  - Name: deleteStack
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Delete the stack.
+      zh-cn: 删除资源栈。
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        StackId: '{{ createInvokerStack.StackId }}'
+Outputs:
+  invokeResult:
+    Type: String
+    Value: '{{ untilInvokerStackReady.result }}'

@@ -1,0 +1,90 @@
+FormatVersion: OOS-2019-06-01
+Description: Use this template to install package on ECS.
+Parameters:
+  regionId:
+    Description: The id of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The id of instance.
+    Type: String
+  action:
+    Description: The action to configure package.
+    Type: String
+    AllowedValues:
+      - install
+      - uninstall
+    Default: install
+  packageName:
+    Description: The name of package.
+    Type: String
+  packageVersion:
+    Description: The version of package.
+    Type: String
+    Default: ''
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description: Queries ECS instance OS type.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: configureLinuxPackage
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        if  [ '{{ packageVersion }}' = '' ] ; then
+          acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}}
+        else
+          acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: configureWindowsPackage
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunPowerShellScript
+      commandContent:
+        'Fn::If':
+          - 'Fn::Equals':
+              - ""
+              - "{{ packageVersion }}"
+          - acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}}
+          - acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ configureLinuxPackage.commandOutput }}'
+        - '{{ configureWindowsPackage.commandOutput }}'

@@ -1,0 +1,1220 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "This template uses an existing VPC and SAP HANA instance(source instance) to create a single-node SAP instance(destination instance), restore the source instance backup data to the destination instance through the HBR service, and check the restored destination instance status.",
+    "zh-cn": "\u5728\u5df2\u6709\u7684SAP HANA\u5b9e\u4f8b(\u6e90\u5b9e\u4f8b)\u540c\u4e00VPC\u4e0b\uff0c\u81ea\u52a8\u521b\u5efa\u5355\u8282\u70b9SAP HANA\u76ee\u7684\u5b9e\u4f8b\uff0c\u901a\u8fc7HBR\u670d\u52a1\u5c06\u6e90\u5b9e\u4f8b\u5907\u4efd\u6570\u636e\u6062\u590d\u5230\u76ee\u7684\u5b9e\u4f8b\uff0c\u5e76\u68c0\u67e5\u6062\u590d\u540e\u7684\u76ee\u7684\u5b9e\u4f8b\u72b6\u6001\u3002",
+    "name-en": "ACS-HBR-SAPHanaRestorationAutomation",
+    "name-zh-cn": "SAP HANA\u5907\u4efd\u53ef\u7528\u6027\u9a8c\u8bc1\uff08\u6062\u590d\u5230\u65b0\u5efa\u5b9e\u4f8b\uff09"
+  },
+  "Parameters": {
+    "zoneId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::ZoneId",
+      "Description": {
+        "name-zh-cn": "\u671f\u671b\u90e8\u7f72\u7684\u53ef\u7528\u533a",
+        "name-en": "Availability Zones",
+        "zh-cn": "\u53ef\u7528\u533a\u5217\u8868\u8bf7\u53c2\u8003, <a href='https://help.aliyun.com/document_detail/40654.html' target='_blank'>\u5730\u57df\u548c\u53ef\u7528\u533a\u4fe1\u606f</a>\u3002",
+        "en": "The Availability Zone where SAP HANA instance will be deployed."
+      }
+    },
+    "vpcId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::VPC::VPCId",
+      "Description": {
+        "name-zh-cn": "\u6e90\u5b9e\u4f8b\u6240\u5728\u4e13\u6709\u7f51\u7edcVPC",
+        "name-en": "Source VPC ID",
+        "zh-cn": "\u6e90\u5b9e\u4f8b\u6240\u5728\u4e13\u6709\u7f51\u7edcVPC\u3002",
+        "en": "VPC ID of source instance ."
+      }
+    },
+    "vSwitchId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u6240\u5728\u4ea4\u6362\u673a",
+        "name-en": "Target VSwitch ID",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u6240\u5728\u4ea4\u6362\u673a\u3002",
+        "en": "VSwitch ID of destination instance ."
+      }
+    },
+    "sourceClusterId": {
+      "Description": {
+        "name-zh-cn": "HBR\u6e90\u5b9e\u4f8bId",
+        "name-en": "Source SAP HANA instance ID",
+        "zh-cn": "\u6e90\u5b9e\u4f8bId, \u9700\u8981\u6062\u590d\u7684SAP HANA\u5907\u4efd\u5b9e\u4f8b\u7684Id\uff0c\u8bf7\u5728\u6df7\u5408\u4e91\u5907\u4efd\u63a7\u5236\u53f0-ECS\u5e94\u7528\u5907\u4efd-\u5b9e\u4f8b\u540d\u79f0/Id\u4e00\u680f\u67e5\u770b\u3002",
+        "en": "Source SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID."
+      },
+      "Type": "String"
+    },
+    "vaultId": {
+      "Description": {
+        "name-zh-cn": "HBR\u5907\u4efd\u5e93ID",
+        "name-en": "Backup Vault ID",
+        "zh-cn": "\u5907\u4efd\u5e93\u7684Id\u3002",
+        "en": "Backup vault ID."
+      },
+      "Type": "String"
+    },
+    "databaseName": {
+      "Description": {
+        "name-zh-cn": "\u6570\u636e\u5e93\u5b9e\u4f8b\u5217\u8868",
+        "name-en": "SAP HANA Database List",
+        "zh-cn": "\u9700\u8981\u6062\u590d\u5907\u4efd\u7684SAP HANA\u6570\u636e\u5e93\u5b9e\u4f8b\u5217\u8868\uff0c\u683c\u5f0f\uff1a<\u6e90\u6570\u636e\u5e93\u540d>@&lt;SID&gt;:<\u76ee\u7684\u6570\u636e\u5e93\u540d>\uff0c\u591a\u4e2a\u6570\u636e\u5e93\u5b9e\u4f8b\u8bf7\u4ee5\u6362\u884c\u5206\u9694\u3002",
+        "en": "SAP HANA database list in format of \"<Source SAP HANA database name>@<Source SAP HANA system Id>\". Separate multiple SAP HANA database with line breaks."
+      },
+      "Type": "List",
+      "Default": [
+        "SYSTEMDB@<SID>:SYSTEMDB"
+      ]
+    },
+    "HANASID": {
+      "Type": "String",
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u51653\u4e2a\u5b57\u7b26,\u53ef\u5305\u542b\u5927\u5199\u5b57\u6bcd\u6216\u6570\u5b57\uff0c\u9996\u4f4d\u5fc5\u987b\u662f\u5927\u5199\u5b57\u6bcd\u3002",
+        "en": "3 characters,can including capital letter or number, must starting with capital letter."
+      },
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA SID",
+        "name-en": "SAP HANA  SID",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA SID\u3002",
+        "en": "Destination instance SAP HANA SID."
+      },
+      "AllowedPattern": "^[A-Z][A-Z0-9][A-Z0-9]$"
+    },
+    "masterPass": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u6e90\u5b9e\u4f8bSAP HANA Master\u8d26\u53f7\u5bc6\u7801",
+        "name-en": "SAP HANA Master Password",
+        "zh-cn": "\u6e90\u5b9e\u4f8bSAP HANA Master\u8d26\u53f7\u5bc6\u7801\u3002",
+        "en": "SAP HANA master password."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u81f3\u5c118\u4e2a\u5b57\u7b26,\u81f3\u5c11\u5305\u542b\u4e00\u4e2a\u6570\u5b57\uff0c\u5927\u5199\u5b57\u6bcd\u548c\u5c0f\u5199\u5b57\u6bcd\uff0c\u53ef\u4ee5\u4f7f\u7528\u7279\u6b8a\u5b57\u7b26\uff08_,@,#,$)\uff0c\u4f46\u4e0d\u80fd\u4ee5\u6570\u5b57\u548c\u7279\u6b8a\u5b57\u7b26\u5f00\u5934\u3002",
+        "en": "Must be at least 8 characters with uppercase, lowercase, and numeric values,can use special characters include(_,@,#,$),but can't staring with number and specical characters."
+      },
+      "AllowedPattern": "^(?=.*[0-9].*)(?=.*[A-Z].*)(?=.*[a-z].*)[a-zA-Z][0-9a-zA-Z_@#$]{7,}$",
+      "NoEcho": true
+    },
+    "imageId": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684\u64cd\u4f5c\u7cfb\u7edf\u7248\u672c",
+        "name-en": "Operating System And Version",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684\u64cd\u4f5c\u7cfb\u7edf\u7248\u672c\uff0c\u8be5\u64cd\u4f5c\u7cfb\u7edf\u4e3aCSP\u5b98\u65b9\u6536\u8d39\u7248\u672c\uff0c\u8be6\u60c5\u8fde\u63a5\uff1a<a href='https://market.aliyun.com/products/57742013/cmjj00037618.html' target='_blank'>SUSE15SP1-SAP</a>\u3001<a href='https://market.aliyun.com/products/57742013/cmjj00036800.html' target='_blank'>SUSE12SP4-SAP</a>\u3001<a href='https://market.aliyun.com/products/57742013/cmjj031975.html' target='_blank'>SUSE12SP3-SAP</a>\u3002",
+        "en": "Operating system and version: <a href='https://market.aliyun.com/products/57742013/cmjj00037618.html' target='_blank'>SUSE15SP1-SAP</a>\u3001<a href='https://market.aliyun.com/products/57742013/cmjj00036800.html' target='_blank'>SUSE12SP4-SAP</a>\u3001<a href='https://market.aliyun.com/products/57742013/cmjj031975.html' target='_blank'>SUSE12SP3-SAP</a>."
+      },
+      "AllowedValues": [
+        "SUSE15SP1-SAP",
+        "SUSE12SP4-SAP",
+        "SUSE12SP3-SAP"
+      ]
+    },
+    "customizedImage": {
+      "Type": "Boolean",
+      "Description": {
+        "name-zh-cn": "\u4f7f\u7528\u81ea\u5b9a\u4e49\u955c\u50cf",
+        "name-en": "Use Custom Image",
+        "zh-cn": "\u662f\u5426\u4f7f\u7528\u81ea\u5b9a\u4e49\u955c\u50cf\u4f5c\u4e3a\u76ee\u7684\u5b9e\u4f8b\u7684\u955c\u50cf\uff0c\u5982\u679c\u9009\u62e9\u8be5\u9879\uff0c'\u76ee\u7684\u5b9e\u4f8b\u7684\u64cd\u4f5c\u7cfb\u7edf\u7248\u672c'\u53c2\u6570\u5c06\u65e0\u6548\uff0c\u4e14\u9700\u6307\u5b9a'\u81ea\u5b9a\u4e49\u955c\u50cfId'\u53c2\u6570\u3002",
+        "en": "Use custom image or not."
+      },
+      "Default": false
+    },
+    "customizedImageId": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u81ea\u5b9a\u4e49\u955c\u50cfId",
+        "name-en": "Custom Image Id",
+        "zh-cn": "\u4f7f\u7528\u81ea\u5b9a\u4e49\u955c\u50cf\u521b\u5efa\u76ee\u7684\u5b9e\u4f8b\uff0c\u4ec5'\u4f7f\u7528\u81ea\u5b9a\u4e49\u955c\u50cf'\u53c2\u6570\u9009\u4e2d\u65f6\u6709\u6548\u3002",
+        "en": "Please enter a custom image id."
+      },
+      "Default": ""
+    },
+    "instanceType": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684\u5b9e\u4f8b\u89c4\u683c",
+        "name-en": "Instance Type For SAP HANA Host",
+        "zh-cn": "<font color='blue'><b>1.\u9009\u62e9\u673a\u578b\u524d\u8bf7\u5148\u786e\u8ba4\u5f53\u524d\u53ef\u7528\u533a\u4e0b\u8be5\u673a\u578b\u662f\u5426\u6709\u8d27\uff0c\u90e8\u5206\u673a\u578b\u9700\u8981\u63d0\u524d\u62a5\u5907</b></font><br><font color='blue'><b>2.\u53ef\u9009\u673a\u578b\u5217\u8868</b></font><br>[ecs.r5.2xlarge \u975e\u8ba4\u8bc1\u673a\u578b 64G]<br>[ecs.r5.4xlarge \u975e\u8ba4\u8bc1\u673a\u578b 128G]<br>[ecs.c5.8xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 64G</font>]<br>[ecs.g5.8xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 128G</font>]<br>[ecs.r5.8xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 256G</font>]<br>[ecs.r6.13xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 384G</font>]<br>[ecs.se1.14xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 480G</font>]<br>[ecs.r5.16xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 512G</font>]<br>[ecs.re4.20xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 960G</font>]<br>[ecs.re4.40xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 1920G</font>]<br>[ecs.re4e.40xlarge <font color='green'>SAP\u8ba4\u8bc1\u673a\u578b 3840G</font>]<br><font color='blue'><b>3.\u8be6\u60c5\u8bf7\u53c2\u8003</font> <a href='https://help.aliyun.com/document_detail/25378.html' target='_blank'><b>\u5b9e\u4f8b\u65cf\u8be6\u60c5</b></a>\u3002",
+        "en": "<font color='blue'><b>Instance type list</b></font><br> [ecs.r5.2xlarge Non-certified instance type 64G]<br>[ecs.r5.4xlarge Non-certified instance type 128G]<br>[ecs.c5.8xlarge <font color='green'>SAP certified instance type 64G</font>]<br>[ecs.g5.8xlarge <font color='green'>SAP certified instance type 128G</font>]<br>[ecs.r5.8xlarge <font color='green'>SAP certified instance type 256G</font>]<br>[ecs.r6.13xlarge <font color='green'>SAP certified instance type 384G</font>]<br>[ecs.se1.14xlarge <font color='green'>SAP certified instance type 480G</font>]<br>[ecs.r5.16xlarge <font color='green'>SAP certified instance type 512G</font>]<br>[ecs.re4.20xlarge <font color='green'>SAP certified instance type 960G</font>]<br>[ecs.re4.40xlarge <font color='green'>SAP certified instance type 1920G</font>]<br>[ecs.re4e.40xlarge <font color='green'>SAP certified instance type 3840G</font>]."
+      },
+      "AllowedValues": [
+        "ecs.r5.2xlarge(8vCPUs 64GiB)",
+        "ecs.r5.4xlarge(16vCPUs 128GiB)",
+        "ecs.c5.8xlarge(32vCPUs 64GiB)",
+        "ecs.g5.8xlarge(32vCPUs 128GiB)",
+        "ecs.r5.8xlarge(32vCPUs 256GiB)",
+        "ecs.r6.13xlarge(52vCPUs 384GiB)",
+        "ecs.se1.14xlarge(56vCPUs 480GiB)",
+        "ecs.r5.16xlarge(64vCPUs 512GiB)",
+        "ecs.re4.20xlarge(80vCPUs 960GiB)",
+        "ecs.re4.40xlarge(160vCPUs 1920GiB)",
+        "ecs.re4e.40xlarge(160vCPUs 3840GiB)"
+      ]
+    },
+    "ECSHostname": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u4e3b\u673a\u540d",
+        "name-en": "Hostname",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u4e3b\u673a\u540d\u3002",
+        "en": "SAP HANA ECS hostname."
+      },
+      "Default": "hana001",
+      "AllowedPattern": "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-])*([a-zA-Z0-9])$",
+      "ConstraintDescription": {
+        "zh-cn": "\u957f\u5ea6\u4e3a 2-13 \u4e2a\u5b57\u7b26\uff0c\u5141\u8bb8\u4f7f\u7528\u5927\u5c0f\u5199\u5b57\u6bcd\u3001\u6570\u5b57\u6216\u8fde\u5b57\u7b26(-)\uff0c\u4f46\u4e0d\u80fd\u4ee5\u8fde\u5b57\u7b26(-)\u5f00\u5934\u6216\u7ed3\u5c3e\u3002",
+        "en": "The length is 2-13 characters,can starting with a capital or lowercase letter,and can contain numbers,or -,but can't starting with - or end with -."
+      }
+    },
+    "privateIpAddress": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u79c1\u6709IP\u5730\u5740",
+        "name-en": "Private IP Address",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u79c1\u6709IP\u5730\u5740,\u8bf7\u6ce8\u610fIP\u5730\u5740\u7684\u8303\u56f4\u8981\u5728\u4ea4\u6362\u673a\u7f51\u6bb5\u3002",
+        "en": "Private IP address for SAP HANA ECS host,please pay attention:IP address should be within VSwitch CIdR Block."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u79c1\u6709IP\u5730\u5740\u3002",
+        "en": "Please input the right private IP address."
+      },
+      "AllowedPattern": "^((192\\.168|172\\.([1][6-9]|[2]\\d|3[01]))(\\.([2][0-4]\\d|[2][5][0-5]|[01]?\\d?\\d)){2}|(\\D)*10(\\.([2][0-4]\\d|[2][5][0-5]|[01]?\\d?\\d)){3})$"
+    },
+    "loginPassword": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8broot\u7528\u6237\u5bc6\u7801",
+        "name-en": "root Passowrd",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8broot\u7528\u6237\u767b\u5f55\u5bc6\u7801\u3002",
+        "en": "SAP HANA ECS root passowrd."
+      },
+      "AllowedPattern": "^(?![a-zA-Z]+$)(?![A-Z0-9]+$)(?![A-Z\\W_]+$)(?![a-z0-9]+$)(?![a-z\\W_]+$)(?![0-9\\W_]+$)[a-zA-Z0-9\\W_]{8,}$",
+      "ConstraintDescription": {
+        "zh-cn": "8-30\u4e2a\u5b57\u7b26\uff0c\u4e14\u540c\u65f6\u5305\u542b\u4e09\u9879\uff08\u5927\u5199\u5b57\u6bcd\uff0c\u5c0f\u5199\u5b57\u6bcd\uff0c\u6570\u5b57\u6216\u7279\u6b8a\u7b26\u53f7\uff09\u3002",
+        "en": "8-30 characters,include(capital letter,lowercase letter,numbers or special characters)."
+      },
+      "NoEcho": true
+    },
+    "HANAInstanceNumber": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA\u5b9e\u4f8b\u7f16\u53f7",
+        "name-en": "SAP HANA Instance Number",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA\u5b9e\u4f8b\u7f16\u53f7\u3002",
+        "en": "SAP HANA instance number."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "2\u4f4d\u6570\u5b57\uff0c00-97\u3002",
+        "en": "2 numbers,00-97."
+      },
+      "AllowedPattern": "^([0-8][0-9]|9[0-6])$",
+      "Default": "00"
+    },
+    "systemDiskCategory": {
+      "Default": "cloud_ssd",
+      "AllowedValues": [
+        "cloud_efficiency",
+        "cloud_ssd"
+      ],
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7cfb\u7edf\u76d8\u7c7b\u578b",
+        "name-en": "System Disk Type",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7cfb\u7edf\u76d8\u7c7b\u578b\uff0c\u7cfb\u7edf\u76d8\u5206\u7c7b: \u9ad8\u6548\u4e91\u76d8,SSD\u4e91\u76d8\u3002",
+        "en": "System disk category: Ultra Disk,SSD disk."
+      },
+      "Type": "String"
+    },
+    "systemDiskSize": {
+      "Default": "100",
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7cfb\u7edf\u76d8\u5927\u5c0f",
+        "name-en": "System Disk Size",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7cfb\u7edf\u76d8\u5927\u5c0f\uff0c\u5355\u4f4dGB\uff0c\u5bb9\u91cf20-500G\u3002",
+        "en": "/ file system size,unit:GB,range:20~500G."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u5165\u6574\u6570\uff0c\u5355\u4f4dGB\uff0c\u5bb9\u91cf20-500G\u3002",
+        "en": "Must be an integer,range:20~500G."
+      },
+      "AllowedPattern": "(^2[0-9]$)|(^[3-9]\\d$)|(^[1-4]\\d{2}$)|500$"
+    },
+    "dataLogDiskCategory": {
+      "Default": "cloud_ssd",
+      "AllowedValues": [
+        "cloud_essd PL1",
+        "cloud_essd PL2",
+        "cloud_essd PL3",
+        "cloud_ssd"
+      ],
+      "Description": {
+        "name-zh-cn": "/hana/data\u548c/hana/log\u6587\u4ef6\u7cfb\u7edf\u6240\u5728\u78c1\u76d8\u7c7b\u578b",
+        "name-en": "/hana/data And /hana/log File System Disk Category",
+        "zh-cn": "1.\u53ef\u9009\u78c1\u76d8\u7c7b\u578b\uff1aESSD\u4e91\u76d8PL1\u3001ESSD\u4e91\u76d8PL2\u3001ESSD\u4e91\u76d8PL3\u3001SSD\u4e91\u76d8\u3002<br>2. ESSD \u4e91\u76d8\u5bb9\u91cf\u8d8a\u5927\uff0c\u53ef\u4f9b\u9009\u62e9\u7684\u6027\u80fd\u7ea7\u522b\u8d8a\u9ad8\uff08460 GiB \u4ee5\u4e0a\u53ef\u9009 PL2\uff0c1260 GiB \u4ee5\u4e0a\u53ef\u9009 PL3\uff09\uff0c\u6027\u80fd\u7ea7\u522b\u8d8a\u9ad8\u76f8\u5e94\u7684\u8d39\u7528\u4e5f\u8d8a\u9ad8:<ul><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL1\uff08\u5355\u76d8IOPS\u6027\u80fd\u4e0a\u96505\u4e07\uff09</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL2\uff08\u5355\u76d8IOPS\u6027\u80fd\u4e0a\u965010\u4e07\uff09</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL3\uff08\u5355\u76d8IOPS\u6027\u80fd\u4e0a\u9650100\u4e07\uff09</li></ul>\u5982\u4f55\u5408\u7406\u9009\u62e9 ESSD \u4e91\u76d8\u6027\u80fd\u7ea7\u522b\uff0c<a href='https://help.aliyun.com/document_detail/122389.html' target='view_window'>\u67e5\u770b\u8be6\u60c5&gt;</a>\u3002",
+        "en": "1. /hana/data and /hana/log file system disk category: ESSD disk,SSD disk.<br>2. The higher the performance level that you can select. For example, PL2 is available for an enhanced SSD of more than 460 GiB and PL3 is available for an enhanced SSD of more than 1260 GiB. A higher performance level indicates a higher fee:<ul><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL1(up to 50,000 IOPS per disk)</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL2(up to 100,000 IOPS per disk)</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL3(up to 1,000,000 IOPS per disk)</li></ul>For more information about how to select the performance level of an enhanced SSD, <a href='https://help.aliyun.com/document_detail/122389.html' target='view_window'>click here&gt;</a>."
+      },
+      "Type": "String"
+    },
+    "dataSize": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/data\u5927\u5c0f",
+        "name-en": "/hana/data File System Size",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/data\u6587\u4ef6\u7cfb\u7edf\u5927\u5c0f\uff0c\u5355\u4f4dGB\uff0cSAP\u5b98\u65b9\u63a8\u8350\uff1aSize >= 1 x RAM\u3002",
+        "en": "/hana/data file system size,unit:GB,SAP recommendation:Size >= 1 x RAM."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u5165\u6574\u6570\uff0c\u5bb9\u91cf20-32768G\u3002",
+        "en": "Must be an integer,range:20~32768G."
+      },
+      "AllowedPattern": "(^[2-9]\\d{1}$)|(^[1-9]\\d{2}$)|(^[1-9]\\d{3}$)|(^[1-2]\\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)"
+    },
+    "logSize": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/log\u5927\u5c0f",
+        "name-en": "/hana/log File System Size",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/log\u6587\u4ef6\u7cfb\u7edf\u5927\u5c0f\uff0c\u5355\u4f4dGB\uff0cSAP\u5b98\u65b9\u63a8\u8350\uff1a[systems \u2264 512GB ] Sizeredolog = 1/2 x RAM;[systems > 512GB ] Sizeredolog(min) = 512GB\u3002",
+        "en": "/hana/log file system size,unit:GB,SAP recommendation:[systems \u2264 512GB ] Sizeredolog = 1/2 x RAM;[systems > 512GB ] Sizeredolog(min) = 512GB."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u5165\u6574\u6570,\u5bb9\u91cf20-32768GB\u3002",
+        "en": "Must be an integer,range:20~32768G."
+      },
+      "AllowedPattern": "(^[2-9]\\d{1}$)|(^[1-9]\\d{2}$)|(^[1-9]\\d{3}$)|(^[1-2]\\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)"
+    },
+    "sharedDiskCategory": {
+      "Default": "cloud_ssd",
+      "AllowedValues": [
+        "cloud_efficiency",
+        "cloud_ssd",
+        "cloud_essd"
+      ],
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/shared\u6587\u4ef6\u7cfb\u7edf\u6240\u5728\u78c1\u76d8\u7c7b\u578b",
+        "name-en": "/hana/shared File System Disk Category",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/shared\u6587\u4ef6\u7cfb\u7edf\u6240\u5728\u78c1\u76d8\u7c7b\u578b\uff1a\u9ad8\u6548\u4e91\u76d8\u3001SSD\u4e91\u76d8\u3001ESSD\u4e91\u76d8\u3002",
+        "en": "/hana/shared file system disk category: Ultra Disk, SSD disk, ESSD disk."
+      },
+      "Type": "String"
+    },
+    "sharedSize": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/shared\u5927\u5c0f",
+        "name-en": "/hana/shared File System Size",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/hana/shared\u6587\u4ef6\u7cfb\u7edf\u5927\u5c0f\uff0c\u5355\u4f4dGB\uff0cSAP\u5b98\u65b9\u63a8\u8350\uff1aSizeinstallation(single-node) = MIN(1 x RAM; 1 TB)\u3002",
+        "en": "/hana/shared file system size,unit:GB,SAP recommendation: Sizeinstallation(single-node) = MIN(1 x RAM; 1 TB)."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u5165\u6574\u6570\uff0c\u5bb9\u91cf20-32768GB\u3002",
+        "en": "Must be an integer,range:20~32768G."
+      },
+      "AllowedPattern": "(^[2-9]\\d{1}$)|(^[1-9]\\d{2}$)|(^[1-9]\\d{3}$)|(^[1-2]\\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)"
+    },
+    "usrsapDiskCategory": {
+      "Default": "cloud_ssd",
+      "AllowedValues": [
+        "cloud_efficiency",
+        "cloud_ssd",
+        "cloud_essd"
+      ],
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/usr/sap\u6587\u4ef6\u7cfb\u7edf\u6240\u5728\u78c1\u76d8\u7c7b\u578b",
+        "name-en": "/usr/sap File System Disk Category",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/usr/sap\u6587\u4ef6\u7cfb\u7edf\u6240\u5728\u78c1\u76d8\u7c7b\u578b\uff1a\u9ad8\u6548\u4e91\u76d8\u3001SSD\u4e91\u76d8\u3001ESSD\u4e91\u76d8\u3002",
+        "en": "/usr/sap file system disk category: Ultra Disk, SSD disk, ESSD disk."
+      },
+      "Type": "String"
+    },
+    "usrsapSize": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/usr/sap\u5927\u5c0f",
+        "name-en": "/usr/sap File System Size",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684/usr/sap\u6587\u4ef6\u7cfb\u7edf\u5927\u5c0f\uff0c\u5355\u4f4dGB\u3002",
+        "en": "/usr/sap file system size,unit:GB."
+      },
+      "Default": "50",
+      "ConstraintDescription": {
+        "zh-cn": "\u5fc5\u987b\u8f93\u5165\u6574\u6570\uff0c\u5bb9\u91cf20-32768G\u3002",
+        "en": "Must be an integer,range:20~32768G."
+      },
+      "AllowedPattern": "(^[2-9]\\d{1}$)|(^[1-9]\\d{2}$)|(^[1-9]\\d{3}$)|(^[1-2]\\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)"
+    },
+    "mediaPath": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "SAP HANA\u8f6f\u4ef6\u5305OSS\u8def\u5f84",
+        "name-en": "SAP HANA Software OSS Path",
+        "zh-cn": "\u8bf7\u4eceSAP\u5b98\u7f51\u4e0b\u8f7dSAP HANA\u5b89\u88c5\u4ecb\u8d28\uff0c\u4e0a\u4f20\u81f3SAP\u7cfb\u7edf\u90e8\u7f72\u6240\u5728\u7684OSS\u5730\u57df\uff0c\u8f93\u5165\u8be5\u76ee\u5f55\u7684\u8def\u5f84\uff0c\u4f8b\uff1aoss://{bucket_name}/hana\u3002",
+        "en": "Please download the SAP HANA installation media from SAP software download center(Don't need to extract, the packages are like these:51053381_part1.exe or.rar\uff09and upload them into OSS bucket,input the full path starting with oss://. eg: oss://{bucket_name}/hana."
+      },
+      "ConstraintDescription": {
+        "zh-cn": "oss:\u5f00\u5934\uff0c\u4f8b\uff1aoss://{bucket_name}/hana\u3002",
+        "en": "Starting with oss.eg: oss://{bucket_name}/hana."
+      },
+      "AllowedPattern": "^(oss|https|http)://[\\S\\w]+([\\S\\w])+$"
+    },
+    "systemUsage": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684SAP HANA\u7cfb\u7edf\u7c7b\u578b",
+        "name-en": "SAP HANA System Usage",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684SAP HANA\u7cfb\u7edf\u7c7b\u578b\uff0c\u5305\u62eccustom,development,test,production\u3002",
+        "en": "SAP HANA system usage(custom,development,test,production)."
+      },
+      "Default": "custom",
+      "AllowedValues": [
+        "custom",
+        "development",
+        "test",
+        "production"
+      ]
+    },
+    "HANASapSidAdmUid": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684SAP HANA sidadm\u7528\u6237Id",
+        "name-en": "SAP HANA sidadm User Id",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684sidadm user Id,\u53ea\u80fd\u586b\u5199\u6570\u5b57,\u5927\u4e8e500\u4e14\u5c0f\u4e8e65532\uff0c\u9ed8\u8ba4\u503c\u662f1001\u3002",
+        "en": "sidadm user Id,Only number,range:500~65532,default value:1001."
+      },
+      "Default": "1001",
+      "ConstraintDescription": {
+        "zh-cn": "\u53ea\u80fd\u586b\u5199\u6570\u5b57,\u5927\u4e8e500\u4e14\u5c0f\u4e8e65532\u3002",
+        "en": "Only number,range:500~65532."
+      },
+      "AllowedPattern": "(^[5-9]\\d{2}$)|(^[1-9]\\d{3}$)|(^[1-5]\\d{4}$)|(^6[0-5][0-5][0-3][0-2]$)"
+    },
+    "HANASapSysGid": {
+      "Type": "String",
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684SAP HANA sapsys\u7ec4Id",
+        "name-en": "SAP HANA sapsys Group Id",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684sapsys group Id,\u53ea\u80fd\u586b\u5199\u6570\u5b57\uff0c\u9ed8\u8ba4\u503c\u662f79\u3002",
+        "en": "Sapsys group Id,Only number,default value:79."
+      },
+      "Default": "79",
+      "ConstraintDescription": {
+        "zh-cn": "\u53ea\u80fd\u586b\u5199\u6570\u5b57\u3002",
+        "en": "Only number."
+      },
+      "AllowedPattern": "(^\\d+$)"
+    },
+    "userName": {
+      "Description": {
+        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684\u7528\u6237\u540d",
+        "name-en": "Username of SYSTEMDB",
+        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u7684\u7528\u6237\u540d\u3002",
+        "en": "Input username of SYSTEMDB."
+      },
+      "Type": "String",
+      "Default": "SYSTEM"
+    },
+    "weatherDeleteResource": {
+      "Description": {
+        "name-zh-cn": "\u9a8c\u8bc1\u6210\u529f\u540e\u4fdd\u7559\u4e91\u8d44\u6e90.",
+        "name-en": "Retain Cloud Resources",
+        "zh-cn": "\u662f\u5426\u5728\u9a8c\u8bc1\u5907\u4efd\u6210\u529f\u540e\uff0c\u4fdd\u7559\u4e91\u8d44\u6e90, \u9ed8\u8ba4\u4e0d\u4fdd\u7559\u3002\u8be5\u53c2\u6570\u4e3a\u9009\u4e2d\u72b6\u6001\u4e14\u6210\u529f\u6062\u590d\u5907\u4efd\u65f6\uff0c'\u4e91\u8d44\u6e90\u4fdd\u7559\u65f6\u957f'\u53c2\u6570\u5c06\u5931\u6548\u3002",
+        "en": "Whether to reserve cloud resources after verifying the successful backup, not reserved by default. When this parameter is selected and the backup is successfully restored, the'Cloud Resource Retention Duration' parameter will be invalid."
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "timeout": {
+      "Description": {
+        "name-zh-cn": "\u4e91\u8d44\u6e90\u4fdd\u7559\u65f6\u957f\uff08\u5355\u4f4d\uff1a\u5206\u949f\uff09",
+        "name-en": "Cloud Resource Retention Time (Unit: Minutes)",
+        "zh-cn": "\u6d4b\u8bd5\u5b8c\u6210/\u5931\u8d25\u540e\uff0c\u4fdd\u7559\u4e91\u8d44\u6e90\u7684\u65f6\u957f\uff08\u5355\u4f4d\uff1a\u5206\u949f\uff09\u3002",
+        "en": "After the test is completed/failed, the length of time to reserve cloud resources (unit: minutes)."
+      },
+      "Type": "Number",
+      "Default": "30"
+    },
+    "dingTalkWebhook": {
+      "Description": {
+        "name-zh-cn": "\u9489\u9489\u673a\u5668\u4ebaWebhook\u5730\u5740",
+        "name-en": "DingTalk Robot Webhook",
+        "zh-cn": "\u9489\u9489\u81ea\u5b9a\u4e49\u673a\u5668\u4ebaWebhook\u5730\u5740\uff0c\u7528\u4ee5\u5411\u9489\u9489\u53d1\u9001\u6d4b\u8bd5\u7ed3\u679c\u6d88\u606f\u548c\u5220\u9664\u4e91\u8d44\u6e90\u5ba1\u6279\u6d88\u606f\uff0c\u66f4\u591a\u8bf7\u6d4f\u89c8<a href='https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq' target='_blank'>\u9489\u9489\u81ea\u5b9a\u4e49\u673a\u5668\u4eba</a>\u3002",
+        "en": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details."
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkHanaInstanceType",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "zh-cn": "\u67e5\u8be2SAP HANA\u5b9e\u4f8b\u89c4\u683c\u5728\u5f53\u524d\u53ef\u7528\u533a\u662f\u5426\u53ef\u7528",
+        "en": "Check SAP HANA instance type availability in current available zones"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeAvailableResource",
+        "Parameters": {
+          "ZoneId": "{{ zoneId }}",
+          "RegionId": "{{ACS::RegionId}}",
+          "InstanceType": {
+            "Fn::Select": [
+              0,
+              {
+                "Fn::Split": [
+                  "(",
+                  "{{ instanceType }}"
+                ]
+              }
+            ]
+          },
+          "DestinationResource": "InstanceType"
+        },
+        "PropertySelector": "AvailableZones.AvailableZone[0].Status",
+        "DesiredValues": [
+          "Available"
+        ]
+      },
+      "Retries": 2
+    },
+    {
+      "Name": "checkHanaBackupSetting",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "zh-cn": "\u67e5\u8be2\u6e90\u5b9e\u4f8bSAP HANA\u6570\u636e\u5e93\u5907\u4efd\u8bbe\u7f6e",
+        "en": "Check source SAP HANA backup settings"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "DescribeHanaBackupSetting",
+        "Parameters": {
+          "VaultId": "{{ vaultId }}",
+          "ClusterId": "{{ sourceClusterId }}",
+          "DatabaseName": {
+            "Fn::Select": [
+              0,
+              {
+                "Fn::Split": [
+                  "@",
+                  "{{ ACS::TaskLoopItem }}"
+                ]
+              }
+            ]
+          }
+        },
+        "PropertySelector": "HanaBackupSetting.CatalogBackupUsingBackint",
+        "DesiredValues": [
+          true
+        ]
+      },
+      "Retries": 2,
+      "Loop": {
+        "Items": "{{ databaseName }}",
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        }
+      }
+    },
+    {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create a SAP HANA single node stack.",
+        "zh-cn": "\u521b\u5efaSAP HANA\u5355\u8282\u70b9\u8d44\u6e90\u6808"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "StackName": "HBR-{{ACS::ExecutionId}}",
+          "TimeoutInMinutes": 60,
+          "DisableRollback": true,
+          "Parameters": [
+            {
+              "ParameterKey": "ImageId",
+              "ParameterValue": "{{ imageId }}"
+            },
+            {
+              "ParameterKey": "CustomizedImageId",
+              "ParameterValue": "{{ customizedImageId }}"
+            },
+            {
+              "ParameterKey": "CustomizedImage",
+              "ParameterValue": "{{ customizedImage }}"
+            },
+            {
+              "ParameterKey": "ZoneId",
+              "ParameterValue": "{{ zoneId }}"
+            },
+            {
+              "ParameterKey": "VpcId",
+              "ParameterValue": "{{ vpcId }}"
+            },
+            {
+              "ParameterKey": "VSwitchId",
+              "ParameterValue": "{{ vSwitchId }}"
+            },
+            {
+              "ParameterKey": "InstanceType",
+              "ParameterValue": "{{ instanceType }}"
+            },
+            {
+              "ParameterKey": "ECSHostname",
+              "ParameterValue": "{{ ECSHostname }}"
+            },
+            {
+              "ParameterKey": "PrivateIpAddress",
+              "ParameterValue": "{{ privateIpAddress }}"
+            },
+            {
+              "ParameterKey": "LoginPassword",
+              "ParameterValue": "{{ loginPassword }}"
+            },
+            {
+              "ParameterKey": "HANASID",
+              "ParameterValue": "{{ HANASID }}"
+            },
+            {
+              "ParameterKey": "HANAInstanceNumber",
+              "ParameterValue": "{{ HANAInstanceNumber }}"
+            },
+            {
+              "ParameterKey": "SystemDiskCategory",
+              "ParameterValue": "{{ systemDiskCategory }}"
+            },
+            {
+              "ParameterKey": "SystemDiskSize",
+              "ParameterValue": "{{ systemDiskSize }}"
+            },
+            {
+              "ParameterKey": "DataLogDiskCategory",
+              "ParameterValue": "{{ dataLogDiskCategory }}"
+            },
+            {
+              "ParameterKey": "DataSize",
+              "ParameterValue": "{{ dataSize }}"
+            },
+            {
+              "ParameterKey": "LogSize",
+              "ParameterValue": "{{ logSize }}"
+            },
+            {
+              "ParameterKey": "SharedDiskCategory",
+              "ParameterValue": "{{ sharedDiskCategory }}"
+            },
+            {
+              "ParameterKey": "SharedSize",
+              "ParameterValue": "{{ sharedSize }}"
+            },
+            {
+              "ParameterKey": "UsrsapDiskCategory",
+              "ParameterValue": "{{ usrsapDiskCategory }}"
+            },
+            {
+              "ParameterKey": "UsrsapSize",
+              "ParameterValue": "{{ usrsapSize }}"
+            },
+            {
+              "ParameterKey": "MasterPass",
+              "ParameterValue": "{{ masterPass }}"
+            },
+            {
+              "ParameterKey": "MediaPath",
+              "ParameterValue": "{{ mediaPath }}"
+            },
+            {
+              "ParameterKey": "SystemUsage",
+              "ParameterValue": "{{ SystemUsage }}"
+            },
+            {
+              "ParameterKey": "HANASapSidAdmUid",
+              "ParameterValue": "{{ HANASapSidAdmUid }}"
+            },
+            {
+              "ParameterKey": "HANASapSysGid",
+              "ParameterValue": "{{ HANASapSysGid }}"
+            }
+          ],
+          "TemplateURL": "https://sap-automation-{{ACS::RegionId}}.oss-{{ACS::RegionId}}.aliyuncs.com/Public_V1/HANA/HANA_Single_Node.json"
+        }
+      },
+      "Outputs": {
+        "StackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilStackReady",
+      "Action": "ACS::WaitFor",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "en": "Wait the stack status util CREATE_COMPLETE.",
+        "zh-cn": "\u7b49\u5f85\u8d44\u6e90\u6808\u81f3\u521b\u5efa\u6210\u529f\u72b6\u6001\u3002"
+      },
+      "DelayType": "Constant",
+      "Delay": 300,
+      "Retries": 12,
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_FAILED"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "HANAServerId": {
+          "Type": "String",
+          "ValueSelector": ".Outputs[] | select(.OutputKey == \"HANAServerId\") | .OutputValue"
+        },
+        "HANAServerLog": {
+          "Type": "Json",
+          "ValueSelector": ".Outputs[] | select(.OutputKey == \"InstallLog\") | .OutputValue"
+        }
+      }
+    },
+    {
+      "Name": "checkHanaServerLog",
+      "Action": "ACS::CheckFor",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u68c0\u67e5SAP HANA\u5b89\u88c5\u65e5\u5fd7",
+        "en": "Check SAP HANA installation log"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "PropertySelector": ".Outputs[] | select(.OutputKey == \"InstallLog\") | .OutputValue",
+        "DesiredValues": [
+          "{\"HANANode\": \"SUCCESS\"}"
+        ]
+      },
+      "Retries": 2
+    },
+    {
+      "Name": "createHANAInstance",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u521b\u5efaHBR SAP HANA\u5b9e\u4f8b",
+        "en": "Create HBR SAP HANA instance"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "CreateHanaInstance",
+        "Parameters": {
+          "VaultId": "{{ vaultId }}",
+          "EcsInstanceId": "{{ untilStackReady.HANAServerId }}",
+          "Host": "{{ privateIpAddress }}",
+          "HanaName": "{{ ECSHostname }}",
+          "InstanceNumber": "{{ HANAInstanceNumber }}",
+          "UserName": "{{ userName }}",
+          "Password": "{{ masterPass }}",
+          "UseSsl": true
+        }
+      },
+      "Outputs": {
+        "ClusterId": {
+          "Type": "String",
+          "ValueSelector": "ClusterId"
+        }
+      }
+    },
+    {
+      "Name": "createClients",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u521b\u5efaHBR SAP HANA\u5b9e\u4f8b\u5ba2\u6237\u7aef",
+        "en": "Create HBR SAP HANA instance client"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "CreateClients",
+        "Parameters": {
+          "VaultId": "{{ vaultId }}",
+          "AlertSetting": "INHERITED",
+          "ClientInfo": [
+            {
+              "instanceId": "{{ untilStackReady.HANAServerId }}",
+              "accessKeyId": "",
+              "accessKeySecret": "",
+              "clusterId": "{{ createHANAInstance.ClusterId }}",
+              "sourceTypes": [
+                "HANA"
+              ]
+            }
+          ]
+        }
+      },
+      "Outputs": {
+        "TaskId": {
+          "Type": "String",
+          "ValueSelector": "TaskId"
+        }
+      }
+    },
+    {
+      "Name": "waitForCreateClient",
+      "Action": "ACS::WaitFor",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u7b49\u5f85\u5ba2\u6237\u7aef\u521b\u5efa\u5b8c\u6210",
+        "en": "Wait for the client to be created"
+      },
+      "DelayType": "Constant",
+      "Delay": 5,
+      "Retries": 15,
+      "Properties": {
+        "Service": "HBR",
+        "API": "DescribeTask",
+        "Parameters": {
+          "TaskId": "{{ createClients.TaskId }}"
+        },
+        "PropertySelector": "Description",
+        "StopRetryValues": [
+          "completed"
+        ],
+        "DesiredValues": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "Name": "waitForActivateClient",
+      "Action": "ACS::WaitFor",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u7b49\u5f85HBR\u5ba2\u6237\u7aef\u6fc0\u6d3b\u5b8c\u6210",
+        "en": "Wait for client activation to complete"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "DescribeClients",
+        "Parameters": {
+          "ClusterId": "{{ createHANAInstance.ClusterId }}",
+          "VaultId": "{{ vaultId }}",
+          "SourceType": "HANA",
+          "ClientType": "ECS_AGENT"
+        },
+        "PropertySelector": "Clients.Client[].Status",
+        "StopRetryValues": [
+          "ACTIVATED",
+          "INSTALL_FAILED"
+        ],
+        "DesiredValues": [
+          "ACTIVATED"
+        ]
+      },
+      "Retries": 5,
+      "Outputs": {
+        "ClientId": {
+          "Type": "String",
+          "ValueSelector": "Clients.Client[].ClientId"
+        }
+      }
+    },
+    {
+      "Name": "RestoreBuckup",
+      "Action": "ACS::HBR::RestoreHanaDatabaseBackup",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "zh-cn": "\u6062\u590d\u5e76\u9a8c\u8bc1\u5907\u4efd",
+        "en": "Restore and verify backup"
+      },
+      "Properties": {
+        "vaultId": "{{ vaultId }}",
+        "sourceClusterId": "{{ sourceClusterId }}",
+        "sourceSystemName": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::Split": [
+                ":",
+                "{{ ACS::TaskLoopItem }}"
+              ]
+            }
+          ]
+        },
+        "clusterId": "{{ createHANAInstance.ClusterId }}",
+        "databaseName": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::Split": [
+                ":",
+                "{{ ACS::TaskLoopItem }}"
+              ]
+            }
+          ]
+        },
+        "HANAInstanceServerId": "{{ untilStackReady.HANAServerId }}",
+        "HANASID": "{{ HANASID }}",
+        "masterClientId": "{{ waitForActivateClient.ClientId }}"
+      },
+      "Loop": {
+        "Items": "{{ databaseName }}",
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "OnSuccess": "DingTalkNotify",
+      "OnError": "getExecutionFaildMessage",
+      "Description": {
+        "en": "Verify the running status of the SAP HANA instance",
+        "zh-cn": "\u6821\u9a8cSAP HANA\u5b9e\u4f8b\u8fd0\u884c\u72b6\u6001"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "commandContent": {
+          "Fn::Join": [
+            "",
+            [
+              "su - ",
+              {
+                "Fn::Jq": [
+                  "First",
+                  ".key | ascii_downcase",
+                  {
+                    "key": "{{ HANASID }}"
+                  }
+                ]
+              },
+              "adm -c \"sapcontrol -nr ",
+              "{{ HANAInstanceNumber }}",
+              " -function GetProcessList\"; if [[ $? -eq 3 ]]; then exit 0;fi"
+            ]
+          ]
+        },
+        "instanceId": "{{ untilStackReady.HANAServerId }}",
+        "commandType": "RunShellScript",
+        "timeout": "180"
+      },
+      "Outputs": {
+        "commandOutputs": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "getExecutionFaildMessage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get execution failure information",
+        "zh-cn": "\u83b7\u53d6\u6267\u884c\u5931\u8d25\u4fe1\u606f"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListExecutions",
+        "Parameters": {
+          "ExecutionId": "{{ ACS::ExecutionId }}"
+        }
+      },
+      "Outputs": {
+        "statusMessage": {
+          "Type": "String",
+          "ValueSelector": "Executions[].StatusMessage"
+        }
+      }
+    },
+    {
+      "Name": "DingTalkNotifyExecutionFailed",
+      "Action": "ACS::Notify",
+      "OnSuccess": "sleepTask",
+      "Description": {
+        "en": "Notification execution failure message",
+        "zh-cn": "\u901a\u77e5\u6267\u884c\u5931\u8d25\u6d88\u606f"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{ dingTalkWebhook }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "markdown",
+            "markdown": {
+              "title": "{{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6267\u884c\u5931\u8d25\u62a5\u544a",
+              "text": {
+                "Fn::Join": [
+                  "\n\n",
+                  [
+                    "#### {{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6267\u884c\u5931\u8d25\u62a5\u544a",
+                    "\u68c0\u6d4b\u6570\u636e\u5e93\uff1a{{ databaseName }}",
+                    "\u9519\u8bef\u4fe1\u606f\uff1a{{ getExecutionFaildMessage.statusMessage }}",
+                    "**\u6d4b\u8bd5\u5c06\u5728{{ timeout }}\u5206\u949f\u540e\u81ea\u52a8\u6e05\u7406\u6d4b\u8bd5\u4e91\u8d44\u6e90\uff0c\u5982\u9700\u4fdd\u7559\u4e91\u8d44\u6e90\uff0c\u8bf7\u5230[OOS\u63a7\u5236\u53f0](https://oos.console.aliyun.com/{{ ACS::RegionId }}/execution/detail/{{ ACS::ExecutionId }})\u53d6\u6d88\u6267\u884c**"
+                  ]
+                ]
+              }
+            },
+            "at": {
+              "atMobiles": [],
+              "isAtAll": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "DingTalkNotify",
+      "Action": "ACS::Notify",
+      "Description": {
+        "en": "Notify test results",
+        "zh-cn": "\u9489\u9489\u901a\u77e5\u6d4b\u8bd5\u7ed3\u679c"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{ dingTalkWebhook }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "markdown",
+            "markdown": {
+              "title": "{{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u62a5\u544a",
+              "text": {
+                "Fn::Join": [
+                  "\n\n",
+                  [
+                    "#### {{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u62a5\u544a",
+                    "\u6d4b\u8bd5\u7ed3\u679c\uff1aSUCCESS",
+                    "\u68c0\u6d4b\u6570\u636e\u5e93\uff1a{{ databaseName }}",
+                    "\u76ee\u7684\u5b9e\u4f8b\uff1a{{ ECSHostname }}",
+                    "\u76ee\u7684\u5b9e\u4f8bId\uff1a{{ untilStackReady.HANAServerId }}",
+                    "**\u5982\u679c\u60a8\u9009\u62e9\u6e05\u7406\u4e91\u8d44\u6e90\uff0c\u6d4b\u8bd5\u5c06\u5728{{ timeout }}\u5206\u949f\u540e\u81ea\u52a8\u6e05\u7406\u6d4b\u8bd5\u4e91\u8d44\u6e90\uff0c\u5982\u9700\u4fdd\u7559\u4e91\u8d44\u6e90\uff0c\u8bf7\u5230[OOS\u63a7\u5236\u53f0](https://oos.console.aliyun.com/{{ACS::RegionId}}/execution/detail/{{ ACS::ExecutionId }})\u53d6\u6d88\u6267\u884c**"
+                  ]
+                ]
+              }
+            },
+            "at": {
+              "atMobiles": [],
+              "isAtAll": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "Name": "whetherDeleteResource",
+      "Action": "ACS::Choice",
+      "Properties": {
+        "DefaultTask": "sleepTask",
+        "Choices": [
+          {
+            "When": "{{ weatherDeleteResource }}",
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "sleepTask",
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "PT{{ timeout }}M"
+      }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteApi",
+      "OnError": "getCleanupFaildMessage",
+      "Description": {
+        "en": "Delete the stack.",
+        "zh-cn": "\u5220\u9664\u8d44\u6e90\u6808"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      }
+    },
+    {
+      "Name": "describeHanaInstances",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "getCleanupFaildMessage",
+      "Description": {
+        "zh-cn": "\u67e5\u8be2HBR SAP HANA\u5b9e\u4f8b",
+        "en": "Query HBR SAP HANA instance"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "DescribeHanaInstances",
+        "Parameters": {
+          "VaultId": "{{ vaultId }}"
+        }
+      },
+      "Outputs": {
+        "Hanas": {
+          "Type": "Json",
+          "ValueSelector": "Hanas"
+        }
+      }
+    },
+    {
+      "Name": "whetherDeleteHanaInstances",
+      "Action": "ACS::Choice",
+      "Properties": {
+        "DefaultTask": "untilStackCleanup",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "{{ ECSHostname }}",
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".key.Hana[] | select(.Host == \"{{ privateIpAddress }}\") | .HanaName",
+                    {
+                      "key": "{{ describeHanaInstances.Hanas }}"
+                    }
+                  ]
+                }
+              ]
+            },
+            "NextTask": "deleteHanaInstance"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "deleteHanaInstance",
+      "Action": "ACS::ExecuteApi",
+      "OnError": "getCleanupFaildMessage",
+      "Description": {
+        "en": "Delete the stack.",
+        "zh-cn": "\u5220\u9664\u6d4b\u8bd5SAP HANA\u5b9e\u4f8b"
+      },
+      "Properties": {
+        "Service": "HBR",
+        "API": "DeleteHanaInstance",
+        "Parameters": {
+          "VaultId": "{{ vaultId }}",
+          "ClusterId": "{{ createHANAInstance.ClusterId }}",
+          "Sid": "{{ HANASID }}"
+        }
+      }
+    },
+    {
+      "Name": "untilStackCleanup",
+      "Action": "ACS::WaitFor",
+      "OnError": "getCleanupFaildMessage",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Wait the stack status util DELETE_COMPLETE.",
+        "zh-cn": "\u7b49\u5f85\u8d44\u6e90\u6808\u81f3\u5220\u9664\u6210\u529f\u72b6\u6001\u3002"
+      },
+      "DelayType": "Constant",
+      "Delay": 300,
+      "Retries": 12,
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "DELETE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "DELETE_FAILED",
+          "DELETE_COMPLETE"
+        ],
+        "PropertySelector": "Status"
+      }
+    },
+    {
+      "Name": "getCleanupFaildMessage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get cleanup failure information",
+        "zh-cn": "\u83b7\u53d6\u6e05\u7406\u5931\u8d25\u4fe1\u606f"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListExecutions",
+        "Parameters": {
+          "ExecutionId": "{{ ACS::ExecutionId }}"
+        }
+      },
+      "Outputs": {
+        "statusMessage": {
+          "Type": "String",
+          "ValueSelector": "Executions[].StatusMessage"
+        }
+      }
+    },
+    {
+      "Name": "DingTalkNotifyCleanupFailed",
+      "Action": "ACS::Notify",
+      "Description": {
+        "en": "Notification cleanup failed",
+        "zh-cn": "\u6e05\u7406\u5931\u8d25\u901a\u77e5"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{ dingTalkWebhook }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "markdown",
+            "markdown": {
+              "title": "{{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6e05\u7406\u5931\u8d25\u62a5\u544a",
+              "text": {
+                "Fn::Join": [
+                  "\n\n",
+                  [
+                    "#### {{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6e05\u7406\u5931\u8d25\u62a5\u544a",
+                    "\u68c0\u6d4b\u6570\u636e\u5e93\uff1a{{ databaseName }}",
+                    "\u9519\u8bef\u4fe1\u606f\uff1a{{ getCleanupFaildMessage.statusMessage }}",
+                    "**\u81ea\u52a8\u6e05\u7406\u4e91\u8d44\u6e90\u5931\u8d25\uff0c\u8bf7\u624b\u52a8\u6e05\u7406**"
+                  ]
+                ]
+              }
+            },
+            "at": {
+              "atMobiles": [],
+              "isAtAll": true
+            }
+          }
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "Result": {
+      "Type": "String",
+      "Value": "{{ untilStackReady.HANAServerId }}"
+    }
+  }
+}

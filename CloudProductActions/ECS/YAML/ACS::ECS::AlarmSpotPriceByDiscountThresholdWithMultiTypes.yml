@@ -1,0 +1,107 @@
+FormatVersion: OOS-2019-06-01
+Description: Alarm notification when spot instance discount or spot price exceeds threshold in multiple instance type.
+Parameters:
+  regionId:
+    Description: The region id
+    Type: String
+  zoneId:
+    Description: The zone id.
+    Type: String
+  instanceTypes:
+    Description: The instance type.
+    Type: List
+  threshold:
+    Description: The discount or price threshold.
+    Type: Number
+  taskType:
+    Description: The monitoring threshold task type.
+    Type: String
+Tasks:
+  - Name: describeAvailableResource
+    Action: 'ACS::ExecuteAPI'
+    Description: Get the avaliable resource.
+    Properties:
+      Service: ECS
+      API: DescribeAvailableResource
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceType: '{{ ACS::TaskLoopItem }}'
+        DestinationResource: InstanceType
+        SpotStrategy: SpotWithPriceLimit
+        ZoneId: '{{ zoneId }}'
+    Outputs:
+      instanceType:
+        Type: String
+        ValueSelector: '. | if .AvailableZones == "" then null else .AvailableZones.AvailableZone[0].AvailableResources.AvailableResource[0].SupportedResources.SupportedResource[0].Value end'
+    Loop:
+      Items: '{{ instanceTypes }}'
+      MaxErrors: 100
+      Concurrency: 10
+      Outputs:
+        instanceTypes:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: instanceType
+  - Name: checkInstanceTypeSize
+    Action: 'ACS::Choice'
+    Description: Check if the instance type size is zero.
+    Properties:
+      DefaultTask: describeSpotPriceHistory
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - 'Fn::MergeList':
+                  - '{{ describeAvailableResource.instanceTypes }}'
+          NextTask: 'ACS::END'
+  - Name: describeSpotPriceHistory
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get the latest discounts on spot instance.
+      zh-cn: 获取抢占式实例最新折扣。
+    Properties:
+      Service: ECS
+      API: DescribeSpotPriceHistory
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceType: '{{ ACS::TaskLoopItem }}'
+        NetworkType: vpc
+        ZoneId: '{{ zoneId }}'
+    Outputs:
+      discountAndPrice:
+        Type: Json
+        ValueSelector: '.SpotPrices.SpotPriceType[-1] | {"realThreshold":(.SpotPrice / .OriginPrice * 100), "spotPrice":.SpotPrice, "originPrice":.OriginPrice, "instanceType":.InstanceType}'
+    Loop:
+      Items:
+        'Fn::MergeList':
+          - '{{ describeAvailableResource.instanceTypes }}'
+      MaxErrors: 100
+      Concurrency: 10
+      Outputs:
+        discountAndPrices:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: discountAndPrice
+  - Name: alarmThresholdInfo
+    Action: 'ACS::ECS::AlarmSpotPriceByDiscountThreshold'
+    Description: Alarm notification when spot instance discount or spot price exceeds threshold.
+    Properties:
+        regionId: '{{regionId}}'
+        zoneId: '{{ zoneId }}'
+        discountJsonInfo: '{{ ACS::TaskLoopItem }}'
+        threshold: '{{ threshold }}'
+        taskType: '{{ taskType }}'
+    Outputs:
+      instanceTypeThresholdInfos:
+        Type: Json
+        ValueSelector: discountInfo
+    Loop:
+      Items: '{{ describeSpotPriceHistory.discountAndPrices }}'
+      MaxErrors: 100
+      Concurrency: 10
+      Outputs:
+        allInstanceTypeThresholdInfo:
+          AggregateField: instanceTypeThresholdInfos
+          AggregateType: 'Fn::ListJoin'
+Outputs:
+  instanceTypeThresholdInfo:
+    Type: Json
+    Value: '{{ alarmThresholdInfo.allInstanceTypeThresholdInfo }}'

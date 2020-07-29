@@ -1,0 +1,326 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Resource usage exceeds threshold alarm notification.",
+    "zh-cn": "\u8d26\u6237\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u540e\u62a5\u8b66\u901a\u77e5\u3002",
+    "name-en": "ACS-ECS-AlarmAccountResourceUsage",
+    "name-zh-cn": "\u8d26\u6237\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u540e\u62a5\u8b66"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "threshold": {
+      "Description": {
+        "en": "The threshold of resource usage alarm(example:10 is 10%,50 is 50%).",
+        "zh-cn": "\u8d44\u6e90\u4f7f\u7528\u7387\u8b66\u62a5\u7684\u9608\u503c\uff08\u4f8b\u5982\uff1a10\u4e3a10\uff05\uff0c50\u4e3a50\uff05\uff09\u3002"
+      },
+      "Type": "Number",
+      "Default": 80,
+      "MinValue": 20,
+      "MaxValue": 99
+    },
+    "webHookUrl": {
+      "Description": {
+        "en": "The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
+        "zh-cn": "\u9489\u9489\u7fa4\u52a9\u624b\u7684webhook\u5730\u5740\uff0c\u5f62\u5982https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414\uff0c\u5177\u4f53\u9489\u9489WebHook\u83b7\u53d6\u8bf7\u53c2\u8003https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5\u3002"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying Cron expression.",
+        "zh-cn": "\u901a\u8fc7\u6307\u5b9aCron\u8868\u8fbe\u5f0f\u6309\u8ba1\u5212\u89e6\u53d1\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "Type": "rate",
+        "Expression": "30 minutes",
+        "EndDate": "2099-12-01T00:00:00Z"
+      }
+    },
+    {
+      "Name": "getAccountAttributes",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Query the quotas of ECS resources that you can create in a region.",
+        "zh-cn": "\u67e5\u8be2\u6307\u5b9a\u5730\u57df\u4e0b\u80fd\u521b\u5efa\u7684ECS\u8d44\u6e90\u914d\u989d\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeAccountAttributes",
+        "Parameters": {
+          "RegionId": "{{ regionId }}"
+        }
+      },
+      "Outputs": {
+        "usedPostpaidInstanceVcpuCount": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[13].AttributeValues.ValueItem[].Value | tonumber",
+          "Type": "Number"
+        },
+        "usedSpotInstanceVcpuCount": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[14].AttributeValues.ValueItem[].Value | tonumber",
+          "Type": "Number"
+        },
+        "usedPostpaidYundiskCapacityCloudEfficiency": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[0].Value | tonumber",
+          "Type": "Number"
+        },
+        "usedPostpaidYundiskCapacityCloudSsd": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[1].Value | tonumber",
+          "Type": "Number"
+        },
+        "usedPostpaidYundiskCapacityCloudEssd": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[2].Value | tonumber",
+          "Type": "Number"
+        },
+        "maxPostpaidInstanceVcpuCount": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[6].AttributeValues.ValueItem[].Value | tonumber",
+          "Type": "Number"
+        },
+        "maxSpotInstanceVcpuCount": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[7].AttributeValues.ValueItem[].Value | tonumber",
+          "Type": "Number"
+        },
+        "maxPostpaidYundiskCapacityCloudEfficiency": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[0].Value | tonumber",
+          "Type": "Number"
+        },
+        "maxPostpaidYundiskCapacityCloudSsd": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[1].Value | tonumber",
+          "Type": "Number"
+        },
+        "maxPostpaidYundiskCapacityCloudEssd": {
+          "ValueSelector": ".AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[2].Value | tonumber",
+          "Type": "Number"
+        }
+      }
+    },
+    {
+      "Name": "checkResourceUsage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose the notification task by usage.",
+        "zh-cn": "\u901a\u8fc7\u4f7f\u7528\u7387\u9009\u62e9\u901a\u77e5\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "({{getAccountAttributes.usedPostpaidInstanceVcpuCount}} / {{getAccountAttributes.maxPostpaidInstanceVcpuCount}}) >= {{ threshold }}/100",
+                    "{\"\": \"\"}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "alarmNotify"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "({{getAccountAttributes.usedSpotInstanceVcpuCount}} / {{getAccountAttributes.maxSpotInstanceVcpuCount}}) >= {{ threshold }}/100",
+                    "{\"\": \"\"}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "alarmNotify"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEfficiency}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEfficiency}}) >= {{ threshold }}/100",
+                    "{\"\": \"\"}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "alarmNotify"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudSsd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudSsd}}) >= {{ threshold }}/100",
+                    "{\"\": \"\"}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "alarmNotify"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEssd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEssd}}) >= {{ threshold }}/100",
+                    "{\"\": \"\"}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "alarmNotify"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "alarmNotify",
+      "Action": "ACS::Notify",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Resource usage exceeds threshold alarm notification.",
+        "zh-cn": "\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u62a5\u8b66\u901a\u77e5\u3002"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{ webHookUrl }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "text",
+            "text": {
+              "content": {
+                "Fn::Join": [
+                  "|-|-|",
+                  [
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            true,
+                            {
+                              "Fn::Jq": [
+                                "First",
+                                "({{getAccountAttributes.usedPostpaidInstanceVcpuCount}} / {{getAccountAttributes.maxPostpaidInstanceVcpuCount}}) >= {{ threshold }}/100",
+                                "{\"\": \"\"}"
+                              ]
+                            }
+                          ]
+                        },
+                        "(The PostpaidInstanceVcpuCount usage under your account exceeds {{ threshold }}%.   \u60a8\u8d26\u6237\u7684 \u6309\u91cf\u4ed8\u8d39\u5b9e\u4f8b\u7684VCPU\u6838\u6570 \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        ""
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            true,
+                            {
+                              "Fn::Jq": [
+                                "First",
+                                "({{getAccountAttributes.usedSpotInstanceVcpuCount}} / {{getAccountAttributes.maxSpotInstanceVcpuCount}}) >= {{ threshold }}/100",
+                                "{\"\": \"\"}"
+                              ]
+                            }
+                          ]
+                        },
+                        "(The SpotInstanceVcpuCount usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u62a2\u5360\u5f0f\u5b9e\u4f8bVCPU\u6838\u6570 \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        ""
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            true,
+                            {
+                              "Fn::Jq": [
+                                "First",
+                                "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEfficiency}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEfficiency}}) >= {{ threshold }}/100",
+                                "{\"\": \"\"}"
+                              ]
+                            }
+                          ]
+                        },
+                        "(The PostpaidYundiskCapacityCloudEfficiency usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39Cloud_efficiency\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        ""
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            true,
+                            {
+                              "Fn::Jq": [
+                                "First",
+                                "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudSsd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudSsd}}) >= {{ threshold }}/100",
+                                "{\"\": \"\"}"
+                              ]
+                            }
+                          ]
+                        },
+                        "(The PostpaidYundiskCapacityCloudSsd usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39cloud_ssd\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        ""
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            true,
+                            {
+                              "Fn::Jq": [
+                                "First",
+                                "({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEssd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEssd}}) >= {{ threshold }}/100",
+                                "{\"\": \"\"}"
+                              ]
+                            }
+                          ]
+                        },
+                        "(The PostpaidYundiskCapacityCloudEssd usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39cloud_essd\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        ""
+                      ]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

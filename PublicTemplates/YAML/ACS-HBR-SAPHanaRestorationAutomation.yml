@@ -1,0 +1,867 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: 'This template uses an existing VPC and SAP HANA instance(source instance) to create a single-node SAP instance(destination instance), restore the source instance backup data to the destination instance through the HBR service, and check the restored destination instance status.'
+  zh-cn: 在已有的SAP HANA实例(源实例)同一VPC下，自动创建单节点SAP HANA目的实例，通过HBR服务将源实例备份数据恢复到目的实例，并检查恢复后的目的实例状态。
+  name-en: ACS-HBR-SAPHanaRestorationAutomation
+  name-zh-cn: SAP HANA备份可用性验证（恢复到新建实例）
+Parameters:
+  zoneId:
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
+    Description:
+      name-zh-cn: 期望部署的可用区
+      name-en: Availability Zones
+      zh-cn: '可用区列表请参考, <a href=''https://help.aliyun.com/document_detail/40654.html'' target=''_blank''>地域和可用区信息</a>。'
+      en: The Availability Zone where SAP HANA instance will be deployed.
+  vpcId:
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::VPC::VPCId'
+    Description:
+      name-zh-cn: 源实例所在专有网络VPC
+      name-en: Source VPC ID
+      zh-cn: 源实例所在专有网络VPC。
+      en: VPC ID of source instance .
+  vSwitchId:
+    Type: String
+    AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
+    Description:
+      name-zh-cn: 目的实例所在交换机
+      name-en: Target VSwitch ID
+      zh-cn: 目的实例所在交换机。
+      en: VSwitch ID of destination instance .
+  sourceClusterId:
+    Description:
+      name-zh-cn: HBR源实例Id
+      name-en: Source SAP HANA instance ID
+      zh-cn: '源实例Id, 需要恢复的SAP HANA备份实例的Id，请在混合云备份控制台-ECS应用备份-实例名称/Id一栏查看。'
+      en: 'Source SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
+    Type: String
+  vaultId:
+    Description:
+      name-zh-cn: HBR备份库ID
+      name-en: Backup Vault ID
+      zh-cn: 备份库的Id。
+      en: Backup vault ID.
+    Type: String
+  databaseName:
+    Description:
+      name-zh-cn: 数据库实例列表
+      name-en: SAP HANA Database List
+      zh-cn: 需要恢复备份的SAP HANA数据库实例列表，格式：<源数据库名>@&lt;SID&gt;:<目的数据库名>，多个数据库实例请以换行分隔。
+      en: SAP HANA database list in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". Separate multiple SAP HANA database with line breaks.
+    Type: List
+    Default:
+      - 'SYSTEMDB@<SID>:SYSTEMDB'
+  HANASID:
+    Type: String
+    ConstraintDescription:
+      zh-cn: '必须输入3个字符,可包含大写字母或数字，首位必须是大写字母。'
+      en: '3 characters,can including capital letter or number, must starting with capital letter.'
+    Description:
+      name-zh-cn: 目的实例SAP HANA SID
+      name-en: SAP HANA  SID
+      zh-cn: 目的实例SAP HANA SID。
+      en: Destination instance SAP HANA SID.
+    AllowedPattern: '^[A-Z][A-Z0-9][A-Z0-9]$'
+  masterPass:
+    Type: String
+    Description:
+      name-zh-cn: 源实例SAP HANA Master账号密码
+      name-en: SAP HANA Master Password
+      zh-cn: 源实例SAP HANA Master账号密码。
+      en: SAP HANA master password.
+    ConstraintDescription:
+      zh-cn: '至少8个字符,至少包含一个数字，大写字母和小写字母，可以使用特殊字符（_,@,#,$)，但不能以数字和特殊字符开头。'
+      en: 'Must be at least 8 characters with uppercase, lowercase, and numeric values,can use special characters include(_,@,#,$),but can''t staring with number and specical characters.'
+    AllowedPattern: '^(?=.*[0-9].*)(?=.*[A-Z].*)(?=.*[a-z].*)[a-zA-Z][0-9a-zA-Z_@#$]{7,}$'
+    NoEcho: true
+  imageId:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的操作系统版本
+      name-en: Operating System And Version
+      zh-cn: '目的实例的操作系统版本，该操作系统为CSP官方收费版本，详情连接：<a href=''https://market.aliyun.com/products/57742013/cmjj00037618.html'' target=''_blank''>SUSE15SP1-SAP</a>、<a href=''https://market.aliyun.com/products/57742013/cmjj00036800.html'' target=''_blank''>SUSE12SP4-SAP</a>、<a href=''https://market.aliyun.com/products/57742013/cmjj031975.html'' target=''_blank''>SUSE12SP3-SAP</a>。'
+      en: 'Operating system and version: <a href=''https://market.aliyun.com/products/57742013/cmjj00037618.html'' target=''_blank''>SUSE15SP1-SAP</a>、<a href=''https://market.aliyun.com/products/57742013/cmjj00036800.html'' target=''_blank''>SUSE12SP4-SAP</a>、<a href=''https://market.aliyun.com/products/57742013/cmjj031975.html'' target=''_blank''>SUSE12SP3-SAP</a>.'
+    AllowedValues:
+      - SUSE15SP1-SAP
+      - SUSE12SP4-SAP
+      - SUSE12SP3-SAP
+  customizedImage:
+    Type: Boolean
+    Description:
+      name-zh-cn: 使用自定义镜像
+      name-en: Use Custom Image
+      zh-cn: 是否使用自定义镜像作为目的实例的镜像，如果选择该项，'目的实例的操作系统版本'参数将无效，且需指定'自定义镜像Id'参数。
+      en: Use custom image or not.
+    Default: false
+  customizedImageId:
+    Type: String
+    Description:
+      name-zh-cn: 自定义镜像Id
+      name-en: Custom Image Id
+      zh-cn: 使用自定义镜像创建目的实例，仅'使用自定义镜像'参数选中时有效。
+      en: Please enter a custom image id.
+    Default: ''
+  instanceType:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的实例规格
+      name-en: Instance Type For SAP HANA Host
+      zh-cn: '<font color=''blue''><b>1.选择机型前请先确认当前可用区下该机型是否有货，部分机型需要提前报备</b></font><br><font color=''blue''><b>2.可选机型列表</b></font><br>[ecs.r5.2xlarge 非认证机型 64G]<br>[ecs.r5.4xlarge 非认证机型 128G]<br>[ecs.c5.8xlarge <font color=''green''>SAP认证机型 64G</font>]<br>[ecs.g5.8xlarge <font color=''green''>SAP认证机型 128G</font>]<br>[ecs.r5.8xlarge <font color=''green''>SAP认证机型 256G</font>]<br>[ecs.r6.13xlarge <font color=''green''>SAP认证机型 384G</font>]<br>[ecs.se1.14xlarge <font color=''green''>SAP认证机型 480G</font>]<br>[ecs.r5.16xlarge <font color=''green''>SAP认证机型 512G</font>]<br>[ecs.re4.20xlarge <font color=''green''>SAP认证机型 960G</font>]<br>[ecs.re4.40xlarge <font color=''green''>SAP认证机型 1920G</font>]<br>[ecs.re4e.40xlarge <font color=''green''>SAP认证机型 3840G</font>]<br><font color=''blue''><b>3.详情请参考</font> <a href=''https://help.aliyun.com/document_detail/25378.html'' target=''_blank''><b>实例族详情</b></a>。'
+      en: '<font color=''blue''><b>Instance type list</b></font><br> [ecs.r5.2xlarge Non-certified instance type 64G]<br>[ecs.r5.4xlarge Non-certified instance type 128G]<br>[ecs.c5.8xlarge <font color=''green''>SAP certified instance type 64G</font>]<br>[ecs.g5.8xlarge <font color=''green''>SAP certified instance type 128G</font>]<br>[ecs.r5.8xlarge <font color=''green''>SAP certified instance type 256G</font>]<br>[ecs.r6.13xlarge <font color=''green''>SAP certified instance type 384G</font>]<br>[ecs.se1.14xlarge <font color=''green''>SAP certified instance type 480G</font>]<br>[ecs.r5.16xlarge <font color=''green''>SAP certified instance type 512G</font>]<br>[ecs.re4.20xlarge <font color=''green''>SAP certified instance type 960G</font>]<br>[ecs.re4.40xlarge <font color=''green''>SAP certified instance type 1920G</font>]<br>[ecs.re4e.40xlarge <font color=''green''>SAP certified instance type 3840G</font>].'
+    AllowedValues:
+      - ecs.r5.2xlarge(8vCPUs 64GiB)
+      - ecs.r5.4xlarge(16vCPUs 128GiB)
+      - ecs.c5.8xlarge(32vCPUs 64GiB)
+      - ecs.g5.8xlarge(32vCPUs 128GiB)
+      - ecs.r5.8xlarge(32vCPUs 256GiB)
+      - ecs.r6.13xlarge(52vCPUs 384GiB)
+      - ecs.se1.14xlarge(56vCPUs 480GiB)
+      - ecs.r5.16xlarge(64vCPUs 512GiB)
+      - ecs.re4.20xlarge(80vCPUs 960GiB)
+      - ecs.re4.40xlarge(160vCPUs 1920GiB)
+      - ecs.re4e.40xlarge(160vCPUs 3840GiB)
+  ECSHostname:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例主机名
+      name-en: Hostname
+      zh-cn: 目的实例主机名。
+      en: SAP HANA ECS hostname.
+    Default: hana001
+    AllowedPattern: '^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-])*([a-zA-Z0-9])$'
+    ConstraintDescription:
+      zh-cn: 长度为 2-13 个字符，允许使用大小写字母、数字或连字符(-)，但不能以连字符(-)开头或结尾。
+      en: 'The length is 2-13 characters,can starting with a capital or lowercase letter,and can contain numbers,or -,but can''t starting with - or end with -.'
+  privateIpAddress:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例私有IP地址
+      name-en: Private IP Address
+      zh-cn: '目的实例私有IP地址,请注意IP地址的范围要在交换机网段。'
+      en: 'Private IP address for SAP HANA ECS host,please pay attention:IP address should be within VSwitch CIdR Block.'
+    ConstraintDescription:
+      zh-cn: 请输入正确的私有IP地址。
+      en: Please input the right private IP address.
+    AllowedPattern: '^((192\.168|172\.([1][6-9]|[2]\d|3[01]))(\.([2][0-4]\d|[2][5][0-5]|[01]?\d?\d)){2}|(\D)*10(\.([2][0-4]\d|[2][5][0-5]|[01]?\d?\d)){3})$'
+  loginPassword:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例root用户密码
+      name-en: root Passowrd
+      zh-cn: 目的实例root用户登录密码。
+      en: SAP HANA ECS root passowrd.
+    AllowedPattern: '^(?![a-zA-Z]+$)(?![A-Z0-9]+$)(?![A-Z\W_]+$)(?![a-z0-9]+$)(?![a-z\W_]+$)(?![0-9\W_]+$)[a-zA-Z0-9\W_]{8,}$'
+    ConstraintDescription:
+      zh-cn: 8-30个字符，且同时包含三项（大写字母，小写字母，数字或特殊符号）。
+      en: '8-30 characters,include(capital letter,lowercase letter,numbers or special characters).'
+    NoEcho: true
+  HANAInstanceNumber:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例SAP HANA实例编号
+      name-en: SAP HANA Instance Number
+      zh-cn: 目的实例SAP HANA实例编号。
+      en: SAP HANA instance number.
+    ConstraintDescription:
+      zh-cn: 2位数字，00-97。
+      en: '2 numbers,00-97.'
+    AllowedPattern: '^([0-8][0-9]|9[0-6])$'
+    Default: '00'
+  systemDiskCategory:
+    Default: cloud_ssd
+    AllowedValues:
+      - cloud_efficiency
+      - cloud_ssd
+    Description:
+      name-zh-cn: 目的实例系统盘类型
+      name-en: System Disk Type
+      zh-cn: '目的实例系统盘类型，系统盘分类: 高效云盘,SSD云盘。'
+      en: 'System disk category: Ultra Disk,SSD disk.'
+    Type: String
+  systemDiskSize:
+    Default: '100'
+    Type: String
+    Description:
+      name-zh-cn: 目的实例系统盘大小
+      name-en: System Disk Size
+      zh-cn: 目的实例系统盘大小，单位GB，容量20-500G。
+      en: '/ file system size,unit:GB,range:20~500G.'
+    ConstraintDescription:
+      zh-cn: 必须输入整数，单位GB，容量20-500G。
+      en: 'Must be an integer,range:20~500G.'
+    AllowedPattern: '(^2[0-9]$)|(^[3-9]\d$)|(^[1-4]\d{2}$)|500$'
+  dataLogDiskCategory:
+    Default: cloud_ssd
+    AllowedValues:
+      - cloud_essd PL1
+      - cloud_essd PL2
+      - cloud_essd PL3
+      - cloud_ssd
+    Description:
+      name-zh-cn: /hana/data和/hana/log文件系统所在磁盘类型
+      name-en: /hana/data And /hana/log File System Disk Category
+      zh-cn: '1.可选磁盘类型：ESSD云盘PL1、ESSD云盘PL2、ESSD云盘PL3、SSD云盘。<br>2. ESSD 云盘容量越大，可供选择的性能级别越高（460 GiB 以上可选 PL2，1260 GiB 以上可选 PL3），性能级别越高相应的费用也越高:<ul><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL1（单盘IOPS性能上限5万）</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL2（单盘IOPS性能上限10万）</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL3（单盘IOPS性能上限100万）</li></ul>如何合理选择 ESSD 云盘性能级别，<a href=''https://help.aliyun.com/document_detail/122389.html'' target=''view_window''>查看详情&gt;</a>。'
+      en: '1. /hana/data and /hana/log file system disk category: ESSD disk,SSD disk.<br>2. The higher the performance level that you can select. For example, PL2 is available for an enhanced SSD of more than 460 GiB and PL3 is available for an enhanced SSD of more than 1260 GiB. A higher performance level indicates a higher fee:<ul><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL1(up to 50,000 IOPS per disk)</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL2(up to 100,000 IOPS per disk)</li><li>&nbsp;&nbsp;&nbsp;&nbsp;cloud_essd PL3(up to 1,000,000 IOPS per disk)</li></ul>For more information about how to select the performance level of an enhanced SSD, <a href=''https://help.aliyun.com/document_detail/122389.html'' target=''view_window''>click here&gt;</a>.'
+    Type: String
+  dataSize:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的/hana/data大小
+      name-en: /hana/data File System Size
+      zh-cn: 目的实例的/hana/data文件系统大小，单位GB，SAP官方推荐：Size >= 1 x RAM。
+      en: '/hana/data file system size,unit:GB,SAP recommendation:Size >= 1 x RAM.'
+    ConstraintDescription:
+      zh-cn: 必须输入整数，容量20-32768G。
+      en: 'Must be an integer,range:20~32768G.'
+    AllowedPattern: '(^[2-9]\d{1}$)|(^[1-9]\d{2}$)|(^[1-9]\d{3}$)|(^[1-2]\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)'
+  logSize:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的/hana/log大小
+      name-en: /hana/log File System Size
+      zh-cn: '目的实例的/hana/log文件系统大小，单位GB，SAP官方推荐：[systems ≤ 512GB ] Sizeredolog = 1/2 x RAM;[systems > 512GB ] Sizeredolog(min) = 512GB。'
+      en: '/hana/log file system size,unit:GB,SAP recommendation:[systems ≤ 512GB ] Sizeredolog = 1/2 x RAM;[systems > 512GB ] Sizeredolog(min) = 512GB.'
+    ConstraintDescription:
+      zh-cn: '必须输入整数,容量20-32768GB。'
+      en: 'Must be an integer,range:20~32768G.'
+    AllowedPattern: '(^[2-9]\d{1}$)|(^[1-9]\d{2}$)|(^[1-9]\d{3}$)|(^[1-2]\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)'
+  sharedDiskCategory:
+    Default: cloud_ssd
+    AllowedValues:
+      - cloud_efficiency
+      - cloud_ssd
+      - cloud_essd
+    Description:
+      name-zh-cn: 目的实例的/hana/shared文件系统所在磁盘类型
+      name-en: /hana/shared File System Disk Category
+      zh-cn: 目的实例的/hana/shared文件系统所在磁盘类型：高效云盘、SSD云盘、ESSD云盘。
+      en: '/hana/shared file system disk category: Ultra Disk, SSD disk, ESSD disk.'
+    Type: String
+  sharedSize:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的/hana/shared大小
+      name-en: /hana/shared File System Size
+      zh-cn: 目的实例的/hana/shared文件系统大小，单位GB，SAP官方推荐：Sizeinstallation(single-node) = MIN(1 x RAM; 1 TB)。
+      en: '/hana/shared file system size,unit:GB,SAP recommendation: Sizeinstallation(single-node) = MIN(1 x RAM; 1 TB).'
+    ConstraintDescription:
+      zh-cn: 必须输入整数，容量20-32768GB。
+      en: 'Must be an integer,range:20~32768G.'
+    AllowedPattern: '(^[2-9]\d{1}$)|(^[1-9]\d{2}$)|(^[1-9]\d{3}$)|(^[1-2]\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)'
+  usrsapDiskCategory:
+    Default: cloud_ssd
+    AllowedValues:
+      - cloud_efficiency
+      - cloud_ssd
+      - cloud_essd
+    Description:
+      name-zh-cn: 目的实例的/usr/sap文件系统所在磁盘类型
+      name-en: /usr/sap File System Disk Category
+      zh-cn: 目的实例的/usr/sap文件系统所在磁盘类型：高效云盘、SSD云盘、ESSD云盘。
+      en: '/usr/sap file system disk category: Ultra Disk, SSD disk, ESSD disk.'
+    Type: String
+  usrsapSize:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的/usr/sap大小
+      name-en: /usr/sap File System Size
+      zh-cn: 目的实例的/usr/sap文件系统大小，单位GB。
+      en: '/usr/sap file system size,unit:GB.'
+    Default: '50'
+    ConstraintDescription:
+      zh-cn: 必须输入整数，容量20-32768G。
+      en: 'Must be an integer,range:20~32768G.'
+    AllowedPattern: '(^[2-9]\d{1}$)|(^[1-9]\d{2}$)|(^[1-9]\d{3}$)|(^[1-2]\d{4}$)|(^3[0-2][0-7][0-6][0-8]$)'
+  mediaPath:
+    Type: String
+    Description:
+      name-zh-cn: SAP HANA软件包OSS路径
+      name-en: SAP HANA Software OSS Path
+      zh-cn: '请从SAP官网下载SAP HANA安装介质，上传至SAP系统部署所在的OSS地域，输入该目录的路径，例：oss://{bucket_name}/hana。'
+      en: 'Please download the SAP HANA installation media from SAP software download center(Don''t need to extract, the packages are like these:51053381_part1.exe or.rar）and upload them into OSS bucket,input the full path starting with oss://. eg: oss://{bucket_name}/hana.'
+    ConstraintDescription:
+      zh-cn: 'oss:开头，例：oss://{bucket_name}/hana。'
+      en: 'Starting with oss.eg: oss://{bucket_name}/hana.'
+    AllowedPattern: '^(oss|https|http)://[\S\w]+([\S\w])+$'
+  systemUsage:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的SAP HANA系统类型
+      name-en: SAP HANA System Usage
+      zh-cn: '目的实例的SAP HANA系统类型，包括custom,development,test,production。'
+      en: 'SAP HANA system usage(custom,development,test,production).'
+    Default: custom
+    AllowedValues:
+      - custom
+      - development
+      - test
+      - production
+  HANASapSidAdmUid:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的SAP HANA sidadm用户Id
+      name-en: SAP HANA sidadm User Id
+      zh-cn: '目的实例的sidadm user Id,只能填写数字,大于500且小于65532，默认值是1001。'
+      en: 'sidadm user Id,Only number,range:500~65532,default value:1001.'
+    Default: '1001'
+    ConstraintDescription:
+      zh-cn: '只能填写数字,大于500且小于65532。'
+      en: 'Only number,range:500~65532.'
+    AllowedPattern: '(^[5-9]\d{2}$)|(^[1-9]\d{3}$)|(^[1-5]\d{4}$)|(^6[0-5][0-5][0-3][0-2]$)'
+  HANASapSysGid:
+    Type: String
+    Description:
+      name-zh-cn: 目的实例的SAP HANA sapsys组Id
+      name-en: SAP HANA sapsys Group Id
+      zh-cn: '目的实例的sapsys group Id,只能填写数字，默认值是79。'
+      en: 'Sapsys group Id,Only number,default value:79.'
+    Default: '79'
+    ConstraintDescription:
+      zh-cn: 只能填写数字。
+      en: Only number.
+    AllowedPattern: (^\d+$)
+  userName:
+    Description:
+      name-zh-cn: 目的实例的用户名
+      name-en: Username of SYSTEMDB
+      zh-cn: 目的实例的用户名。
+      en: Input username of SYSTEMDB.
+    Type: String
+    Default: SYSTEM
+  weatherDeleteResource:
+    Description:
+      name-zh-cn: 验证成功后保留云资源.
+      name-en: Retain Cloud Resources
+      zh-cn: '是否在验证备份成功后，保留云资源, 默认不保留。该参数为选中状态且成功恢复备份时，''云资源保留时长''参数将失效。'
+      en: 'Whether to reserve cloud resources after verifying the successful backup, not reserved by default. When this parameter is selected and the backup is successfully restored, the''Cloud Resource Retention Duration'' parameter will be invalid.'
+    Type: Boolean
+    Default: false
+  timeout:
+    Description:
+      name-zh-cn: 云资源保留时长（单位：分钟）
+      name-en: 'Cloud Resource Retention Time (Unit: Minutes)'
+      zh-cn: 测试完成/失败后，保留云资源的时长（单位：分钟）。
+      en: 'After the test is completed/failed, the length of time to reserve cloud resources (unit: minutes).'
+    Type: Number
+    Default: '30'
+  dingTalkWebhook:
+    Description:
+      name-zh-cn: 钉钉机器人Webhook地址
+      name-en: DingTalk Robot Webhook
+      zh-cn: '钉钉自定义机器人Webhook地址，用以向钉钉发送测试结果消息和删除云资源审批消息，更多请浏览<a href=''https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq'' target=''_blank''>钉钉自定义机器人</a>。'
+      en: 'Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details.'
+    Type: String
+Tasks:
+  - Name: checkHanaInstanceType
+    Action: 'ACS::CheckFor'
+    Description:
+      zh-cn: 查询SAP HANA实例规格在当前可用区是否可用
+      en: Check SAP HANA instance type availability in current available zones
+    Properties:
+      Service: ECS
+      API: DescribeAvailableResource
+      Parameters:
+        ZoneId: '{{ zoneId }}'
+        RegionId: '{{ACS::RegionId}}'
+        InstanceType:
+          'Fn::Select':
+            - 0
+            - 'Fn::Split':
+                - (
+                - '{{ instanceType }}'
+        DestinationResource: InstanceType
+      PropertySelector: 'AvailableZones.AvailableZone[0].Status'
+      DesiredValues:
+        - Available
+    Retries: 2
+  - Name: checkHanaBackupSetting
+    Action: 'ACS::CheckFor'
+    Description:
+      zh-cn: 查询源实例SAP HANA数据库备份设置
+      en: Check source SAP HANA backup settings
+    Properties:
+      Service: HBR
+      API: DescribeHanaBackupSetting
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ sourceClusterId }}'
+        DatabaseName: 
+          'Fn::Select':
+            - 0
+            - 'Fn::Split':
+              - '@'
+              - '{{ ACS::TaskLoopItem }}'
+      PropertySelector: HanaBackupSetting.CatalogBackupUsingBackint
+      DesiredValues:
+        - true
+    Retries: 2
+    Loop:
+      Items: '{{ databaseName }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+  - Name: createStack
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Create a SAP HANA single node stack.
+      zh-cn: 创建SAP HANA单节点资源栈
+    Properties:
+      Service: ROS
+      API: CreateStack
+      Parameters:
+        StackName: 'HBR-{{ACS::ExecutionId}}'
+        TimeoutInMinutes: 60
+        DisableRollback: true
+        Parameters:
+          - ParameterKey: ImageId
+            ParameterValue: '{{ imageId }}'
+          - ParameterKey: CustomizedImageId
+            ParameterValue: '{{ customizedImageId }}'
+          - ParameterKey: CustomizedImage
+            ParameterValue: '{{ customizedImage }}'
+          - ParameterKey: ZoneId
+            ParameterValue: '{{ zoneId }}'
+          - ParameterKey: VpcId
+            ParameterValue: '{{ vpcId }}'
+          - ParameterKey: VSwitchId
+            ParameterValue: '{{ vSwitchId }}'
+          - ParameterKey: InstanceType
+            ParameterValue: '{{ instanceType }}'
+          - ParameterKey: ECSHostname
+            ParameterValue: '{{ ECSHostname }}'
+          - ParameterKey: PrivateIpAddress
+            ParameterValue: '{{ privateIpAddress }}'
+          - ParameterKey: LoginPassword
+            ParameterValue: '{{ loginPassword }}'
+          - ParameterKey: HANASID
+            ParameterValue: '{{ HANASID }}'
+          - ParameterKey: HANAInstanceNumber
+            ParameterValue: '{{ HANAInstanceNumber }}'
+          - ParameterKey: SystemDiskCategory
+            ParameterValue: '{{ systemDiskCategory }}'
+          - ParameterKey: SystemDiskSize
+            ParameterValue: '{{ systemDiskSize }}'
+          - ParameterKey: DataLogDiskCategory
+            ParameterValue: '{{ dataLogDiskCategory }}'
+          - ParameterKey: DataSize
+            ParameterValue: '{{ dataSize }}'
+          - ParameterKey: LogSize
+            ParameterValue: '{{ logSize }}'
+          - ParameterKey: SharedDiskCategory
+            ParameterValue: '{{ sharedDiskCategory }}'
+          - ParameterKey: SharedSize
+            ParameterValue: '{{ sharedSize }}'
+          - ParameterKey: UsrsapDiskCategory
+            ParameterValue: '{{ usrsapDiskCategory }}'
+          - ParameterKey: UsrsapSize
+            ParameterValue: '{{ usrsapSize }}'
+          - ParameterKey: MasterPass
+            ParameterValue: '{{ masterPass }}'
+          - ParameterKey: MediaPath
+            ParameterValue: '{{ mediaPath }}'
+          - ParameterKey: SystemUsage
+            ParameterValue: '{{ SystemUsage }}'
+          - ParameterKey: HANASapSidAdmUid
+            ParameterValue: '{{ HANASapSidAdmUid }}'
+          - ParameterKey: HANASapSysGid
+            ParameterValue: '{{ HANASapSysGid }}'
+        TemplateURL: 'https://sap-automation-{{ACS::RegionId}}.oss-{{ACS::RegionId}}.aliyuncs.com/Public_V1/HANA/HANA_Single_Node.json'
+    Outputs:
+      StackId:
+        Type: String
+        ValueSelector: StackId
+  - Name: untilStackReady
+    Action: 'ACS::WaitFor'
+    OnError: getExecutionFaildMessage
+    Description:
+      en: Wait the stack status util CREATE_COMPLETE.
+      zh-cn: 等待资源栈至创建成功状态。
+    DelayType: Constant
+    Delay: 300
+    Retries: 12
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+      DesiredValues:
+        - CREATE_COMPLETE
+      StopRetryValues:
+        - CREATE_FAILED
+        - CHECK_FAILED
+        - ROLLBACK_FAILED
+        - ROLLBACK_COMPLETE
+        - CREATE_ROLLBACK_COMPLETE
+        - CREATE_ROLLBACK_FAILED
+      PropertySelector: Status
+    Outputs:
+      HANAServerId:
+        Type: String
+        ValueSelector: '.Outputs[] | select(.OutputKey == "HANAServerId") | .OutputValue'
+      HANAServerLog:
+        Type: Json
+        ValueSelector: '.Outputs[] | select(.OutputKey == "InstallLog") | .OutputValue'
+  - Name: checkHanaServerLog
+    Action: 'ACS::CheckFor'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 检查SAP HANA安装日志
+      en: Check SAP HANA installation log
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+      PropertySelector: '.Outputs[] | select(.OutputKey == "InstallLog") | .OutputValue'
+      DesiredValues:
+        - '{"HANANode": "SUCCESS"}'
+    Retries: 2
+  - Name: createHANAInstance
+    Action: 'ACS::ExecuteAPI'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 创建HBR SAP HANA实例
+      en: Create HBR SAP HANA instance
+    Properties:
+      Service: HBR
+      API: CreateHanaInstance
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        EcsInstanceId: '{{ untilStackReady.HANAServerId }}'
+        Host: '{{ privateIpAddress }}'
+        HanaName: '{{ ECSHostname }}'
+        InstanceNumber: '{{ HANAInstanceNumber }}'
+        UserName: '{{ userName }}'
+        Password: '{{ masterPass }}'
+        UseSsl: true
+    Outputs:
+      ClusterId:
+        Type: String
+        ValueSelector: ClusterId
+  - Name: createClients
+    Action: 'ACS::ExecuteAPI'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 创建HBR SAP HANA实例客户端
+      en: Create HBR SAP HANA instance client
+    Properties:
+      Service: HBR
+      API: CreateClients
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        AlertSetting: INHERITED
+        ClientInfo:
+          - instanceId: '{{ untilStackReady.HANAServerId }}'
+            accessKeyId: ''
+            accessKeySecret: ''
+            clusterId: '{{ createHANAInstance.ClusterId }}'
+            sourceTypes:
+              - HANA
+    Outputs:
+      TaskId:
+        Type: String
+        ValueSelector: TaskId
+  - Name: waitForCreateClient
+    Action: 'ACS::WaitFor'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 等待客户端创建完成
+      en: Wait for the client to be created
+    DelayType: Constant
+    Delay: 5
+    Retries: 15
+    Properties:
+      Service: HBR
+      API: DescribeTask
+      Parameters:
+        TaskId: '{{ createClients.TaskId }}'
+      PropertySelector: Description
+      StopRetryValues:
+        - completed
+      DesiredValues:
+        - completed
+  - Name: waitForActivateClient
+    Action: 'ACS::WaitFor'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 等待HBR客户端激活完成
+      en: Wait for client activation to complete
+    Properties:
+      Service: HBR
+      API: DescribeClients
+      Parameters:
+        ClusterId: '{{ createHANAInstance.ClusterId }}'
+        VaultId: '{{ vaultId }}'
+        SourceType: HANA
+        ClientType: ECS_AGENT
+      PropertySelector: 'Clients.Client[].Status'
+      StopRetryValues:
+        - ACTIVATED
+        - INSTALL_FAILED
+      DesiredValues:
+        - ACTIVATED
+    Retries: 5
+    Outputs:
+      ClientId:
+        Type: String
+        ValueSelector: 'Clients.Client[].ClientId'
+  - Name: RestoreBuckup
+    Action: 'ACS::HBR::RestoreHanaDatabaseBackup'
+    OnError: getExecutionFaildMessage
+    Description:
+      zh-cn: 恢复并验证备份
+      en: Restore and verify backup
+    Properties:
+      vaultId: '{{ vaultId }}'
+      sourceClusterId: '{{ sourceClusterId }}'
+      sourceSystemName:
+        'Fn::Select':
+          - 0
+          - 'Fn::Split':
+            - ':'
+            - '{{ ACS::TaskLoopItem }}'
+      clusterId: '{{ createHANAInstance.ClusterId }}'
+      databaseName:
+        'Fn::Select':
+          - 1
+          - 'Fn::Split':
+            - ':'
+            - '{{ ACS::TaskLoopItem }}'
+      HANAInstanceServerId: '{{ untilStackReady.HANAServerId }}'
+      HANASID: '{{ HANASID }}'
+      masterClientId: '{{ waitForActivateClient.ClientId }}'
+    Loop:
+      Items: '{{ databaseName }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+  - Name: runCommand
+    Action: 'ACS::ECS::RunCommand'
+    OnSuccess: DingTalkNotify
+    OnError: getExecutionFaildMessage
+    Description:
+      en: Verify the running status of the SAP HANA instance
+      zh-cn: 校验SAP HANA实例运行状态
+    Properties:
+      regionId: '{{ ACS::RegionId }}'
+      commandContent:
+        'Fn::Join':
+          - ''
+          - - 'su - '
+            - 'Fn::Jq':
+                - First
+                - .key | ascii_downcase
+                - key: '{{ HANASID }}'
+            - 'adm -c "sapcontrol -nr '
+            - '{{ HANAInstanceNumber }}'
+            - ' -function GetProcessList"; if [[ $? -eq 3 ]]; then exit 0;fi'
+      instanceId: '{{ untilStackReady.HANAServerId }}'
+      commandType: RunShellScript
+      timeout: '180'
+    Outputs:
+      commandOutputs:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: getExecutionFaildMessage
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get execution failure information
+      zh-cn: 获取执行失败信息
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ExecutionId: '{{ ACS::ExecutionId }}'
+    Outputs:
+      statusMessage:
+        Type: String
+        ValueSelector: 'Executions[].StatusMessage'
+  - Name: DingTalkNotifyExecutionFailed
+    Action: 'ACS::Notify'
+    OnSuccess: sleepTask
+    Description:
+      en: Notification execution failure message
+      zh-cn: 通知执行失败消息
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ dingTalkWebhook }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: markdown
+          markdown:
+            title: '{{ ACS::CurrentUTCTime }}-HBR自动测试执行失败报告'
+            text:
+              'Fn::Join':
+                - |+
+
+
+                - - '#### {{ ACS::CurrentUTCTime }}-HBR自动测试执行失败报告'
+                  - '检测数据库：{{ databaseName }}'
+                  - '错误信息：{{ getExecutionFaildMessage.statusMessage }}'
+                  - '**测试将在{{ timeout }}分钟后自动清理测试云资源，如需保留云资源，请到[OOS控制台](https://oos.console.aliyun.com/{{ ACS::RegionId }}/execution/detail/{{ ACS::ExecutionId }})取消执行**'
+          at:
+            atMobiles: []
+            isAtAll: true
+  - Name: DingTalkNotify
+    Action: 'ACS::Notify'
+    Description:
+      en: Notify test results
+      zh-cn: 钉钉通知测试结果
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ dingTalkWebhook }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: markdown
+          markdown:
+            title: '{{ ACS::CurrentUTCTime }}-HBR自动测试报告'
+            text:
+              'Fn::Join':
+                - |+
+
+
+                - - '#### {{ ACS::CurrentUTCTime }}-HBR自动测试报告'
+                  - 测试结果：SUCCESS
+                  - '检测数据库：{{ databaseName }}'
+                  - '目的实例：{{ ECSHostname }}'
+                  - '目的实例Id：{{ untilStackReady.HANAServerId }}'
+                  - '**如果您选择清理云资源，测试将在{{ timeout }}分钟后自动清理测试云资源，如需保留云资源，请到[OOS控制台](https://oos.console.aliyun.com/{{ACS::RegionId}}/execution/detail/{{ ACS::ExecutionId }})取消执行**'
+          at:
+            atMobiles: []
+            isAtAll: true
+  - Name: whetherDeleteResource
+    Action: 'ACS::Choice'
+    Properties:
+      DefaultTask: sleepTask
+      Choices:
+        - When: '{{ weatherDeleteResource }}'
+          NextTask: 'ACS::END'
+  - Name: sleepTask
+    Action: 'ACS::Sleep'
+    Properties:
+      Duration: 'PT{{ timeout }}M'
+  - Name: deleteStack
+    Action: 'ACS::ExecuteApi'
+    OnError: getCleanupFaildMessage
+    Description:
+      en: Delete the stack.
+      zh-cn: 删除资源栈
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+  - Name: describeHanaInstances
+    Action: 'ACS::ExecuteAPI'
+    OnError: getCleanupFaildMessage
+    Description:
+      zh-cn: 查询HBR SAP HANA实例
+      en: Query HBR SAP HANA instance
+    Properties:
+      Service: HBR
+      API: DescribeHanaInstances
+      Parameters:
+        VaultId: '{{ vaultId }}'
+    Outputs:
+      Hanas:
+        Type: Json
+        ValueSelector: Hanas
+  - Name: whetherDeleteHanaInstances
+    Action: 'ACS::Choice'
+    Properties:
+      DefaultTask: untilStackCleanup
+      Choices:
+        - When:
+            'Fn::Equals':
+              - '{{ ECSHostname }}'
+              - 'Fn::Jq':
+                  - First
+                  - '.key.Hana[] | select(.Host == "{{ privateIpAddress }}") | .HanaName'
+                  - key: '{{ describeHanaInstances.Hanas }}'
+          NextTask: deleteHanaInstance
+  - Name: deleteHanaInstance
+    Action: 'ACS::ExecuteApi'
+    OnError: getCleanupFaildMessage
+    Description:
+      en: Delete the stack.
+      zh-cn: 删除测试SAP HANA实例
+    Properties:
+      Service: HBR
+      API: DeleteHanaInstance
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ createHANAInstance.ClusterId }}'
+        Sid: '{{ HANASID }}'
+  - Name: untilStackCleanup
+    Action: 'ACS::WaitFor'
+    OnError: getCleanupFaildMessage
+    OnSuccess: 'ACS::END'
+    Description:
+      en: Wait the stack status util DELETE_COMPLETE.
+      zh-cn: 等待资源栈至删除成功状态。
+    DelayType: Constant
+    Delay: 300
+    Retries: 12
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createStack.StackId}}'
+      DesiredValues:
+        - DELETE_COMPLETE
+      StopRetryValues:
+        - DELETE_FAILED
+        - DELETE_COMPLETE
+      PropertySelector: Status
+  - Name: getCleanupFaildMessage
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get cleanup failure information
+      zh-cn: 获取清理失败信息
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ExecutionId: '{{ ACS::ExecutionId }}'
+    Outputs:
+      statusMessage:
+        Type: String
+        ValueSelector: 'Executions[].StatusMessage'
+  - Name: DingTalkNotifyCleanupFailed
+    Action: 'ACS::Notify'
+    Description:
+      en: Notification cleanup failed
+      zh-cn: 清理失败通知
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ dingTalkWebhook }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: markdown
+          markdown:
+            title: '{{ ACS::CurrentUTCTime }}-HBR自动测试清理失败报告'
+            text:
+              'Fn::Join':
+                - |+
+
+
+                - - '#### {{ ACS::CurrentUTCTime }}-HBR自动测试清理失败报告'
+                  - '检测数据库：{{ databaseName }}'
+                  - '错误信息：{{ getCleanupFaildMessage.statusMessage }}'
+                  - '**自动清理云资源失败，请手动清理**'
+          at:
+            atMobiles: []
+            isAtAll: true
+Outputs:
+  Result:
+    Type: String
+    Value: '{{ untilStackReady.HANAServerId }}'

@@ -1,0 +1,84 @@
+FormatVersion: OOS-2019-06-01
+Description: SownLoads file to instance.
+Parameters:
+  regionId:
+    Description: The id of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The id of instace.
+    Type: String
+  sourceType:
+    Description: The type of file storage.
+    Type: String
+    AllowedValues:
+      - oss
+      - https
+      - github
+  sourcePath:
+    Description: You must specify a URL where the file is stored.
+    Type: String
+  tokenInfo:
+    Description: Specify a token to download file.It is only required when downloading file from GitHub.
+    Type: String
+    Default: ''
+  destinationDir:
+    Description: Target directory for file copy in instance.
+    Type: String
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description: Queries ECS instance OS type.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: downloadLinuxFile
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\'{{tokenInfo}}\',\'{{destinationDir}}\'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: downloadWindowsFile
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        acs-plugin-manager.exe --exec -P oosutil_win --param download_content,{{ sourceType }},'{{ sourcePath }}',\'{{ tokenInfo }}\',\'{{destinationDir}}\'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ downloadLinuxFile.commandOutput }}'
+        - '{{ downloadWindowsFile.commandOutput }}'

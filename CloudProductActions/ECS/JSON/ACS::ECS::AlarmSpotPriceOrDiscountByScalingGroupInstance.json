@@ -1,0 +1,171 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group existing instances.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The region id.",
+      "Type": "String"
+    },
+    "threshold": {
+      "Description": "The discount threshold(example:10 is 1% off, 50 is 50% off).",
+      "Type": "Number"
+    },
+    "taskType": {
+      "Description": "Monitoring threshold task type.",
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": "The instance type.",
+      "Type": "String"
+    },
+    "zoneId": {
+      "Description": "The zone id.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeSpotPriceHistoryInfos",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Get the latest discounts on spot instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSpotPriceHistory",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceType": "{{ instanceType }}",
+          "NetworkType": "vpc",
+          "ZoneId": "{{ zoneId }}"
+        }
+      },
+      "Outputs": {
+        "discountAndPrice": {
+          "Type": "Json",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1] | {\"realThreshold\":(.SpotPrice / .OriginPrice * 100), \"spotPrice\":.SpotPrice, \"originPrice\":.OriginPrice, \"instanceType\":.InstanceType}"
+        }
+      }
+    },
+    {
+      "Name": "selectTask",
+      "Action": "ACS::Choice",
+      "Description": "Select the type of task that performs the monitoring threshold.",
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Discount",
+                "{{ taskType }}"
+              ]
+            },
+            "NextTask": "checkDiscountThreshold"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                "Price",
+                "{{ taskType }}"
+              ]
+            },
+            "NextTask": "checkSpotPriceThreshold"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "checkDiscountThreshold",
+      "Action": "ACS::Choice",
+      "Description": "Check if the actual discount exceeds the threshold.",
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".realThreshold >= {{ threshold }}",
+                    "{{ describeSpotPriceHistoryInfos.discountAndPrice }}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "describeSpotPriceHistory"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "checkSpotPriceThreshold",
+      "Action": "ACS::Choice",
+      "Description": "Check if the actual discount exceeds the threshold.",
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".spotPrice >= {{ threshold }}",
+                    "{{ describeSpotPriceHistoryInfos.discountAndPrice }}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "describeSpotPriceHistory"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "describeSpotPriceHistory",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Get the latest discounts or spot price on spot instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSpotPriceHistory",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceType": "{{ instanceType }}",
+          "NetworkType": "vpc",
+          "ZoneId": "{{ zoneId }}"
+        }
+      },
+      "Outputs": {
+        "spotPrice": {
+          "Type": "String",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1].SpotPrice"
+        },
+        "instanceType": {
+          "Type": "String",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1].InstanceType"
+        },
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1].ZoneId"
+        },
+        "actualDiscount": {
+          "Type": "String",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1] | .SpotPrice / .OriginPrice * 10000 | floor as $num | $num/100"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "discountInfo": {
+      "Type": "Json",
+      "Value": {
+        "instanceType": "{{ describeSpotPriceHistory.instanceType }}",
+        "zoneId": "{{ describeSpotPriceHistory.zoneId }}",
+        "spotPrice": "{{ describeSpotPriceHistory.spotPrice }}",
+        "actualDiscount": "\"{{ describeSpotPriceHistory.actualDiscount }}\""
+      }
+    }
+  }
+}

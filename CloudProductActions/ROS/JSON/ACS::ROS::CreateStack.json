@@ -1,0 +1,122 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Create a ROS stack.",
+  "Parameters": {
+    "parameters": {
+      "Description": "The parameters that Ros template need. e.g.[ { \"ParameterValue\": \"System\", \"ParameterKey\": \"PolicyType\" }, { \"ParameterValue\": \"zhangsan\", \"ParameterKey\": \"UserName\" }, { \"ParameterValue\": \"AliyunOSSReadOnlyAccess\", \"ParameterKey\": \"PolicyName\" } ].",
+      "Type": "Json"
+    },
+    "templateBody": {
+      "Description": "The Ros template content.",
+      "Type": "Json",
+      "AssociationProperty": "Code"
+    },
+    "stackName": {
+      "Description": "The Ros stack mame.",
+      "Type": "String",
+      "Default": "OOS-{{ACS::ExecutionId}}"
+    },
+    "timeoutInMinutes": {
+      "Description": "The Ros timeout in minutes.",
+      "Type": "String",
+      "Default": 10
+    },
+    "disableRollback": {
+      "Description": "The Ros stack disable rollback .",
+      "Type": "String",
+      "Default": false
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Create a ROS stack.",
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "StackName": "{{stackName}}",
+          "TimeoutInMinutes": "{{timeoutInMinutes}}",
+          "DisableRollback": "{{disableRollback}}",
+          "Parameters": "{{parameters}}",
+          "TemplateBody": "{{templateBody}}"
+        }
+      },
+      "Outputs": {
+        "stackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilStackReady",
+      "Action": "ACS::WaitFor",
+      "OnError": "queryStackStatusReason",
+      "OnSuccess": "ACS::END",
+      "Description": "Wait for the stack status CREATE_COMPLETE.",
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "statusReason": {
+          "Type": "String",
+          "ValueSelector": "StatusReason"
+        }
+      }
+    },
+    {
+      "Name": "queryStackStatusReason",
+      "Action": "ACS::ExecuteAPI",
+      "OnError": "ACS::NEXT",
+      "Description": "Query the reson of failed created stack.",
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      },
+      "Outputs": {
+        "statusReason": {
+          "Type": "String",
+          "ValueSelector": "StatusReason"
+        }
+      }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Delete the ros resource stack.",
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "StackId": "{{createStack.StackId}}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "stackId": {
+      "Type": "String",
+      "Value": "{{createStack.stackId}}"
+    }
+  }
+}

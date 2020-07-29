@@ -1,0 +1,108 @@
+FormatVersion: OOS-2019-06-01
+Description: Modify instance charge type.
+Parameters:
+  regionId:
+    Type: String
+    Description: The id of region.
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Type: String
+    Description: The id of instance.
+  instanceChargeType:
+    Description: The instance ChargeType.
+    Type: String
+    AllowedValues:
+      - PostPaid
+      - PrePaid
+    Default: PostPaid
+  networkChargeType:
+    Description: The network ChargeType.
+    Type: String
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+    Default: PayByTraffic
+Tasks:
+  - Name: getInstanceChargeType
+    Action: 'ACS::ExecuteApi'
+    Description: Get ECS instance ChargeType.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+    Outputs:
+      instanceChargeType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].InstanceChargeType'
+  - Name: checkInstanceChargeType
+    Action: 'ACS::Choice'
+    Description: Choose next task by instance ChargeType.
+    Properties:
+      DefaultTask: modifyInstanceChargeType
+      Choices:
+        - When:
+            'Fn::Equals':
+              - '{{ instanceChargeType }}'
+              - '{{ getInstanceChargeType.instanceChargeType }}'
+          NextTask: getInternetChargeType
+  - Name: modifyInstanceChargeType
+    Description: Modify instance charge type.
+    Action: 'ACS::ExecuteApi'
+    Properties:
+      Service: ECS
+      API: ModifyInstanceChargeType
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+        InstanceChargeType: '{{ instanceChargeType }}'
+  - Name: untilInstanceChargeTypeReady
+    Action: ACS::WaitFor
+    Description: Waits for the instances ChargeType ready.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+        - '{{ instanceId }}'
+      DesiredValues:
+      - '{{ instanceChargeType }}'
+      PropertySelector: 'Instances.Instance[].InstanceChargeType'
+  - Name: getInternetChargeType
+    Action: 'ACS::ExecuteApi'
+    Description: Get ECS internet ChargeType.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+    Outputs:
+      internetChargeType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].InternetChargeType'
+  - Name: checkInternetChargeType
+    Action: 'ACS::Choice'
+    Description: Choose next task by instance internet ChargeType.
+    Properties:
+      DefaultTask: modifyInternetChargeType
+      Choices:
+        - When:
+            'Fn::Equals':
+              - '{{ networkChargeType }}'
+              - '{{ getInternetChargeType.internetChargeType }}'
+          NextTask: 'ACS::END'
+  - Name: modifyInternetChargeType
+    Action: 'ACS::ExecuteAPI'
+    Description: Modifiy the billing method for public network usage.
+    Properties:
+      Service: ECS
+      API: ModifyInstanceNetworkSpec
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+        NetworkChargeType: '{{ networkChargeType }}'

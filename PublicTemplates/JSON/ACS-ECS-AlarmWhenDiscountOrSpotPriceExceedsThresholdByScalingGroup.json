@@ -1,0 +1,417 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Monitor the discounts and prices of spot instances in the scaling group, and send out alarm notifications if they exceed.",
+    "zh-cn": "\u76d1\u63a7\u4f38\u7f29\u7ec4\u5185\u7684\u62a2\u5360\u5f0f\u5b9e\u4f8b\u7684\u6298\u6263\u4e0e\u4ef7\u683c\uff0c\u5b9e\u9645\u503c\u8d85\u51fa\u9608\u503c\u65f6\u53d1\u51fa\u62a5\u8b66\u901a\u77e5\u3002",
+    "name-en": "ACS-ECS-AlarmWhenDiscountOrSpotPriceExceedsThresholdByScalingGroup",
+    "name-zh-cn": "\u76d1\u63a7\u4f38\u7f29\u7ec4\u5185\u7684\u62a2\u5360\u5f0f\u5b9e\u4f8b\u7684\u4ef7\u683c\u4e0e\u6298\u6263\u8d85\u51fa\u9608\u503c\u65f6\u62a5\u8b66"
+  },
+  "Parameters": {
+    "region": {
+      "Type": "String",
+      "Description": {
+        "name-en": "regionId",
+        "name-zh-cn": "\u5730\u57df",
+        "en": "The region id.",
+        "zh-cn": "\u5730\u57df\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "scalingGroupId": {
+      "Description": {
+        "en": "The scaling group id.",
+        "zh-cn": "\u5f39\u6027\u4f38\u7f29\u7ec4\u7684ID\u3002",
+        "name-en": "scalingGroupId",
+        "name-zh-cn": "\u4f38\u7f29\u7ec4ID"
+      },
+      "Type": "List"
+    },
+    "taskType": {
+      "Description": {
+        "en": "The monitoring threshold task type\uff08Discount\uff1aMonitor discount, Price\uff1amonitor price\uff09.",
+        "zh-cn": "\u76d1\u63a7\u9608\u503c\u4efb\u52a1\u7c7b\u578b\uff08Discount\uff1a\u6298\u6263\u76d1\u63a7, Price\uff1a\u4ef7\u683c\u76d1\u63a7\uff09\u3002",
+        "name-en": "taskType",
+        "name-zh-cn": "\u76d1\u63a7\u4efb\u52a1\u7c7b\u578b"
+      },
+      "Type": "String",
+      "Default": "Discount",
+      "AllowedValues": [
+        "Discount",
+        "Price"
+      ]
+    },
+    "threshold": {
+      "Description": {
+        "en": "The discount/price threshold(example:10 is 1% off,50 is 50% off,Or directly enter the price threshold).",
+        "zh-cn": "\u4ef7\u683c/\u6298\u6263\u9608\u503c\uff08\u4f8b\uff1a10\u4e3a1\u6298\uff0c50\u4e3a5\u6298\uff0c\u6216\u8005\u76f4\u63a5\u8f93\u5165\u4ef7\u683c\u7684\u9608\u503c\uff09\u3002",
+        "name-en": "threshold",
+        "name-zh-cn": "\u4ef7\u683c/\u6298\u6263\u9608\u503c"
+      },
+      "Type": "Number"
+    },
+    "webhook": {
+      "Description": {
+        "en": "DingTalk webhook(example:https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx).",
+        "zh-cn": "\u9489\u9489\u63a5\u6536\u4fe1\u606f\u7684\u5730\u5740\uff08\u4f8b\uff1ahttps://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\uff09\u3002"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 100,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeScalingGroups",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describe the scaling groups.",
+        "zh-cn": "\u67e5\u8be2\u5f39\u6027\u4f38\u7f29\u7ec4\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingGroups",
+        "Parameters": {
+          "RegionId": "{{ region }}",
+          "ScalingGroupId1": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "scalingGroupInfo": {
+          "Type": "Json",
+          "ValueSelector": ".ScalingGroups.ScalingGroup[] | {\"scalingConfigurationId\":.ActiveScalingConfigurationId, \"scalingGroupId\":.ScalingGroupId, \"vSwitchIds\": .VSwitchIds.VSwitchId}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ scalingGroupId }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "scalingGroupInfos": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "scalingGroupInfo"
+          }
+        }
+      }
+    },
+    {
+      "Name": "describeScalingConfigurations",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describe the scaling configurations.",
+        "zh-cn": "\u67e5\u8be2\u73b0\u6709\u7684\u4f38\u7f29\u914d\u7f6e\u3002"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingConfigurations",
+        "Parameters": {
+          "RegionId": "{{ region }}",
+          "ScalingConfigurationId1": {
+            "Fn::Jq": [
+              "First",
+              ".scalingConfigurationId",
+              "{{ ACS::TaskLoopItem }}"
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "scalingConfigurationInfo": {
+          "Type": "Json",
+          "ValueSelector": ".ScalingConfigurations.ScalingConfiguration[] | {\"instanceTypes\":.InstanceTypes.InstanceType, \"scalingConfigurationId\":.ScalingConfigurationId}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ describeScalingGroups.scalingGroupInfos }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "scalingConfigurationInfos": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "scalingConfigurationInfo"
+          }
+        }
+      }
+    },
+    {
+      "Name": "describeVSwitches",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describe the scaling configurations.",
+        "zh-cn": "\u67e5\u8be2\u73b0\u6709\u7684\u4f38\u7f29\u914d\u7f6e\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeVSwitches",
+        "Parameters": {
+          "RegionId": "{{ region }}",
+          "VSwitchId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "zoneInfo": {
+          "Type": "Json",
+          "ValueSelector": ".VSwitches.VSwitch[] | {\"vSwitchId\":.VSwitchId, \"zoneId\":.ZoneId}"
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::MergeList": {
+            "Fn::Jq": [
+              "All",
+              ".[].vSwitchIds",
+              "{{ describeScalingGroups.scalingGroupInfos }}"
+            ]
+          }
+        },
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "zoneInfos": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "zoneInfo"
+          }
+        }
+      }
+    },
+    {
+      "Name": "wetherOutPutPriceInfo",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Detect if need to out price.",
+        "zh-cn": "\u68c0\u6d4b\u662f\u5426\u9700\u8981\u67e5\u8be2\u4ef7\u683c\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "instanceThresholdInfo",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                {
+                  "Fn::MergeList": "{{ describeScalingGroups.scalingGroupInfos }}"
+                }
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "instanceThresholdInfo",
+      "Action": "ACS::ECS::AlarmSpotPriceOrDiscountThresholdByScalingGroup",
+      "Description": {
+        "en": "Monitor discounts or spot prices under the scaling groups.",
+        "zh-cn": "\u76d1\u63a7\u5f39\u6027\u4f38\u7f29\u7ec4\u4e0b\u7684\u6298\u6263\u6216\u4ef7\u683c\u3002"
+      },
+      "Properties": {
+        "regionId": "{{region}}",
+        "threshold": "{{ threshold }}",
+        "taskType": "{{ taskType }}",
+        "vSwitchId": {
+          "Fn::Jq": [
+            "First",
+            ".vSwitchId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "scalingConfigurationId": {
+          "Fn::Jq": [
+            "First",
+            ".scalingConfigurationId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "configurationInfos": "{{ describeScalingConfigurations.scalingConfigurationInfos }}",
+        "scalingGroupId": {
+          "Fn::Jq": [
+            "First",
+            ".scalingGroupId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "zoneIds": "{{ describeVSwitches.zoneInfos }}"
+      },
+      "Outputs": {
+        "thresholdInfo": {
+          "Type": "List",
+          "ValueSelector": "instanceThresholdInfos"
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            ".[] | {scalingConfigurationId, scalingGroupId, \"vSwitchId\":.vSwitchIds[]}",
+            {
+              "Fn::MergeList": {
+                "Fn::Jq": [
+                  "First",
+                  ". | map(. as $item | [$item])",
+                  "{{ describeScalingGroups.scalingGroupInfos }}"
+                ]
+              }
+            }
+          ]
+        },
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "thresholdInfos": {
+            "AggregateField": "thresholdInfo",
+            "AggregateType": "Fn::ListJoin"
+          }
+        }
+      }
+    },
+    {
+      "Name": "wetherNodifyWebhook",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Detect if an alarm notification is required.",
+        "zh-cn": "\u68c0\u6d4b\u662f\u5426\u9700\u8981\u53d1\u62a5\u8b66\u901a\u77e5\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "alarmNotify",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                {
+                  "Fn::MergeList": {
+                    "Fn::MergeList": "{{ instanceThresholdInfo.thresholdInfos }}"
+                  }
+                }
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "alarmNotify",
+      "Action": "ACS::Notify",
+      "Description": {
+        "en": "Instance discount / spot price exceeds threshold alarm notification.",
+        "zh-cn": "\u5b9e\u4f8b\u7684\u6298\u6263/\u73b0\u4ef7\u8d85\u51fa\u9608\u503c\u62a5\u8b66\u901a\u77e5\u3002"
+      },
+      "Properties": {
+        "NotifyType": "WebHook",
+        "WebHook": {
+          "URI": "{{ webhook }}",
+          "Headers": {
+            "Content-Type": "application/json"
+          },
+          "Content": {
+            "msgtype": "markdown",
+            "markdown": {
+              "title": "\u76d1\u63a7\u7ed3\u679c",
+              "text": {
+                "Fn::Join": [
+                  "",
+                  {
+                    "Fn::ListJoin": [
+                      "### \u62a5\u8b66\u9608\u503c\uff1a{{ threshold }}\n",
+                      {
+                        "Fn::Jq": [
+                          "First",
+                          ".[0] | split(\",&emsp;\") | join(\"\") | split(\"||\") | join(\"|\") | split(\",\") | join(\"\") | split(\"|###\") | join(\"###\")",
+                          {
+                            "Fn::Jq": [
+                              "All",
+                              ".[] | map(.[] | tostring)| join(\"&emsp;|\")",
+                              {
+                                "Fn::Jq": [
+                                  "All",
+                                  "map(. | .threshold=.threshold+\"&emsp;|\\n\\n,\")",
+                                  {
+                                    "Fn::Jq": [
+                                      "All",
+                                      ".[] | .scalingGroupId = \"### \u4f38\u7f29\u7ec4ID\uff1a\"+.scalingGroupId+\"\\n|&emsp;\u673a\u578b&emsp;|&emsp;&emsp;\u53ef\u7528\u533a|\u73b0\u4ef7|\u6298\u6263%|\\n|:----|----:|:----:|:----|\\n,\"",
+                                      {
+                                        "Fn::MergeList": {
+                                          "Fn::MergeList": "{{ instanceThresholdInfo.thresholdInfos }}"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "allThresholdInfo": {
+      "Type": "List",
+      "Value": {
+        "Fn::Join": [
+          "",
+          {
+            "Fn::ListJoin": [
+              "### \u62a5\u8b66\u9608\u503c\uff1a{{ threshold }}\n",
+              {
+                "Fn::Jq": [
+                  "First",
+                  ".[0] | split(\",&emsp;\") | join(\"\") | split(\"||\") | join(\"|\") | split(\",\") | join(\"\") | split(\"|###\") | join(\"###\")",
+                  {
+                    "Fn::Jq": [
+                      "All",
+                      ".[] | map(.[] | tostring)| join(\"&emsp;|\")",
+                      {
+                        "Fn::Jq": [
+                          "All",
+                          "map(. | .threshold=.threshold+\"&emsp;|\\n\\n,\")",
+                          {
+                            "Fn::Jq": [
+                              "All",
+                              ".[] | .scalingGroupId = \"### \u4f38\u7f29\u7ec4ID\uff1a\"+.scalingGroupId+\"\\n|&emsp;\u673a\u578b&emsp;|&emsp;&emsp;\u53ef\u7528\u533a|\u73b0\u4ef7|\u6298\u6263%|\\n|:----|----:|:----:|:----|\\n,\"",
+                              {
+                                "Fn::MergeList": {
+                                  "Fn::MergeList": "{{ instanceThresholdInfo.thresholdInfos }}"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

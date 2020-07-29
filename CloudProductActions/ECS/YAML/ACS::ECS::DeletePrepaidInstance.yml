@@ -1,0 +1,93 @@
+FormatVersion: OOS-2019-06-01
+Description: Deletes ECS instance by specifying instance ID.
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The ID of ECS instance.
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+Tasks:
+  - Name: modifyInstanceChargeType
+    Action: 'ACS::ExecuteAPI'
+    Description: Modify the charge type for prepaid instances to postpaid.
+    Properties:
+      Service: ECS
+      API: ModifyInstanceChargeType
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+        InstanceChargeType: PostPaid
+  - Name: untilInstanceChargeTypeReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the instances ChargeType ready.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - PostPaid
+      PropertySelector: 'Instances.Instance[].InstanceChargeType'
+  - Name: getInstanceStatus
+    Description: Views the ECS instances status.
+    Action: 'ACS::ExecuteApi'
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      status:
+        Type: String
+        ValueSelector: 'Instances.Instance[].Status'
+  - Name: whetherInstanceIsReady
+    Action: 'ACS::Choice'
+    Description: Choose next task by instance status.
+    Properties:
+      DefaultTask: stopInstance
+      Choices:
+        - When:
+            'Fn::Equals':
+              - Stopped
+              - '{{ getInstanceStatus.status }}'
+          NextTask: deleteInstance
+  - Name: stopInstance
+    Action: 'ACS::ExecuteAPI'
+    Description: Stops an ECS instance.
+    Properties:
+      Service: ECS
+      API: StopInstance
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+  - Name: untilInstanceReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the ECS instance to enter Stopped status.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Stopped
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: deleteInstance
+    Action: 'ACS::ExecuteAPI'
+    Description: Deletes ECS instance with the specified instance ID.
+    Properties:
+      Service: ECS
+      API: DeleteInstance
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'

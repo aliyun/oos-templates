@@ -1,0 +1,171 @@
+FormatVersion: OOS-2019-06-01
+Description: 'Restore a backup of the source instance database to the test instance, and check the recovery status.'
+Parameters:
+  vaultId:
+    Description: 'Backup vault ID.'
+    Type: String
+  sourceClusterId: 
+    Description: 'Source HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
+    Type: String
+  clusterId:
+    Description: 'Destination HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
+    Type: String
+  masterClientId:
+    Description: 'Destination HANA instance client ID'
+    Type: String
+  databaseName:
+    Description: 'Database name'
+    Type: String
+  HANASID:
+    Type: String
+    ConstraintDescription: '3 characters,can including capital letter or number, must starting with capital letter'
+    Description: 'HANA system Id'
+    AllowedPattern: '^[A-Z][A-Z0-9][A-Z0-9]$'
+  sourceSystemName:
+    Type: String
+    Description: 'Please input source name in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". E.g, DB1@SID.'
+  HANAInstanceServerId:
+    Type: String
+    Description: 'Destination HANA instance ECS ID'
+Tasks:
+  - Name: updateHanaBackupSetting
+    Action: 'ACS::ExecuteAPI'
+    Description: 'Update HANA database backup settings'
+    Properties:
+      Service: HBR
+      API: UpdateHanaBackupSetting
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ clusterId }}'
+        DatabaseName: '{{ databaseName }}'
+        EnableAutoLogBackup: true
+        CatalogBackupUsingBackint: true
+        DataBackupParameterFile: ''
+        LogBackupParameterFile: ''
+        CatalogBackupParameterFile: ''
+        LogBackupUsingBackint: true
+        LogBackupTimeout: 900
+  - Name: describeHanaBackupSetting
+    Action: 'ACS::WaitFor'
+    Description: 'Wait for setting HANA database backup'
+    Properties:
+      Service: HBR
+      API: DescribeHanaBackupSetting
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ clusterId }}'
+        DatabaseName: '{{ databaseName }}'
+      PropertySelector: HanaBackupSetting.CatalogBackupUsingBackint
+      StopRetryValues:
+        - true
+      DesiredValues:
+        - true
+    Retries: 5
+  - Name: getHanaBackupId
+    Action: 'ACS::ExecuteAPI'
+    Description: 'Get ID of the last backup'
+    Properties:
+      Service: HBR
+      API: DescribeHanaBackupsAsync
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ clusterId }}'
+        Mode: RECOVERY_TO_MOST_RECENT
+        PageSize: 10
+        PageNumber: 1
+        LogPosition: 0
+        VolumeId: 0
+        SystemCopy: true
+        DatabaseName: '{{ databaseName }}'
+        SourceClusterId: '{{ sourceClusterId }}'
+        Source: '{{ sourceSystemName }}'
+    Outputs:
+      TaskId:
+        Type: String
+        ValueSelector: TaskId
+  - Name: waitForDescribeHanaBackups
+    Action: 'ACS::WaitFor'
+    Description: 'Get ID of the last backup'
+    DelayType: Constant
+    Delay: 5
+    Retries: 20
+    Properties:
+      Service: HBR
+      API: DescribeTask
+      Parameters:
+        TaskId: '{{ getHanaBackupId.TaskId }}'
+      PropertySelector: Description
+      StopRetryValues:
+        - completed
+        - HanaSqlError
+      DesiredValues:
+        - completed
+    Outputs:
+      Result:
+        Type: Json
+        ValueSelector: Result
+  - Name: startToRestoreBackup
+    Action: 'ACS::ExecuteAPI'
+    Description: 'Start to restore backup'
+    Properties:
+      Service: HBR
+      API: CreateHanaRestore
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ clusterId }}'
+        Mode: RECOVERY_TO_MOST_RECENT
+        DatabaseName: '{{ databaseName }}'
+        BackupId:
+          'Fn::Jq':
+            - First
+            - '.HanaBackups[].BackupId | tostring'
+            - '{{ waitForDescribeHanaBackups.Result }}'
+        ClearLog: true
+        UseDelta: true
+        UseCatalog: true
+        BackupPrefix: ''
+        LogPosition: 0
+        VolumeId: 0
+        SidAdmin:
+          'Fn::Join':
+            - ''
+            - - 'Fn::Jq':
+                  - First
+                  - .key | ascii_downcase
+                  - key: '{{ HANASID }}'
+              - adm
+        CheckAccess: true
+        SystemCopy: true
+        SourceClusterId: '{{ sourceClusterId }}'
+        Source: '{{ sourceSystemName }}'
+        MasterClientId: '{{ masterClientId }}'
+    Outputs:
+      RestoreId:
+        Type: String
+        ValueSelector: RestoreId
+      BackupId:
+        Type: Number
+        ValueSelector:
+          'Fn::Jq':
+            - First
+            - '.HanaBackups[].BackupId | tostring'
+            - '{{ waitForDescribeHanaBackups.Result }}'
+  - Name: waitForRestoreBackup
+    Action: 'ACS::WaitFor'
+    Description: 'Wait for restoring backup'
+    Retries: 300
+    Delay: 120
+    DelayType: Constant
+    Properties:
+      Service: HBR
+      API: DescribeHanaRestores
+      Parameters:
+        VaultId: '{{ vaultId }}'
+        ClusterId: '{{ clusterId }}'
+        RestoreId: '{{ startToRestoreBackup.RestoreId }}'
+      PropertySelector: 'HanaRestore.HanaRestores[0].Status'
+      StopRetryValues:
+        - COMPLETE
+        - FAILED
+      DesiredValues:
+        - COMPLETE

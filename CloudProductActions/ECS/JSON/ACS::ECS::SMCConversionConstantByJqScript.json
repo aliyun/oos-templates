@@ -1,0 +1,73 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Execute jq script to convert string constant.",
+  "Parameters": {
+    "parameter": {
+      "Description": "The constant parameter.",
+      "Type": "String"
+    },
+    "jqScript": {
+      "Description": "The jq script(The script must begin with .[0] | 'your jq script').",
+      "Type": "List"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "placeHolder",
+      "Action": "ACS::Choice",
+      "Description": "PlaceHolder for conver constant.",
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                1,
+                1
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    }
+  ],
+  "Outputs": {
+    "firstValue": {
+      "Type": "String",
+      "Value": {
+        "Fn::Jq": [
+          "First",
+          {
+            "Fn::Jq": [
+              "First",
+              ".[0]",
+              "{{ jqScript }}"
+            ]
+          },
+          [
+            "{{ parameter }}"
+          ]
+        ]
+      }
+    },
+    "secondValue": {
+      "Type": "String",
+      "Value": {
+        "Fn::Jq": [
+          "First",
+          {
+            "Fn::Jq": [
+              "First",
+              ".[1]",
+              "{{ jqScript }}"
+            ]
+          },
+          [
+            "{{ parameter }}"
+          ]
+        ]
+      }
+    }
+  }
+}

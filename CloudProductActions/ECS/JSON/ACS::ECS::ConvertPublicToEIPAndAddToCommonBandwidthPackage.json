@@ -1,0 +1,109 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": "The ID instance.",
+      "Type": "String"
+    },
+    "bandwidthPackageId": {
+      "Description": "The ID of the common bandwidth package.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstancePublicIP",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Gets ECS instance public IP.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "publicIpAddress": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].PublicIpAddress.IpAddress[]"
+        }
+      }
+    },
+    {
+      "Name": "whetherInstanceIsReady",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by instance public IpAddress.",
+      "Properties": {
+        "DefaultTask": "convertNatPublicIpToEip",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ getInstancePublicIP.publicIpAddress }}"
+              ]
+            },
+            "NextTask": "getInstanceEIP"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "convertNatPublicIpToEip",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ConvertNatPublicIpToEip",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "getInstanceEIP",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Gets ECS instance EIP.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "allocationId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].EipAddress.AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "addCommonBandwidthPackageIp",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Add Eip from CommonBandwidthPackage.",
+      "Properties": {
+        "Service": "VPC",
+        "API": "AddCommonBandwidthPackageIp",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "BandwidthPackageId": "{{ bandwidthPackageId }}",
+          "IpInstanceId": "{{ getInstanceEIP.allocationId }}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+FormatVersion: OOS-2019-06-01
+Description: Alarm notification when spot instance discount or spot price exceeds threshold.
+Parameters:
+  regionId:
+    Description: The region id.
+    Type: String
+  zoneId:
+    Description: The zone id.
+    Type: String
+  discountJsonInfo:
+    Description: The discount info.
+    Type: Json
+  threshold:
+    Description: The discount or price threshold.
+    Type: Number
+  scalingGroupId:
+    Description: The scaling group id.
+    Type: String
+  taskType:
+    Description: The monitoring threshold task type.
+    Type: String
+Tasks:
+  - Name: selectTask
+    Action: 'ACS::Choice'
+    Description: Select the type of task that performs the monitoring threshold.
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - Discount
+              - '{{ taskType }}'
+          NextTask: checkDiscountThreshold
+        - When:
+            'Fn::Equals':
+              - Price
+              - '{{ taskType }}'
+          NextTask: checkSpotPriceThreshold
+  - Name: checkDiscountThreshold
+    Action: 'ACS::Choice'
+    Description: Check if the actual discount exceeds the threshold.
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '.realThreshold >= {{ threshold }}'
+                  - '{{ discountJsonInfo }}'
+          NextTask: describeSpotPriceHistory
+  - Name: checkSpotPriceThreshold
+    Action: 'ACS::Choice'
+    Description: Check if the actual discount exceeds the threshold.
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '.spotPrice >= {{ threshold }}'
+                  - '{{ discountJsonInfo }}'
+          NextTask: describeSpotPriceHistory
+  - Name: describeSpotPriceHistory
+    Action: 'ACS::ExecuteAPI'
+    Description: Get the latest discounts or spot price on spot instance.
+    Properties:
+      Service: ECS
+      API: DescribeSpotPriceHistory
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceType:
+          'Fn::Jq':
+            - First
+            - .instanceType
+            - '{{ discountJsonInfo }}'
+        NetworkType: vpc
+        ZoneId: '{{ zoneId }}'
+    Outputs:
+      spotPrice:
+        Type: String
+        ValueSelector: '.SpotPrices.SpotPriceType[-1].SpotPrice'
+      instanceType:
+        Type: String
+        ValueSelector: '.SpotPrices.SpotPriceType[-1].InstanceType'
+      zoneId:
+        Type: String
+        ValueSelector: '.SpotPrices.SpotPriceType[-1].ZoneId'
+      actualDiscount:
+        Type: String
+        ValueSelector: '.SpotPrices.SpotPriceType[-1] | .SpotPrice / .OriginPrice * 10000 | floor as $num | $num/100'
+Outputs:
+  discountInfo:
+    Type: Json
+    Value:
+      scalingGroupId: '{{ scalingGroupId }}'
+      instanceType: '{{ describeSpotPriceHistory.instanceType }}'
+      zoneId: '{{ describeSpotPriceHistory.zoneId }}'
+      spotPrice: '{{ describeSpotPriceHistory.spotPrice }}'
+      actualDiscount: '{{ describeSpotPriceHistory.actualDiscount }}'

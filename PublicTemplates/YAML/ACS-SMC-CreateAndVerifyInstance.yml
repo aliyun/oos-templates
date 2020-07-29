@@ -1,0 +1,427 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Create and verify instance by commands.
+  zh-cn: SMC创建并通过执行命令验证目标实例。
+  name-en: ACS-SMC-CreateAndVerifyInstance
+  name-zh-cn: SMC创建并验证目标实例
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of target region.
+      zh-cn: 将创建资源的目标地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  zoneId:
+    Description:
+      en: The target zone id of VSwitch to create..
+      zh-cn: 将创建交换机的目标可用区ID。
+    AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
+    Type: String
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  hostName:
+    Description:
+      en: The hostname of ECS instance to create.
+      zh-cn: 将创建实例的主机名。
+    Type: String
+  imageId:
+    Description:
+      en: The image id of ECS instance to create.
+      zh-cn: 将创建实例的镜像ID。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  instanceType:
+    Description:
+      en: The instance type of ECS instance to create.
+      zh-cn: 将创建实例的规格。
+    Type: String
+    AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+  privateIp:
+    Description:
+      en: The private IP of ECS instance to create, (for example:172.16.2.100).
+      zh-cn: 将创建实例的内网IP，（例如：172.16.2.100）。
+    Type: String
+  instancesCount:
+    Description:
+      en: The count of ECS instance to create.
+      zh-cn: 将创建实例的数量。
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 999
+  isDeleteInstance:
+    Description:
+      en: Whether delete ECS instance after check.
+      zh-cn: 检查实例完成后是否删除实例。
+    Type: Boolean
+    Default: false
+  commandType:
+    Description:
+      en: The type of command.
+      zh-cn: 实例自定义检查云助手命令类型。
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    Default: RunShellScript
+  commandContent:
+    Description:
+      en: Custome instance check command content.
+      zh-cn: 实例自定义检查预云助手命令内容。
+    Type: String
+    AssociationProperty: Code
+    Default: ''
+  timeout:
+    Description:
+      en: Timeout for executing script.
+      zh-cn: 执行脚本的超时时间。
+    Type: Number
+    Default: 600
+  workingDir:
+    Description:
+      en: The directory where the created command runs on the ECS instances.
+      zh-cn: 在实例中运行命令的目录。
+    Type: String
+    Default: /root
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: converConstant
+    Action: 'ACS::ECS::SMCConversionConstantByJqScript'
+    Description:
+      en: Automatically convert to available CidrBlock according to PrivateIp.
+      zh-cn: 根据PrivateIp自动转换成可用的CidrBlock。
+    Properties:
+      parameter: '{{ privateIp }}'
+      jqScript:
+        - '.[0] | split(".") as $item | $item | if .[0]=="10" then "10.0.0.0/8" elif .[0]=="172" then "172.16.0.0/12" elif .[0]=="192" then "192.168.0.0/16" else "" end'
+        - '.[0] | split(".") as $item | $item | if .[0]=="10" then "10."+.[1]+".0.0/16" elif .[0]=="172" then "172."+.[1]+"."+.[2]+".0/24" elif .[0]=="192" then "192.168."+.[2]+".0/24" else "" end'
+    Outputs:
+      vswCidrBlock:
+        Type: String
+        ValueSelector: secondValue
+      vpcCidrBlock:
+        Type: String
+        ValueSelector: firstValue
+  - Name: createStack
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Create a resource stack.
+      zh-cn: 创建资源栈。
+    Properties:
+      Service: ROS
+      API: CreateStack
+      Parameters:
+        RegionId: '{{ regionId  }}'
+        StackName: 'OOS-{{ACS::ExecutionId}}'
+        TimeoutInMinutes: 10
+        DisableRollback: false
+        Parameters:
+          - ParameterKey: hostName
+            ParameterValue: '{{ hostName }}'
+          - ParameterKey: privateIp
+            ParameterValue: '{{ privateIp }}'
+          - ParameterKey: instanceType
+            ParameterValue: '{{ instanceType }}'
+          - ParameterKey: zoneId
+            ParameterValue: '{{ zoneId }}'
+          - ParameterKey: regionId
+            ParameterValue: '{{ regionId  }}'
+          - ParameterKey: imageId
+            ParameterValue: '{{imageId}}'
+          - ParameterKey: executionId
+            ParameterValue: '{{ ACS::ExecutionId }}'
+          - ParameterKey: instancesCount
+            ParameterValue: '{{ instancesCount }}'
+        TemplateBody: |
+          {
+            "Description": "Create VPC ECS instance",
+            "Parameters": {
+              "imageId": {
+                "Type": "String"
+              },
+              "hostName": {
+                "Type": "String"
+              },
+              "privateIp": {
+                "Type": "String"
+              },
+              "instanceType": {
+                "Type": "String"
+              },
+              "executionId": {
+                "Type": "String"
+              },
+              "instancesCount": {
+                "Type": "String"
+              },
+              "zoneId": {
+                "Type": "String"
+              },
+              "regionId": {
+                "Type": "String"
+              },
+              "resourcePrefix": {
+                "Type": "String",
+                "Default": "oos-generated"
+              }
+            },
+            "ROSTemplateFormatVersion": "2015-09-01",
+            "Outputs": {
+              "ecs_instance_id": {
+                "Value": {
+                  "Fn::GetAtt": [
+                    "ecs",
+                    "InstanceIds"
+                  ]
+                }
+              }
+            },
+            "Resources": {
+              "vswitch": {
+                "Type": "ALIYUN::ECS::VSwitch",
+                "Properties": {
+                  "VpcId": {
+                    "Ref": "vpc"
+                  },
+                  "Description": {
+                    "Fn::Join": [
+                      " ",
+                      [
+                        "OOS execution id is",
+                        {
+                          "Ref": "executionId"
+                        }
+                      ]
+                    ]
+                  },
+                  "ZoneId": {
+                    "Ref": "zoneId"
+                  },
+                  "CidrBlock": "{{ converConstant.vswCidrBlock }}"
+                }
+              },
+              "sg": {
+                "Type": "ALIYUN::ECS::SecurityGroup",
+                "Properties": {
+                  "Tags": [
+                    {
+                      "Key": "oos-generated",
+                      "Value": {
+                        "Ref": "executionId"
+                      }
+                    },
+                    {
+                      "Key": "region",
+                      "Value": {
+                        "Ref": "regionId"
+                      }
+                    }
+                  ],
+                  "VpcId": {
+                    "Ref": "vpc"
+                  },
+                  "SecurityGroupName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        {
+                          "Ref": "resourcePrefix"
+                        },
+                        "sg"
+                      ]
+                    ]
+                  },
+                  "SecurityGroupEgress": [
+                    {
+                      "PortRange": "-1/-1",
+                      "Priority": 1,
+                      "IpProtocol": "all",
+                      "DestCidrIp": "0.0.0.0/0",
+                      "NicType": "intranet"
+                    }
+                  ]
+                }
+              },
+              "vpc": {
+                "Type": "ALIYUN::ECS::VPC",
+                "Properties": {
+                  "CidrBlock": "{{ converConstant.vpcCidrBlock }}",
+                  "Description": {
+                    "Fn::Join": [
+                      " ",
+                      [
+                        "OOS execution id is",
+                        {
+                          "Ref": "executionId"
+                        }
+                      ]
+                    ]
+                  },
+                  "VpcName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        {
+                          "Ref": "resourcePrefix"
+                        },
+                        "vpc"
+                      ]
+                    ]
+                  }
+                }
+              },
+              "ecs": {
+                "Type": "ALIYUN::ECS::InstanceGroup",
+                "Properties": {
+                  "ImageId": {
+                    "Ref": "imageId"
+                  },
+                  "HostName": {
+                    "Ref": "hostName"
+                  },
+                  "PrivateIpAddress": {
+                    "Ref": "privateIp"
+                  },
+                  "SecurityGroupId": {
+                    "Ref": "sg"
+                  },
+                  "VpcId": {
+                    "Ref": "vpc"
+                  },
+                  "VSwitchId": {
+                    "Ref": "vswitch"
+                  },
+                  "InstanceType": {
+                    "Ref": "instanceType"
+                  },
+                  "MinAmount": {
+                    "Ref": "instancesCount"
+                  },
+                  "MaxAmount": {
+                    "Ref": "instancesCount"
+                  },
+                  "Tags": [
+                    {
+                      "Key": "oos-generated",
+                      "Value": {
+                        "Ref": "executionId"
+                      }
+                    },
+                    {
+                      "Key": "region",
+                      "Value": {
+                        "Ref": "regionId"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+    Outputs:
+      StackId:
+        Type: String
+        ValueSelector: StackId
+  - Name: untilStackReady
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Wait for the stack status CREATE_COMPLETE.
+      zh-cn: 等待资源栈至创建成功状态。
+    OnSuccess: doInstanceCheck
+    OnError: queryStackStatusReason
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        RegionId: '{{ regionId  }}'
+        StackId: '{{createStack.StackId}}'
+      DesiredValues:
+        - CREATE_COMPLETE
+      StopRetryValues:
+        - CREATE_FAILED
+        - CHECK_FAILED
+        - ROLLBACK_FAILED
+        - ROLLBACK_COMPLETE
+        - CREATE_ROLLBACK_COMPLETE
+      PropertySelector: Status
+    Outputs:
+      instanceIds:
+        Type: String
+        ValueSelector: 'Outputs[0].OutputValue'
+  - Name: queryStackStatusReason
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query the reson of failed created stack.
+      zh-cn: 查询资源栈未创建成功的原因。
+    OnError: deleteStack
+    OnSuccess: deleteStack
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        RegionId: '{{ regionId  }}'
+        StackId: '{{ createStack.StackId }}'
+    Outputs:
+      statusReason:
+        Type: String
+        ValueSelector: StatusReason
+  - Name: deleteStack
+    Description:
+      en: Delete the stack.
+      zh-cn: 删除资源栈。
+    OnSuccess: 'ACS::END'
+    Action: 'ACS::ExecuteApi'
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        RegionId: '{{ regionId }}'
+        StackId: '{{createStack.StackId}}'
+  - Name: doInstanceCheck
+    Action: 'ACS::ECS::SMCVerifyInstanceByRunCommand'
+    Description:
+      en: Execute cloud assistant command to check Instance.
+      zh-cn: 执行云助手命令检查实例。
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      isDeleteInstance: '{{ isDeleteInstance }}'
+      commandContent: '{{ commandContent }}'
+      commandType: '{{ commandType }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ untilStackReady.instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+Outputs:
+  instanceCheckResults:
+    Type: List
+    Value: '{{ doInstanceCheck.commandOutputs }}'

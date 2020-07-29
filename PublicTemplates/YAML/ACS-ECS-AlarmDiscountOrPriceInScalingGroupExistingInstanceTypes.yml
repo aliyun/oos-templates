@@ -1,0 +1,174 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: 'Monitor the discounts and prices of spot instances that currently exist in the scaling group, and send out alarm notifications if they exceed.'
+  zh-cn: 监控目前伸缩组内实际存在的抢占式实例的折扣与价格，实际值超出阈值时发出报警通知。
+  name-en: ACS-ECS-AlarmDiscountOrPriceInScalingGroupExistingInstanceTypes
+  name-zh-cn: 监控伸缩组已有的实例类型的价格与折扣超出阈值时报警
+Parameters:
+  region:
+    Type: String
+    Description:
+      name-en: regionId
+      name-zh-cn: 地域
+      en: The region id.
+      zh-cn: 地域。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  scalingGroupId:
+    Description:
+      en: The scaling group id.
+      zh-cn: 弹性伸缩组的ID。
+      name-en: scalingGroupId
+      name-zh-cn: 伸缩组ID
+    Type: List
+  taskType:
+    Description:
+      en: 'The monitoring threshold task type（Discount：Monitor discount, Price：monitor price）.'
+      zh-cn: '监控阈值任务类型（Discount：折扣监控, Price：价格监控）。'
+      name-en: taskType
+      name-zh-cn: 监控任务类型
+    Type: String
+    Default: Discount
+    AllowedValues:
+      - Discount
+      - Price
+  threshold:
+    Description:
+      en: 'The discount/price threshold(example:10 is 1% off,50 is 50% off,Or directly enter the price threshold).'
+      zh-cn: 价格/折扣阈值（例：10为1折，50为5折，或者直接输入价格的阈值）。
+      name-en: threshold
+      name-zh-cn: 价格/折扣阈值
+    Type: Number
+  webhook:
+    Description:
+      en: 'DingTalk webhook(example:https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx).'
+      zh-cn: '钉钉接收信息的地址（例：https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx）。'
+    Type: String
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 100
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeScalingGroups
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Describe the scaling groups.
+      zh-cn: 查询弹性伸缩组。
+    Properties:
+      Service: ESS
+      API: DescribeScalingGroups
+      Parameters:
+        RegionId: '{{ region }}'
+        ScalingGroupId1: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      scalingGroupInfo:
+        Type: String
+        ValueSelector: '.ScalingGroups.ScalingGroup[].ScalingGroupId'
+    Loop:
+      Items: '{{ scalingGroupId }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        scalingGroupInfos:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: scalingGroupInfo
+  - Name: wetherOutPutPriceInfo
+    Action: 'ACS::Choice'
+    Description:
+      en: Check if the scaling group exists.
+      zh-cn: 检测伸缩组是否存在。
+    Properties:
+      DefaultTask: scalingGroupMonitorInfos
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - 'Fn::MergeList': '{{ describeScalingGroups.scalingGroupInfos }}'
+          NextTask: 'ACS::END'
+  - Name: scalingGroupMonitorInfos
+    Action: 'ACS::ECS::AlarmSpotPriceOrDiscountBySingleScalingGroup'
+    Description:
+      en: Monitor the discount or price of the instance type popped up under the scaling group.
+      zh-cn: 监控弹性伸缩组下弹出已实例类型的折扣或价格。
+    Properties:
+      regionId: '{{region}}'
+      threshold: '{{ threshold }}'
+      taskType: '{{ taskType }}'
+      scalingGroupId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      monitorInfo:
+        Type: String
+        ValueSelector: singleMonitorInfo
+    Loop:
+      Items: '{{ scalingGroupId }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        allMonitorInfo:
+          AggregateField: monitorInfo
+          AggregateType: 'Fn::ListJoin'
+  - Name: wetherNodifyWebhook
+    Action: 'ACS::Choice'
+    Description:
+      en: Detect if an alarm notification is required.
+      zh-cn: 检测是否需要发报警通知。
+    Properties:
+      DefaultTask: alarmNotify
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - 'Fn::MergeList':
+                  - '{{ scalingGroupMonitorInfos.allMonitorInfo }}'
+          NextTask: 'ACS::END'
+  - Name: alarmNotify
+    Action: 'ACS::Notify'
+    Description:
+      en: Instance discount / spot price exceeds threshold alarm notification.
+      zh-cn: 实例的折扣/现价超出阈值报警通知。
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ webhook }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: markdown
+          markdown:
+            title: 监控结果
+            text:
+              'Fn::Join':
+                - ''
+                - 'Fn::ListJoin':
+                    - |
+                      ### 报警阈值%：{{ threshold }}
+                    - 'Fn::Jq':
+                        - First
+                        - . | join("\n\n")
+                        - 'Fn::MergeList':
+                            - '{{ scalingGroupMonitorInfos.allMonitorInfo }}'
+Outputs:
+  allThresholdInfo:
+    Type: List
+    Value:
+        'Fn::Join':
+          - ''
+          - 'Fn::ListJoin':
+              - |
+                ### 报警阈值%：{{ threshold }}
+              - 'Fn::Jq':
+                  - First
+                  - . | join("\n\n")
+                  - 'Fn::MergeList':
+                      - '{{ scalingGroupMonitorInfos.allMonitorInfo }}'

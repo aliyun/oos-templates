@@ -1,0 +1,295 @@
+FormatVersion: OOS-2019-06-01
+Description: Checking by customer command and default command for ecs instance.
+Parameters:
+  regionId:
+    Type: String
+    Description: The id of target region.
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The ecs instance id.
+    Type: String
+  isDeleteInstance:
+    Description: Whether delete ECS instance after check.
+    Type: Boolean
+    Default: false
+  commandType:
+    Description: The type of command.
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    Default: RunShellScript
+  commandContent:
+    Description: Custome instance check command content.
+    Type: String
+    AssociationProperty: Code
+    Default: ''
+  timeout:
+    Description: Timeout for executing script.
+    Type: Number
+    Default: 60
+  workingDir:
+    Description: The directory where the created command runs on the ECS instances.
+    Type: String
+    Default: /root
+Tasks:
+  - Name: waitInstanceReady
+    Action: 'ACS::WaitFor'
+    Description: Wait the ECS instance status is running.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+    Outputs:
+      oSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: queryCloudAssistantReady
+    Action: 'ACS::ExecuteAPI'
+    Description: Views the cloud assistanat status.
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+    Outputs:
+      cloudAssistantStatus:
+        ValueSelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
+        Type: String
+  - Name: whetherCloudAssistantIsReady
+    Action: 'ACS::Choice'
+    Description: Choose next task by CloudAssistant status.
+    Properties:
+      DefaultTask: waitCloudAssistantStatusReady
+      Choices:
+        - When:
+            'Fn::Equals':
+              - 'true'
+              - '{{ queryCloudAssistantReady.cloudAssistantStatus }}'
+          NextTask: doInstanceDefaultCheck
+  - Name: waitCloudAssistantStatusReady
+    Action: 'ACS::WaitFor'
+    Description: Wait for the cloud assistant status reach true.
+    OnError: queryCloudAssistantStatus
+    OnSuccess: doInstanceDefaultCheck
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - 'true'
+      PropertySelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
+  - Name: queryCloudAssistantStatus
+    Action: 'ACS::ExecuteAPI'
+    Description: Views the cloud assistanat status.
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+    Outputs:
+      cloudAssistantStatus:
+        ValueSelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
+        Type: String
+  - Name: whetherCloudAssistantStatusIsTrue
+    Action: 'ACS::Choice'
+    Description: Choose next task by CloudAssistant status.
+    Properties:
+      DefaultTask: installCloudAssistant
+      Choices:
+        - When:
+            'Fn::Equals':
+              - 'true'
+              - '{{ queryCloudAssistantStatus.cloudAssistantStatus }}'
+          NextTask: waitCloudAssistantStatusReachtrue
+  - Name: installCloudAssistant
+    Action: 'ACS::ExecuteAPI'
+    Description: Install cloud assistant with specified instance ID.
+    Properties:
+      Service: ECS
+      API: InstallCloudAssistant
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+  - Name: rebootInstance
+    Action: 'ACS::ExecuteAPI'
+    Description: Restarts an ECS instance.
+    Properties:
+      Service: ECS
+      API: RebootInstance
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+  - Name: waitCloudAssistantStatusReachtrue
+    Action: 'ACS::WaitFor'
+    Description: Wait for the cloud assistant status reach true.
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - 'true'
+      PropertySelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
+  - Name: doInstanceDefaultCheck
+    Action: 'ACS::ECS::RunCommand'
+    Description: Execute cloud assistant command to check Instance.
+    OnError: whetherExecuteCustomerCheck
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent:
+        'Fn::If':
+          - 'Fn::Equals':
+              - linux
+              - '{{ waitInstanceReady.oSType }}'
+          - |
+            #!/bin/bash
+            function print_title() {
+              local title="$1"
+              echo -e "\n========================= $title:\n"
+            }
+
+            function verify_cmd() {
+              local cmd="$1"
+              print_title "$cmd"
+
+              ((verify_count=verify_count+1))
+              if $cmd 2>&1; then
+                ((ok_count=ok_count+1))
+              fi
+            }
+
+            verify_cmd "ip addr"
+            verify_cmd "df -hPT"
+            verify_cmd "cat /etc/fstab"
+            verify_cmd "ping aliyun.com -c 4"
+
+            print_title "Default Result"
+            echo "Default Verify Finished!"
+          - |
+            @echo off
+
+            call :print_title "ipconfig"
+            ipconfig
+
+            call :print_title "diskpart list disk/volume"
+            chcp 65001 >nul
+            echo list disk > c:\verify.tmp
+            echo list vol >> c:\verify.tmp
+            diskpart /s c:\verify.tmp
+            del c:\verify.tmp
+
+            call :print_title "ping -n 4 aliyun.com"
+            ping -n 4 aliyun.com
+
+            call :print_title "Default Result"
+            echo Default Verify Finished!
+
+            goto end
+
+            :print_title
+            set title=%1
+            echo.
+            echo ========================= %title%:
+            echo.
+            goto:eof
+
+            :end
+      instanceId: '{{ instanceId }}'
+      commandType:
+        'Fn::If':
+          - 'Fn::Equals':
+              - linux
+              - '{{ waitInstanceReady.oSType }}'
+          - RunShellScript
+          - RunBatScript
+      workingDir: '{{ workingDir }}'
+      timeout: '180'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: whetherExecuteCustomerCheck
+    Action: 'ACS::Choice'
+    Description: Choose next task by IsDeleteInstance.
+    Properties:
+      DefaultTask: doInstanceCustomerCheck
+      Choices:
+        - When:
+            'Fn::Equals':
+              - ''
+              - '{{ isDeleteInstance }}'
+          NextTask: whetherDeleteInstanceIsTrue
+  - Name: doInstanceCustomerCheck
+    Description: Execute customer command to check Instance.
+    Action: 'ACS::ECS::RunCommand'
+    OnError: whetherDeleteInstanceIsTrue
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: '{{ commandContent }}'
+      instanceId: '{{ instanceId }}'
+      commandType: '{{ commandType }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: whetherDeleteInstanceIsTrue
+    Action: 'ACS::Choice'
+    Description: Choose next task by IsDeleteInstance.
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - '{{ isDeleteInstance }}'
+          NextTask: waitDataRecover
+  - Name: waitDataRecover
+    Action: 'ACS::Sleep'
+    Description: Wait the cloud assistanat status.
+    Properties:
+      Duration: PT1M
+  - Name: deleteInstance
+    Action: 'ACS::ExecuteAPI'
+    Description: Deletes ECS instance with the specified instance ID.
+    Properties:
+      Service: ECS
+      API: DeleteInstance
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+        Force: true
+Outputs:
+  invocationOutput:
+    Type: Json
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - ''
+            - '{{ commandContent }}'
+        - instanceId: '{{ instanceId }}'
+          instanceDefaultCheck: '{{ doInstanceDefaultCheck.commandOutput }}'
+        - instanceId: '{{ instanceId }}'
+          instanceDefaultCheck: '{{ doInstanceDefaultCheck.commandOutput }}'
+          instanceCustomerCheck: '{{ doInstanceCustomerCheck.commandOutput }}'
+

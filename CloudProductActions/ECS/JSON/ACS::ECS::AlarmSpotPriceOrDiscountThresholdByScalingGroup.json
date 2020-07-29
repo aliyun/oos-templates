@@ -1,0 +1,126 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The region id",
+      "Type": "String"
+    },
+    "zoneIds": {
+      "Description": "The zone id.",
+      "Type": "List"
+    },
+    "threshold": {
+      "Description": "The discount threshold(example:10 is 1% off, 50 is 50% off).",
+      "Type": "Number"
+    },
+    "taskType": {
+      "Description": "Monitoring threshold task type.",
+      "Type": "String"
+    },
+    "vSwitchId": {
+      "Description": "Query vswitch id for zone id.",
+      "Type": "String"
+    },
+    "scalingGroupId": {
+      "Description": "The scaling group id.",
+      "Type": "String"
+    },
+    "scalingConfigurationId": {
+      "Description": "The scaling configuration id.",
+      "Type": "String"
+    },
+    "configurationInfos": {
+      "Description": "The configuration infos.",
+      "Type": "List"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeSpotPriceHistory",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Get the latest discounts on spot instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSpotPriceHistory",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceType": "{{ ACS::TaskLoopItem }}",
+          "NetworkType": "vpc",
+          "ZoneId": {
+            "Fn::Jq": [
+              "First",
+              ".| map(select(.vSwitchId == \"{{ vSwitchId }}\").zoneId)[]",
+              "{{ zoneIds }}"
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "discountAndPrice": {
+          "Type": "Json",
+          "ValueSelector": ".SpotPrices.SpotPriceType[-1] | {\"realThreshold\":(.SpotPrice / .OriginPrice * 100), \"spotPrice\":.SpotPrice, \"originPrice\":.OriginPrice, \"instanceType\":.InstanceType}"
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "First",
+            ". | map(select(.scalingConfigurationId = \"{{ scalingConfigurationId }}\").instanceTypes)[]",
+            "{{ ConfigurationInfos }}"
+          ]
+        },
+        "MaxErrors": 100,
+        "Concurrency": 10,
+        "Outputs": {
+          "discountAndPrices": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "discountAndPrice"
+          }
+        }
+      }
+    },
+    {
+      "Name": "alarmThresholdInfo",
+      "Action": "ACS::ECS::AlarmScalingThreshold",
+      "Description": "Alarm notification when spot instance discount or spot price exceeds threshold.",
+      "Properties": {
+        "regionId": "{{regionId}}",
+        "zoneId": {
+          "Fn::Jq": [
+            "First",
+            ".| map(select(.vSwitchId == \"{{ vSwitchId }}\").zoneId)[]",
+            "{{ zoneIds }}"
+          ]
+        },
+        "discountJsonInfo": "{{ ACS::TaskLoopItem }}",
+        "threshold": "{{ threshold }}",
+        "scalingGroupId": "{{ scalingGroupId }}",
+        "taskType": "{{ taskType }}"
+      },
+      "Outputs": {
+        "instanceTypeThresholdInfos": {
+          "Type": "Json",
+          "ValueSelector": "discountInfo"
+        }
+      },
+      "Loop": {
+        "Items": "{{ describeSpotPriceHistory.discountAndPrices }}",
+        "MaxErrors": 100,
+        "Concurrency": 10,
+        "Outputs": {
+          "allInstanceTypeThresholdInfo": {
+            "AggregateField": "instanceTypeThresholdInfos",
+            "AggregateType": "Fn::ListJoin"
+          }
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceThresholdInfos": {
+      "Type": "List",
+      "Value": "{{ alarmThresholdInfo.allInstanceTypeThresholdInfo }}"
+    }
+  }
+}

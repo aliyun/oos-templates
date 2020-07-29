@@ -1,0 +1,100 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky convert the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.",
+    "zh-cn": "\u6279\u91cf\u628a\u516c\u7f51IP\u8f6c\u6362\u4e3aEIP\u5e76\u52a0\u5165\u5230\u5171\u4eab\u5e26\u5bbd\u5305\u4e2d\u3002",
+    "name-en": "ACS-ECS-BulkyConvertPublicToEIPAndAddToCommonBandwidthPackage",
+    "name-zh-cn": "\u6279\u91cf\u628a\u516c\u7f51IP\u8f6c\u6362\u4e3aEIP\u5e76\u52a0\u5165\u5230\u5171\u4eab\u5e26\u5bbd\u5305\u4e2d",
+    "categories": [
+      "instance_manage"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "bandwidthPackageId": {
+      "Description": {
+        "en": "The ID of the common bandwidth package.",
+        "zh-cn": "\u5171\u4eab\u5e26\u5bbd\u5305ID\u3002"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "convertsPublicIPToEIPAndAddItToCommonBandwidthPackage",
+      "Action": "ACS::ECS::ConvertPublicToEIPAndAddToCommonBandwidthPackage",
+      "Description": {
+        "en": "converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.",
+        "zh-cn": "\u6279\u91cf\u628a\u516c\u7f51IP\u8f6c\u6362\u4e3aEIP\u5e76\u52a0\u5165\u5230\u5171\u4eab\u5e26\u5bbd\u5305\u4e2d\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "bandwidthPackageId": "{{ bandwidthPackageId }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}"
+      }
+    }
+  ]
+}

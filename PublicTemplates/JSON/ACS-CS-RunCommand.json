@@ -1,0 +1,61 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Run command on k8s cluster.",
+    "zh-cn": "\u5728k8s\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4\u3002",
+    "name-en": "ACS-CS-RunCommand",
+    "name-zh-cn": "\u5728k8s\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4"
+  },
+  "Parameters": {
+    "clusterId": {
+      "Description": {
+        "en": "The ID of cluster.",
+        "zh-cn": "\u96c6\u7fa4ID\u3002"
+      },
+      "Type": "String"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in cluster.",
+        "zh-cn": "\u5728\u96c6\u7fa4\u4e2d\u6267\u884c\u7684\u547d\u4ee4\u3002"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "runCommand",
+      "Action": "ACS::CS::RunCommand",
+      "Description": {
+        "en": "Executes a command in cluster.",
+        "zh-cn": "\u5728\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4\u3002"
+      },
+      "Properties": {
+        "clusterId": "{{ clusterId }}",
+        "commandContent": "{{ commandContent }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutput }}"
+    }
+  }
+}

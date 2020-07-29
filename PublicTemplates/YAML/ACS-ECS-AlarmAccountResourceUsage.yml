@@ -1,0 +1,196 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Resource usage exceeds threshold alarm notification.
+  zh-cn: 账户资源使用率超出阈值后报警通知。
+  name-en: ACS-ECS-AlarmAccountResourceUsage
+  name-zh-cn: 账户资源使用率超出阈值后报警
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  threshold:
+    Description:
+      en: 'The threshold of resource usage alarm(example:10 is 10%,50 is 50%).'
+      zh-cn: 资源使用率警报的阈值（例如：10为10％，50为50％）。
+    Type: Number
+    Default: 80
+    MinValue: 20
+    MaxValue: 99
+  webHookUrl:
+    Description:
+      en: 'The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.'
+      zh-cn: '钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。'
+    Type: String
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: timerTrigger
+    Action: 'ACS::TimerTrigger'
+    Description:
+      en: Triggers a task as scheduled by specifying Cron expression.
+      zh-cn: 通过指定Cron表达式按计划触发任务。
+    Properties:
+      Type: rate
+      Expression: 30 minutes
+      EndDate: '2099-12-01T00:00:00Z'
+  - Name: getAccountAttributes
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Query the quotas of ECS resources that you can create in a region.
+      zh-cn: 查询指定地域下能创建的ECS资源配额。
+    Properties:
+      Service: ECS
+      API: DescribeAccountAttributes
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      usedPostpaidInstanceVcpuCount:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[13].AttributeValues.ValueItem[].Value | tonumber'
+        Type: Number
+      usedSpotInstanceVcpuCount:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[14].AttributeValues.ValueItem[].Value | tonumber'
+        Type: Number
+      usedPostpaidYundiskCapacityCloudEfficiency:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[0].Value | tonumber'
+        Type: Number
+      usedPostpaidYundiskCapacityCloudSsd:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[1].Value | tonumber'
+        Type: Number
+      usedPostpaidYundiskCapacityCloudEssd:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[16].AttributeValues.ValueItem[2].Value | tonumber'
+        Type: Number
+      maxPostpaidInstanceVcpuCount:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[6].AttributeValues.ValueItem[].Value | tonumber'
+        Type: Number
+      maxSpotInstanceVcpuCount:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[7].AttributeValues.ValueItem[].Value | tonumber'
+        Type: Number
+      maxPostpaidYundiskCapacityCloudEfficiency:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[0].Value | tonumber'
+        Type: Number
+      maxPostpaidYundiskCapacityCloudSsd:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[1].Value | tonumber'
+        Type: Number
+      maxPostpaidYundiskCapacityCloudEssd:
+        ValueSelector: '.AccountAttributeItems.AccountAttributeItem[15].AttributeValues.ValueItem[2].Value | tonumber'
+        Type: Number
+  - Name: checkResourceUsage
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose the notification task by usage.
+      zh-cn: 通过使用率选择通知任务。
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '({{getAccountAttributes.usedPostpaidInstanceVcpuCount}} / {{getAccountAttributes.maxPostpaidInstanceVcpuCount}}) >= {{ threshold }}/100'
+                  - '{"": ""}'
+          NextTask: alarmNotify
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '({{getAccountAttributes.usedSpotInstanceVcpuCount}} / {{getAccountAttributes.maxSpotInstanceVcpuCount}}) >= {{ threshold }}/100'
+                  - '{"": ""}'
+          NextTask: alarmNotify
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEfficiency}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEfficiency}}) >= {{ threshold }}/100'
+                  - '{"": ""}'
+          NextTask: alarmNotify
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudSsd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudSsd}}) >= {{ threshold }}/100'
+                  - '{"": ""}'
+          NextTask: alarmNotify
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEssd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEssd}}) >= {{ threshold }}/100'
+                  - '{"": ""}'
+          NextTask: alarmNotify
+  - Name: alarmNotify
+    Action: 'ACS::Notify'
+    OnSuccess: 'ACS::END'
+    Description:
+      en: Resource usage exceeds threshold alarm notification.
+      zh-cn: 资源使用率超出阈值报警通知。
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ webHookUrl }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: text
+          text:
+            content:
+              'Fn::Join':
+                - '|-|-|'
+                - - 'Fn::If':
+                      - 'Fn::Equals':
+                          - true
+                          - 'Fn::Jq':
+                              - First
+                              - '({{getAccountAttributes.usedPostpaidInstanceVcpuCount}} / {{getAccountAttributes.maxPostpaidInstanceVcpuCount}}) >= {{ threshold }}/100'
+                              - '{"": ""}'
+                      - '(The PostpaidInstanceVcpuCount usage under your account exceeds {{ threshold }}%.   您账户的 按量付费实例的VCPU核数 使用率已超过{{threshold}}%。)'
+                      - ''
+                  - 'Fn::If':
+                      - 'Fn::Equals':
+                          - true
+                          - 'Fn::Jq':
+                              - First
+                              - '({{getAccountAttributes.usedSpotInstanceVcpuCount}} / {{getAccountAttributes.maxSpotInstanceVcpuCount}}) >= {{ threshold }}/100'
+                              - '{"": ""}'
+                      - '(The SpotInstanceVcpuCount usage under your account exceeds {{ threshold }}%.  您账户的 抢占式实例VCPU核数 使用率已超过{{threshold}}%。)'
+                      - ''
+                  - 'Fn::If':
+                      - 'Fn::Equals':
+                          - true
+                          - 'Fn::Jq':
+                              - First
+                              - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEfficiency}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEfficiency}}) >= {{ threshold }}/100'
+                              - '{"": ""}'
+                      - '(The PostpaidYundiskCapacityCloudEfficiency usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费Cloud_efficiency云盘容量 使用率已超过{{threshold}}%。)'
+                      - ''
+                  - 'Fn::If':
+                      - 'Fn::Equals':
+                          - true
+                          - 'Fn::Jq':
+                              - First
+                              - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudSsd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudSsd}}) >= {{ threshold }}/100'
+                              - '{"": ""}'
+                      - '(The PostpaidYundiskCapacityCloudSsd usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费cloud_ssd云盘容量 使用率已超过{{threshold}}%。)'
+                      - ''
+                  - 'Fn::If':
+                      - 'Fn::Equals':
+                          - true
+                          - 'Fn::Jq':
+                              - First
+                              - '({{getAccountAttributes.usedPostpaidYundiskCapacityCloudEssd}} / {{getAccountAttributes.maxPostpaidYundiskCapacityCloudEssd}}) >= {{ threshold }}/100'
+                              - '{"": ""}'
+                      - '(The PostpaidYundiskCapacityCloudEssd usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费cloud_essd云盘容量 使用率已超过{{threshold}}%。)'
+                      - ''

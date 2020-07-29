@@ -1,0 +1,83 @@
+FormatVersion: OOS-2019-06-01
+Description: Detach the eip from the special instance.
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+  instanceId:
+    Description: The ecs instance id.
+    Type: String
+Tasks:
+  - Name: waitInstanceReady
+    Action: 'ACS::WaitFor'
+    Delay: 15
+    Retries: 7
+    DelayType: Constant
+    Description: Wait ECS instance is in the running or stopped status.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+        - Stopped
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: describeEipAddresses
+    Action: 'ACS::ExecuteAPI'
+    Description: Describe the eip addresses.
+    Properties:
+      Service: ECS
+      API: DescribeEipAddresses
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AssociatedInstanceId: '{{ instanceId }}'
+        AssociatedInstanceType: EcsInstance
+    Outputs:
+      allocationIds:
+        Type: List
+        ValueSelector: '.EipAddresses.EipAddress[].AllocationId'
+  - Name: unassociateEipAddress
+    Action: 'ACS::ExecuteAPI'
+    Description: Unasscocatie the eip from network interface.
+    OnError: waitEipAddressAvailable
+    Properties:
+      Service: ECS
+      API: UnassociateEipAddress
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId: '{{ ACS::TaskLoopItem }}'
+        InstanceId: '{{ instanceId }}'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIds }}'
+  - Name: waitEipAddressAvailable
+    Action: 'ACS::WaitFor'
+    Description: Waits for the eip util Available.
+    Delay: 15
+    Retries: 7
+    DelayType: Constant
+    OnError: releaseEipAddress
+    Properties:
+      Service: ECS
+      API: DescribeEipAddresses
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId: '{{ ACS::TaskLoopItem }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'EipAddresses.EipAddress[].Status'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIds }}'
+  - Action: 'ACS::ExecuteAPI'
+    Name: releaseEipAddress
+    Description: Release the eip.
+    Properties:
+      Service: ECS
+      API: ReleaseEipAddress
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIds }}'

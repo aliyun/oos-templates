@@ -1,0 +1,85 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky modify the information of an ECS instance.",
+    "zh-cn": "\u6279\u91cf\u4fee\u6539ECS\u5b9e\u4f8b\u7684\u90e8\u5206\u4fe1\u606f.",
+    "name-en": "ACS-ECS-BulkyModifyInstanceAttributes",
+    "name-zh-cn": "\u6279\u91cf\u4fee\u6539\u5b9e\u4f8b\u7684\u90e8\u5206\u4fe1\u606f",
+    "categories": [
+      "instance_manage"
+    ]
+  },
+  "Parameters": {
+    "instanceAttributes": {
+      "Description": {
+        "en": "The infos list of the ECS instance.Format: [{\"regionId\": \"cn-xxx\", \"instanceId\": \"i-xxx\", \"hostName\": \"\", \"instanceName\": \"\", \"description\": \"\"}]",
+        "zh-cn": "ECS\u5b9e\u4f8b\u7684\u4fe1\u606f\u5217\u8868.\u683c\u5f0f: [{\"regionId\": \"cn-xxx\", \"instanceId\": \"i-xxx\", \"hostName\": \"\", \"instanceName\": \"\", \"description\": \"\"}]"
+      },
+      "Type": "Json"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyInstanceAttribute",
+      "Action": "ACS::ECS::ModifyInstanceAttribute",
+      "Description": {
+        "en": "Modify the information of an ECS instance.",
+        "zh-cn": "\u4fee\u6539\u5b9e\u4f8b\u4fe1\u606f\u3002"
+      },
+      "Properties": {
+        "instanceAttributes": "{{ instanceAttributes }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            ".[].instanceId",
+            "{{ instanceAttributes }}"
+          ]
+        },
+        "Outputs": {
+          "results": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "result"
+          }
+        }
+      },
+      "Outputs": {
+        "result": {
+          "Type": "String",
+          "ValueSelector": "instanceInfos"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "results": {
+      "Type": "List",
+      "Value": "{{ modifyInstanceAttribute.results }}"
+    }
+  }
+}

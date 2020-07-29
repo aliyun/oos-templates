@@ -1,0 +1,149 @@
+FormatVersion: OOS-2019-06-01
+Description: Alarm notification when spot instance discount or spot price exceeds threshold in the single scaling group existing instances.
+Parameters:
+  regionId:
+    Description: The region id.
+    Type: String
+  threshold:
+    Description: 'The discount threshold(example:10 is 1% off, 50 is 50% off).'
+    Type: Number
+  taskType:
+    Description: Monitoring threshold task type.
+    Type: String
+  scalingGroupId:
+    Type: String
+    Description: The scaling group id.
+Tasks:
+  - Name: describeScalingInstances
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Describe the scaling instances.
+      zh-cn: 查询伸缩组内的实例。
+    Properties:
+      Service: ESS
+      API: DescribeScalingInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ScalingGroupId: '{{ scalingGroupId }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: '.ScalingInstances.ScalingInstance[].InstanceId'
+  - Name: wetherExistInstance
+    Action: 'ACS::Choice'
+    Description:
+      en: Detect if an alarm notification is required.
+      zh-cn: 检测是否需要发报警通知。
+    Properties:
+      DefaultTask: describeInstances
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - '{{ describeScalingInstances.instanceIds }}'
+          NextTask: 'ACS::END'
+  - Name: describeInstances
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Describe the instances.
+      zh-cn: 查询实例。
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      instanceTypeAndZone:
+        Type: Json
+        ValueSelector: '.Instances.Instance[] | {"instanceType":.InstanceType, "zoneId": .ZoneId}'
+    Loop:
+      Items: '{{ describeScalingInstances.instanceIds }}'
+      MaxErrors: 100
+      Concurrency: 50
+      Outputs:
+        instanceTypeAndZones:
+          AggregateField: instanceTypeAndZone
+          AggregateType: 'Fn::ListJoin'
+  - Name: describeScalingGroups
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Describe the scaling groups.
+      zh-cn: 查询弹性伸缩组。
+    Properties:
+      Service: ESS
+      API: DescribeScalingGroups
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ScalingGroupId1: '{{ scalingGroupId }}'
+    Outputs:
+      scalingGroupName:
+        Type: String
+        ValueSelector: '.ScalingGroups.ScalingGroup[].ScalingGroupName'
+  - Name: outPutSingleScalingGroupInfo
+    Action: 'ACS::ECS::AlarmSpotPriceOrDiscountByScalingGroupInstance'
+    Description:  Monitor discounts or prices of all created spot instance types under a single scaling group.
+    Properties:
+      regionId: '{{regionId}}'
+      threshold: '{{ threshold }}'
+      taskType: '{{ taskType }}'
+      instanceType:
+        'Fn::Jq':
+          - First
+          - .instanceType
+          - '{{ ACS::TaskLoopItem }}'
+      zoneId:
+        'Fn::Jq':
+          - First
+          - .zoneId
+          - '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      monitorInfo:
+        Type: Json
+        ValueSelector: discountInfo
+    Loop:
+      Items:
+        'Fn::Jq':
+          - First
+          - '. | unique'
+          - '{{ describeInstances.instanceTypeAndZones }}'
+      MaxErrors: 100
+      Concurrency: 10
+      Outputs:
+        scalingGroupMonitorInfos:
+          AggregateField: monitorInfo
+          AggregateType: 'Fn::ListJoin'
+Outputs:
+  singleMonitorInfo:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - []
+            - 'Fn::MergeList':
+                - '{{ outPutSingleScalingGroupInfo.scalingGroupMonitorInfos }}'
+        - Null
+        - 'Fn::Jq':
+            - First
+            - '.[0] as $item | "\n### 伸缩组名称：{{describeScalingGroups.scalingGroupName}}\n### 伸缩组ID：{{scalingGroupId}}\n|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\n|:----|:----|:----:|:----|\n" + $item'
+            - - 'Fn::Jq':
+                  - First
+                  - '.[]|split(",&emsp;") | join("") |split("\n,")| join("")| split("\n,|")|join("") |split("||")|join("|")'
+                  - 'Fn::Jq':
+                      - All
+                      - '.[1]=""|join("|")'
+                      - 'Fn::Jq':
+                          - All
+                          - '.[1]=""| .[1]=.[0] | .[0]="" | join("|")'
+                          - 'Fn::Jq':
+                              - All
+                              - map(.) | join("\n|")
+                              - 'Fn::Jq':
+                                  - All
+                                  - '.[] | map(.[] | tostring)| join("&emsp;|")'
+                                  - 'Fn::Jq':
+                                      - All
+                                      - 'map(.| .actualDiscount=.actualDiscount+"&emsp;|\n," )'
+                                      - 'Fn::MergeList':
+                                          - '{{ outPutSingleScalingGroupInfo.scalingGroupMonitorInfos }}'

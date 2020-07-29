@@ -1,0 +1,165 @@
+FormatVersion: OOS-2019-06-01
+Description: Detach the network interface and eip from the special instance.
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The ecs instance id.
+    Type: String
+Tasks:
+  - Name: waitInstanceReady
+    Action: 'ACS::WaitFor'
+    Delay: 15
+    Retries: 7
+    DelayType: Constant
+    Description: Wait ECS instance is in the running or stopped status.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+        - Stopped
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: describeNetworkInterfaces
+    Action: 'ACS::ExecuteAPI'
+    Description: Describe the network interfaces.
+    Properties:
+      Service: ECS
+      API: DescribeNetworkInterfaces
+      Parameters:
+        InstanceId: '{{ instanceId }}'
+        Type: 'Secondary'
+    Outputs:
+      networkInterfaceId:
+        Type: List
+        ValueSelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].NetworkInterfaceId'
+  - Name: describeEipAddresses
+    Action: 'ACS::ExecuteAPI'
+    Description: Describe the eip addresses.
+    Properties:
+      Service: ECS
+      API: DescribeEipAddresses
+      Parameters:
+        AssociatedInstanceId: '{{ ACS::TaskLoopItem }}'
+        AssociatedInstanceType: 'NetworkInterface'
+    Outputs:
+      allocationId:
+        Type: Json
+        ValueSelector: 'EipAddresses.EipAddress[] | {"allocationId":.AllocationId, "networkInterfaceId":.InstanceId}'
+    Loop:
+      Items: '{{ describeNetworkInterfaces.networkInterfaceId }}'
+      Outputs:
+        allocationIdInfo:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: allocationId
+  - Name: unassociateEipAddress
+    Action: 'ACS::ExecuteAPI'
+    Description: Unasscocatie the eip from network interface.
+    OnError: waitEipAddressReady
+    Properties:
+      Service: ECS
+      API: UnassociateEipAddress
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId:
+          'Fn::Select':
+            - 'allocationId'
+            - '{{ ACS::TaskLoopItem }}'
+        InstanceId:
+          'Fn::Select':
+            - 'networkInterfaceId'
+            - '{{ ACS::TaskLoopItem }}'
+        InstanceType: 'NetworkInterface'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'
+  - Name: waitEipAddressReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the eip util Available.
+    Delay: 15
+    Retries: 7
+    DelayType: Constant
+    OnError: releaseEipAddress
+    Properties:
+      Service: ECS
+      API: DescribeEipAddresses
+      Parameters:
+        AllocationId:
+          'Fn::Select':
+            - 'allocationId'
+            - '{{ ACS::TaskLoopItem }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'EipAddresses.EipAddress[].Status'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'
+  - Action: 'ACS::ExecuteAPI'
+    Name: releaseEipAddress
+    Description: Release the eip.
+    OnError: detachNetworkInterface
+    Properties:
+      Service: ECS
+      API: ReleaseEipAddress
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId:
+          'Fn::Select':
+            - 'allocationId'
+            - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'
+  - Action: 'ACS::ExecuteAPI'
+    Name: detachNetworkInterface
+    Description: Detach the network interface.
+    OnError: waitNetworkInterfaceAvailable
+    Properties:
+      Service: ECS
+      API: DetachNetworkInterface
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+        NetworkInterfaceId:
+          'Fn::Select':
+            - 'networkInterfaceId'
+            - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'
+  - Name: waitNetworkInterfaceAvailable
+    Action: 'ACS::WaitFor'
+    Description: Waits for the network interface util Available.
+    Delay: 15
+    Retries: 7
+    DelayType: Constant
+    OnError: deleteNetworkInterface
+    Properties:
+      Service: ECS
+      API: DescribeNetworkInterfaces
+      Parameters:
+        RegionId: '{{ regionId }}'
+        NetworkInterfaceId:
+          - 'Fn::Select':
+              - 'networkInterfaceId'
+              - '{{ ACS::TaskLoopItem }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].Status'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'
+  - Action: 'ACS::ExecuteAPI'
+    Name: deleteNetworkInterface
+    Description: Delete the network interface.
+    Properties:
+      Service: ECS
+      API: DeleteNetworkInterface
+      Parameters:
+        RegionId: '{{ regionId }}'
+        NetworkInterfaceId:
+          'Fn::Select':
+            - 'networkInterfaceId'
+            - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ describeEipAddresses.allocationIdInfo }}'

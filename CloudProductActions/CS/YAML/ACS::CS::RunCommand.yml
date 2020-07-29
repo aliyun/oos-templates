@@ -1,0 +1,83 @@
+FormatVersion: OOS-2019-06-01
+Description: Run command on CS instance.
+Parameters:
+  clusterId:
+    Description: The ID of cluster.
+    Type: String
+  commandContent:
+    Description: The content of command.
+    Type: String
+    AssociationProperty: Code
+  OOSAssumeRole:
+    Description: The RAM role to be assumed by OOS.
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getClusterType
+  Action: 'ACS::ExecuteAPI'
+  Description: Views cluster type.
+  Properties:
+    Service: CS
+    API: DescribeClusters
+    Method: GET
+    URI: '/clusters/{{clusterId}}'
+  Outputs:
+    clusterType:
+      Type: String
+      ValueSelector: .cluster_type
+- Name: chooseNextTask
+  Action: 'ACS::Choice'
+  Description: Choose next task by cluster type.
+  Properties:
+    DefaultTask: runFC_Command
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'Kubernetes'
+            - '{{ getClusterType.clusterType }}'
+        NextTask: getClusterMaster
+- Name: getClusterMaster
+  Action: 'ACS::ExecuteAPI'
+  Description: Views cluster master nodes.
+  Properties:
+    Service: CS
+    API: DescribeClusterNodes
+    Method: GET
+    URI: '/clusters/{{clusterId}}'
+  Outputs:
+    instanceId:
+      Type: String
+      ValueSelector: '.outputs[10].OutputValue[]'
+- Name: runCommand
+  Action: 'ACS::ECS::RunCommand'
+  Description: Executes a cloud assistant command.
+  OnSuccess: ACS::END
+  Properties:
+    commandContent: '{{ commandContent }}'
+    instanceId: '{{ getClusterMaster.instanceId }}'
+    commandType: RunShellScript
+  Outputs:
+    commandOutput:
+      Type: String
+      ValueSelector: invocationOutput
+- Name: runFC_Command
+  Description: Run kubectl command.
+  Action: ACS::CS::FC-RunCommand
+  Properties:
+    clusterId: '{{ clusterId }}'
+    commandContent: '{{ commandContent }}'
+  Outputs:
+    commandOutput:
+      Type: String
+      ValueSelector: invokeResult
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - Kubernetes
+            - '{{ getClusterType.clusterType }}'
+        - '{{ runCommand.commandOutput }}'
+        - '{{ runFC_Command.commandOutput }}'

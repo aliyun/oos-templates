@@ -1,0 +1,114 @@
+FormatVersion: OOS-2019-06-01
+Description: 'Use this template to run Ansible playbooks on ECS Instance.Only supports CentOS, AliyunLinux and Ubuntu.'
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description: The id of instance.
+    Type: String
+  sourceType:
+    Description: The type of playbook storage.
+    Type: String
+    AllowedValues:
+      - oss
+      - https
+      - github
+  sourcePath:
+    Description: 'You must specify a URL where the playbook is stored.You can specify the URL in the following formats: https://example.com/playbook.yml'
+    Type: String
+  playbookFile:
+    Description: 'The name of playbook to apply. For example: example.yml'
+    Type: String
+  tokenInfo:
+    Type: String
+    Description: Specify a token to download ansible playbook.It is only required when downloading palybook from GitHub.
+    Default: ''
+  hosts:
+    Description: The hosts used to execute  palybook.
+    Type: String
+    Default: /etc/ansible/hosts
+  installDependencies:
+    Description: 'If set to True,  OOS installs Ansible and its dependencies, including Python, from the PyPI repo.  If set to False, then verify that Ansible and its dependencies are installed on the target instances.'
+    Type: Boolean
+    Default: true
+  workingDir:
+    Description: The directory to apply playbook.
+    Type: String
+    Default: /root/ansible-workspace
+  check:
+    Description: Use the check parameter to perform a dry run of the Ansible execution.
+    Type: Boolean
+    Default: true
+  extraVariables:
+    Type: String
+    Description: 'Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime'
+    Default: color=red
+    AllowedPattern: ^$|^\w+\=\S+(\s\w+\=\S+)*$
+  verbose:
+    Type: String
+    Description: 'Set the verbosity level for logging Playbook executions. Specify -v for low verbosity, -vv or –vvv for medium verbosity, and -vvvv for debug level.'
+    AllowedValues:
+      - '-v'
+      - '-vv'
+      - '-vvv'
+      - '-vvvv'
+    Default: '-v'
+Tasks:
+  - Name: applyPlaybook
+    Action: 'ACS::ECS::RunCommand'
+    Description: Apply the specified playbook.
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        if  [ '{{ installDependencies }}' = 'true' ] ; then
+          echo "Installing and or updating required tools: Ansible, wget unzip ...." >&2;
+          if [ -f  "/etc/system-release" ] ; then
+            if cat /etc/system-release|grep -i 'CentOS Linux release' ; then
+              sudo yum install -y ansible
+              sudo yum -y install unzip
+            elif cat /etc/system-release|grep -i 'Aliyun Linux release' ; then
+              sudo yum install -y ansible
+              sudo yum install -y unzip
+            else
+              echo "There was a problem installing or updating the required tools for the document. You can review the log files to help you correct the problem." >&2;
+              exit 1;
+            fi
+          elif cat /etc/issue|grep -i Ubuntu ; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install python-pip -y
+            sudo pip install ansible --upgrade
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install unzip -y
+          else
+            echo "There was a problem installing or updating the required tools for the document. You can review the log files to help you correct the problem." >&2
+            exit 1
+          fi
+        fi
+        echo "Downloading playbook"
+        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\'{{tokenInfo}}\',\'{{workingDir}}\'
+        echo "Running Ansible in {{workingDir}}"
+        cd {{workingDir}}
+        for zip in $(find -iname '*.zip'); do
+          unzip -o $zip
+        done
+        PlaybookFile="{{ playbookFile }}"
+        if [ ! -f  ${PlaybookFile} ] ; then
+           echo "The specified Playbook file doesn't exist in the downloaded bundle. Please review the relative path and file name." >&2
+           exit 2
+        fi
+        if  [ {{ check }} = true ] ; then
+           ansible-playbook -i "{{ hosts }}" --check -c local -e "{{ extraVariables }}" "{{ verbose }}" ${PlaybookFile}
+        else
+           ansible-playbook -i "{{ hosts }}" -c local -e "{{ extraVariables }}" "{{ verbose }}" ${PlaybookFile}
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ applyPlaybook.commandOutput }}'

@@ -1,0 +1,165 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Attach policy to user that template executed by after approving.
+  zh-cn: 审批通过后授权给创建执行的子用户。
+  name-en: ACS-RAM-ApproveAttachPolicyToUser
+  name-zh-cn: 审批通过后授权给创建执行的子用户
+  categories:
+    - security
+Parameters:
+  policyType:
+    Description:
+      en: The ploicy type to add,the optioanl is Custom or System.
+      zh-cn: 将授予的权限策略类型，可选类型为系统权限或自定义权限。
+    Type: String
+    AllowedValues:
+      - Custom
+      - System
+  policyName:
+    Description:
+      en: The ploicy to add.
+      zh-cn: 将授予的权限策略名称。
+    Type: String
+  webHookUrl:
+    Description:
+      en: >-
+        The webhook url of dingtalk group assistant,
+        e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.
+      zh-cn: >-
+        钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。
+    Type: String
+  atMobiles:
+    Description:
+      en: The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.
+      zh-cn: 审批通知中被@的群成员的钉钉手机号，比如138ALBB1234。
+    Type: List
+  atAll:
+    Description:
+      en: 'Whether assistant @ all members in dingtalk group or not notification comes'
+      zh-cn: 当群助手向钉钉群中发送审批通知时是否@所有人。
+    Type: String
+    Default: 'false'
+  approvers:
+    Description:
+      en: The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.
+      zh-cn: 可以审批任务的用户。用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可。
+    Type: List
+    AssociationProperty: ALIYUN::RAM::User
+  minRequiredApprovals:
+    Description:
+      en: The min required count of approvals.
+      zh-cn: 最低需要通过审批的数量
+    Type: Number
+    Default: 1
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: approveAttachPolicy
+    Action: 'ACS::Approve'
+    Description:
+      en: Approve task add policy.
+      zh-cn: 审批后授权。
+    Properties:
+      Approvers: '{{approvers}}'
+      MinRequiredApprovals: '{{minRequiredApprovals}}'
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{webhookUrl}}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: text
+          text:
+            content: |
+              Notice: Please approve the task execution to attach {{policyType}} policy {{policyName}}
+              for target user {{ACS::ExecuteUser}}.
+              sent by {{ACS::RegionId}} oos {{ACS::ExecutionId}}.
+          at:
+            atMobiles: '{{atMobiles}}'
+            isAtAll: '{{atAll}}'
+  - Name: checkPolicyExist
+    Action: ACS::CheckFor
+    Description:
+      en: Check for the existence of policy.
+      zh-cn: 确认权限策略已存在。
+    Properties:
+      Service: RAM
+      API: GetPolicy
+      Parameters:
+        PolicyType: '{{ policyType }}'
+        PolicyName: '{{ policyName }}'
+      DesiredValues:
+      - 'true'
+      PropertySelector: '.DefaultPolicyVersion != null|tostring'
+    Outputs:
+      policyDocumentToAttach:
+          Type: Json
+          ValueSelector: .DefaultPolicyVersion.PolicyDocument
+  - Name: createStack
+    Action: 'ACS::Template'
+    Description:
+      en: Attach policy by Ros resource stack.
+      zh-cn: 通过Ros资源栈为角色授权。
+    Properties:
+      TemplateName: 'ACS::ROS::CreateStack'
+      Parameters:
+        stackName: 'OOS-{{ACS::ExecutionId}}'
+        disableRollback: true
+        parameters:
+          - ParameterKey: PolicyType
+            ParameterValue: '{{ policyType }}'
+          - ParameterKey: UserName
+            ParameterValue: '{{ACS::ExecuteUser}}'
+          - ParameterKey: PolicyName
+            ParameterValue: '{{ policyName }}'
+        templateBody: |
+          {
+            "Parameters": {
+              "PolicyType": {
+                "Type": "String",
+                "Description": "Authorization policy type. Value: \"System\" or \"Custom\"."
+              },
+              "UserName": {
+                "Type": "String",
+                "Description": "User name."
+              },
+              "PolicyName": {
+                "Type": "String",
+                "Description": "Authorization policy name."
+              }
+            },
+            "ROSTemplateFormatVersion": "2015-09-01",
+            "Outputs": {},
+            "Resources": {
+              "AttachPolicyToUser": {
+                "Type": "ALIYUN::RAM::AttachPolicyToUser",
+                "Properties": {
+                  "PolicyType": {
+                    "Ref": "PolicyType"
+                  },
+                  "UserName": {
+                    "Ref": "UserName"
+                  },
+                  "PolicyName": {
+                    "Ref": "PolicyName"
+                  }
+                }
+              }
+            }
+          }
+    Outputs:
+      stackId:
+        Type: String
+        ValueSelector: stackId
+Outputs:
+  statement:
+    Type: Json
+    Value: "{{ checkPolicyExist.policyDocumentToAttach }}"
+  stackId:
+    Type: String
+    Value: '{{createStack.stackId}}'

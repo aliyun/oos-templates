@@ -1,0 +1,88 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky run command on ECS instances across multiple regions.
+  zh-cn: 批量在多个地域的ECS实例上运行云助手命令。
+  name-en: ACS-ECS-BulkyRunCommandAcrossRegions
+  name-zh-cn: 批量在多个地域的ECS实例上运行云助手命令
+  categories:
+    - run_command
+Parameters:
+  instanceInfos:
+    Description:
+      en: 'The infos list of the ECS instance.Format: {"regionId": "cn-xxx", "instanceId": "i-xxx"}'
+      zh-cn: 'ECS实例的信息列表.格式: {"regionId": "cn-xxx", "instanceId": "i-xxx"}'
+    Type: List
+    Default: []
+  commandType:
+    Description:
+      en: The type of command.
+      zh-cn: 云助手命令类型。
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+    Default: RunShellScript
+  commandContent:
+    Description:
+      en: Command content to run in ECS instance.
+      zh-cn: 在ECS实例中执行的云助手命令。
+    Type: String
+    AssociationProperty: Code
+    Default: echo hello
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances.
+      zh-cn: ECS实例中执行命令的超时时间。
+    Type: Number
+    Default: 600
+  rateControl:
+    Description:
+      en: Concurrency ratio of task execution.
+      zh-cn: 任务执行的并发比率。
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      en: The RAM role to be assumed by OOS.
+      zh-cn: OOS扮演的RAM角色。
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: runCommand
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Execute cloud assistant command.
+      zh-cn: 执行云助手命令。
+    Properties:
+      regionId:
+        'Fn::Select':
+          - regionId
+          - '{{ ACS::TaskLoopItem }}'
+      instanceId:
+        'Fn::Select':
+          - instanceId
+          - '{{ ACS::TaskLoopItem }}'
+      commandContent: '{{ commandContent }}'
+      commandType: '{{ commandType }}'
+      timeout: '{{ timeout }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceInfos }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutputs:
+    Type: List
+    Value: '{{ runCommand.commandOutputs }}'

@@ -1,0 +1,137 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to install sls agent on ecs",
+    "zh-cn": "\u4f7f\u7528\u8fd9\u4e2a\u6a21\u677f\u6279\u91cf\u7684\u5728ECS\u5b89\u88c5OOS\u81ea\u5b9a\u4e49\u8f6f\u4ef6\u5305",
+    "name-en": "ACS-ECS-BulkyConfigureOOSPackage",
+    "name-zh-cn": "\u6279\u91cf\u5b89\u88c5OOS\u81ea\u5b9a\u4e49\u8f6f\u4ef6\u5305",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "action": {
+      "Description": {
+        "en": "The action to configure package.",
+        "zh-cn": "\u914d\u7f6e\u7684\u8f6f\u4ef6\u5305\u7684\u65b9\u5f0f\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ],
+      "Default": "install"
+    },
+    "packageName": {
+      "Description": {
+        "en": "The name of package to configure.",
+        "zh-cn": "\u8981\u914d\u7f6e\u7684\u8f6f\u4ef6\u5305\u540d\u79f0\u3002"
+      },
+      "Type": "String"
+    },
+    "packageVersion": {
+      "Description": {
+        "en": "The version of package to configure.",
+        "zh-cn": "\u8981\u914d\u7f6e\u7684\u8f6f\u4ef6\u5305\u7248\u672c\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "targets": {
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": "The RAM role to be assumed by OOS.",
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances.",
+        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "configurePackage",
+      "Description": {
+        "en": "Configure Package.",
+        "zh-cn": "\u914d\u7f6e\u8f6f\u4ef6\u5305\u3002"
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackage",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "action": "{{ action }}",
+        "packageName": "{{ packageName }}",
+        "packageVersion": "{{ packageVersion }}"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ configurePackage.commandOutputs }}"
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Grant account privilege to specified or all dbs of the instance.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The region id of DB instance.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "dbInstanceId": {
+      "Description": "The id of DB instance to grant account privilege in.",
+      "Type": "String"
+    },
+    "accountName": {
+      "Description": "The account name to grant privilege for.",
+      "Type": "String"
+    },
+    "dbNames": {
+      "Description": "The DB names to grant account privilege to. tips, the wildcard parameter value [\"all\"] that represents all dbs is only suoported when all dbs count of single instance not greater than 100.",
+      "Type": "List"
+    },
+    "accountPrivilege": {
+      "Description": "The target account privilege to grant, the default is ReadOnly.",
+      "Type": "String",
+      "AllowedValues": [
+        "ReadWrite",
+        "ReadOnly",
+        "DDLOnly",
+        "DMLOnly",
+        "DBOwner"
+      ],
+      "Default": "ReadOnly"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkForInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": "Check wether the DB instance is running status.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstanceAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dbInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstanceAttribute[].DBInstanceStatus"
+      }
+    },
+    {
+      "Name": "whetherSpecifiedDBNames",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by the dbNames parameter value.",
+      "Properties": {
+        "DefaultTask": "grantAccountPrivilege",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [
+                  "all"
+                ],
+                "{{ dbNames }}"
+              ]
+            },
+            "NextTask": "describeDatabases"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "describeDatabases",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "grantAccountPrivilegeForAllDBs",
+      "OnError": "ACS::END",
+      "Description": "Query all running databases name of the instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDatabases",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dbInstanceId }}",
+          "DBStatus": "Running",
+          "PageSize": 100
+        }
+      },
+      "Outputs": {
+        "dbNames": {
+          "Type": "List",
+          "ValueSelector": ".Databases.Database[].DBName"
+        }
+      }
+    },
+    {
+      "Name": "grantAccountPrivilege",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "ACS::END",
+      "OnError": "ACS::END",
+      "Description": "Grant account privilege to specified dbs of instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "GrantAccountPrivilege",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dbInstanceId }}",
+          "AccountName": "{{ accountName }}",
+          "DBName": "{{ ACS::TaskLoopItem }}",
+          "AccountPrivilege": "{{ accountPrivilege }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ dbNames }}"
+      }
+    },
+    {
+      "Name": "grantAccountPrivilegeForAllDBs",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Grant account privilege to all dbs of instance.",
+      "Properties": {
+        "Service": "RDS",
+        "API": "GrantAccountPrivilege",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dbInstanceId }}",
+          "AccountName": "{{ accountName }}",
+          "DBName": "{{ ACS::TaskLoopItem }}",
+          "AccountPrivilege": "{{ accountPrivilege }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ describeDatabases.dbNames }}"
+      }
+    }
+  ]
+}
