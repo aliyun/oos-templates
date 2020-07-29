@@ -1,11 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: >-
-    Modify the wait state of the specified scaling activity according to the
-    result of applies an automatic snapshot policy to one or more disks.
-  zh-cn: 根据为一块或者多块云盘应用自动快照策略的结果修改伸缩活动的等待状态。
+  en: Use lifecycleHook to apply an automatic snapshot policy to one or more disks, only supports elastic expansion activities.
+  zh-cn: 使用生命周期挂钩应用自动快照策略到磁盘(仅支持弹性扩张活动)。
   name-en: ACS-ESS-LifeCycleApplyAutoSnapshotPolicy
-  name-zh-cn: 弹性伸缩LifeCycleHook用自动快照策略
+  name-zh-cn: 使用生命周期挂钩应用自动快照策略
   categories:
     - elastic_manage
 Parameters:
@@ -57,6 +55,7 @@ Tasks:
       Service: ECS
       API: DescribeInstances
       Parameters:
+        RegionId: '{{ regionId }}'
         InstanceIds:
           - '{{ ACS::TaskLoopItem }}'
       DesiredValues:
@@ -71,6 +70,7 @@ Tasks:
     OnError: CompleteLifecycleActionForAbandon
     OnSuccess: CompleteLifecycleActionForContinue
     Properties:
+      regionId: '{{ regionId }}'
       autoSnapshotPolicyId: '{{ autoSnapshotPolicyId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
     Loop:
@@ -89,6 +89,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         LifecycleHookId: '{{ lifecycleHookId }}'
         LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:

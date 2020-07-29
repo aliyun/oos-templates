@@ -16,6 +16,16 @@
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
+    },
+    "password": {
+      "Description": "The password.",
+      "Type": "String",
+      "Default": ""
+    },
+    "keyPairName": {
+      "Description": "The keypair name.",
+      "Type": "String",
+      "Default": ""
     }
   },
   "Tasks": [
@@ -101,7 +111,31 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}",
-          "InstanceId": "{{ instanceId }}"
+          "InstanceId": "{{ instanceId }}",
+          "KeyPairName": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "",
+                  "{{ keyPairName }}"
+                ]
+              },
+              null,
+              "{{ keyPairName }}"
+            ]
+          },
+          "Password": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "",
+                  "{{ password }}"
+                ]
+              },
+              null,
+              "{{ password }}"
+            ]
+          }
         }
       },
       "Outputs": {

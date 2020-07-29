@@ -1,9 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky create NetworkInterface and EIP and attach them to the instance on lifeCycleHook.
-  zh-cn: LifeCycleHook批量创建弹性网卡与弹性IP并将其绑定到实例上。
+  en: Use lifecycleHook to create NetworkInterface and EIP and attach them to the instance, only supports elastic expansion activities.
+  zh-cn: 使用生命周期挂钩批量创建弹性网卡与弹性IP并将其绑定到实例上(仅支持弹性扩张活动)。
   name-en: ACS-ESS-LifeCycleCreateNetworkInterfaceAndEipAndAttachToInstance
-  name-zh-cn: 弹性伸缩LifeCycleHook创建弹性网卡与EIP并绑定到实例上
+  name-zh-cn: 使用生命周期挂钩创建弹性网卡与EIP并绑定到实例上
   categories:
     - elastic_manage
 Parameters:
@@ -32,6 +32,21 @@ Parameters:
       zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
     Type: String
     Default: '${lifecycleActionToken}'
+  internetChargeType:
+    Description:
+      en: EIP measurement method.
+      zh-cn: 'EIP的计量方式（PayByBandwidth：按带宽计费，PayByTraffic：按流量计费）。'
+    Type: String
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+    Default: PayByBandwidth
+  bandwidth:
+    Description:
+      en: 'Peak bandwidth of eip, unit: Mbps.'
+      zh-cn: 'EIP的带宽峰值（Mbps）。'
+    Type: Number
+    Default: 5
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -59,6 +74,8 @@ Tasks:
       zh-cn: 创建弹性网卡与弹性IP并将其绑定到实例上。
     Properties:
       regionId: '{{ regionId }}'
+      internetChargeType: '{{ internetChargeType }}'
+      bandwidth: '{{ bandwidth }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
     Loop:
       RateControl: '{{ rateControl }}'
@@ -76,6 +93,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         LifecycleHookId: '{{ lifecycleHookId }}'
         LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:

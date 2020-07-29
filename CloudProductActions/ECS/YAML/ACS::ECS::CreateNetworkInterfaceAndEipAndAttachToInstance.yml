@@ -8,6 +8,17 @@ Parameters:
   instanceId:
     Description: The ecs instance id.
     Type: String
+  internetChargeType:
+    Description: EIP measurement method.
+    Type: String
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+    Default: PayByBandwidth
+  bandwidth:
+    Description: Peak bandwidth of eip.
+    Type: Number
+    Default: 5
 Tasks:
   - Name: checkInstanceReady
     Action: 'ACS::CheckFor'
@@ -101,6 +112,8 @@ Tasks:
       API: AllocateEipAddress
       Parameters:
         RegionId: '{{ regionId }}'
+        InternetChargeType: '{{ internetChargeType }}'
+        Bandwidth: '{{ bandwidth }}'
     Outputs:
       allocationId:
         Type: String
@@ -122,7 +135,6 @@ Tasks:
   - Name: associateEipAddress
     Action: 'ACS::ExecuteAPI'
     Description: Bind the eip to instance.
-    OnSuccess: 'ACS::END'
     OnError: detachNetworkInterface
     Properties:
       Service: ECS
@@ -131,7 +143,30 @@ Tasks:
         RegionId: '{{ regionId }}'
         AllocationId: '{{ allocateEipAddress.allocationId }}'
         InstanceId: '{{ createNetworkInterface.networkInterfaceId }}'
-        InstanceType: 'NetworkInterface'
+        InstanceType: NetworkInterface
+  - Name: runCommand
+    Action: 'ACS::ECS::RunCommand'
+    OnError: detachNetworkInterface
+    OnSuccess: 'ACS::END'
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: >-
+        wget
+        https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/x64/multi-nic-util-0.6.tgz
+
+        tar -zxvf multi-nic-util-0.6.tgz
+
+        cd multi-nic-util-0.6
+
+        bash install.sh
+
+        systemctl restart eni.service
+      instanceId: '{{instanceId}}'
+      commandType: RunShellScript
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
   - Action: 'ACS::ExecuteAPI'
     Name: detachNetworkInterface
     Description: Detach the network interface.
@@ -181,4 +216,7 @@ Tasks:
 Outputs:
   networkInterfaceIdAndAllocationId:
     Type: String
-    Value: '{instanceId:{{ instanceId }}, allocationId: {{ allocateEipAddress.allocationId }}, networkInterfaceId: {{ createNetworkInterface.networkInterfaceId }}}'
+    Value: >-
+      {instanceId:{{ instanceId }}, allocationId: {{
+      allocateEipAddress.allocationId }}, networkInterfaceId: {{
+      createNetworkInterface.networkInterfaceId }}}

@@ -7,6 +7,15 @@
     "name-zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97"
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "serviceName": {
       "Description": {
         "en": "Service name To Invoke.",
@@ -51,6 +60,7 @@
         "functionName": "{{ functionName }}",
         "serviceName": "{{ serviceName }}",
         "invocationType": "Sync",
+        "regionId": "{{ regionId }}",
         "event": "{{ parameters }}"
       },
       "Outputs": {

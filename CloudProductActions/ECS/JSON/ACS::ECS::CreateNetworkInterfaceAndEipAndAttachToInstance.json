@@ -10,6 +10,20 @@
     "instanceId": {
       "Description": "The ecs instance id.",
       "Type": "String"
+    },
+    "internetChargeType": {
+      "Description": "EIP measurement method.",
+      "Type": "String",
+      "AllowedValues": [
+        "PayByBandwidth",
+        "PayByTraffic"
+      ],
+      "Default": "PayByBandwidth"
+    },
+    "bandwidth": {
+      "Description": "Peak bandwidth of eip.",
+      "Type": "Number",
+      "Default": 5
     }
   },
   "Tasks": [
@@ -138,7 +152,9 @@
         "Service": "ECS",
         "API": "AllocateEipAddress",
         "Parameters": {
-          "RegionId": "{{ regionId }}"
+          "RegionId": "{{ regionId }}",
+          "InternetChargeType": "{{ internetChargeType }}",
+          "Bandwidth": "{{ bandwidth }}"
         }
       },
       "Outputs": {
@@ -171,7 +187,6 @@
       "Name": "associateEipAddress",
       "Action": "ACS::ExecuteAPI",
       "Description": "Bind the eip to instance.",
-      "OnSuccess": "ACS::END",
       "OnError": "detachNetworkInterface",
       "Properties": {
         "Service": "ECS",
@@ -181,6 +196,24 @@
           "AllocationId": "{{ allocateEipAddress.allocationId }}",
           "InstanceId": "{{ createNetworkInterface.networkInterfaceId }}",
           "InstanceType": "NetworkInterface"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "OnError": "detachNetworkInterface",
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "wget https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/x64/multi-nic-util-0.6.tgz\ntar -zxvf multi-nic-util-0.6.tgz\ncd multi-nic-util-0.6\nbash install.sh\nsystemctl restart eni.service",
+        "instanceId": "{{instanceId}}",
+        "commandType": "RunShellScript"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
         }
       }
     },

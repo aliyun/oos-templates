@@ -1,11 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: >-
-    Modify the wait state of the specified scaling activity according to the
-    result of setting the IP whitelist of the MongoDB instance.
-  zh-cn: 根据设置MongoDB实例白名单结果修改伸缩活动的等待状态。
+  en: Use lifecycleHook to modify the IP whitelist of the MongoDB instance.
+  zh-cn: 使用生命周期挂钩设置MongoDB实例的IP白名单。
   name-en: ACS-ESS-LifeCycleModifyMongoDBIPWhitelist
-  name-zh-cn: 弹性伸缩LifeCycleHook设置MongoDB白名单
+  name-zh-cn: 使用生命周期挂钩设置MongoDB实例的IP白名单
   categories:
     - elastic_manage
 Parameters:
@@ -16,8 +14,8 @@ Parameters:
     Type: String
   modifyMode:
     Description:
-      en: Modification method.
-      zh-cn: 修改白名单方式。
+      en: The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities.
+      zh-cn: 修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动。
     Type: String
     AllowedValues:
       - Append
@@ -105,6 +103,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         LifecycleHookId: '{{ lifecycleHookId }}'
         LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:

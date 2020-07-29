@@ -130,7 +130,7 @@
                 "{{ viewInstanceStatus.instanceStatus }}"
               ]
             },
-            "NextTask": "replaceSystemDisk"
+            "NextTask": "getKeyPairName"
           }
         ]
       }
@@ -168,6 +168,43 @@
       }
     },
     {
+      "Name": "getActiveScalingConfigurationId",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views scalingConfigurationId.",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingGroups",
+        "Parameters": {
+          "ScalingGroupId1": "{{ scalingGroupId }}"
+        }
+      },
+      "Outputs": {
+        "configurationId": {
+          "Type": "String",
+          "ValueSelector": "ScalingGroups.ScalingGroup[].ActiveScalingConfigurationId"
+        }
+      }
+    },
+    {
+      "Name": "getKeyPairName",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views keypair.",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingConfigurations",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "ScalingConfigurationId1": "{{ getActiveScalingConfigurationId.configurationId }}"
+        }
+      },
+      "Outputs": {
+        "keyPairName": {
+          "Type": "String",
+          "ValueSelector": "ScalingConfigurations.ScalingConfiguration[].KeyPairName"
+        }
+      }
+    },
+    {
       "Name": "replaceSystemDisk",
       "Action": "ACS::ExecuteAPI",
       "Description": "Replaces the system disk of an ECS instance.",
@@ -177,7 +214,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}",
-          "InstanceId": "{{ instanceId }}"
+          "InstanceId": "{{ instanceId }}",
+          "KeyPairName": "{{ getKeyPairName.keyPairName }}"
         }
       },
       "Outputs": {

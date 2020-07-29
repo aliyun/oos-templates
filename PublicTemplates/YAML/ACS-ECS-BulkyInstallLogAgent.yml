@@ -21,6 +21,12 @@ Parameters:
       - upgrade
       - uninstall
     Default: install
+  overwrite:
+    Description:
+      en: 'If logAgent exists in the instance, choose whether to overwrite LogAgent(Default no).'
+      zh-cn: 如果实例内存在logAgent时，选择是否覆盖LogAgent(默认不覆盖)。
+    Type: Boolean
+    Default: false
   targets:
     Type: Json
     AssociationProperty: Targets
@@ -72,14 +78,58 @@ Tasks:
                   - '{{ getInstance.instanceInfos }}'
               - linux
           - |-
-            wget http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/linux64/logtail.sh -O logtail.sh; chmod 755 logtail.sh;  if [ "{{action}}" = "install" ]; then
-                ./logtail.sh install {{ regionId }}
+            set -e
+            installLogAgent(){
+                message=`./logtail.sh install {{ regionId }} 2>/dev/null`
+                if [ $? = 0 ]; then
+                    cat /usr/local/ilogtail/app_info.json
+                else
+                    echo "$message"
+                    exit 1
+                fi
+            }
+            wget http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/linux64/logtail.sh -q -O logtail.sh;
+            if [ $? != 0 ]; then
+              echo "Failed to dowmload logtail_installer, Please check your network service."
+              exit 1
+            fi
+            chmod 755 logtail.sh;
+            if [ "{{action}}" = "install" ]; then
+                wetherOverwriteAgent="{{overwrite}}"
+                if [ $wetherOverwriteAgent = "true" ]; then
+                    installLogAgent
+                else
+                    logVersionPath="/usr/local/ilogtail/app_info.json"
+                    if [ -f "$logVersionPath" ]; then
+                        echo 'already has LogAgent'
+                        exit 0
+                    else
+                        installLogAgent
+                    fi
+                fi
             elif [ "{{action}}" = "upgrade" ]; then
-                ./logtail.sh upgrade
+                message=`./logtail.sh upgrade 2>/dev/null`
+                if [ $? = 0 ]; then
+                  cat /usr/local/ilogtail/app_info.json
+                else
+                  echo "$message"
+                  exit 1
+                fi
             else
                 ./logtail.sh uninstall
             fi
           - |-
+            function installLogAgent
+            {
+                .\logtail_installer.exe install {{ regionId }}
+                if (! $?)
+                 {
+                   echo "Failed to install install log and to start log service Failed, please try again."
+                   exit 1
+                 }
+                echo 'Install complete'
+            }
+
             $action="{{ action }}"
 
             $pathExistOrNot = Test-Path -Path "C:\Users\Administrator\OOSPackages"
@@ -95,12 +145,46 @@ Tasks:
 
             $client = new-object System.Net.WebClient
             $client.DownloadFile('http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/win/logtail_installer.zip', 'C:\Users\Administrator\OOSPackages\logtail_installer.zip')
+            if (! $?)
+            {
+              echo "Failed to dowmload logtail_installer, Please check your network service."
+              exit 1
+            }
             Expand-Archive -Force -Path C:\Users\Administrator\OOSPackages\logtail_installer.zip -DestinationPath C:\Users\Administrator\OOSPackages
             switch($action)
             {
                 "install" {
-                    .\logtail_installer.exe install {{ regionId }}
-                    echo 'Install complete'
+                    $wetherOverwriteAgent = "{{overwrite}}"
+
+                    if ($wetherOverwriteAgent -eq "true")
+                    {
+                        installLogAgent
+                    } else
+                    {
+                        if ([Environment]::Is64BitOperatingSystem)
+                        {
+                            $logAgentPath = Test-Path -Path "C:\Program Files (x86)\Alibaba\Logtail"
+                            if ($logAgentPath)
+                            {
+                                echo 'already has LogAgent'
+                                exit 0
+                            } else
+                            {
+                                installLogAgent
+                            }
+                        } else
+                        {
+                            $logAgentPath = Test-Path -Path "C:\Program Files\Alibaba\Logtail"
+                            if ($logAgentPath)
+                            {
+                                echo 'already has LogAgent'
+                            } else
+                            {
+                                installLogAgent
+                            }
+                        }
+                    }
+
                 }
                 "upgrade" {
                     .\logtail_installer.exe uninstall

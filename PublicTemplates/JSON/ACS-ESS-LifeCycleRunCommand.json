@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Run command in the specified scaling activity instance",
-    "zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4",
+    "en": "Use lifecycleHook to run command in the specified scaling activity instance.",
+    "zh-cn": "\u4f7f\u7528\u751f\u547d\u5468\u671f\u6302\u94a9\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4\u3002",
     "name-en": "ACS-ESS-LifeCycleRunCommand",
-    "name-zh-cn": "\u5f39\u6027\u4f38\u7f29LifeCycleHook\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4",
+    "name-zh-cn": "\u4f7f\u7528\u751f\u547d\u5468\u671f\u6302\u94a9\u5230\u5b9e\u4f8b\u4e2d\u6267\u884c\u547d\u4ee4",
     "categories": [
       "elastic_manage"
     ]
@@ -100,6 +100,7 @@
         "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": "{{ commandContent }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "commandType": "{{ commandType }}"
@@ -135,7 +136,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "LifecycleHookId": "{{ lifecycleHookId }}",
-          "LifecycleActionToken": "{{ lifecycleActionToken }}"
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "CONTINUE"
         }
       }
     },

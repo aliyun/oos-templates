@@ -5,6 +5,13 @@ Description:
   name-en: ACS-FC-InvokeFunction
   name-zh-cn: 执行函数计算
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region.
+      zh-cn: 地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   serviceName:
     Description:
       en: Service name To Invoke.
@@ -38,6 +45,7 @@ Tasks:
       functionName: '{{ functionName }}'
       serviceName: '{{ serviceName }}'
       invocationType: Sync
+      regionId: '{{ regionId }}'
       event: '{{ parameters }}'
     Outputs:
       invokeData:

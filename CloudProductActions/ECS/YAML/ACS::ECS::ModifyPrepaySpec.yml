@@ -17,6 +17,13 @@ Parameters:
   instanceType:
     Description: The Instance type you will modify.
     Type: String
+  operatorType:
+    Description: The operation type.
+    Type: String
+    AllowedValues:
+      - downgrade
+      - upgrade
+    Default: upgrade
 Tasks:
 - Name: stopInstance
   Action: ACS::ExecuteAPI
@@ -51,10 +58,16 @@ Tasks:
       AutoPay: '{{ autoPay }}'
       InstanceId: '{{ instanceId }}'
       InstanceType: '{{ instanceType }}'
+      OperatorType: '{{ operatorType }}'
   Outputs:
     orderId:
       Type: List
       ValueSelector: OrderId
+- Name: waitInstanceReady
+  Action: ACS::Sleep
+  Description: Waits the instance recover.
+  Properties:
+    Duration: PT1M
 - Name: startInstance
   Action: ACS::ExecuteAPI
   Description: Starts an ECS instance.

@@ -106,7 +106,7 @@ Tasks:
             'Fn::Equals':
               - rollback
               - '{{ invokeType }}'
-          NextTask: getResourceIds
+          NextTask: getExecutionInstanceIds
   - Name: whetherTosuspendProcess
     Action: 'ACS::Choice'
     Description:
@@ -171,6 +171,20 @@ Tasks:
       commandOutput:
         Type: String
         ValueSelector: invocationOutput
+  - Name: tagInstance
+    Action: ACS::ExecuteApi
+    Description:
+      en: Creates and attaches tag to ECS instance.
+      zh-cn: 创建并挂载标签到ECS实例。
+    Properties:
+      Service: ECS
+      API: TagResources
+      Parameters:
+        ResourceIds: '{{ getInstance.instanceIds }}'
+        ResourceType: Instance
+        Tags:
+        - Key: 'ess:rollingupdate'
+          Value: 'oos:{{ ACS::ExecutionId }}'
   - Name: whetherToResumeProcesses
     Action: 'ACS::Choice'
     Description:
@@ -196,11 +210,11 @@ Tasks:
       Parameters:
         ScalingGroupId: '{{ scalingGroupId }}'
         Process: '{{ exitProcess }}'
-  - Name: getResourceIds
+  - Name: getExecutionInstanceIds
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Views resource instance.
-      zh-cn: 获取实例。
+      en: Get the instance that has been executed.
+      zh-cn: 获取已经执行过执行脚本的实例。
     Properties:
       Service: OOS
       API: ListExecutions
@@ -210,6 +224,20 @@ Tasks:
       instanceIds:
         Type: List
         ValueSelector: 'Executions[].Parameters.instanceId'
+  - Name: getExistInstanceIds
+    Description:
+      en: Views the ECS instances.
+      zh-cn: 获取ECS实例。
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      Filters:
+        - Type: ResourceIds
+          ResourceIds: '{{ getExecutionInstanceIds.instanceIds }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
   - Name: getRollbackProcess
     Action: 'ACS::ExecuteAPI'
     Description:
@@ -250,12 +278,12 @@ Tasks:
       scalingGroupId: '{{ scalingGroupId }}'
       rollBack: 'true'
     Loop:
-      Items: '{{ getResourceIds.instanceIds }}'
+      Items: '{{ getExistInstanceIds.instanceIds }}'
       BatchPauseOption: '{{ batchPauseOption }}'
       Concurrency:
         'Fn::CalculateBatch':
           - '{{ batchNumber }}'
-          - '{{ getResourceIds.instanceIds }}'
+          - '{{ getExistInstanceIds.instanceIds }}'
       Outputs:
         commandOutputs:
           AggregateType: 'Fn::ListJoin'

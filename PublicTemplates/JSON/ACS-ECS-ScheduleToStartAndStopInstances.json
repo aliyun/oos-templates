@@ -43,8 +43,8 @@
     },
     "weekdays": {
       "Description": {
-        "en": "The Cycle of task\uff0c* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday\uff0crefer them here: https://www.alibabacloud.com/help/doc-detail/64769.htm",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5468\u671f\uff0c*\u8868\u793a\u6bcf\u5929\uff0cMON\u8868\u793a\u4ec5\u5468\u4e00\uff0cMON-FRI\u8868\u793a\u5468\u4e00\u5230\u5468\u4e94\u3002\u8be6\u60c5\u53c2\u8003\uff1ahttps://www.alibabacloud.com/help/zh/faq-detail/64769.htm"
+        "en": "The Cycle of task\uff0c* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday\uff0crefer them here: https://help.aliyun.com/document_detail/169784.html",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5468\u671f\uff0c*\u8868\u793a\u6bcf\u5929\uff0cMON\u8868\u793a\u4ec5\u5468\u4e00\uff0cMON-FRI\u8868\u793a\u5468\u4e00\u5230\u5468\u4e94\u3002\u8be6\u60c5\u53c2\u8003\uff1ahttps://help.aliyun.com/document_detail/169784.html"
       },
       "Type": "String",
       "Default": "MON-FRI"
@@ -148,6 +148,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{regionId}}",
         "Filters": [
           "{{ targets }}"
         ]

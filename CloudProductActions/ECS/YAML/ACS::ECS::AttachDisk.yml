@@ -16,6 +16,10 @@ Parameters:
     AllowedPattern: d-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
+  deleteWithInstance:
+    Description: The disk will be deleted with instance when deleting instance, the defalut is false.
+    Type: Boolean
+    Default: false
 Tasks:
 - Name: attachDisk
   Action: ACS::ExecuteAPI
@@ -27,6 +31,7 @@ Tasks:
       RegionId: '{{ regionId }}'
       DiskId: '{{ diskId }}'
       InstanceId: '{{ instanceId }}'
+      DeleteWithInstance: '{{ deleteWithInstance }}'
 - Name: untilDiskAttached
   Action: ACS::WaitFor
   Description: Waits for the disk to be attached.

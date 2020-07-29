@@ -33,6 +33,7 @@ Parameters:
       zh-cn: 实例类型。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
     Default: 'ecs.g5.large'
   securityGroupId:
     Description:
@@ -52,6 +53,12 @@ Parameters:
       RegionId: regionId
       Filters:
         - SecurityGroupId: securityGroupId
+  ramRoleName:
+    Description:
+      en: The ram role for the ECS instances.
+      zh-cn: 实例的RAM角色。
+    Type: String
+    Default: ''
   commandType:
     Description:
       en: The type of command.
@@ -62,6 +69,17 @@ Parameters:
       - RunPowerShellScript
       - RunShellScript
     Default: RunShellScript
+
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+
   commandContent:
     Description:
       en: Command content to run in ECS instance.
@@ -102,6 +120,7 @@ Tasks:
     instanceType: '{{ instanceType }}'
     securityGroupId: '{{ securityGroupId }}'
     vSwitchId: '{{ vSwitchId }}'
+    ramRoleName: '{{ ramRoleName }}'
   Outputs:
     instanceId:
       ValueSelector: instanceIds[0]
@@ -144,6 +163,7 @@ Tasks:
     regionId: '{{ regionId }}'
     imageName: '{{ targetImageName }}'
     instanceId: '{{ runInstances.instanceId }}'
+    tags: '{{tags}}'
   Outputs:
     imageId:
       ValueSelector: imageId

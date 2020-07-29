@@ -26,6 +26,7 @@ Parameters:
       zh-cn: 实例类型。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
   securityGroupId:
     Description:
       en: The security group ID for the ECS instances.
@@ -62,6 +63,17 @@ Parameters:
       en: The ID list of the scaling configuration to be modified.
       zh-cn: 待修改的伸缩配置IDs。
     Type: List
+
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -131,6 +143,7 @@ Tasks:
   Properties:
     imageName: '{{ targetImageName }}'
     instanceId: '{{ runInstances.instanceId }}'
+    tags: '{{tags}}'
   Outputs:
     imageId:
       ValueSelector: imageId

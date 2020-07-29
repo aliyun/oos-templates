@@ -1,8 +1,8 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Use this template to run Ansible playbooks on ECS Instance.",
-    "zh-cn": "\u4f7f\u7528\u8fd9\u4e2a\u6a21\u677f\u6267\u884cECS\u5b9e\u4f8b\u4e2d\u7684AnsibleBook \u5e2e\u52a9\u624b\u518c\u8bf7\u53c2\u8003https://yq.aliyun.com/articles/718185",
+    "en": "Use this template to run Ansible playbook on ECS Instance.Only supports CentOS, AliyunLinux and Ubuntu.",
+    "zh-cn": "\u4f7f\u7528\u8fd9\u4e2a\u6a21\u677f\u6267\u884cECS\u5b9e\u4f8b\u4e2d\u7684Ansible PlayBook\uff0c\u4ec5\u652f\u6301CentOS\uff0cAliyunLinux\u548cUbuntu",
     "name-en": "ACS-ECS-ApplyAnsiblePlayBooks",
     "name-zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u6267\u884cAnsible PlayBook",
     "categories": [
@@ -10,46 +10,111 @@
     ]
   },
   "Parameters": {
-    "playbookurl": {
+    "regionId": {
       "Type": "String",
       "Description": {
-        "en": "You must specify a URL where the playbook is stored.You can specify the URL in the following formats: http://example.com/playbook.yml",
-        "zh-cn": "\u60a8\u5fc5\u987b\u6307\u5b9a\u7528\u4e8e\u5b58\u50a8\u5267\u672c\u7684URL\u3002\u53ef\u4ee5\u6309\u4ee5\u4e0b\u683c\u5f0f\u6307\u5b9aURL\uff1ahttp://example.com/playbook.yml"
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
       },
-      "AllowedPattern": "^\\s*$|^(http|https)://[^']*$"
-    },
-    "hosts": {
-      "Type": "String",
-      "Description": "You must specify a hosts to run ansible playbook",
-      "Default": "local"
-    },
-    "extravars": {
-      "Type": "String",
-      "Description": {
-        "en": "Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime",
-        "zh-cn": "\u5176\u4ed6\u53d8\u91cf\u5728\u8fd0\u884c\u65f6\u4f20\u9012\u7ed9Ansible\u3002 \u8f93\u5165\u4ee5\u7a7a\u683c\u5206\u9694\u7684\u952e/\u503c\u5bf9\u5217\u8868\u3002 \u4f8b\u5982\uff1acolor = red flavour = lime"
-      },
-      "Default": "SSM = True",
-      "AllowedPattern": "^$|^\\w+\\=\\S+(\\s\\w+\\=\\S+)*$"
-    },
-    "check": {
-      "Type": "String",
-      "Description": {
-        "en": "Use the check parameter to perform a dry run of the Ansible execution.",
-        "zh-cn": "\u4f7f\u7528check\u53c2\u6570\u6267\u884cAnsible\u6267\u884c\u7684\u7a7a\u8fd0\u884c\u3002"
-      },
-      "AllowedValues": [
-        "True",
-        "False"
-      ],
-      "Default": "False"
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
     },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
+    },
+    "sourceType": {
+      "Type": "String",
+      "Description": {
+        "en": "The type of playbook storage.",
+        "zh-cn": "playbook\u5b58\u50a8\u7684\u7c7b\u578b\u3002"
+      },
+      "AllowedValues": [
+        "oss",
+        "https",
+        "github"
+      ]
+    },
+    "sourcePath": {
+      "Type": "String",
+      "Description": {
+        "en": "You must specify a URL where the playbook is stored.You can specify the URL in the following formats: https://example.com/playbook.yml",
+        "zh-cn": "\u60a8\u5fc5\u987b\u6307\u5b9a\u7528\u4e8e\u5b58\u50a8playbook\u7684URL\u3002\u53ef\u4ee5\u6309\u4ee5\u4e0b\u683c\u5f0f\u6307\u5b9aURL\uff1ahttps://example.com/playbook.yml"
+      }
+    },
+    "playbookFile": {
+      "Description": {
+        "en": "The name of playbook to apply. For example: example.yml",
+        "zh-cn": "\u6267\u884c\u7684playbook\u540d\u79f0\u3002\u4f8b\u5982: example.yml"
+      },
+      "Type": "String"
+    },
+    "tokenInfo": {
+      "Type": "String",
+      "Description": {
+        "en": "Specify a token to download ansible playbook.It is only required when downloading palybook from GitHub.",
+        "zh-cn": "\u6307\u5b9a\u4ee4\u724c\u4ee5\u4e0b\u8f7dplaybook\uff0c\u53ea\u6709\u4eceGitHub\u4e0a\u4e0b\u8f7dpalybook\u65f6\u9700\u8981\u586b\u3002"
+      },
+      "Default": ""
+    },
+    "hosts": {
+      "Type": "String",
+      "Description": {
+        "en": "The hosts used to execute  palybook.",
+        "zh-cn": "\u7528\u4e8e\u6267\u884cpalybook\u7684hosts\u3002"
+      },
+      "Default": "/etc/ansible/hosts"
+    },
+    "installDependencies": {
+      "Description": {
+        "en": "If set to True,  OOS installs Ansible and its dependencies, including Python, from the PyPI repo.  If set to False, then verify that Ansible and its dependencies are installed on the target instances.",
+        "zh-cn": "\u5982\u679c\u8bbe\u7f6e\u4e3aTrue\uff0c\u5219OOS\u4ecePyPI\u5b58\u50a8\u5e93\u4e2d\u5b89\u88c5Ansible\u53ca\u5176\u4f9d\u8d56\u9879\uff0c\u5305\u62ecPython\u3002\u5982\u679c\u8bbe\u7f6e\u4e3aFalse\uff0c\u5219\u9700\u8981\u9a8c\u8bc1\u76ee\u6807\u5b9e\u4f8b\u4e0a\u662f\u5426\u5b89\u88c5\u4e86Ansible\u53ca\u5176\u4f9d\u8d56\u9879\u3002"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "workingDir": {
+      "Description": {
+        "en": "The directory to apply playbook.",
+        "zh-cn": "\u6267\u884cplaybook\u7684\u76ee\u5f55\u3002"
+      },
+      "Type": "String",
+      "Default": "/root/ansible-workspace"
+    },
+    "check": {
+      "Description": {
+        "en": "Use the check parameter to perform a dry run of the Ansible execution.",
+        "zh-cn": "\u4f7f\u7528check\u53c2\u6570\u8fd0\u884cAnsible\u6267\u884c\u68c0\u67e5\u3002"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "extraVariables": {
+      "Type": "String",
+      "Description": {
+        "en": "Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime",
+        "zh-cn": "\u5176\u4ed6\u53d8\u91cf\u5728\u8fd0\u884c\u65f6\u4f20\u9012\u7ed9Ansible\u3002 \u8f93\u5165\u4ee5\u7a7a\u683c\u5206\u9694\u7684\u952e/\u503c\u5bf9\u5217\u8868\u3002 \u4f8b\u5982\uff1acolor=red flavour=lime"
+      },
+      "Default": "color=red",
+      "AllowedPattern": "^$|^\\w+\\=\\S+(\\s\\w+\\=\\S+)*$"
+    },
+    "verbose": {
+      "Type": "String",
+      "Description": {
+        "en": "Set the verbosity level for logging Playbook executions. Specify -v for low verbosity, -vv or \u2013vvv for medium verbosity, and -vvvv for debug level.",
+        "zh-cn": "\u8bbe\u7f6e\u7528\u4e8e\u8bb0\u5f55Playbook\u6267\u884c\u60c5\u51b5\u7684\u8be6\u7ec6\u7a0b\u5ea6\u3002 \u6307\u5b9a-v\u8868\u793a\u4f4e\u7ea7\u522b\uff0c-vv\u6216\u2013vvv\u8868\u793a\u4e2d\u7b49\u7ea7\u522b\uff0c-vvvv\u8868\u793a\u8c03\u8bd5\u7ea7\u522b\u3002"
+      },
+      "AllowedValues": [
+        "-v",
+        "-vv",
+        "-vvv",
+        "-vvvv"
+      ],
+      "Default": "-v"
     },
     "rateControl": {
       "Description": {
@@ -81,6 +146,7 @@
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -93,12 +159,25 @@
       }
     },
     {
-      "Name": "runCommand",
-      "Action": "ACS::ECS::RunCommand",
+      "Name": "applyPlaybook",
+      "Action": "ACS::ECS::ApplyAnsiblePlayBook",
+      "Description": {
+        "en": "Apply the specified playbook.",
+        "zh-cn": "\u8fd0\u884c\u6307\u5b9a\u7684playbook\u3002"
+      },
       "Properties": {
-        "commandContent": "ansible --version;\nif [ $? -ne 0 ]; then\n    echo \"Ansible is not installed. Please install Ansible and rerun the command\" >&2;\n    exit 1;\nfi\nif [[ \"{{playbookurl}}\" =~ ^http* ]]; then\n   wget -O playbook.yml '{{playbookurl}}'\n   echo $?\n   if [ $? -ne 0 ]; then\n     echo \"There was a problem downloading the playbook. Make sure the URL is correct and that the playbook exists.\">&2;\n     exit 1;\n   fi\nelse\n    echo \"The URL protocal is not http(s).\">&2;\n    exit 1\nfi\nif  [[ {{check}} == True ]] ; then\n   ansible-playbook --check -c {{hosts}} -e {{extravars}} playbook.yml;\nelse\n   ansible-playbook -c {{hosts}} -e {{extravars}} playbook.yml;\nfi",
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
-        "commandType": "RunShellScript"
+        "sourceType": "{{ sourceType }}",
+        "sourcePath": "{{ sourcePath }}",
+        "playbookFile": "{{ playbookFile }}",
+        "tokenInfo": "{{ tokenInfo }}",
+        "hosts": "{{ hosts }}",
+        "installDependencies": "{{ installDependencies }}",
+        "workingDir": "{{ workingDir }}",
+        "check": "{{ check }}",
+        "extraVariables": "{{ extraVariables }}",
+        "verbose": "{{ verbose }}"
       },
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",
@@ -113,7 +192,7 @@
       "Outputs": {
         "commandOutput": {
           "Type": "String",
-          "ValueSelector": "invocationOutput"
+          "ValueSelector": "commandOutput"
         }
       }
     }
@@ -121,7 +200,7 @@
   "Outputs": {
     "commandOutput": {
       "Type": "String",
-      "Value": "{{ runCommand.commandOutputs }}"
+      "Value": "{{ applyPlaybook.commandOutputs }}"
     }
   }
 }

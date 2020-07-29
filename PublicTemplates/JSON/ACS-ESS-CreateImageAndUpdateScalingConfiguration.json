@@ -32,6 +32,18 @@
       },
       "Type": "List"
     },
+    "tags": {
+      "Description": {
+        "en": "The image tag.",
+        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
+    },
     "OOSAssumeRole": {
       "Description": {
         "en": "The RAM role to be assumed by OOS.",
@@ -71,7 +83,8 @@
       },
       "Properties": {
         "imageName": "{{ targetImageName }}_on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}",
-        "instanceId": "{{ instanceId }}"
+        "instanceId": "{{ instanceId }}",
+        "tags": "{{tags}}"
       },
       "Outputs": {
         "imageId": {

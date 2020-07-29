@@ -24,6 +24,15 @@ Parameters:
       en: The name of new image.
       zh-cn: 新镜像的名称。
     Type: String
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -55,6 +64,7 @@ Tasks:
     regionId: '{{ regionId }}'
     imageName: '{{ imageName }}'
     instanceId: '{{ instanceId }}'
+    tags: '{{tags}}'
   Outputs:
     imageId:
       ValueSelector: imageId

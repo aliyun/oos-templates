@@ -24,6 +24,18 @@
       },
       "Type": "String"
     },
+    "tags": {
+      "Description": {
+        "en": "The image tag.",
+        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
+    },
     "rateControl": {
       "Description": {
         "en": "Concurrency ratio of task execution.",
@@ -77,11 +89,12 @@
       },
       "Properties": {
         "instanceId": "{{ ACS::TaskLoopItem }}",
+        "tags": "{{tags}}",
         "imageName": "image_of_{{ ACS::TaskLoopItem }}_{{ ACS::ExecutionId }}"
       },
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",
-        "RateContral": "{{ rateControl }}",
+        "RateControl": "{{ rateControl }}",
         "Outputs": {
           "imageIds": {
             "AggregateType": "Fn::ListJoin",
@@ -113,7 +126,7 @@
       },
       "Loop": {
         "Items": "{{ createImage.imageIds }}",
-        "RateContral": "{{ rateControl }}"
+        "RateControl": "{{ rateControl }}"
       }
     }
   ],

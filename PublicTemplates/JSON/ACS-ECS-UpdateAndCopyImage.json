@@ -25,7 +25,7 @@
         "zh-cn": "\u6e90\u955c\u50cfID\u3002"
       },
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9\\-_]*"
+      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*"
     },
     "instanceType": {
       "Description": {
@@ -34,6 +34,7 @@
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
       "Default": "ecs.g5.large"
     },
     "securityGroupId": {
@@ -58,6 +59,26 @@
           }
         ]
       }
+    },
+    "ramRoleName": {
+      "Description": {
+        "en": "The ram role for the ECS instances.",
+        "zh-cn": "\u5b9e\u4f8b\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "tags": {
+      "Description": {
+        "en": "The image tag.",
+        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
     },
     "commandType": {
       "Description": {
@@ -112,6 +133,22 @@
       ],
       "Default": []
     },
+    "accountIds": {
+      "Description": {
+        "en": "The IDs of the Alibaba Cloud accounts to which the image is shared.",
+        "zh-cn": "\u6388\u6743\u5171\u4eab\u955c\u50cf\u7684\u963f\u91cc\u4e91\u8d26\u53f7ID\u3002"
+      },
+      "Type": "List",
+      "Default": []
+    },
+    "scalingConfigurationIds": {
+      "Description": {
+        "en": "The ID list of the scaling configuration to be modified.Must correspond to the selected region.",
+        "zh-cn": "\u5f85\u4fee\u6539\u7684\u4f38\u7f29\u914d\u7f6eIDs\uff0c\u5fc5\u987b\u8981\u4e0e\u6240\u9009\u7684\u5730\u57df\u5bf9\u5e94\u3002"
+      },
+      "Type": "List",
+      "Default": []
+    },
     "rateControl": {
       "Description": {
         "en": "Concurrency ratio of task execution.",
@@ -147,7 +184,8 @@
         "imageId": "{{ sourceImageId }}",
         "instanceType": "{{ instanceType }}",
         "securityGroupId": "{{ securityGroupId }}",
-        "vSwitchId": "{{ vSwitchId }}"
+        "vSwitchId": "{{ vSwitchId }}",
+        "ramRoleName": "{{ ramRoleName }}"
       },
       "Outputs": {
         "instanceId": {
@@ -202,6 +240,7 @@
       },
       "OnError": "deleteInstance",
       "Properties": {
+        "tags": "{{tags}}",
         "imageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}",
         "instanceId": "{{ runInstances.instanceId }}"
       },
@@ -213,10 +252,10 @@
       }
     },
     {
-      "Name": "deleteInstance",
+      "Name": "deleteInstanceAfterUpdateImageSuccessfully",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Deletes the ECS instance.",
+        "en": "Release the instance after updating the image successfully\u3002",
         "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
       },
       "Properties": {
@@ -279,7 +318,7 @@
     {
       "Name": "copyImage",
       "Action": "ACS::ECS::CopyImage",
-      "OnSuccess": "ACS::END",
+      "OnSuccess": "whetherToShareImage",
       "OnError": "ACS::END",
       "Description": {
         "en": "Copy image to regions chosen.",
@@ -335,6 +374,82 @@
         "imageIdWithRegion": {
           "ValueSelector": ".|(.imageId),\"{{ ACS::TaskLoopItem }}\"",
           "Type": "List"
+        }
+      }
+    },
+    {
+      "Name": "whetherToShareImage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by accountIds.",
+        "zh-cn": "\u6839\u636e\u8f93\u5165\u8d26\u6237\u503c\u5224\u65ad\u4e0b\u4e00\u6b65\u6267\u884c\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "shareImage",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ accountIds }}"
+              ]
+            },
+            "NextTask": "modifyScalingConfiguration"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "shareImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Shares a custom image to other Alibaba Cloud accounts.",
+        "zh-cn": "\u5171\u4eab\u81ea\u5b9a\u4e49\u955c\u50cf\u5230\u5176\u4ed6\u963f\u91cc\u4e91\u8d26\u53f7\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyImageSharePermission",
+        "Parameters": {
+          "RegionId": "{{ ACS::RegionId }}",
+          "ImageId": "{{ createImage.imageId }}",
+          "AddAccount": "{{ accountIds }}"
+        }
+      }
+    },
+    {
+      "Name": "modifyScalingConfiguration",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify scaling configuration.",
+        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyScalingConfiguration",
+        "Parameters": {
+          "ScalingConfigurationId": "{{ ACS::TaskLoopItem }}",
+          "ImageId": "{{ createImage.imageId }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ scalingConfigurationIds }}"
+      }
+    },
+    {
+      "Name": "deleteInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes the ECS instance after updating the image failure.",
+        "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteInstance",
+        "Risk": "Normal",
+        "Parameters": {
+          "InstanceId": "{{ runInstances.instanceId }}",
+          "Force": true
         }
       }
     }

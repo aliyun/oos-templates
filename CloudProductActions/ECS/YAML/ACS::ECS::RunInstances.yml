@@ -18,6 +18,14 @@ Parameters:
     AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
     MaxLength: 30
     MinLength: 1
+  instanceName:
+    Description: The name of new instance.
+    Type: String
+    Default: ''
+  ramRoleName:
+    Description: The ram role for the ECS instances.
+    Type: String
+    Default: ''
   securityGroupId:
     Description: The ID of the security group to which the instance belongs.
     Type: String
@@ -54,6 +62,8 @@ Tasks:
       Amount: '{{ amount }}'
       ImageId: '{{ imageId }}'
       InstanceType: '{{ instanceType }}'
+      InstanceName: '{{ instanceName }}'
+      RamRoleName: '{{ ramRoleName }}'
       SecurityGroupId: '{{ securityGroupId }}'
       VSwitchId: '{{ vSwitchId }}'
       InternetMaxBandwidthIn: '{{ internetMaxBandwidthIn }}'

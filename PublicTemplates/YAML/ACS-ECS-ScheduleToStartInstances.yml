@@ -16,9 +16,8 @@ Parameters:
     Default: '{{ ACS::RegionId }}'
   cron:
     Description:
-      en: "The cron expression, refer them here: https://www.alibabacloud.com/help/zh/faq-detail/64769.htm.\
-        \ The minimum interval is one minute."
-      zh-cn: 'cron表达式，详情参考：https://www.alibabacloud.com/help/zh/faq-detail/64769.htm'
+      en: 'The cron expression, refer them here: https://help.aliyun.com/document_detail/169784.html'
+      zh-cn: 'cron表达式，详情参考：https://help.aliyun.com/document_detail/169784.html'
     Type: String
     AssociationProperty: Cron
     Default: 0 0 12 ? * *

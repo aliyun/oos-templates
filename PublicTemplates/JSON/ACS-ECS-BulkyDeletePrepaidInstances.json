@@ -1,8 +1,8 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Bulky delete prepaid instances.The specified ECS instances must be in stopped status.",
-    "zh-cn": "\u6279\u91cf\u5220\u9664ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b\u3002\u6307\u5b9a\u7684ECS\u5b9e\u4f8b\u5fc5\u987b\u5904\u4e8e\u5df2\u505c\u6b62\u72b6\u6001\u3002",
+    "en": "Bulky delete prepaid instances.",
+    "zh-cn": "\u6279\u91cf\u5220\u9664ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b\u3002",
     "name-en": "ACS-ECS-BulkyDeletePrepaidInstances",
     "name-zh-cn": "\u6279\u91cf\u5220\u9664ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b",
     "categories": [
@@ -10,6 +10,15 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "targets": {
       "Type": "Json",
       "AssociationProperty": "Targets",
@@ -62,29 +71,14 @@
       }
     },
     {
-      "Name": "modifyInstanceChargeType",
-      "Action": "ACS::ExecuteAPI",
+      "Name": "deletePrepaidInstance",
+      "Action": "ACS::ECS::DeletePrepaidInstance",
       "Description": {
-        "en": "Modify the charge type for prepaid instances to postpaid.",
-        "zh-cn": "\u4fee\u6539\u9884\u4ed8\u8d39\u5b9e\u4f8b\u4ed8\u8d39\u65b9\u5f0f\u4e3a\u6309\u91cf\u4ed8\u8d39\u3002"
+        "en": "Deletes the prepaid ECS instance by instance ID.",
+        "zh-cn": "\u901a\u8fc7\u5b9e\u4f8bID\u5220\u9664\u5305\u5e74\u5305\u6708\u5b9e\u4f8b\u3002"
       },
       "Properties": {
-        "Service": "ECS",
-        "API": "ModifyInstanceChargeType",
-        "Parameters": {
-          "InstanceIds": "{{ getInstance.instanceIds }}",
-          "InstanceChargeType": "PostPaid"
-        }
-      }
-    },
-    {
-      "Name": "deleteInstance",
-      "Action": "ACS::ECS::DeleteInstance",
-      "Description": {
-        "en": "Deletes the ECS instance by instance ID.",
-        "zh-cn": "\u901a\u8fc7\u5b9e\u4f8bID\u5220\u9664\u5b9e\u4f8b\u3002"
-      },
-      "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}"
       },
       "Loop": {

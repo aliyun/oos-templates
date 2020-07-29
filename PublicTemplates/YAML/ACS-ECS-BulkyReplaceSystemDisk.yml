@@ -22,6 +22,18 @@ Parameters:
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
     AssociationPropertyMetadata:
       RegionId: regionId
+  password:
+    Description:
+      en: The password of instance.
+      zh-cn: 实例的用户名密码。
+    Type: String
+    Default: ''
+  keyPairName:
+    Description:
+      en: The keypair name.
+      zh-cn: 密钥对名称。
+    Type: String
+    Default: ''
   targets:
     Type: Json
     AssociationProperty: Targets
@@ -69,6 +81,8 @@ Tasks:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       imageId: '{{ imageId }}'
+      keyPairName: '{{ keyPairName }}'
+      password: '{{ password }}'
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ getInstance.instanceIds }}'

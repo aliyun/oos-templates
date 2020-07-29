@@ -20,6 +20,15 @@
     "instanceType": {
       "Description": "The Instance type you will modify.",
       "Type": "String"
+    },
+    "operatorType": {
+      "Description": "The operation type.",
+      "Type": "String",
+      "AllowedValues": [
+        "downgrade",
+        "upgrade"
+      ],
+      "Default": "upgrade"
     }
   },
   "Tasks": [
@@ -66,7 +75,8 @@
           "RegionId": "{{ regionId }}",
           "AutoPay": "{{ autoPay }}",
           "InstanceId": "{{ instanceId }}",
-          "InstanceType": "{{ instanceType }}"
+          "InstanceType": "{{ instanceType }}",
+          "OperatorType": "{{ operatorType }}"
         }
       },
       "Outputs": {
@@ -74,6 +84,14 @@
           "Type": "List",
           "ValueSelector": "OrderId"
         }
+      }
+    },
+    {
+      "Name": "waitInstanceReady",
+      "Action": "ACS::Sleep",
+      "Description": "Waits the instance recover.",
+      "Properties": {
+        "Duration": "PT1M"
       }
     },
     {

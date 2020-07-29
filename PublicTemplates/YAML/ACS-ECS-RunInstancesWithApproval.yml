@@ -25,6 +25,7 @@ Parameters:
       zh-cn: 实例类型。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
   securityGroupId:
     Description:
       en: The security group ID for the ECS instances.

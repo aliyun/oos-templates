@@ -43,6 +43,7 @@
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
       "Default": "ecs.g5.large"
     },
     "securityGroupId": {
@@ -72,6 +73,14 @@
         ]
       }
     },
+    "ramRoleName": {
+      "Description": {
+        "en": "The ram role for the ECS instances.",
+        "zh-cn": "\u5b9e\u4f8b\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
     "commandType": {
       "Description": {
         "en": "The type of command.",
@@ -84,6 +93,18 @@
         "RunShellScript"
       ],
       "Default": "RunShellScript"
+    },
+    "tags": {
+      "Description": {
+        "en": "The image tag.",
+        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
     },
     "commandContent": {
       "Description": {
@@ -137,7 +158,8 @@
         "imageId": "{{ sourceImageId }}",
         "instanceType": "{{ instanceType }}",
         "securityGroupId": "{{ securityGroupId }}",
-        "vSwitchId": "{{ vSwitchId }}"
+        "vSwitchId": "{{ vSwitchId }}",
+        "ramRoleName": "{{ ramRoleName }}"
       },
       "Outputs": {
         "instanceId": {
@@ -197,7 +219,8 @@
       "Properties": {
         "regionId": "{{ regionId }}",
         "imageName": "{{ targetImageName }}",
-        "instanceId": "{{ runInstances.instanceId }}"
+        "instanceId": "{{ runInstances.instanceId }}",
+        "tags": "{{tags}}"
       },
       "Outputs": {
         "imageId": {

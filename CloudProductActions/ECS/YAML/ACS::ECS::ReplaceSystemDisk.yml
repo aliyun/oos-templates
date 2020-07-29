@@ -13,6 +13,14 @@ Parameters:
     Type: String
     MinLength: 1
     MaxLength: 30
+  password:
+    Description: The password.
+    Type: String
+    Default: ''
+  keyPairName:
+    Description: The keypair name.
+    Type: String
+    Default: ''
 Tasks:
 - Name: viewInstanceStatus
   Action: ACS::ExecuteApi
@@ -71,6 +79,20 @@ Tasks:
       RegionId: '{{ regionId }}'
       ImageId: '{{ imageId }}'
       InstanceId: '{{ instanceId }}'
+      KeyPairName:
+        'Fn::If':
+          - 'Fn::Equals':
+              - ''
+              - '{{ keyPairName }}'
+          - Null
+          - '{{ keyPairName }}'
+      Password:
+        'Fn::If':
+          - 'Fn::Equals':
+              - ''
+              - '{{ password }}'
+          - Null
+          - '{{ password }}'
   Outputs:
     diskId:
       Type: String

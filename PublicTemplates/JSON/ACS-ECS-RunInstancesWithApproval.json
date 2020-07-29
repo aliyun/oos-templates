@@ -32,7 +32,8 @@
         "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType"
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*"
     },
     "securityGroupId": {
       "Description": {

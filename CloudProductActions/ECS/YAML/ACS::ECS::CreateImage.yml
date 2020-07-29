@@ -13,6 +13,12 @@ Parameters:
     Type: String
     MinLength: 1
     MaxLength: 30
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    Default: []
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
@@ -38,6 +44,7 @@ Tasks:
       RegionId: '{{ regionId }}'
       ImageName: '{{ imageName }}'
       InstanceId: '{{ instanceId }}'
+      Tags: '{{ tags }}'
   Outputs:
     imageId:
       Type: String
@@ -45,6 +52,7 @@ Tasks:
 - Name: untilImageReady
   Action: ACS::WaitFor
   Description: Waits for the image to be available.
+  Retries: 17
   Properties:
     Service: ECS
     API: DescribeImages

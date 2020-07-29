@@ -19,13 +19,14 @@ Parameters:
       en: The image ID for the ECS instance.
       zh-cn: 源镜像ID。
     Type: String
-    AllowedPattern: '[A-Za-z0-9\-_]*'
+    AllowedPattern: '[A-Za-z0-9_\-\.]*'
   instanceType:
     Description:
       en: The instance type for the ECS instances.
       zh-cn: 实例类型。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
+    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
     Default: 'ecs.g5.large'
   securityGroupId:
     Description:
@@ -42,6 +43,21 @@ Parameters:
     AssociationPropertyMetadata:
       Filters:
         - SecurityGroupId: securityGroupId
+  ramRoleName:
+    Description:
+      en: The ram role for the ECS instances.
+      zh-cn: 实例的RAM角色。
+    Type: String
+    Default: ''
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
   commandType:
     Description:
       en: The type of command.
@@ -87,6 +103,18 @@ Parameters:
       - me-east-1
       - eu-central-1
     Default: []
+  accountIds:
+    Description:
+      en: The IDs of the Alibaba Cloud accounts to which the image is shared.
+      zh-cn: 授权共享镜像的阿里云账号ID。
+    Type: List
+    Default: []
+  scalingConfigurationIds:
+    Description:
+      en: The ID list of the scaling configuration to be modified.Must correspond to the selected region.
+      zh-cn: 待修改的伸缩配置IDs，必须要与所选的地域对应。
+    Type: List
+    Default: []
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -115,6 +143,7 @@ Tasks:
     instanceType: '{{ instanceType }}'
     securityGroupId: '{{ securityGroupId }}'
     vSwitchId: '{{ vSwitchId }}'
+    ramRoleName: '{{ ramRoleName }}'
   Outputs:
     instanceId:
       ValueSelector: instanceIds[0]
@@ -151,16 +180,17 @@ Tasks:
     zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   OnError: deleteInstance
   Properties:
+    tags: '{{tags}}'
     imageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
     instanceId: '{{ runInstances.instanceId }}'
   Outputs:
     imageId:
       ValueSelector: imageId
       Type: String
-- Name: deleteInstance
+- Name: deleteInstanceAfterUpdateImageSuccessfully
   Action: ACS::ExecuteAPI
   Description:
-    en: Deletes the ECS instance.
+    en: Release the instance after updating the image successfully。
     zh-cn: 删除ECS实例。
   Properties:
     Service: ECS
@@ -202,7 +232,7 @@ Tasks:
         NextTask: copyImageToAllRegions
 - Name: copyImage
   Action: 'ACS::ECS::CopyImage'
-  OnSuccess: 'ACS::END'
+  OnSuccess: whetherToShareImage
   OnError: 'ACS::END'
   Description:
     en: Copy image to regions chosen.
@@ -244,6 +274,57 @@ Tasks:
     imageIdWithRegion:
       ValueSelector: '.|(.imageId),"{{ ACS::TaskLoopItem }}"'
       Type: List
+- Name: whetherToShareImage
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by accountIds.
+    zh-cn: 根据输入账户值判断下一步执行。
+  Properties:
+    DefaultTask: shareImage
+    Choices:
+      - When:
+          'Fn::Equals':
+            - []
+            - '{{ accountIds }}'
+        NextTask: modifyScalingConfiguration
+- Name: shareImage
+  Action: 'ACS::ExecuteAPI'
+  Description:
+    en: Shares a custom image to other Alibaba Cloud accounts.
+    zh-cn: 共享自定义镜像到其他阿里云账号。
+  Properties:
+    Service: ECS
+    API: ModifyImageSharePermission
+    Parameters:
+      RegionId: '{{ ACS::RegionId }}'
+      ImageId: '{{ createImage.imageId }}'
+      AddAccount: '{{ accountIds }}'
+- Name: modifyScalingConfiguration
+  Action: 'ACS::ExecuteAPI'
+  Description:
+    en: Modify scaling configuration.
+    zh-cn: 修改伸缩配置。
+  OnSuccess: ACS::END
+  Properties:
+    Service: ESS
+    API: ModifyScalingConfiguration
+    Parameters:
+      ScalingConfigurationId: '{{ ACS::TaskLoopItem }}'
+      ImageId: '{{ createImage.imageId }}'
+  Loop:
+    Items: '{{ scalingConfigurationIds }}'
+- Name: deleteInstance
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Deletes the ECS instance after updating the image failure.
+    zh-cn: 删除ECS实例。
+  Properties:
+    Service: ECS
+    API: DeleteInstance
+    Risk: Normal
+    Parameters:
+      InstanceId: '{{ runInstances.instanceId }}'
+      Force: true
 Outputs:
   updatedImageId:
     Type: String

@@ -32,8 +32,8 @@ Parameters:
       Format: 'HH:mm:ssZ'
   weekdays:
     Description:
-      en: 'The Cycle of task，* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday，refer them here: https://www.alibabacloud.com/help/doc-detail/64769.htm'
-      zh-cn: '任务执行的周期，*表示每天，MON表示仅周一，MON-FRI表示周一到周五。详情参考：https://www.alibabacloud.com/help/zh/faq-detail/64769.htm'
+      en: 'The Cycle of task，* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday，refer them here: https://help.aliyun.com/document_detail/169784.html'
+      zh-cn: '任务执行的周期，*表示每天，MON表示仅周一，MON-FRI表示周一到周五。详情参考：https://help.aliyun.com/document_detail/169784.html'
     Type: String
     Default: MON-FRI
   targets:
@@ -102,6 +102,7 @@ Tasks:
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{regionId}}'
       Filters:
         - '{{ targets }}'
     Outputs:

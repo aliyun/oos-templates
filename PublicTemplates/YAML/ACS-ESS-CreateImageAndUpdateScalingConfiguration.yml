@@ -23,6 +23,17 @@ Parameters:
       en: The ID list of the scaling configuration to be modified.
       zh-cn: 待修改的伸缩配置IDs。
     Type: List
+
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+
   OOSAssumeRole:
     Description:
       en: The RAM role to be assumed by OOS.
@@ -52,6 +63,7 @@ Tasks:
   Properties:
     imageName: '{{ targetImageName }}_on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}'
     instanceId: '{{ instanceId }}'
+    tags: '{{tags}}'
   Outputs:
     imageId:
       ValueSelector: imageId

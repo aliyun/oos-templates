@@ -1,10 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: >-
-    Run command in the specified scaling activity instance
-  zh-cn: 弹性伸缩LifeCycleHook到实例中执行命令
+  en: Use lifecycleHook to run command in the specified scaling activity instance.
+  zh-cn: 使用生命周期挂钩到实例中执行命令。
   name-en: ACS-ESS-LifeCycleRunCommand
-  name-zh-cn: 弹性伸缩LifeCycleHook到实例中执行命令
+  name-zh-cn: 使用生命周期挂钩到实例中执行命令
   categories:
     - elastic_manage
 Parameters:
@@ -78,6 +77,7 @@ Tasks:
       en: Execute cloud assistant command.
       zh-cn: 执行云助手命令。
     Properties:
+      regionId: '{{ regionId }}'
       commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       commandType: '{{ commandType }}'
@@ -105,6 +105,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         LifecycleHookId: '{{ lifecycleHookId }}'
         LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:

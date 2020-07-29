@@ -7,12 +7,21 @@ Description:
   categories:
     - cost_manage
 Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of target region.
+      zh-cn: 将创建资源的目标地域ID。
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   imageId:
     Description:
       en: The image id of ECS instance to create.
       zh-cn: 将创建实例的镜像ID。
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   instanceType:
     Description:
       en:  The instance type of ECS instance to create.
@@ -21,9 +30,12 @@ Parameters:
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
   zoneId:
     Description:
-      en: The zone id of VSwitch to create.
-      zh-cn: 将创建交换机的可用区ID。
+      en: The target zone id of VSwitch to create..
+      zh-cn: 将创建交换机的目标可用区ID。
+    AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
     Type: String
+    AssociationPropertyMetadata:
+      RegionId: regionId
   webHookUrl:
     Description:
       en: >-
@@ -101,6 +113,7 @@ Tasks:
       Service: ROS
       API: CreateStack
       Parameters:
+        RegionId: '{{ regionId  }}'
         StackName: 'OOS-{{ACS::ExecutionId}}'
         TimeoutInMinutes: 10
         DisableRollback: false
@@ -110,7 +123,7 @@ Tasks:
           - ParameterKey: zoneId
             ParameterValue: '{{ zoneId }}'
           - ParameterKey: regionId
-            ParameterValue: '{{ ACS::RegionId  }}'
+            ParameterValue: '{{ regionId  }}'
           - ParameterKey: imageId
             ParameterValue: '{{imageId}}'
           - ParameterKey: executionId
@@ -298,7 +311,7 @@ Tasks:
 
   - Name: untilStackReady
     OnSuccess: ACS::END
-    OnError: deleteStack
+    OnError: queryStackStatusReason
     Action: 'ACS::WaitFor'
     Description:
       en: Wait for the stack status CREATE_COMPLETE.
@@ -307,6 +320,7 @@ Tasks:
       Service: ROS
       API: GetStack
       Parameters:
+        RegionId: '{{ regionId  }}'
         StackId: '{{createStack.StackId}}'
       DesiredValues:
         - CREATE_COMPLETE
@@ -321,6 +335,25 @@ Tasks:
       instanceIds:
         Type: String
         ValueSelector: 'Outputs[0].OutputValue'
+
+  - Name: queryStackStatusReason
+    Action: ACS::ExecuteAPI
+    OnError: deleteStack
+    OnSuccess: deleteStack
+    Description:
+      en: Query the reson of failed created stack.
+      zh-cn: 查询资源栈未创建成功的原因。
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        RegionId: '{{ regionId  }}'
+        StackId: '{{createStack.StackId}}'
+    Outputs:
+      statusReason:
+        Type: String
+        ValueSelector: 'StatusReason'
+
   - Name: deleteStack
     Action: 'ACS::ExecuteApi'
     Description:
@@ -330,6 +363,7 @@ Tasks:
       Service: ROS
       API: DeleteStack
       Parameters:
+        RegionId: '{{ regionId  }}'
         StackId: '{{createStack.StackId}}'
 
 Outputs:

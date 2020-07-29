@@ -53,7 +53,7 @@ Tasks:
     instanceIds:
       Type: List
       ValueSelector: Instances.Instance[].InstanceId
-- Name: tagECSInstacnes
+- Name: tagECSInstances
   Action: ACS::ECS::TagInstanceByRunCommandResult
   Description:
     en: Creates and attaches tag to ECS instance.

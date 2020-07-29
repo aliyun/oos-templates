@@ -17,6 +17,17 @@ Parameters:
       en: The OSS bucket to which the image is to be exported.
       zh-cn: 保存导出镜像的OSS bucket。
     Type: String
+
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -55,10 +66,11 @@ Tasks:
     zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
   Properties:
     instanceId: '{{ ACS::TaskLoopItem }}'
+    tags: '{{tags}}'
     imageName: 'image_of_{{ ACS::TaskLoopItem }}_{{ ACS::ExecutionId }}'
   Loop:
     Items: '{{ getInstance.instanceIds }}'
-    RateContral: '{{ rateControl }}'
+    RateControl: '{{ rateControl }}'
     Outputs:
       imageIds:
         AggregateType: 'Fn::ListJoin'
@@ -80,7 +92,7 @@ Tasks:
       OSSBucket: '{{ OSSBucket }}'
   Loop:
     Items: '{{ createImage.imageIds }}'
-    RateContral: '{{ rateControl }}'
+    RateControl: '{{ rateControl }}'
 Outputs:
   imageIds:
     Type: List

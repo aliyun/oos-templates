@@ -81,7 +81,10 @@
         "zh-cn": "\u65b0\u5b9e\u4f8b\u7684\u6807\u7b7e\u3002"
       },
       "Type": "Json",
-      "AssociationProperty": "Tags"
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      }
     },
     "targetInstanceChargeType": {
       "Description": {

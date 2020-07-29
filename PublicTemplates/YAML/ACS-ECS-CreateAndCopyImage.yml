@@ -71,6 +71,29 @@ Parameters:
       - me-east-1
       - eu-central-1
     Default: []
+  accountIds:
+    Description:
+      en: The IDs of the Alibaba Cloud accounts to which the image is shared.
+      zh-cn: 授权共享镜像的阿里云账号ID。
+    Type: List
+    Default: []
+  scalingConfigurationIds:
+    Description:
+      en: The ID list of the scaling configuration to be modified.Must correspond to the selected region.
+      zh-cn: 待修改的伸缩配置IDs，必须要与所选的地域对应。
+    Type: List
+    Default: []
+  tags:
+    Description:
+      en: The image tag.
+      zh-cn: 镜像标签。
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+
+
   rateControl:
     Description:
       en: Concurrency ratio of task execution.
@@ -108,6 +131,7 @@ Tasks:
     en: Run cloud assistant command on ECS instance.
     zh-cn: 在实例中运行云助手命令。
   Properties:
+    regionId: '{{ regionId }}'
     instanceId: '{{ instanceId }}'
     commandContent: '{{ commandContent }}'
     commandType: '{{ commandType }}'
@@ -124,6 +148,7 @@ Tasks:
     regionId: '{{ regionId }}'
     instanceId: '{{ instanceId }}'
     imageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
+    tags: '{{tags}}'
   Outputs:
     imageId:
       ValueSelector: imageId
@@ -137,7 +162,7 @@ Tasks:
     Service: ECS
     API: DescribeRegions
     Parameters:
-      RegionId: '{{ACS::RegionId}}'
+      RegionId: '{{ regionId }}'
   Outputs:
     regionIds:
       Type: List
@@ -160,13 +185,12 @@ Tasks:
         NextTask: copyImageToAllRegions
 - Name: copyImage
   Action: 'ACS::ECS::CopyImage'
-  OnSuccess: 'ACS::END'
-  OnError: 'ACS::END'
+  OnSuccess: whetherToShareImage
   Description:
     en: Copy image to regions chosen.
     zh-cn: 复制镜像到被指定的地域。
   Properties:
-    regionId: '{{ ACS::RegionId }}'
+    regionId: '{{ regionId }}'
     imageId: '{{ createImage.imageId }}'
     targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
     targetRegionId: '{{ ACS::TaskLoopItem }}'
@@ -187,7 +211,7 @@ Tasks:
     en: Copy image to all available regions.
     zh-cn: 复制镜像到所有可用地域。
   Properties:
-    regionId: '{{ ACS::RegionId }}'
+    regionId: '{{ regionId }}'
     imageId: '{{ createImage.imageId }}'
     targetImageName: '{{ targetImageName }}-{{ ACS::CurrentUTCTime }}'
     targetRegionId: '{{ ACS::TaskLoopItem }}'
@@ -202,6 +226,45 @@ Tasks:
     imageIdWithRegion:
       ValueSelector: '.|(.imageId),"{{ ACS::TaskLoopItem }}"'
       Type: List
+- Name: whetherToShareImage
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by accountIds.
+    zh-cn: 根据输入账户值判断下一步执行。
+  Properties:
+    DefaultTask: shareImage
+    Choices:
+      - When:
+          'Fn::Equals':
+            - []
+            - '{{ accountIds }}'
+        NextTask: modifyScalingConfiguration
+- Name: shareImage
+  Action: 'ACS::ExecuteAPI'
+  Description:
+    en: Shares a custom image to other Alibaba Cloud accounts.
+    zh-cn: 共享自定义镜像到其他阿里云账号。
+  Properties:
+    Service: ECS
+    API: ModifyImageSharePermission
+    Parameters:
+      RegionId: '{{ regionId }}'
+      ImageId: '{{ createImage.imageId }}'
+      AddAccount: '{{ accountIds }}'
+- Name: modifyScalingConfiguration
+  Action: 'ACS::ExecuteAPI'
+  Description:
+    en: Modify scaling configuration.
+    zh-cn: 修改伸缩配置。
+  Properties:
+    Service: ESS
+    API: ModifyScalingConfiguration
+    Parameters:
+      RegionId: '{{ regionId }}'
+      ScalingConfigurationId: '{{ ACS::TaskLoopItem }}'
+      ImageId: '{{ createImage.imageId }}'
+  Loop:
+    Items: '{{ scalingConfigurationIds }}'
 Outputs:
   imageIds:
     Type: List

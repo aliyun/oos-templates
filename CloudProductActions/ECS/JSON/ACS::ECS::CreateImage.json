@@ -16,6 +16,14 @@
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
+    },
+    "tags": {
+      "Description": {
+        "en": "The image tag.",
+        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      },
+      "Type": "Json",
+      "Default": []
     }
   },
   "Tasks": [
@@ -49,7 +57,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}",
-          "InstanceId": "{{ instanceId }}"
+          "InstanceId": "{{ instanceId }}",
+          "Tags": "{{ tags }}"
         }
       },
       "Outputs": {
@@ -63,6 +72,7 @@
       "Name": "untilImageReady",
       "Action": "ACS::WaitFor",
       "Description": "Waits for the image to be available.",
+      "Retries": 17,
       "Properties": {
         "Service": "ECS",
         "API": "DescribeImages",

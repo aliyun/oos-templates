@@ -60,6 +60,8 @@ Parameters:
       zh-cn: 新实例的标签。
     Type: Json
     AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
   targetInstanceChargeType:
     Description:
       en: The charge type for new ECS instances,the default is PostPaid.

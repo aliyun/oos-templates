@@ -2,6 +2,11 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": "Invoke Created Function.",
   "Parameters": {
+    "regionId": {
+      "Description": "The region id.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "functionName": {
       "Description": "Function name To Invoke.",
       "Type": "String"
@@ -45,7 +50,8 @@
           "X-Fc-Invocation-Type": "{{ invocationType }}"
         },
         "Parameters": {
-          "AccountId": "{{ acs::accountid }}"
+          "AccountId": "{{ acs::accountid }}",
+          "RegionId": "{{ regionId }}"
         },
         "Body": "{{event}}"
       },

@@ -70,7 +70,7 @@
       }
     },
     {
-      "Name": "tagECSInstacnes",
+      "Name": "tagECSInstances",
       "Action": "ACS::ECS::TagInstanceByOSType",
       "Description": {
         "en": "Creates and attaches tag to ECS instance.",
