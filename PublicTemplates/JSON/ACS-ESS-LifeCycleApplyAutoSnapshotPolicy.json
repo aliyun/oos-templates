@@ -12,6 +12,8 @@
   "Parameters": {
     "autoSnapshotPolicyId": {
       "Description": {
+        "name-en": "autoSnapshotPolicyId",
+        "name-zh-cn": "\u81ea\u52a8\u5feb\u7167\u7b56\u7565ID",
         "en": "The ID of the automatic snapshot policy.",
         "zh-cn": "\u76ee\u6807\u81ea\u52a8\u5feb\u7167\u7b56\u7565ID\u3002"
       },
@@ -19,6 +21,8 @@
     },
     "regionId": {
       "Description": {
+        "name-en": "regionId",
+        "name-zh-cn": "\u5730\u57dfID",
         "en": "The ID of region.",
         "zh-cn": "\u5730\u57dfID\uff0c\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${regionId}"
       },
@@ -27,6 +31,8 @@
     },
     "instanceIds": {
       "Description": {
+        "name-en": "instanceIds",
+        "name-zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868",
         "en": "The ID list of the ECS instance.",
         "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c [\"${instanceId}\"]"
       },
@@ -37,14 +43,18 @@
     },
     "lifecycleHookId": {
       "Description": {
+        "name-en": "lifecycleHookId",
+        "name-zh-cn": "\u751f\u547d\u5468\u671f\u6302\u94a9ID",
         "en": "The ID of the lifecycle hook.",
-        "zh-cn": "\u751f\u547d\u5468\u671fID,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleHookId}"
+        "zh-cn": "\u751f\u547d\u5468\u671f\u6302\u94a9ID,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleHookId}"
       },
       "Type": "String",
       "Default": "${lifecycleHookId}"
     },
     "lifecycleActionToken": {
       "Description": {
+        "name-en": "lifecycleActionToken",
+        "name-zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c",
         "en": "The token that indicates a specific scaling activity associated with an instance.",
         "zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleActionToken}"
       },
@@ -53,6 +63,8 @@
     },
     "OOSAssumeRole": {
       "Description": {
+        "name-en": "OOSAssumeRole",
+        "name-zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272",
         "en": "The RAM role to be assumed by OOS.",
         "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
       },

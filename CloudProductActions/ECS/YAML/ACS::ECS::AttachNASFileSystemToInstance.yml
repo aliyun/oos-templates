@@ -1,0 +1,169 @@
+FormatVersion: OOS-2019-06-01
+Description: Attach NAS file system to instance (only supports elastic contraction activities).
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+  instanceId:
+    Description: The ID of the ECS instance.
+    Type: String
+  mountTargetDomain:
+    Description: The MountTargetDomain.
+    Type: String
+  mountDir:
+    Description: The dir to mount file systen in instance.
+    Type: String
+    Default: /mnt
+  fileSystemVersion:
+    Description: The version of file system.
+    Type: String
+    AllowedValues:
+      - 0
+      - 1
+    Default: 0
+Tasks:
+  - Name: untilInstanceReady
+    Action: 'ACS::WaitFor'
+    Description: Waits for the ECS instance to enter running status.
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: attachFileSystemToLinuxInstance
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+        mount_targets=(
+            {{mountTargetDomain}}
+        )
+        mount_points=(
+            {{mountDir}}
+        )
+        use_v3=(
+           {{fileSystemVersion}}
+        )
+
+        success_install_client=0
+
+        type yum
+        if [ $? -eq 0 -a $success_install_client -eq 0 ]; then
+            yum install -y nfs-utils
+            if [ $? -eq 0 ]; then
+                success_install_client=1
+            fi
+        fi
+
+        type apt-get
+        if [ $? -eq 0 -a $success_install_client -eq 0 ]; then
+            apt-get install -y nfs-common
+            if [ $? -eq 0 ]; then
+                success_install_client=1
+            else
+                apt-get updateå
+                apt-get install -y nfs-common
+                if [ $? -eq 0 ]; then
+                    success_install_client=1
+                fi
+            fi
+        fi
+
+        type zypper
+        if [ $? -eq 0 -a $success_install_client -eq 0 ]; then
+            zypper install -y nfs-client
+            if [ $? -eq 0 ]; then
+                success_install_client=1
+            else
+                zypper refresh
+                zypper install -y nfs-client
+                if [ $? -eq 0 ]; then
+                    success_install_client=1
+                fi
+            fi
+        fi
+
+        if [ $success_install_client -ne 1 ]; then
+            exit 0
+        fi
+
+        if (lsmod | grep sunrpc > /dev/null); then
+            if (modinfo sunrpc | grep tcp_max_slot_table_entries > /dev/null); then
+                sysctl -w sunrpc.tcp_max_slot_table_entries=128
+            fi
+            if (modinfo sunrpc | grep tcp_slot_table_entries > /dev/null); then
+                sysctl -w sunrpc.tcp_slot_table_entries=128
+            fi
+        fi
+
+        if (modinfo nfs | grep nfs4_unique_id > /dev/null); then
+            printf 'install nfs /sbin/modprobe --ignore-install nfs nfs4_unique_id=$(cat /sys/class/dmi/id/product_uuid)\n' > /etc/modprobe.d/alinas.conf
+        fi
+        (modinfo sunrpc | grep tcp_max_slot_table_entries > /dev/null) && echo "options sunrpc tcp_max_slot_table_entries=128" >> /etc/modprobe.d/alinas.conf
+        (modinfo sunrpc | grep tcp_slot_table_entries > /dev/null) && echo "options sunrpc tcp_slot_table_entries=128" >> /etc/modprobe.d/alinas.conf
+
+        if [ ! -f /etc/rc.local ]; then
+            echo '#!/bin/bash' > /etc/rc.local
+        fi
+        echo "mount -a -t nfs" >> /etc/rc.local
+        chmod +x /etc/rc.local
+
+        for i in "${!mount_targets[@]}"; do
+            mount_target=${mount_targets[$i]}
+            [ -z $mount_target ] && continue
+            mount_point=${mount_points[$i]}
+            [ -z $mount_point ] && continue
+            v3=${use_v3[$i]}
+            [ -z $v3 ] && continue
+
+            mkdir -p "${mount_point}" || continue
+
+            automount_param=""
+            if [ -f /etc/os-release ]; then
+                os_name=`awk -F= '/^NAME/{print $2}' /etc/os-release`
+                if [[ ${os_name} == "\"Ubuntu\"" ]]; then
+                    if (man systemd-fstab-generator > /dev/null); then
+                        automount_param=",x-systemd.automount"
+                    fi
+                elif [[ ${os_name} == "\"Aliyun Linux\"" ]]; then
+                    if (man systemd-fstab-generator > /dev/null); then
+                        automount_param=",x-systemd.automount,x-systemd.requires=systemd-resolved.service,x-systemd.after=systemd-resolved.service"
+                    fi
+                fi
+            fi
+
+            if [[ $mount_target == *.extreme.nas.aliyuncs.com ]]; then
+                if [ -f /etc/systemd/system/sockets.target.wants/rpcbind.socket ]; then
+                    sed -i 's/BindIPv6Only=ipv6-only/#BindIPv6Only=ipv6-only/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket
+                    sed -i 's/ListenStream=\[::\]:111/#ListenStream=\[::\]:111/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket
+                    sed -i 's/ListenDatagram=\[::\]:111/#ListenDatagram=\[::\]:111/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket
+                fi
+                echo "${mount_target}:/share ${mount_point} nfs vers=3,nolock,noacl,proto=tcp,noresvport,_netdev${automount_param} 0 0" >> /etc/fstab
+            elif [[ $mount_target == *.nas.aliyuncs.com ]]; then
+                if [ $v3 -eq 1 ]; then
+                    echo "${mount_target}:/ ${mount_point} nfs vers=3,nolock,proto=tcp,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport${automount_param} 0 0" >> /etc/fstab
+                else
+                    echo "${mount_target}:/ ${mount_point} nfs vers=4,minorversion=0,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport${automount_param} 0 0" >> /etc/fstab
+                fi
+            fi
+
+            mount -a -t nfs
+        done
+
+        df -h
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ attachFileSystemToLinuxInstance.commandOutput }}'

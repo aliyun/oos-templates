@@ -39,7 +39,7 @@ Parameters:
     Description:
       en: Specify a token to download file.It is only required when downloading file from GitHub.
       zh-cn: 指定令牌以下载文件，只有从GitHub上下载文件时需要填。
-    Default: ' '
+    Default: ''
   destinationDir:
     Description:
       en: Target directory for file copy in instance.

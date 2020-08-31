@@ -1,0 +1,75 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Modify instance deletionProtection attribute.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": "The id of ECS instances.",
+      "Type": "String"
+    },
+    "deletionProtection": {
+      "Description": "The status of deletion protection.",
+      "Type": "Boolean"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstanceStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": "Views the ECS instances by instance id.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "deletionProtection": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].DeletionProtection"
+        }
+      }
+    },
+    {
+      "Name": "whetherInstanceIsReady",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by instance status.",
+      "Properties": {
+        "DefaultTask": "modifyInstanceAttribute",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ getInstanceStatus.deletionProtection }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifyInstanceAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Modify the information of an ECS instance.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "DeletionProtection": "{{ deletionProtection }}"
+        }
+      }
+    }
+  ]
+}

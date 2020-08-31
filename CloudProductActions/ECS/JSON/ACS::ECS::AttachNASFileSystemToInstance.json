@@ -1,0 +1,75 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Attach NAS file system to instance (only supports elastic contraction activities).",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": "The ID of the ECS instance.",
+      "Type": "String"
+    },
+    "mountTargetDomain": {
+      "Description": "The MountTargetDomain.",
+      "Type": "String"
+    },
+    "mountDir": {
+      "Description": "The dir to mount file systen in instance.",
+      "Type": "String",
+      "Default": "/mnt"
+    },
+    "fileSystemVersion": {
+      "Description": "The version of file system.",
+      "Type": "String",
+      "AllowedValues": [
+        0,
+        1
+      ],
+      "Default": 0
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Waits for the ECS instance to enter running status.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
+      "Name": "attachFileSystemToLinuxInstance",
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\nmount_targets=(\n    {{mountTargetDomain}}\n)\nmount_points=(\n    {{mountDir}}\n)\nuse_v3=(\n   {{fileSystemVersion}}\n)\n\nsuccess_install_client=0\n\ntype yum\nif [ $? -eq 0 -a $success_install_client -eq 0 ]; then\n    yum install -y nfs-utils\n    if [ $? -eq 0 ]; then\n        success_install_client=1\n    fi\nfi\n\ntype apt-get\nif [ $? -eq 0 -a $success_install_client -eq 0 ]; then\n    apt-get install -y nfs-common\n    if [ $? -eq 0 ]; then\n        success_install_client=1\n    else\n        apt-get update\u00e5\n        apt-get install -y nfs-common\n        if [ $? -eq 0 ]; then\n            success_install_client=1\n        fi\n    fi\nfi\n\ntype zypper\nif [ $? -eq 0 -a $success_install_client -eq 0 ]; then\n    zypper install -y nfs-client\n    if [ $? -eq 0 ]; then\n        success_install_client=1\n    else\n        zypper refresh\n        zypper install -y nfs-client\n        if [ $? -eq 0 ]; then\n            success_install_client=1\n        fi\n    fi\nfi\n\nif [ $success_install_client -ne 1 ]; then\n    exit 0\nfi\n\nif (lsmod | grep sunrpc > /dev/null); then\n    if (modinfo sunrpc | grep tcp_max_slot_table_entries > /dev/null); then\n        sysctl -w sunrpc.tcp_max_slot_table_entries=128\n    fi\n    if (modinfo sunrpc | grep tcp_slot_table_entries > /dev/null); then\n        sysctl -w sunrpc.tcp_slot_table_entries=128\n    fi\nfi\n\nif (modinfo nfs | grep nfs4_unique_id > /dev/null); then\n    printf 'install nfs /sbin/modprobe --ignore-install nfs nfs4_unique_id=$(cat /sys/class/dmi/id/product_uuid)\\n' > /etc/modprobe.d/alinas.conf\nfi\n(modinfo sunrpc | grep tcp_max_slot_table_entries > /dev/null) && echo \"options sunrpc tcp_max_slot_table_entries=128\" >> /etc/modprobe.d/alinas.conf\n(modinfo sunrpc | grep tcp_slot_table_entries > /dev/null) && echo \"options sunrpc tcp_slot_table_entries=128\" >> /etc/modprobe.d/alinas.conf\n\nif [ ! -f /etc/rc.local ]; then\n    echo '#!/bin/bash' > /etc/rc.local\nfi\necho \"mount -a -t nfs\" >> /etc/rc.local\nchmod +x /etc/rc.local\n\nfor i in \"${!mount_targets[@]}\"; do\n    mount_target=${mount_targets[$i]}\n    [ -z $mount_target ] && continue\n    mount_point=${mount_points[$i]}\n    [ -z $mount_point ] && continue\n    v3=${use_v3[$i]}\n    [ -z $v3 ] && continue\n\n    mkdir -p \"${mount_point}\" || continue\n\n    automount_param=\"\"\n    if [ -f /etc/os-release ]; then\n        os_name=`awk -F= '/^NAME/{print $2}' /etc/os-release`\n        if [[ ${os_name} == \"\\\"Ubuntu\\\"\" ]]; then\n            if (man systemd-fstab-generator > /dev/null); then\n                automount_param=\",x-systemd.automount\"\n            fi\n        elif [[ ${os_name} == \"\\\"Aliyun Linux\\\"\" ]]; then\n            if (man systemd-fstab-generator > /dev/null); then\n                automount_param=\",x-systemd.automount,x-systemd.requires=systemd-resolved.service,x-systemd.after=systemd-resolved.service\"\n            fi\n        fi\n    fi\n\n    if [[ $mount_target == *.extreme.nas.aliyuncs.com ]]; then\n        if [ -f /etc/systemd/system/sockets.target.wants/rpcbind.socket ]; then\n            sed -i 's/BindIPv6Only=ipv6-only/#BindIPv6Only=ipv6-only/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket\n            sed -i 's/ListenStream=\\[::\\]:111/#ListenStream=\\[::\\]:111/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket\n            sed -i 's/ListenDatagram=\\[::\\]:111/#ListenDatagram=\\[::\\]:111/g' /etc/systemd/system/sockets.target.wants/rpcbind.socket\n        fi\n        echo \"${mount_target}:/share ${mount_point} nfs vers=3,nolock,noacl,proto=tcp,noresvport,_netdev${automount_param} 0 0\" >> /etc/fstab\n    elif [[ $mount_target == *.nas.aliyuncs.com ]]; then\n        if [ $v3 -eq 1 ]; then\n            echo \"${mount_target}:/ ${mount_point} nfs vers=3,nolock,proto=tcp,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport${automount_param} 0 0\" >> /etc/fstab\n        else\n            echo \"${mount_target}:/ ${mount_point} nfs vers=4,minorversion=0,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev,noresvport${automount_param} 0 0\" >> /etc/fstab\n        fi\n    fi\n\n    mount -a -t nfs\ndone\n\ndf -h"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ attachFileSystemToLinuxInstance.commandOutput }}"
+    }
+  }
+}

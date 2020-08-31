@@ -50,6 +50,15 @@ Parameters:
     Description: The maximum outbound public bandwidth.
     Type: Number
     Default: 0
+  systemDiskCategory:
+    Description: The category of the system disk.
+    Type: String
+    AllowedValues:
+     - cloud_efficiency
+     - cloud_ssd
+     - cloud_essd
+     - cloud
+    Default: cloud_efficiency
 Tasks:
 - Name: runInstances
   Action: ACS::ExecuteAPI
@@ -68,6 +77,7 @@ Tasks:
       VSwitchId: '{{ vSwitchId }}'
       InternetMaxBandwidthIn: '{{ internetMaxBandwidthIn }}'
       InternetMaxBandwidthOut: '{{ internetMaxBandwidthOut }}'
+      SystemDiskCategory: '{{ systemDiskCategory }}'
   Outputs:
     instanceIds:
       Type: List

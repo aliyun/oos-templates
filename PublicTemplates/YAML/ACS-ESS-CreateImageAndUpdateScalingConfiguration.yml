@@ -42,19 +42,6 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-- Name: checkNewImageName
-  Action: ACS::CheckFor
-  Description:
-    en: Check image name is available.
-    zh-cn: 检查镜像名称是可用的。
-  Properties:
-    Service: ECS
-    API: DescribeImages
-    Parameters:
-      ImageName: '{{ targetImageName }}'
-    DesiredValues:
-    - 0
-    PropertySelector: TotalCount
 - Name: createImage
   Action: ACS::ECS::CreateImage
   Description:

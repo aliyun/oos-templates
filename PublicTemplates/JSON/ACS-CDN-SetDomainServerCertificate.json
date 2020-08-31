@@ -1,0 +1,161 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Set domain server certificate.",
+    "zh-cn": "\u542f\u7528\u6307\u5b9a\u57df\u540d\u4e0b\u8bc1\u4e66\u529f\u80fd\u3002",
+    "name-en": "ACS-CDN-SetDomainServerCertificate",
+    "name-zh-cn": "\u542f\u7528\u6307\u5b9a\u57df\u540d\u4e0b\u8bc1\u4e66\u529f\u80fd",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "domainName": {
+      "Description": {
+        "en": "The name of the CDN domain for which the certificate is enabled.",
+        "zh-cn": "\u57df\u540d\u3002"
+      },
+      "Type": "String"
+    },
+    "serverCertificateStatus": {
+      "Description": {
+        "en": "Specifies whether to enable the SSL certificate.",
+        "zh-cn": "HTTPS\u8bc1\u4e66\u662f\u5426\u542f\u7528\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "on",
+        "off"
+      ],
+      "Default": "on"
+    },
+    "certType": {
+      "Description": {
+        "en": "The type of cert.",
+        "zh-cn": "\u8bc1\u4e66\u7c7b\u578b\u3002\u5f53\u8bc1\u4e66\u7c7b\u578b\u4e3acas\u65f6\uff0cPrivateKey\u65e0\u9700\u4f20\u53c2\u3002"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "cas",
+        "free",
+        "upload"
+      ]
+    },
+    "certName": {
+      "Description": {
+        "en": "The name of the certificate.",
+        "zh-cn": "\u8bc1\u4e66\u540d\u79f0"
+      },
+      "Type": "String"
+    },
+    "serverCertificate": {
+      "Description": {
+        "en": "The content of the certificate. Specify the content of the certificate only if you enable the SSL certificate.",
+        "zh-cn": "\u5b89\u5168\u8bc1\u4e66\u5185\u5bb9\uff0c\u4e0d\u542f\u7528\u8bc1\u4e66\u5219\u65e0\u9700\u8f93\u5165\uff0c\u914d\u7f6e\u8bc1\u4e66\u8bf7\u8f93\u5165\u8bc1\u4e66\u5185\u5bb9\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "privateKey": {
+      "Description": {
+        "en": "The private key. Specify the private key only if you enable the SSL certificate.",
+        "zh-cn": "\u79c1\u94a5\u5185\u5bb9\uff0c\u4e0d\u542f\u7528\u8bc1\u4e66\u5219\u65e0\u9700\u8f93\u5165\uff0c\u914d\u7f6e\u8bc1\u4e66\u8bf7\u8f93\u5165\u79c1\u94a5\u5185\u5bb9\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "forceSet": {
+      "Description": {
+        "en": "If you set the value to 1, the system does not check the certificate name for duplicates and overwrites the information of the existing certificate with the same name.",
+        "zh-cn": "\u8bbe\u7f6e\u4e3a1\u65f6\uff0c\u5ffd\u7565\u8bc1\u4e66\u540d\u79f0\u91cd\u590d\u7684\u6821\u9a8c\uff0c\u8986\u76d6\u539f\u6709\u540c\u540d\u8bc1\u4e66\u4fe1\u606f\u3002"
+      },
+      "Type": "String",
+      "Default": 1
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getDomainDetail",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "get domain detail.",
+        "zh-cn": "\u83b7\u53d6\u57df\u540d\u8be6\u60c5\u3002"
+      },
+      "Properties": {
+        "Service": "CDN",
+        "API": "DescribeCdnDomainDetail",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DomainName": "{{ domainName }}"
+        }
+      },
+      "Outputs": {
+        "serverCertificateStatus": {
+          "Type": "String",
+          "ValueSelector": "GetDomainDetailModel.ServerCertificateStatus"
+        }
+      }
+    },
+    {
+      "Name": "whetherDomainIsReady",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by server eertificate status.",
+        "zh-cn": "\u6839\u636e\u8bc1\u4e66\u7684\u72b6\u6001\u9009\u62e9\u4e0b\u4e00\u4e2a\u4efb\u52a1\u3002"
+      },
+      "Properties": {
+        "DefaultTask": "SetDomainServerCertificate",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "on",
+                "{{ getDomainDetail.serverCertificateStatus }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "SetDomainServerCertificate",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Set domain server certificate",
+        "zh-cn": "\u8bbe\u7f6e\u6307\u5b9a\u57df\u540d\u4e0b\u8bc1\u4e66\u529f\u80fd\u3002"
+      },
+      "Properties": {
+        "Service": "CDN",
+        "API": "SetDomainServerCertificate",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DomainName": "{{ domainName }}",
+          "ServerCertificateStatus": "{{ serverCertificateStatus }}",
+          "CertType": "{{ certType }}",
+          "ServerCertificate": "{{ serverCertificate }}",
+          "PrivateKey": "{{ privateKey }}",
+          "ForceSet": "{{ forceSet }}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": "Install package on ECS.",
+  "Parameters": {
+    "regionId": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "rollBack": {
+      "Description": "The ID of region.",
+      "Type": "String",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false"
+    },
+    "instanceId": {
+      "Description": "The ID of ECS instance that will install package.",
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "action": {
+      "Description": "The action to configure package.",
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ],
+      "Default": "install"
+    },
+    "packageName": {
+      "Description": "The name of package.",
+      "Type": "String"
+    },
+    "packageVersion": {
+      "Description": "The version of package.",
+      "Type": "String",
+      "Default": ""
+    },
+    "scalingGroupId": {
+      "Description": "The id of scaling group.",
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "viewInstanceLifecycleState",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Views ECS instance lifecycle status.",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId1": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "lifecycleState": {
+          "Type": "String",
+          "ValueSelector": "ScalingInstances.ScalingInstance[].LifecycleState"
+        }
+      }
+    },
+    {
+      "Name": "whetherLifecycleStateIsStandby",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by lifecycle status.",
+      "Properties": {
+        "DefaultTask": "enterStandby",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Standby",
+                "{{ viewInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "queryInstanceOSType"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "enterStandby",
+      "Action": "ACS::WaitFor",
+      "Description": "Enter standby.",
+      "Retries": 15,
+      "Delay": 10,
+      "Properties": {
+        "Service": "ESS",
+        "API": "EnterStandby",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    },
+    {
+      "Name": "queryInstanceOSType",
+      "Action": "ACS::ExecuteApi",
+      "Description": "Queries ECS instance OS type.",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "OSType": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSType"
+        }
+      }
+    },
+    {
+      "Name": "configureLinuxPackage",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "if  [ '{{ packageVersion }}' = '' ] ; then\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}}\nelse\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\nfi"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "configureWindowsPackage",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "",
+                "{{ packageVersion }}"
+              ]
+            },
+            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}}",
+            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}"
+          ]
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "whetherToRollbackExitStandBy",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by rollback status.",
+      "Properties": {
+        "DefaultTask": "whetherToExitStandBy",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ rollBack }}"
+              ]
+            },
+            "NextTask": "exitStandBy"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherToExitStandBy",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by lifecycle status.",
+      "Properties": {
+        "DefaultTask": "exitStandBy",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Standby",
+                "{{ viewInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "exitStandBy",
+      "Action": "ACS::WaitFor",
+      "Description": "Exit standby.",
+      "Retries": 15,
+      "Delay": 10,
+      "Properties": {
+        "Service": "ESS",
+        "API": "ExitStandBy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "linux",
+              "{{ queryInstanceOSType.OSType }}"
+            ]
+          },
+          "{{ configureLinuxPackage.commandOutput }}",
+          "{{ configureWindowsPackage.commandOutput }}"
+        ]
+      }
+    }
+  }
+}

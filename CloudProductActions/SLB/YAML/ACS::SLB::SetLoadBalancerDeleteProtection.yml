@@ -1,0 +1,48 @@
+FormatVersion: OOS-2019-06-01
+Description: Modify loadbalancer deletionProtection attribute.
+Parameters:
+  regionId:
+    Description: The ID of region.
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  loadBalancerId:
+    Description: The id of loadBalancer.
+    Type: String
+  deleteProtection: 
+    Description: The LoadBalancerDeleteProtection status.
+    Type: String
+Tasks:
+- Name: getLoadBalancerAttribute
+  Action: ACS::ExecuteAPI
+  Description: Views the attribute by loadbalancer id.
+  Properties:
+    Service: SLB
+    API: DescribeLoadBalancerAttribute
+    Parameters:
+      RegionId: '{{ regionId }}'
+      LoadBalancerId: '{{ loadBalancerId }}'
+  Outputs:
+    deletionProtection:
+      Type: String
+      ValueSelector: .DeleteProtection
+- Name: whetherLoadBalancerIsDeleteProtection
+  Action: 'ACS::Choice'
+  Description: Choose next task by LoadBalancer status.
+  Properties:
+    DefaultTask: enableLoadBalancerIsDeleteProtection
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'on'
+            - '{{ getLoadBalancerAttribute.deletionProtection }}'
+        NextTask: ACS::END
+- Name: enableLoadBalancerIsDeleteProtection
+  Action: ACS::ExecuteApi
+  Description: Set loadbalancer deleteprotection.
+  Properties:
+    Service: SLB
+    API: SetLoadBalancerDeleteProtection
+    Parameters:
+      RegionId: '{{ regionId }}'
+      LoadBalancerId: '{{ loadBalancerId }}'
+      DeleteProtection: '{{ deleteProtection }}'

@@ -44,6 +44,14 @@ Parameters:
       en: The private IP of ECS instance to create, (for example:172.16.2.100).
       zh-cn: 将创建实例的内网IP，（例如：172.16.2.100）。
     Type: String
+  systemDiskSize:
+    Description:
+      en: System disk size(This parameter does not take effect when the default value of 39 is used).
+      zh-cn: 系统盘大小（使用默认值19时此参数不生效）。
+    Type: Number
+    Default: 19
+    MinValue: 19
+    MaxValue: 500
   instancesCount:
     Description:
       en: The count of ECS instance to create.
@@ -152,6 +160,8 @@ Tasks:
             ParameterValue: '{{ ACS::ExecutionId }}'
           - ParameterKey: instancesCount
             ParameterValue: '{{ instancesCount }}'
+          - ParameterKey: systemDiskSize
+            ParameterValue: '{{ systemDiskSize }}'
         TemplateBody: |
           {
             "Description": "Create VPC ECS instance",
@@ -180,10 +190,23 @@ Tasks:
               "regionId": {
                 "Type": "String"
               },
+              "systemDiskSize": {
+                "Type": "Number"
+              },
               "resourcePrefix": {
                 "Type": "String",
                 "Default": "oos-generated"
               }
+            },
+            "Conditions":{
+                "CreateSystemDiskSize":{
+                    "Fn::Equals":[
+                        19,
+                        {
+                            "Ref":"systemDiskSize"
+                        }
+                    ]
+                }
             },
             "ROSTemplateFormatVersion": "2015-09-01",
             "Outputs": {
@@ -313,6 +336,17 @@ Tasks:
                   },
                   "InstanceType": {
                     "Ref": "instanceType"
+                  },
+                  "SystemDiskSize": {
+                    "Fn::If": [
+                      "CreateSystemDiskSize",
+                        {
+                          "Ref": "ALIYUN::NoValue"
+                        },
+                        {
+                          "Ref": "systemDiskSize"
+                        }
+                    ]
                   },
                   "MinAmount": {
                     "Ref": "instancesCount"

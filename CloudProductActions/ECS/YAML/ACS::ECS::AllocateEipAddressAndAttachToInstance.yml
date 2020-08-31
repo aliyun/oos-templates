@@ -18,6 +18,10 @@ Parameters:
     Description: Peak bandwidth of eip.
     Type: Number
     Default: 5
+  tags:
+    Description: The tags for EIP(format:[{"Key":"test1","Value":"test1"},{"Key":"test2","Value":"test2"}]).
+    Type: Json
+    Default: [{"Key":"oos_generate","Value":"{{ACS::ExecutionId}}"}]
 Tasks:
   - Name: waitInstanceReady
     Action: 'ACS::WaitFor'
@@ -65,6 +69,19 @@ Tasks:
       DesiredValues:
         - Available
       PropertySelector: 'EipAddresses.EipAddress[].Status'
+  - Name: tagResources
+    Action: 'ACS::ExecuteAPI'
+    Description: Add tags on EIP.
+    OnError: waitEipAddressAvailable
+    Properties:
+      Service: VPC
+      API: TagResources
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceType: EIP
+        ResourceId:
+          - '{{ allocateEipAddress.allocationId }}'
+        Tags: '{{ tags }}'
   - Name: associateEipAddress
     Action: 'ACS::ExecuteAPI'
     Description: Bind the eip to instance.

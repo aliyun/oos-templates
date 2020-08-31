@@ -10,6 +10,12 @@
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": "The id of target region.",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "SSEAlgorithm": {
       "Description": {
         "en": "Set the default encryption method of the server.",
@@ -29,7 +35,7 @@
       "Type": "String",
       "Default": false
     },
-    "BucketName": {
+    "bucketName": {
       "Description": {
         "en": "The bucket name.",
         "zh-cn": "OOS bucket \u540d\u79f0\u3002"
@@ -86,13 +92,16 @@
         "Service": "OSS",
         "API": "PutBucketEncryption",
         "Method": "PUT",
-        "URI": "/",
-        "Headers": {},
-        "Parameters": {
-          "BucketName": "{{ BucketName }}",
-          "SSEAlgorithm": "{{ SSEAlgorithm }}"
+        "URI": "?encryption",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/xml"
         },
-        "Body": ""
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "BucketName": "{{ bucketName }}"
+        },
+        "Body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <ServerSideEncryptionRule> <ApplyServerSideEncryptionByDefault> <SSEAlgorithm>{{ SSEAlgorithm }}</SSEAlgorithm> <KMSMasterKeyID></KMSMasterKeyID> </ApplyServerSideEncryptionByDefault> </ServerSideEncryptionRule>"
       }
     },
     {
@@ -106,14 +115,16 @@
         "Service": "OSS",
         "API": "PutBucketEncryption",
         "Method": "PUT",
-        "URI": "/",
-        "Headers": {},
-        "Parameters": {
-          "BucketName": "{{ BucketName }}",
-          "SSEAlgorithm": "{{ SSEAlgorithm }}",
-          "KMSMasterKeyID": "{{ KMSMasterKeyID }}"
+        "URI": "?encryption",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/xml"
         },
-        "Body": ""
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "BucketName": "{{ bucketName }}"
+        },
+        "Body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <ServerSideEncryptionRule> <ApplyServerSideEncryptionByDefault> <SSEAlgorithm>{{ SSEAlgorithm }}</SSEAlgorithm> <KMSMasterKeyID>{{ KMSMasterKeyID }}</KMSMasterKeyID> </ApplyServerSideEncryptionByDefault> </ServerSideEncryptionRule>"
       }
     }
   ]

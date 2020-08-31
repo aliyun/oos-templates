@@ -88,7 +88,7 @@ Tasks:
           fi
         fi
         echo "Downloading playbook"
-        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\'{{tokenInfo}}\',\'{{workingDir}}\'
+        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\','{{workingDir}}'
         echo "Running Ansible in {{workingDir}}"
         cd {{workingDir}}
         for zip in $(find -iname '*.zip'); do

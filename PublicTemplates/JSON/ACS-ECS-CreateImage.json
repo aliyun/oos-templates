@@ -57,26 +57,6 @@
   "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
     {
-      "Name": "checkNewImageName",
-      "Action": "ACS::CheckFor",
-      "Description": {
-        "en": "Check image name is available.",
-        "zh-cn": "\u68c0\u67e5\u955c\u50cf\u540d\u79f0\u662f\u53ef\u7528\u7684\u3002"
-      },
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeImages",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "ImageName": "{{ imageName }}"
-        },
-        "DesiredValues": [
-          0
-        ],
-        "PropertySelector": "TotalCount"
-      }
-    },
-    {
       "Name": "createImage",
       "Action": "ACS::ECS::CreateImage",
       "Description": {
@@ -85,7 +65,7 @@
       },
       "Properties": {
         "regionId": "{{ regionId }}",
-        "imageName": "{{ imageName }}",
+        "imageName": "{{ imageName }}__on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}",
         "instanceId": "{{ instanceId }}",
         "tags": "{{tags}}"
       },

@@ -51,7 +51,7 @@ Tasks:
       regionId: '{{ regionId }}'
       commandType: RunShellScript
       commandContent: |-
-        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\'{{tokenInfo}}\',\'{{destinationDir}}\'
+        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\','{{destinationDir}}'
     Outputs:
       commandOutput:
         Type: String
@@ -67,7 +67,7 @@ Tasks:
       regionId: '{{ regionId }}'
       commandType: RunPowerShellScript
       commandContent: |-
-        acs-plugin-manager.exe --exec -P oosutil_win --param download_content,{{ sourceType }},'{{ sourcePath }}',\'{{ tokenInfo }}\',\'{{destinationDir}}\'
+        acs-plugin-manager.exe --exec -P oosutil_win --param download_content,{{ sourceType }},'{{ sourcePath }}','`{{ tokenInfo }}`','{{destinationDir}}'
     Outputs:
       commandOutput:
         Type: String

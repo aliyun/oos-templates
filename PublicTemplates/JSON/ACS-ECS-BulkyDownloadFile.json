@@ -52,7 +52,7 @@
         "en": "Specify a token to download file.It is only required when downloading file from GitHub.",
         "zh-cn": "\u6307\u5b9a\u4ee4\u724c\u4ee5\u4e0b\u8f7d\u6587\u4ef6\uff0c\u53ea\u6709\u4eceGitHub\u4e0a\u4e0b\u8f7d\u6587\u4ef6\u65f6\u9700\u8981\u586b\u3002"
       },
-      "Default": " "
+      "Default": ""
     },
     "destinationDir": {
       "Description": {

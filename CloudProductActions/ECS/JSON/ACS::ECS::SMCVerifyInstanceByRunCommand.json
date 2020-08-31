@@ -49,6 +49,8 @@
       "Name": "waitInstanceReady",
       "Action": "ACS::WaitFor",
       "Description": "Wait the ECS instance status is running.",
+      "Retries": 7,
+      "Delay": 15,
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -68,107 +70,6 @@
           "Type": "String",
           "ValueSelector": "Instances.Instance[].OSType"
         }
-      }
-    },
-    {
-      "Name": "queryCloudAssistantReady",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Views the cloud assistanat status.",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeCloudAssistantStatus",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceId": [
-            "{{ instanceId }}"
-          ]
-        }
-      },
-      "Outputs": {
-        "cloudAssistantStatus": {
-          "ValueSelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus",
-          "Type": "String"
-        }
-      }
-    },
-    {
-      "Name": "whetherCloudAssistantIsReady",
-      "Action": "ACS::Choice",
-      "Description": "Choose next task by CloudAssistant status.",
-      "Properties": {
-        "DefaultTask": "waitCloudAssistantStatusReady",
-        "Choices": [
-          {
-            "When": {
-              "Fn::Equals": [
-                "true",
-                "{{ queryCloudAssistantReady.cloudAssistantStatus }}"
-              ]
-            },
-            "NextTask": "doInstanceDefaultCheck"
-          }
-        ]
-      }
-    },
-    {
-      "Name": "waitCloudAssistantStatusReady",
-      "Action": "ACS::WaitFor",
-      "Description": "Wait for the cloud assistant status reach true.",
-      "OnError": "queryCloudAssistantStatus",
-      "OnSuccess": "doInstanceDefaultCheck",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeCloudAssistantStatus",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
-        },
-        "DesiredValues": [
-          "true"
-        ],
-        "PropertySelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
-      }
-    },
-    {
-      "Name": "queryCloudAssistantStatus",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Views the cloud assistanat status.",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeCloudAssistantStatus",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceId": [
-            "{{ instanceId }}"
-          ]
-        }
-      },
-      "Outputs": {
-        "cloudAssistantStatus": {
-          "ValueSelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus",
-          "Type": "String"
-        }
-      }
-    },
-    {
-      "Name": "whetherCloudAssistantStatusIsTrue",
-      "Action": "ACS::Choice",
-      "Description": "Choose next task by CloudAssistant status.",
-      "Properties": {
-        "DefaultTask": "installCloudAssistant",
-        "Choices": [
-          {
-            "When": {
-              "Fn::Equals": [
-                "true",
-                "{{ queryCloudAssistantStatus.cloudAssistantStatus }}"
-              ]
-            },
-            "NextTask": "waitCloudAssistantStatusReachtrue"
-          }
-        ]
       }
     },
     {
@@ -200,9 +101,32 @@
       }
     },
     {
+      "Name": "waitRebootInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": "Wait the ECS instance status is running.",
+      "Retries": 7,
+      "Delay": 15,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      }
+    },
+    {
       "Name": "waitCloudAssistantStatusReachtrue",
       "Action": "ACS::WaitFor",
       "Description": "Wait for the cloud assistant status reach true.",
+      "Retries": 7,
+      "Delay": 15,
       "Properties": {
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",

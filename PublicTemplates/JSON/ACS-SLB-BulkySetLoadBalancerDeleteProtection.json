@@ -1,0 +1,71 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky set loadbalancer deletion protection.",
+    "zh-cn": "\u6279\u91cf\u542f\u7528\u8d1f\u8f7d\u5747\u8861\u5b9e\u4f8b\u5220\u9664\u4fdd\u62a4\u3002",
+    "name-en": "ACS-SLB-BulkySetLoadBalancerDeleteProtection",
+    "name-zh-cn": "\u6279\u91cf\u542f\u7528\u8d1f\u8f7d\u5747\u8861\u5b9e\u4f8b\u5220\u9664\u4fdd\u62a4",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "AssociationProperty": "RegionId",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "loadBalancerIds": {
+      "Description": {
+        "en": "The id of region.",
+        "zh-cn": "\u5730\u57dfID\u3002"
+      },
+      "Type": "List"
+    },
+    "rateControl": {
+      "Description": {
+        "en": "Concurrency ratio of task execution.",
+        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "enableLoadBalancerDeletionProtection",
+      "Action": "ACS::SLB::SetLoadBalancerDeleteProtection",
+      "Description": {
+        "en": "Set loadBalancer deletion protection.",
+        "zh-cn": "\u8d1f\u8f7d\u5747\u8861\u5b9e\u4f8b\u542f\u7528\u5b9e\u4f8b\u4fdd\u62a4\u3002"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "loadBalancerId": "{{ ACS::TaskLoopItem }}",
+        "deleteProtection": "on"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ loadBalancerIds }}"
+      }
+    }
+  ]
+}

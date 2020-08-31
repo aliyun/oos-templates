@@ -35,11 +35,11 @@
       }
     },
     {
-      "Name": "whetherInstanceIsReady",
+      "Name": "whetherInstanceIsRunning",
       "Action": "ACS::Choice",
       "Description": "Choose next task by instance status.",
       "Properties": {
-        "DefaultTask": "startInstance",
+        "DefaultTask": "whetherInstanceIsStarting",
         "Choices": [
           {
             "When": {
@@ -49,6 +49,25 @@
               ]
             },
             "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherInstanceIsStarting",
+      "Action": "ACS::Choice",
+      "Description": "Choose next task by instance status.",
+      "Properties": {
+        "DefaultTask": "startInstance",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Starting",
+                "{{ getInstanceStatus.status }}"
+              ]
+            },
+            "NextTask": "untilInstanceReady"
           }
         ]
       }

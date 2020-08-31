@@ -49,6 +49,14 @@
       "AssociationProperty": "Code",
       "Default": "echo hello"
     },
+    "workingDir": {
+      "Description": {
+        "en": "The directory where the created command runs on the ECS instances.Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32.",
+        "zh-cn": "\u811a\u672c\u5728ECS\u5b9e\u4f8b\u4e2d\u7684\u8fd0\u884c\u76ee\u5f55\u3002Linux\u7cfb\u7edf\u5b9e\u4f8b\u9ed8\u8ba4\u5728\u7ba1\u7406\u5458\uff08root\u7528\u6237\uff09\u7684home\u76ee\u5f55\u4e0b\uff0c\u5373/root\u3002Windows\u7cfb\u7edf\u5b9e\u4f8b\u9ed8\u8ba4\u5728\u4e91\u52a9\u624b\u5ba2\u6237\u7aef\u8fdb\u7a0b\u6240\u5728\u76ee\u5f55\uff0c\u4f8b\u5982C:\\Windows\\System32\u3002"
+      },
+      "Type": "String",
+      "Default": ""
+    },
     "timeout": {
       "Description": {
         "en": "The value of the invocation timeout period of a command on ECS instances.",
@@ -114,6 +122,7 @@
         "commandContent": "{{ commandContent }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "commandType": "{{ commandType }}",
+        "workingDir": "{{ workingDir }}",
         "timeout": "{{ timeout }}"
       },
       "Loop": {

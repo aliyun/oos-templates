@@ -23,7 +23,18 @@ Tasks:
     status:
       Type: String
       ValueSelector: Instances.Instance[].Status
-- Name: whetherInstanceIsReady
+- Name: whetherInstanceIsRunning
+  Action: 'ACS::Choice'
+  Description: Choose next task by instance status.
+  Properties:
+    DefaultTask: whetherInstanceIsStarting
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'Running'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: ACS::END
+- Name: whetherInstanceIsStarting
   Action: 'ACS::Choice'
   Description: Choose next task by instance status.
   Properties:
@@ -31,9 +42,9 @@ Tasks:
     Choices:
       - When:
           'Fn::Equals':
-            - 'Running'
+            - 'Starting'
             - '{{ getInstanceStatus.status }}'
-        NextTask: ACS::END
+        NextTask: untilInstanceReady
 - Name: startInstance
   Action: ACS::ExecuteAPI
   Description: Starts an ECS instance.
