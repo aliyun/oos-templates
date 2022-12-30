@@ -1,52 +1,52 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Creates one or more ECS instances with approval.",
-    "zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b\u3002",
+    "en": "Creates one or more ECS instances with approval",
+    "zh-cn": "通过审批后创建ECS实例",
     "name-en": "ACS-ECS-RunInstancesWithApproval",
-    "name-zh-cn": "\u901a\u8fc7\u5ba1\u6279\u540e\u521b\u5efaECS\u5b9e\u4f8b",
+    "name-zh-cn": "通过审批后创建ECS实例",
     "categories": [
       "cost_manage"
     ]
   },
   "Parameters": {
     "accessToken": {
-      "Description": {
-        "en": "Dingtalk access_token to be notified.",
-        "zh-cn": "\u9489\u9489\u8bbf\u95ee\u4ee4\u724c\u3002"
+      "Label": {
+        "en": "AccessToken",
+        "zh-cn": "钉钉访问令牌"
       },
       "Type": "String",
       "AllowedPattern": "[A-Za-z0-9]*"
     },
     "imageId": {
-      "Description": {
-        "en": "The image ID for the ECS instances.",
-        "ah_cn": "\u955c\u50cfID\u3002"
+      "Label": {
+        "en": "ImageId",
+        "zh-cn": "镜像ID"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
     },
     "instanceType": {
-      "Description": {
-        "en": "The instance type for the ECS instances.",
-        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      "Label": {
+        "en": "InstanceType",
+        "zh-cn": "实例类型"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
       "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*"
     },
     "securityGroupId": {
-      "Description": {
-        "en": "The security group ID for the ECS instances.",
-        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      "Label": {
+        "en": "SecurityGroupId",
+        "zh-cn": "安全组ID"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
     },
     "vSwitchId": {
-      "Description": {
-        "en": "The virtual switch ID for the ECS instances\u3002",
-        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      "Label": {
+        "en": "VSwitchId",
+        "zh-cn": "交换机ID"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
@@ -59,17 +59,17 @@
       }
     },
     "amount": {
-      "Description": {
-        "en": "The specified number of instances you want to create.",
-        "zh-cn": "\u5b9e\u4f8b\u6570\u91cf\u3002"
+      "Label": {
+        "en": "Amount",
+        "zh-cn": "实例数量"
       },
       "Type": "Number",
       "Default": 1
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -81,8 +81,8 @@
       "Name": "approvalForRunInstances",
       "Action": "ACS::Approve",
       "Description": {
-        "en": "Approval to lunch ECS instances.",
-        "zh-cn": "\u9489\u9489\u5ba1\u6279\u3002"
+        "en": "Approval to lunch ECS instances",
+        "zh-cn": "钉钉审批"
       },
       "Properties": {
         "NotifyType": "WebHook",
@@ -104,8 +104,8 @@
       "Name": "runInstances",
       "Action": "ACS::ECS::RunInstances",
       "Description": {
-        "en": "Creates one or more ECS instances.",
-        "zh-cn": "\u521b\u5efa\u5b9e\u4f8b\u3002"
+        "en": "Creates one or more ECS instances",
+        "zh-cn": "创建实例"
       },
       "Properties": {
         "imageId": "{{ imageId }}",
@@ -126,6 +126,49 @@
     "instanceId": {
       "Type": "String",
       "Value": "{{ runInstances.instanceId }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "accessToken"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "钉钉访问令牌",
+              "en": "Dingtalk Access Token"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "imageId",
+            "instanceType",
+            "securityGroupId",
+            "vSwitchId",
+            "amount"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "创建实例选型",
+              "en": "Run Command Options"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

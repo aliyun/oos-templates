@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Run command on CS instance.",
+  "Description": {
+    "name-en": "ACS::CS::RunCommand",
+    "name-zh-cn": "在K8s集群节点上执行命令",
+    "en": "Run command on K8s cluser nodes",
+    "zh-cn": "在K8s集群节点上执行命令"
+  },
   "Parameters": {
     "clusterId": {
-      "Description": "The ID of cluster.",
+      "Description": {
+        "en": "The ID of cluster",
+        "zh-cn": "集群ID"
+      },
       "Type": "String"
     },
     "commandContent": {
-      "Description": "The content of command.",
+      "Description": {
+        "en": "The content of command",
+        "zh-cn": "命令内容"
+      },
       "Type": "String",
       "AssociationProperty": "Code"
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -22,7 +36,10 @@
     {
       "Name": "getClusterType",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views cluster type.",
+      "Description": {
+        "en": "Queries cluster type",
+        "zh-cn": "获取集群类型"
+      },
       "Properties": {
         "Service": "CS",
         "API": "DescribeClusters",
@@ -39,7 +56,10 @@
     {
       "Name": "chooseNextTask",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by cluster type.",
+      "Description": {
+        "en": "Choose next task by cluster type",
+        "zh-cn": "根据集群类型选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "runFC_Command",
         "Choices": [
@@ -58,7 +78,10 @@
     {
       "Name": "getClusterMaster",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views cluster master nodes.",
+      "Description": {
+        "en": "Queries cluster master nodes",
+        "zh-cn": "获取集群主节点"
+      },
       "Properties": {
         "Service": "CS",
         "API": "DescribeClusterNodes",
@@ -75,7 +98,10 @@
     {
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
-      "Description": "Executes a cloud assistant command.",
+      "Description": {
+        "en": "Runs cloud assistant command",
+        "zh-cn": "执行云助手命令"
+      },
       "OnSuccess": "ACS::END",
       "Properties": {
         "commandContent": "{{ commandContent }}",
@@ -91,8 +117,11 @@
     },
     {
       "Name": "runFC_Command",
-      "Description": "Run kubectl command.",
-      "Action": "ACS::CS::FC-RunCommand",
+      "Description": {
+        "en": "Runs command on cluster nodes by FC",
+        "zh-cn": "通过函数计算在集群节点上执行命令"
+      },
+      "Action": "ACS::CS::FCRunCommand",
       "Properties": {
         "clusterId": "{{ clusterId }}",
         "commandContent": "{{ commandContent }}"

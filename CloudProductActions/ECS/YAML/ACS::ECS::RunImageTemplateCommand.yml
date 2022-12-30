@@ -1,0 +1,94 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::RunImageTemplateCommand
+  name-zh-cn: 在ECS实例上跨多个区域运行命令或重启实例
+  en: Bulky run command or reboot instance on ECS instance across multiple regions
+  zh-cn: 在ECS实例上跨多个区域运行命令或重启实例
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  parameters:
+    Description:
+      en: 'The parameters of template tasks e.g.{"type": "RESTART"} or { "commandType":
+    "RunShellScript", "commandContent": "pwd", "workingDir": "/root", "type": "RunCommand",
+    "timeout": 600 }.'
+      zh-cn: '模板任务参数:{"type": "RESTART"}或{" commandType": "RunShellScript"， "commandContent":
+    "pwd"， "workingDir": "/root"， "type": "RunCommand"， "timeout": 600}'
+    Type: Json
+Tasks:
+  - Name: rebootInstance
+    When:
+      'Fn::Equals':
+        - RESTART
+        - 'Fn::Select':
+            - type
+            - '{{ parameters }}'
+    Action: 'ACS::ECS::RebootInstance'
+    Description:
+      en: Restarts the ECS instances
+      zh-cn: 重启实例
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+  - Name: installCloudAssistant
+    When:
+      'Fn::Equals':
+        - RESTART
+        - 'Fn::Select':
+            - type
+            - '{{ parameters }}'
+    Action: ACS::ECS::InstallCloudAssistant
+    Description:
+      en: Install cloud assostant for ECS instance
+      zh-cn: 为ECS实例安装云助手
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+  - Name: runCommand
+    Action: 'ACS::ECS::RunCommand'
+    When:
+      Fn::Not:
+        'Fn::Equals':
+          - RESTART
+          - 'Fn::Select':
+              - type
+              - '{{ parameters }}'
+    Description:
+      en: Executes cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandContent:
+        'Fn::Select':
+          - commandContent
+          - '{{ parameters }}'
+      commandType:
+        'Fn::Select':
+          - commandType
+          - '{{ parameters }}'
+      workingDir:
+        'Fn::Select':
+          - workingDir
+          - '{{ parameters }}'
+      timeout:
+        'Fn::Jq':
+          - First
+          - .timeout| if .==null then 600|tonumber else .|tonumber end
+          - '{{ parameters }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ runCommand.commandOutput }}'

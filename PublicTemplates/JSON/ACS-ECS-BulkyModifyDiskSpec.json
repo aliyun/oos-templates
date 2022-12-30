@@ -1,0 +1,140 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky modify disk spec",
+    "zh-cn": "批量修改云盘规格",
+    "name-en": "ACS-ECS-BulkyModifyDiskSpec",
+    "name-zh-cn": "批量修改云盘规格",
+    "categories": [
+      "instance_manage",
+      "computenest"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "diskIds": {
+      "Label": {
+        "en": "DiskIds",
+        "zh-cn": "云盘ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::Disk::DiskId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "Type": "List"
+    },
+    "performanceLevel": {
+      "Label": {
+        "en": "PerformanceLevel",
+        "zh-cn": "云盘的性能级别"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "PL0",
+        "PL1",
+        "PL2",
+        "PL3"
+      ],
+      "Default": "PL1"
+    },
+    "diskCategory": {
+      "Label": {
+        "en": "DiskCategory",
+        "zh-cn": "云盘的类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "cloud_essd",
+        "cloud_auto",
+        "cloud_ssd",
+        "cloud_efficiency"
+      ]
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyDiskSpec",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modify disk spec",
+        "zh-cn": "修改磁盘规格"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyDiskSpec",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DiskId": "{{ ACS::TaskLoopItem }}",
+          "PerformanceLevel": "{{ performanceLevel }}",
+          "DiskCategory": "{{ diskCategory }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ diskIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "diskIds",
+            "performanceLevel",
+            "diskCategory"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "参数设置",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

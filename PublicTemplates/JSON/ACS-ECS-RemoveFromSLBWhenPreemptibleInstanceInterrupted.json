@@ -1,22 +1,31 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Remove backend servers from SLB when preemptible instance of current region is about to be interrupted.",
-    "zh-cn": "\u5f53\u524d\u5730\u57df\u7684\u62a2\u5360\u5f0f\u5b9e\u4f8b\u5373\u5c06\u91ca\u653e\u65f6\uff0c\u5c06\u5b9e\u4f8b\u4ece\u5176\u6240\u5728\u8d1f\u8f7d\u5747\u8861\u540e\u7aef\u670d\u52a1\u5668\u5217\u8868\u79fb\u9664\u3002",
+    "en": "Remove backend servers from SLB when preemptible instance of current region is about to be interrupted",
+    "zh-cn": "当前地域的抢占式实例即将释放时，将实例从其所在负载均衡后端服务器列表移除",
     "name-en": "ACS-ECS-RemoveFromSLBWhenPreemptibleInstanceInterrupted",
-    "name-zh-cn": "\u5c06\u5373\u5c06\u91ca\u653e\u7684\u62a2\u5360\u5f0f\u5b9e\u4f8b\u4ece\u5176\u6240\u5728\u8d1f\u8f7d\u5747\u8861\u540e\u7aef\u670d\u52a1\u5668\u5217\u8868\u79fb\u9664",
+    "name-zh-cn": "将即将释放的抢占式实例从其所在负载均衡后端服务器列表移除",
     "categories": [
       "event-trigger"
     ]
   },
   "Parameters": {
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
+    },
+    "tags": {
+      "Type": "Json",
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "实例的标签"
+      },
+      "AssociationProperty": "Tags",
+      "Default": []
     }
   },
   "RamRole": "{{OOSAssumeRole}}",
@@ -24,11 +33,12 @@
     {
       "Name": "eventTrigger",
       "Description": {
-        "en": "Monitor the preemptible instance interruption event.",
-        "zh-cn": "\u76d1\u63a7\u62a2\u5360\u5f0f\u5b9e\u4f8b\u7684\u91ca\u653e\u4e8b\u4ef6\u3002"
+        "en": "Monitor the preemptible instance interruption event",
+        "zh-cn": "监控抢占式实例的释放事件"
       },
       "Action": "ACS::EventTrigger",
       "Properties": {
+        "Tags": "{{ tags }}",
         "Product": "ECS",
         "Name": [
           "Instance:PreemptibleInstanceInterruption"
@@ -53,8 +63,8 @@
     {
       "Name": "describeSLB",
       "Description": {
-        "en": "Views the SLB id of preemptible instance interrupted.",
-        "zh-cn": "\u67e5\u8be2\u91ca\u653e\u7684\u62a2\u5360\u5b9e\u4f8b\u6240\u5728\u8d1f\u8f7d\u5747\u8861ID\u3002"
+        "en": "Views the SLB id of preemptible instance interrupted",
+        "zh-cn": "查询释放的抢占实例所在负载均衡ID"
       },
       "Action": "ACS::ExecuteAPI",
       "Properties": {
@@ -74,8 +84,8 @@
     {
       "Name": "setBackendServers",
       "Description": {
-        "en": "Set the weight of interrupted instance zero on SLB.",
-        "zh-cn": "\u5c06\u91ca\u653e\u7684\u5b9e\u4f8b\u5728\u8d1f\u8f7d\u5747\u8861\u4e0a\u7684\u6743\u91cd\u8bbe\u7f6e\u4e3a0\u3002"
+        "en": "Set the weight of interrupted instance zero on SLB",
+        "zh-cn": "将释放的实例在负载均衡上的权重设置为0"
       },
       "Action": "ACS::ExecuteAPI",
       "Properties": {
@@ -95,8 +105,8 @@
     {
       "Name": "waitConnectionExpire",
       "Description": {
-        "en": "Wait created connection expire.",
-        "zh-cn": "\u7b49\u5f85\u5df2\u7ecf\u5efa\u7acb\u7684\u7f51\u7edc\u8fde\u63a5\u65ad\u5f00\u3002"
+        "en": "Wait created connection expire",
+        "zh-cn": "等待已经建立的网络连接断开"
       },
       "Action": "ACS::Sleep",
       "Properties": {
@@ -106,8 +116,8 @@
     {
       "Name": "removeBackendServers",
       "Description": {
-        "en": "Remove the interrupted instance from SLB backend servers list.",
-        "zh-cn": "\u5c06\u91ca\u653e\u7684\u5b9e\u4f8b\u4ece\u8d1f\u8f7d\u5747\u8861\u540e\u7aef\u670d\u52a1\u5668\u5217\u8868\u4e0a\u79fb\u9664\u3002"
+        "en": "Remove the interrupted instance from SLB backend servers list",
+        "zh-cn": "将释放的实例从负载均衡后端服务器列表上移除"
       },
       "Action": "ACS::ExecuteAPI",
       "Properties": {
@@ -129,6 +139,34 @@
     "instanceId": {
       "Value": "{{ eventTrigger.instanceId }}",
       "Type": "String"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "tags"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择标签",
+              "en": "Select Tags"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

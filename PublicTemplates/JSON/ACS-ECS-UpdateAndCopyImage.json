@@ -1,36 +1,51 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image and copy new image.",
-    "zh-cn": "\u901a\u8fc7\u8fd0\u884c\u547d\u4ee4\u66f4\u65b0\u4e00\u4e2a\u5df2\u5b58\u5728\u7684ECS\u955c\u50cf\u540e\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u5e76\u4e14\u514b\u9686\u65b0\u955c\u50cf\u5230\u5176\u4ed6\u5730\u57df\u3002",
     "name-en": "ACS-ECS-UpdateAndCopyImage",
-    "name-zh-cn": "\u66f4\u65b0ECS\u955c\u50cf\u5e76\u540c\u6b65\u5230\u5176\u5b83\u5730\u57df",
+    "name-zh-cn": "更新ECS镜像并同步到其它地域",
+    "en": "Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image and copy new image",
+    "zh-cn": "通过运行命令更新一个已存在的ECS镜像后创建一个新ECS镜像并且克隆新镜像到其他地域",
     "categories": [
       "image_manage"
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "targetImageName": {
-      "Description": {
-        "en": "The name of new image.",
-        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
+      "Label": {
+        "en": "TargetImageName",
+        "zh-cn": "新镜像的名称"
       },
       "Type": "String",
-      "MinLength": 1,
-      "Default": "UpdateImage_from_{{ sourceImageId }}_on_{{ ACS::ExecutionId }}"
+      "Description": {
+        "en": "<p class=\"p\">Note:</p> <ul class=\"ul\"> <li class=\"li\">Length is 2~128 English or Chinese characters</li> <li class=\"li\"><font color='red'>must start with big or small letters or Chinese, not http:// and https://. </font></li> <li class=\"li\">Can contain numbers, colons (:), underscores (_), or dashes (-). </li> </ul>",
+        "zh-cn": "<p class=\"p\">注意：</p> <ul class=\"ul\"> <li class=\"li\">长度为2~128个英文或中文字符</li> <li class=\"li\"><font color='red'>必须以大小字母或中文开头，不能以http://和https://开头。</font></li> <li class=\"li\">可以包含数字、半角冒号（:）、下划线（_）或者短划线（-）。</li> </ul>"
+      },
+      "Default": "UpdateImage_from_{{sourceImageId}}_on_{{ACS::ExecutionId}}"
     },
     "sourceImageId": {
-      "Description": {
-        "en": "The image ID for the ECS instance.",
-        "zh-cn": "\u6e90\u955c\u50cfID\u3002"
+      "Label": {
+        "en": "SourceImageId",
+        "zh-cn": "源镜像ID"
       },
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*"
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "instanceType": {
-      "Description": {
-        "en": "The instance type for the ECS instances.",
-        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      "Label": {
+        "en": "InstanceType",
+        "zh-cn": "实例类型"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
@@ -38,21 +53,25 @@
       "Default": "ecs.g5.large"
     },
     "securityGroupId": {
-      "Description": {
-        "en": "The security group ID for the ECS instances.",
-        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      "Label": {
+        "en": "SecurityGroupId",
+        "zh-cn": "安全组ID"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "vSwitchId": {
-      "Description": {
-        "en": "The virtual switch ID for the ECS instances\u3002",
-        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      "Label": {
+        "en": "VSwitchId",
+        "zh-cn": "交换机ID"
       },
       "Type": "String",
       "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
       "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
         "Filters": [
           {
             "SecurityGroupId": "securityGroupId"
@@ -61,17 +80,17 @@
       }
     },
     "ramRoleName": {
-      "Description": {
-        "en": "The ram role for the ECS instances.",
-        "zh-cn": "\u5b9e\u4f8b\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "RamRoleName",
+        "zh-cn": "实例的RAM角色"
       },
       "Type": "String",
       "Default": ""
     },
     "tags": {
-      "Description": {
-        "en": "The image tag.",
-        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "镜像标签"
       },
       "Type": "Json",
       "AssociationProperty": "Tags",
@@ -81,9 +100,9 @@
       "Default": []
     },
     "commandType": {
-      "Description": {
-        "en": "The type of command.",
-        "zh-cn": "\u4e91\u52a9\u624b\u547d\u4ee4\u7c7b\u578b\u3002"
+      "Label": {
+        "en": "CommandType",
+        "zh-cn": "云助手命令类型"
       },
       "Type": "String",
       "AllowedValues": [
@@ -94,18 +113,18 @@
       "Default": "RunShellScript"
     },
     "commandContent": {
-      "Description": {
-        "en": "Command content to run in ECS instance.",
-        "zh-cn": "\u5728ECS\u5b9e\u4f8b\u4e2d\u6267\u884c\u7684\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "在ECS实例中执行的云助手命令"
       },
       "Type": "String",
       "AssociationProperty": "Code",
       "Default": "echo hello"
     },
     "targetRegionIds": {
-      "Description": {
-        "en": "The Target Region Ids.",
-        "zh-cn": "\u76ee\u6807\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "TargetRegionIds",
+        "zh-cn": "目标地域ID"
       },
       "Type": "List",
       "AllowedValues": [
@@ -119,6 +138,8 @@
         "cn-shenzhen",
         "cn-chengdu",
         "cn-hongkong",
+        "cn-heyuan",
+        "cn-wulanchabu",
         "ap-northeast-1",
         "ap-southeast-1",
         "ap-southeast-2",
@@ -134,25 +155,41 @@
       "Default": []
     },
     "accountIds": {
-      "Description": {
-        "en": "The IDs of the Alibaba Cloud accounts to which the image is shared.",
-        "zh-cn": "\u6388\u6743\u5171\u4eab\u955c\u50cf\u7684\u963f\u91cc\u4e91\u8d26\u53f7ID\u3002"
+      "Label": {
+        "en": "AccountIds",
+        "zh-cn": "授权共享镜像的阿里云账号ID"
       },
       "Type": "List",
       "Default": []
     },
     "scalingConfigurationIds": {
       "Description": {
-        "en": "The ID list of the scaling configuration to be modified.Must correspond to the selected region.",
-        "zh-cn": "\u5f85\u4fee\u6539\u7684\u4f38\u7f29\u914d\u7f6eIDs\uff0c\u5fc5\u987b\u8981\u4e0e\u6240\u9009\u7684\u5730\u57df\u5bf9\u5e94\u3002"
+        "en": "<font color='red'><b>Must correspond to the selected region</b></font>",
+        "zh-cn": "<font color='red'><b>必须要在所选的地域</b></font>"
+      },
+      "Label": {
+        "en": "ScalingConfigurationIds",
+        "zh-cn": "待修改的伸缩配置ID"
+      },
+      "Type": "List",
+      "Default": []
+    },
+    "launchTemplateNames": {
+      "Description": {
+        "en": "<font color='red'><b>Must correspond to the selected region</b></font>",
+        "zh-cn": "<font color='red'><b>必须要在所选的地域</b></font>"
+      },
+      "Label": {
+        "en": "LaunchTemplateNames",
+        "zh-cn": "待更新的实例启动模版名称列表"
       },
       "Type": "List",
       "Default": []
     },
     "rateControl": {
-      "Description": {
-        "en": "Concurrency ratio of task execution.",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
       },
       "Type": "Json",
       "AssociationProperty": "RateControl",
@@ -163,9 +200,9 @@
       }
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -177,10 +214,11 @@
       "Name": "runInstances",
       "Action": "ACS::ECS::RunInstances",
       "Description": {
-        "en": "Create a ECS instance with source image.",
-        "zh-cn": "\u7528\u6e90\u955c\u50cf\u521b\u5efa\u4e00\u53f0ECS\u5b9e\u4f8b\u3002"
+        "en": "Create a ECS instance with source image",
+        "zh-cn": "用源镜像创建一台ECS实例"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "imageId": "{{ sourceImageId }}",
         "instanceType": "{{ instanceType }}",
         "securityGroupId": "{{ securityGroupId }}",
@@ -198,11 +236,12 @@
       "Name": "installCloudAssistant",
       "Action": "ACS::ECS::InstallCloudAssistant",
       "Description": {
-        "en": "Install cloud assostant for ECS instance.",
-        "zh-cn": "\u7ed9\u5b9e\u4f8b\u5b89\u88c5\u4e91\u52a9\u624b\u3002"
+        "en": "Install cloud assostant for ECS instance",
+        "zh-cn": "给实例安装云助手"
       },
       "OnError": "deleteInstance",
       "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ runInstances.instanceId }}"
       }
     },
@@ -210,11 +249,12 @@
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
       "Description": {
-        "en": "Run cloud assostant command on ECS instance.",
-        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+        "en": "Run cloud assostant command on ECS instance",
+        "zh-cn": "在实例中运行云助手命令"
       },
       "OnError": "deleteInstance",
       "Properties": {
+        "regionId": "{{ regionId }}",
         "commandContent": "{{ commandContent }}",
         "commandType": "{{ commandType }}",
         "instanceId": "{{ runInstances.instanceId }}"
@@ -224,10 +264,11 @@
       "Name": "stopInstance",
       "Action": "ACS::ECS::StopInstance",
       "Description": {
-        "en": "Stops the ECS instance.",
-        "zh-cn": "\u505c\u6b62ECS\u5b9e\u4f8b\u3002"
+        "en": "Stops the ECS instance",
+        "zh-cn": "停止ECS实例"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "instanceId": "{{ runInstances.instanceId }}"
       }
     },
@@ -235,11 +276,12 @@
       "Name": "createImage",
       "Action": "ACS::ECS::CreateImage",
       "Description": {
-        "en": "Create new image with the specified image name and instance ID.",
-        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+        "en": "Create new image with the specified image name and instance ID",
+        "zh-cn": "通过指定实例ID和镜像名称创建新的镜像"
       },
       "OnError": "deleteInstance",
       "Properties": {
+        "regionId": "{{ regionId }}",
         "tags": "{{tags}}",
         "imageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}",
         "instanceId": "{{ runInstances.instanceId }}"
@@ -255,14 +297,15 @@
       "Name": "deleteInstanceAfterUpdateImageSuccessfully",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Release the instance after updating the image successfully\u3002",
-        "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
+        "en": "Release the instance after updating the image successfully",
+        "zh-cn": "删除ECS实例"
       },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteInstance",
         "Risk": "Normal",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ runInstances.instanceId }}",
           "Force": true
         }
@@ -272,20 +315,20 @@
       "Name": "queryAllAvailableRegions",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "View all available regions.",
-        "zh-cn": "\u67e5\u8be2\u5f53\u524d\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+        "en": "View all available regions",
+        "zh-cn": "查询当前所有可用地域"
       },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeRegions",
         "Parameters": {
-          "RegionId": "{{ACS::RegionId}}"
+          "RegionId": "{{ regionId }}"
         }
       },
       "Outputs": {
         "regionIds": {
           "Type": "List",
-          "ValueSelector": "Regions.Region[]|.RegionId|select([scan(\"{{ACS::RegionId}}|test\")]|length<1)"
+          "ValueSelector": "Regions.Region[]|.RegionId|select([scan(\"{{regionId}}|test\")]|length<1)"
         },
         "allRegionsChosen": {
           "Type": "String",
@@ -297,8 +340,8 @@
       "Name": "whetherCloneToAllRegions",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by targetRegionIds Chosen.",
-        "zh-cn": "\u6839\u636e\u6240\u9009\u76ee\u7684\u5730\u57df\u5224\u65ad\u4e0b\u4e00\u6b65\u6267\u884c\u3002"
+        "en": "Choose next task by targetRegionIds Chosen",
+        "zh-cn": "根据所选目的地域判断下一步执行"
       },
       "Properties": {
         "DefaultTask": "copyImage",
@@ -321,11 +364,11 @@
       "OnSuccess": "whetherToShareImage",
       "OnError": "ACS::END",
       "Description": {
-        "en": "Copy image to regions chosen.",
-        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u88ab\u6307\u5b9a\u7684\u5730\u57df\u3002"
+        "en": "Copy image to regions chosen",
+        "zh-cn": "复制镜像到被指定的地域"
       },
       "Properties": {
-        "regionId": "{{ ACS::RegionId }}",
+        "regionId": "{{ regionId }}",
         "imageId": "{{ createImage.imageId }}",
         "targetRegionId": "{{ ACS::TaskLoopItem }}",
         "targetImageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}"
@@ -351,11 +394,11 @@
       "Name": "copyImageToAllRegions",
       "Action": "ACS::ECS::CopyImage",
       "Description": {
-        "en": "Copy image to all available regions.",
-        "zh-cn": "\u590d\u5236\u955c\u50cf\u5230\u6240\u6709\u53ef\u7528\u5730\u57df\u3002"
+        "en": "Copy image to all available regions",
+        "zh-cn": "复制镜像到所有可用地域"
       },
       "Properties": {
-        "regionId": "{{ ACS::RegionId }}",
+        "regionId": "{{ regionId }}",
         "imageId": "{{ createImage.imageId }}",
         "targetRegionId": "{{ ACS::TaskLoopItem }}",
         "targetImageName": "{{ targetImageName }}-{{ ACS::CurrentUTCTime }}"
@@ -381,8 +424,8 @@
       "Name": "whetherToShareImage",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by accountIds.",
-        "zh-cn": "\u6839\u636e\u8f93\u5165\u8d26\u6237\u503c\u5224\u65ad\u4e0b\u4e00\u6b65\u6267\u884c\u3002"
+        "en": "Choose next task by accountIds",
+        "zh-cn": "根据输入账户值判断下一步执行"
       },
       "Properties": {
         "DefaultTask": "shareImage",
@@ -403,14 +446,14 @@
       "Name": "shareImage",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Shares a custom image to other Alibaba Cloud accounts.",
-        "zh-cn": "\u5171\u4eab\u81ea\u5b9a\u4e49\u955c\u50cf\u5230\u5176\u4ed6\u963f\u91cc\u4e91\u8d26\u53f7\u3002"
+        "en": "Shares a custom image to other Alibaba Cloud accounts",
+        "zh-cn": "共享自定义镜像到其他阿里云账号"
       },
       "Properties": {
         "Service": "ECS",
         "API": "ModifyImageSharePermission",
         "Parameters": {
-          "RegionId": "{{ ACS::RegionId }}",
+          "RegionId": "{{ regionId }}",
           "ImageId": "{{ createImage.imageId }}",
           "AddAccount": "{{ accountIds }}"
         }
@@ -419,15 +462,16 @@
     {
       "Name": "modifyScalingConfiguration",
       "Action": "ACS::ExecuteAPI",
+      "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Modify scaling configuration.",
-        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+        "en": "Modify scaling configuration",
+        "zh-cn": "修改伸缩配置"
       },
-      "OnSuccess": "ACS::END",
       "Properties": {
         "Service": "ESS",
         "API": "ModifyScalingConfiguration",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "ScalingConfigurationId": "{{ ACS::TaskLoopItem }}",
           "ImageId": "{{ createImage.imageId }}"
         }
@@ -437,17 +481,35 @@
       }
     },
     {
+      "Name": "updateLaunchTemplate",
+      "Action": "ACS::ECS::UpdateLaunchTemplate",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Update instance launch template",
+        "zh-cn": "更新实例启动模版"
+      },
+      "Properties": {
+        "regionId": "{{ ACS::RegionId }}",
+        "imageId": "{{ createImage.imageId }}",
+        "launchTemplateName": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ launchTemplateNames }}"
+      }
+    },
+    {
       "Name": "deleteInstance",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Deletes the ECS instance after updating the image failure.",
-        "zh-cn": "\u5220\u9664ECS\u5b9e\u4f8b\u3002"
+        "en": "Deletes the ECS instance after updating the image failure",
+        "zh-cn": "删除ECS实例"
       },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteInstance",
         "Risk": "Normal",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "InstanceId": "{{ runInstances.instanceId }}",
           "Force": true
         }
@@ -473,6 +535,88 @@
           "{{ copyImage.imageIdsWithRegion }}"
         ]
       }
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "sourceImageId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择源镜像",
+              "en": "Select Origin Image"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "targetImageName",
+            "tags"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "镜像设置",
+              "en": "Image Configure"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "instanceType",
+            "securityGroupId",
+            "vSwitchId",
+            "ramRoleName"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置中转实例",
+              "en": "ECS Instance Configure"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "commandType",
+            "commandContent"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "发送远程命令",
+              "en": "Run Command"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "targetRegionIds",
+            "accountIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "镜像分发",
+              "en": "Copy Image"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "scalingConfigurationIds",
+            "launchTemplateNames",
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

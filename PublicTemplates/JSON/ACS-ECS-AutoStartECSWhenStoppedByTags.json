@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Start ECS instance when instance enter stopped status with specified tag.",
-    "zh-cn": "\u5f53\u6807\u7b7e\u4e0b\u5b9e\u4f8b\u5173\u673a\u65f6\uff0c\u81ea\u52a8\u542f\u52a8\u8be5\u5b9e\u4f8b\u3002",
+    "en": "Start ECS instance when instance enter stopped status with specified tag",
+    "zh-cn": "当标签下实例关机时，自动启动该实例",
     "name-en": "ACS-ECS-AutoStartECSWhenStoppedByTags",
-    "name-zh-cn": "\u6307\u5b9a\u6807\u7b7e\u4e0b\u7684\u5b9e\u4f8b\u5173\u673a\u65f6\u81ea\u52a8\u91cd\u542f",
+    "name-zh-cn": "指定标签下的实例关机时自动重启",
     "categories": [
       "event-trigger"
     ]
@@ -12,16 +12,17 @@
   "Parameters": {
     "tags": {
       "Type": "Json",
-      "Description": {
-        "en": "The tags to select ECS instances.",
-        "zh-cn": "\u5b9e\u4f8b\u7684\u6807\u7b7e\u3002"
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "实例的标签"
       },
-      "AssociationProperty": "Tags"
+      "AssociationProperty": "Tags",
+      "Default": []
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -32,8 +33,8 @@
     {
       "Name": "eventTrigger",
       "Description": {
-        "en": "Monitor the ECS instance enter Stopped status.",
-        "zh-cn": "\u76d1\u63a7\u53d8\u4e3a\u505c\u6b62\u72b6\u6001ECS\u5b9e\u4f8b\u3002"
+        "en": "Monitor the ECS instance enter Stopped status",
+        "zh-cn": "监控变为停止状态ECS实例"
       },
       "Action": "ACS::EventTrigger",
       "Properties": {
@@ -45,7 +46,11 @@
           "state": [
             "Stopped"
           ]
-        }
+        },
+        "Tags": "{{ tags }}",
+        "RegionId": [
+          "{{ ACS::RegionId }}"
+        ]
       },
       "Outputs": {
         "instanceId": {
@@ -55,32 +60,11 @@
       }
     },
     {
-      "Name": "checkForInstances",
-      "Action": "ACS::CheckFor",
-      "Description": {
-        "en": "Ensure there is specified tag on ECS instance.",
-        "zh-cn": "\u68c0\u67e5ECS\u5b9e\u4f8b\u6709\u6307\u5b9a\u7684tag\u3002"
-      },
-      "OnError": "ACS::END",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
-        "Parameters": {
-          "Tags": "{{ tags }}",
-          "InstanceIds": "[\"{{ eventTrigger.instanceId }}\"]"
-        },
-        "PropertySelector": "TotalCount",
-        "DesiredValues": [
-          1
-        ]
-      }
-    },
-    {
       "Name": "startInstance",
       "Action": "ACS::ECS::StartInstance",
       "Description": {
-        "en": "Starts the ECS instance.",
-        "zh-cn": "\u542f\u52a8\u5b9e\u4f8b\u3002"
+        "en": "Starts the ECS instance",
+        "zh-cn": "启动实例"
       },
       "Properties": {
         "instanceId": "{{ eventTrigger.instanceId }}"
@@ -91,6 +75,34 @@
     "instanceId": {
       "Value": "{{ eventTrigger.instanceId  }}",
       "Type": "String"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "tags"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

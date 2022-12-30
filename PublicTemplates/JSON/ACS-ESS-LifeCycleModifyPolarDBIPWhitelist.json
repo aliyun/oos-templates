@@ -1,30 +1,30 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Use lifecycleHook to modify the IP whitelist of the PolarDB instance.",
-    "zh-cn": "\u4f7f\u7528\u751f\u547d\u5468\u671f\u6302\u94a9\u8bbe\u7f6ePolarDB\u5b9e\u4f8b\u7684IP\u767d\u540d\u5355\u3002",
+    "en": "Use lifecycleHook to modify the IP whitelist of the PolarDB instance",
+    "zh-cn": "使用生命周期挂钩设置PolarDB实例的IP白名单",
     "name-en": "ACS-ESS-LifeCycleModifyPolarDBIPWhitelist",
-    "name-zh-cn": "\u4f7f\u7528\u751f\u547d\u5468\u671f\u6302\u94a9\u8bbe\u7f6ePolarDB\u5b9e\u4f8b\u7684IP\u767d\u540d\u5355",
+    "name-zh-cn": "使用生命周期挂钩设置PolarDB实例的IP白名单",
     "categories": [
       "elastic_manage"
     ]
   },
   "Parameters": {
     "dbClusterId": {
-      "Description": {
-        "name-en": "dbClusterId",
-        "name-zh-cn": "PolarDB\u96c6\u7fa4ID",
-        "en": "The ID of PolarDB cluster.",
-        "zh-cn": "PolarDB\u96c6\u7fa4ID"
+      "Label": {
+        "en": "DBClusterId",
+        "zh-cn": "PolarDB集群ID"
       },
       "Type": "String"
     },
     "modifyMode": {
+      "Label": {
+        "en": "ModifyMode",
+        "zh-cn": "修改IP白名单的方式"
+      },
       "Description": {
-        "name-en": "modifyMode",
-        "name-zh-cn": "\u4fee\u6539IP\u767d\u540d\u5355\u7684\u65b9\u5f0f",
-        "en": "The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities.",
-        "zh-cn": "\u4fee\u6539IP\u767d\u540d\u5355\u7684\u65b9\u5f0f\uff0cAppend\u7528\u4e8e\u5f39\u6027\u6269\u5f20\u6d3b\u52a8\uff0cDelete\u7528\u4e8e\u5f39\u6027\u6536\u7f29\u6d3b\u52a8\u3002"
+        "en": "The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities",
+        "zh-cn": "修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动"
       },
       "Type": "String",
       "AllowedValues": [
@@ -33,21 +33,25 @@
       ]
     },
     "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
       "Description": {
-        "name-en": "regionId",
-        "name-zh-cn": "\u5730\u57dfID",
-        "en": "The ID of region.",
-        "zh-cn": "\u5730\u57dfID\uff0c\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${regionId}"
+        "en": "The ID of region",
+        "zh-cn": "地域ID，请使用弹性伸缩系统默认值 ${regionId}"
       },
       "Type": "String",
       "Default": "${regionId}"
     },
     "instanceIds": {
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "ECS实例ID列表"
+      },
       "Description": {
-        "name-en": "instanceIds",
-        "name-zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868",
-        "en": "The ID list of the ECS instance.",
-        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c [\"${instanceId}\"]"
+        "en": "The ID list of the ECS instance",
+        "zh-cn": "ECS实例ID列表,请使用弹性伸缩系统默认值 [\"${instanceId}\"]"
       },
       "Type": "List",
       "Default": [
@@ -55,31 +59,33 @@
       ]
     },
     "lifecycleHookId": {
+      "Label": {
+        "en": "LifecycleHookId",
+        "zh-cn": "生命周期挂钩ID"
+      },
       "Description": {
-        "name-en": "lifecycleHookId",
-        "name-zh-cn": "\u751f\u547d\u5468\u671f\u6302\u94a9ID",
-        "en": "The ID of the lifecycle hook.",
-        "zh-cn": "\u751f\u547d\u5468\u671f\u6302\u94a9ID,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleHookId}"
+        "en": "The ID of the lifecycle hook",
+        "zh-cn": "生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}"
       },
       "Type": "String",
       "Default": "${lifecycleHookId}"
     },
     "lifecycleActionToken": {
+      "Label": {
+        "en": "LifecycleActionToken",
+        "zh-cn": "实例关联的特定伸缩活动的令牌"
+      },
       "Description": {
-        "name-en": "lifecycleActionToken",
-        "name-zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c",
-        "en": "The token that indicates a specific scaling activity associated with an instance.",
-        "zh-cn": "\u5b9e\u4f8b\u5173\u8054\u7684\u7279\u5b9a\u4f38\u7f29\u6d3b\u52a8\u7684\u4ee4\u724c,\u8bf7\u4f7f\u7528\u5f39\u6027\u4f38\u7f29\u7cfb\u7edf\u9ed8\u8ba4\u503c ${lifecycleActionToken}"
+        "en": "The token that indicates a specific scaling activity associated with an instance",
+        "zh-cn": "实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}"
       },
       "Type": "String",
       "Default": "${lifecycleActionToken}"
     },
     "OOSAssumeRole": {
-      "Description": {
-        "name-en": "OOSAssumeRole",
-        "name-zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272",
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -91,8 +97,8 @@
       "Name": "getInstanceIpAddress",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Gets ECS instance network type and ip address.",
-        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u7684\u7f51\u7edc\u7c7b\u578b\u548cIp\u5730\u5740\u3002"
+        "en": "Gets ECS instance network type and ip address",
+        "zh-cn": "获取ECS实例的网络类型和Ip地址"
       },
       "OnError": "CompleteLifecycleActionForAbandon",
       "Properties": {
@@ -104,44 +110,37 @@
         }
       },
       "Outputs": {
-        "Ips": {
+        "ipAddress": {
           "Type": "List",
           "ValueSelector": ".Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress+.InnerIpAddress.IpAddress|.[]"
         }
       }
     },
     {
-      "Name": "modifySecurityIps",
-      "Action": "ACS::ExecuteAPI",
+      "Name": "modifyPolarDBIPWhitelist",
+      "Action": "ACS::ESS::ModifyPolarDBIPWhitelist",
       "Description": {
-        "en": "Modifies the whitelist.",
-        "zh-cn": "\u4fee\u6539\u767d\u540d\u5355\u3002"
+        "en": "Modify the ip whitelist",
+        "zh-cn": "修改IP白名单"
       },
       "OnError": "CompleteLifecycleActionForAbandon",
       "OnSuccess": "CompleteLifecycleActionForContinue",
       "Properties": {
-        "Service": "POLARDB",
-        "API": "ModifyDBClusterAccessWhitelist",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "DBClusterId": "{{ dbClusterId }}",
-          "WhiteListType": "IP",
-          "ModifyMode": "{{ modifyMode }}",
-          "SecurityIps": {
-            "Fn::Join": [
-              ",",
-              "{{ getInstanceIpAddress.Ips }}"
-            ]
-          }
-        }
+        "regionId": "{{ regionId }}",
+        "dbClusterId": "{{ dbClusterId }}",
+        "modifyMode": "{{ modifyMode }}",
+        "securityIp": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ getInstanceIpAddress.ipAddress }}"
       }
     },
     {
       "Name": "CompleteLifecycleActionForContinue",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Modify lifecycle action for continue.",
-        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u7ee7\u7eed\u5b8c\u6210\u3002"
+        "en": "Modify lifecycle action for continue",
+        "zh-cn": "修改伸缩活动的等待状态为继续完成"
       },
       "OnSuccess": "ACS::END",
       "Properties": {
@@ -159,8 +158,8 @@
       "Name": "CompleteLifecycleActionForAbandon",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Complete lifecycle action for Abandon.",
-        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u6d3b\u52a8\u7684\u7b49\u5f85\u72b6\u6001\u4e3a\u5f03\u7528\u3002"
+        "en": "Complete lifecycle action for Abandon",
+        "zh-cn": "修改伸缩活动的等待状态为弃用"
       },
       "Properties": {
         "Service": "ESS",
@@ -177,7 +176,7 @@
   "Outputs": {
     "ipAddresses": {
       "Type": "List",
-      "Value": "{{ getInstanceIpAddress.Ips }}"
+      "Value": "{{ getInstanceIpAddress.ipAddress}}"
     }
   }
 }

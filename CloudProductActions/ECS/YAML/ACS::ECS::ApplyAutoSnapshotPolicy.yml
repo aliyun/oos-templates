@@ -1,20 +1,32 @@
 FormatVersion: OOS-2019-06-01
-Description: Apply auto snapshot policy.
+Description:
+  name-en: ACS::ECS::ApplyAutoSnapshotPolic
+  name-zh-cn: 为云盘应用自动快照策略
+  en: Apply an automatic snapshot policy to one or more disks
+  zh-cn: 为一块或者多块云盘应用自动快照策略
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   autoSnapshotPolicyId:
-    Description: The ID of ECS AutoSnapshotPolicy.
+    Description:
+      en: The ID of ECS AutoSnapshotPolicy
+      zh-cn: ECS 自动快照策略的ID
     Type: String
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
 Tasks:
 - Name: getDiskIds
   Action: 'ACS::ExecuteAPI'
-  Description: Views all disks of the ECS instance.
+  Description:
+    en: Queries all disk IDs of the ECS instance
+    zh-cn: 获取ECS实例的所有磁盘的ID
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -27,7 +39,9 @@ Tasks:
       ValueSelector: 'Disks.Disk[].DiskId'
 - Name: applyAutoSnapshotPolicy
   Action: 'ACS::ExecuteAPI'
-  Description: Creates disks from all snapshots.
+  Description:
+    en: Apply auto snapshot policy to disk
+    zh-cn: 应用自动快照策略
   Properties:
     Service: ECS
     API: ApplyAutoSnapshotPolicy

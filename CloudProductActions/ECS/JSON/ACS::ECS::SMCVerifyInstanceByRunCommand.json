@@ -1,24 +1,41 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Checking by customer command and default command for ecs instance.",
+  "Description": {
+    "name-en": "ACS::ECS::SMCVerifyInstanceByRunCommand",
+    "name-zh-cn": "通过执行云助手命令验证实例",
+    "en": "Checking by customer command and default command for ecs instance",
+    "zh-cn": "在ECS实例上，检测客户命令和默认命令"
+  },
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": "The id of target region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ecs instance id.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "isDeleteInstance": {
-      "Description": "Whether delete ECS instance after check.",
+      "Description": {
+        "en": "Whether delete ECS instance after check, (default is false)",
+        "zh-cn": "在检测完毕后，选择是否删除实例（默认为不删除）"
+      },
       "Type": "Boolean",
       "Default": false
     },
     "commandType": {
-      "Description": "The type of command.",
+      "Description": {
+        "en": "The type of command",
+        "zh-cn": "命令类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "RunBatScript",
@@ -28,18 +45,27 @@
       "Default": "RunShellScript"
     },
     "commandContent": {
-      "Description": "Custome instance check command content.",
+      "Description": {
+        "en": "The content of command",
+        "zh-cn": "命令内容"
+      },
       "Type": "String",
       "AssociationProperty": "Code",
       "Default": ""
     },
     "timeout": {
-      "Description": "Timeout for executing script.",
+      "Description": {
+        "en": "Timeout for executing script",
+        "zh-cn": "执行脚本的超时时间"
+      },
       "Type": "Number",
       "Default": 60
     },
     "workingDir": {
-      "Description": "The directory where the created command runs on the ECS instances.",
+      "Description": {
+        "en": "The directory where the created command runs on the ECS instances",
+        "zh-cn": "在ECS实例上执行脚本的位置"
+      },
       "Type": "String",
       "Default": "/root"
     }
@@ -48,7 +74,10 @@
     {
       "Name": "waitInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait the ECS instance status is running.",
+      "Description": {
+        "en": "Wait the ECS instance status is running",
+        "zh-cn": "等待ECS实例至Running状态"
+      },
       "Retries": 7,
       "Delay": 15,
       "Properties": {
@@ -69,13 +98,28 @@
         "oSType": {
           "Type": "String",
           "ValueSelector": "Instances.Instance[].OSType"
+        },
+        "vpcId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].VpcAttributes.VpcId"
+        },
+        "vSwitchId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].VpcAttributes.VSwitchId"
+        },
+        "securityGroupIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].SecurityGroupIds.SecurityGroupId[]"
         }
       }
     },
     {
       "Name": "installCloudAssistant",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Install cloud assistant with specified instance ID.",
+      "Description": {
+        "en": "Install cloud assistant with specified instance ID",
+        "zh-cn": "通过实例ID下载云助手客户端"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "InstallCloudAssistant",
@@ -89,44 +133,26 @@
     },
     {
       "Name": "rebootInstance",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Restarts an ECS instance.",
+      "Action": "ACS::ECS::RebootInstance",
+      "Description": {
+        "en": "Restarts an ECS instance",
+        "zh-cn": "重启ECS实例"
+      },
       "Properties": {
-        "Service": "ECS",
-        "API": "RebootInstance",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceId": "{{ instanceId }}"
-        }
-      }
-    },
-    {
-      "Name": "waitRebootInstanceReady",
-      "Action": "ACS::WaitFor",
-      "Description": "Wait the ECS instance status is running.",
-      "Retries": 7,
-      "Delay": 15,
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
-        },
-        "DesiredValues": [
-          "Running"
-        ],
-        "PropertySelector": "Instances.Instance[].Status"
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
       }
     },
     {
       "Name": "waitCloudAssistantStatusReachtrue",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for the cloud assistant status reach true.",
+      "Description": {
+        "en": "Wait for the cloud assistant status reach true",
+        "zh-cn": "等待云助手客户端安装完成"
+      },
       "Retries": 7,
-      "Delay": 15,
+      "Delay": 30,
+      "DelayType": "Constant",
       "Properties": {
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",
@@ -145,7 +171,10 @@
     {
       "Name": "doInstanceDefaultCheck",
       "Action": "ACS::ECS::RunCommand",
-      "Description": "Execute cloud assistant command to check Instance.",
+      "Description": {
+        "en": "Execute cloud assistant command to check Instance",
+        "zh-cn": "执行云助手命令检测实例"
+      },
       "OnError": "whetherExecuteCustomerCheck",
       "Properties": {
         "regionId": "{{ regionId }}",
@@ -157,8 +186,8 @@
                 "{{ waitInstanceReady.oSType }}"
               ]
             },
-            "#!/bin/bash\nfunction print_title() {\n  local title=\"$1\"\n  echo -e \"\\n========================= $title:\\n\"\n}\n\nfunction verify_cmd() {\n  local cmd=\"$1\"\n  print_title \"$cmd\"\n\n  ((verify_count=verify_count+1))\n  if $cmd 2>&1; then\n    ((ok_count=ok_count+1))\n  fi\n}\n\nverify_cmd \"ip addr\"\nverify_cmd \"df -hPT\"\nverify_cmd \"cat /etc/fstab\"\nverify_cmd \"ping aliyun.com -c 4\"\n\nprint_title \"Default Result\"\necho \"Default Verify Finished!\"\n",
-            "@echo off\n\ncall :print_title \"ipconfig\"\nipconfig\n\ncall :print_title \"diskpart list disk/volume\"\nchcp 65001 >nul\necho list disk > c:\\verify.tmp\necho list vol >> c:\\verify.tmp\ndiskpart /s c:\\verify.tmp\ndel c:\\verify.tmp\n\ncall :print_title \"ping -n 4 aliyun.com\"\nping -n 4 aliyun.com\n\ncall :print_title \"Default Result\"\necho Default Verify Finished!\n\ngoto end\n\n:print_title\nset title=%1\necho.\necho ========================= %title%:\necho.\ngoto:eof\n\n:end\n"
+            "#!/bin/bash\nfunction print_title() { echo -e \"\\n========================= $1:\\n\"; }\nprint_title \"ip addr\"\nip addr\nprint_title \"df -hPT\"\ndf -hPT\nprint_title \"cat /etc/fstab\"\ncat /etc/fstab\nprint_title \"Default Result\"\nif mount -a; then echo DISK_DEVICE_OK; fi\nif curl -s --connect-timeout 3 100.100.100.200 >/dev/null; then\n  echo PRIVATE_NET_OK\n  if curl -s --connect-timeout 3 www.aliyun.com >/dev/null; then echo PUBLIC_NET_OK; fi\nfi\n",
+            "function print_title($title) { echo \"========================= $title :\" }\nprint_title \"ipconfig\"\nipconfig\nprint_title \"list disk/volume\"\nget-wmiobject -class win32_logicaldisk\nprint_title \"Default Result\"\nif (get-wmiobject -class win32_logicaldisk) { echo DISK_DEVICE_OK }\nTry {\n    if (Invoke-WebRequest -UseBasicParsing  100.100.100.200 -TimeoutSec 3) {\n    echo PRIVATE_NET_OK\n    if (Invoke-WebRequest -UseBasicParsing www.aliyun.com -TimeoutSec 3) { echo PUBLIC_NET_OK }\n    }\n} Catch {}\n"
           ]
         },
         "instanceId": "{{ instanceId }}",
@@ -171,7 +200,7 @@
               ]
             },
             "RunShellScript",
-            "RunBatScript"
+            "RunPowerShellScript"
           ]
         },
         "workingDir": "{{ workingDir }}",
@@ -195,7 +224,7 @@
             "When": {
               "Fn::Equals": [
                 "",
-                "{{ isDeleteInstance }}"
+                "{{ commandContent }}"
               ]
             },
             "NextTask": "whetherDeleteInstanceIsTrue"
@@ -205,7 +234,10 @@
     },
     {
       "Name": "doInstanceCustomerCheck",
-      "Description": "Execute customer command to check Instance.",
+      "Description": {
+        "en": "Execute customer command to check Instance",
+        "zh-cn": "执行客户的云助手命令检测实例"
+      },
       "Action": "ACS::ECS::RunCommand",
       "OnError": "whetherDeleteInstanceIsTrue",
       "Properties": {
@@ -226,7 +258,10 @@
     {
       "Name": "whetherDeleteInstanceIsTrue",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by IsDeleteInstance.",
+      "Description": {
+        "en": "Choose next task by IsDeleteInstance",
+        "zh-cn": "选择是否删除实例"
+      },
       "Properties": {
         "DefaultTask": "ACS::END",
         "Choices": [
@@ -245,7 +280,10 @@
     {
       "Name": "waitDataRecover",
       "Action": "ACS::Sleep",
-      "Description": "Wait the cloud assistanat status.",
+      "Description": {
+        "en": "Wait the cloud assistanat status",
+        "zh-cn": "等待云助手客户端的状态"
+      },
       "Properties": {
         "Duration": "PT1M"
       }
@@ -253,7 +291,10 @@
     {
       "Name": "deleteInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Deletes ECS instance with the specified instance ID.",
+      "Description": {
+        "en": "Deletes ECS instance with the specified instance ID",
+        "zh-cn": "通过实例ID删除ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteInstance",
@@ -261,6 +302,179 @@
           "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}",
           "Force": true
+        }
+      }
+    },
+    {
+      "Name": "waitInstanceDeleted",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the ECS instance deletion to complete",
+        "zh-cn": "等待ECS实例删除完成"
+      },
+      "Retries": 7,
+      "Delay": 15,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          null
+        ],
+        "PropertySelector": "Instances.Instance[]"
+      }
+    },
+    {
+      "Name": "waitSecurityGroupAvailable",
+      "Action": "ACS::Sleep",
+      "Description": {
+        "en": "Wait for the instance to remove the security group",
+        "zh-cn": "等待实例解除安全组"
+      },
+      "Properties": {
+        "Duration": "PT30S"
+      }
+    },
+    {
+      "Name": "deleteSecurityGroup",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Call DeleteSecurityGroup to delete a security group",
+        "zh-cn": "调用DeleteSecurityGroup删除一个安全组"
+      },
+      "OnError": "waitVSwitchAvailable",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteSecurityGroup",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "SecurityGroupId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 10,
+          "Concurrency": 10
+        },
+        "Items": "{{ waitInstanceReady.securityGroupIds }}"
+      }
+    },
+    {
+      "Name": "waitVSwitchAvailable",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the VSwitches status utilAvailable",
+        "zh-cn": "等待交换机至可用状态"
+      },
+      "Retries": 7,
+      "Delay": 15,
+      "OnError": "deleteVSwitch",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeVSwitches",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VSwitchId": "{{ waitInstanceReady.vSwitchId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": ".VSwitches.VSwitch[].Status"
+      }
+    },
+    {
+      "Name": "deleteVSwitch",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Call the DeleteVSwitch interface to delete the switch",
+        "zh-cn": "调用DeleteVSwitch接口删除交换机"
+      },
+      "OnError": "waitVSwitchDeleted",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DeleteVSwitch",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VSwitchId": "{{ waitInstanceReady.vSwitchId }}"
+        }
+      }
+    },
+    {
+      "Name": "waitVSwitchDeleted",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the VSwitches deletion to complete",
+        "zh-cn": "等待交换机删除完成"
+      },
+      "Retries": 7,
+      "Delay": 15,
+      "OnError": "waitVpcUtilAvailable",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeVSwitches",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VSwitchId": "{{ waitInstanceReady.vSwitchId }}"
+        },
+        "DesiredValues": [
+          null
+        ],
+        "PropertySelector": ".VSwitches.VSwitch[]"
+      }
+    },
+    {
+      "Name": "waitVpcUtilAvailable",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the VPC status util available",
+        "zh-cn": "等待专有网络至可用状态"
+      },
+      "Retries": 7,
+      "Delay": 15,
+      "OnError": "waitVpcCustomRouteUnbind",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeVpcs",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VpcId": "{{ waitInstanceReady.vpcId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Vpcs.Vpc[].Status"
+      }
+    },
+    {
+      "Name": "waitVpcCustomRouteUnbind",
+      "Action": "ACS::Sleep",
+      "Description": {
+        "en": "Waiting for the VPC to unbind the route",
+        "zh-cn": "等待专有网络解绑路由"
+      },
+      "Properties": {
+        "Duration": "PT30S"
+      }
+    },
+    {
+      "Name": "deleteVpc",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Call the DeleteVpc interface to delete a private network (VPC)",
+        "zh-cn": "调用DeleteVpc接口删除一个专有网络（VPC)"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "DeleteVpc",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "VpcId": "{{ waitInstanceReady.vpcId }}"
         }
       }
     }

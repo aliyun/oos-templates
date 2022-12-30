@@ -1,0 +1,140 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify polarDB cluseter ip whitelist",
+    "zh-cn": "修改PolarDB集群的IP白名单",
+    "name-en": "ACS::ESS::ModifyPolarDBIPWhitelist",
+    "name-zh-cn": "修改PolarDB集群的IP白名单"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region.",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String"
+    },
+    "dbClusterId": {
+      "Description": {
+        "en": "The ID of PolarDB cluster.",
+        "zh-cn": "PolarDB集群ID"
+      },
+      "Type": "String"
+    },
+    "modifyMode": {
+      "Description": {
+        "en": "The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities.",
+        "zh-cn": "修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动。"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Append",
+        "Delete"
+      ]
+    },
+    "securityIp": {
+      "Description": {
+        "en": "The ip address",
+        "zh-cn": "ip地址"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeDBClusterAccessWhitelist",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describes the whitelist",
+        "zh-cn": "获取白名单信息"
+      },
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "DescribeDBClusterAccessWhitelist",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ dbClusterId }}"
+        }
+      },
+      "Outputs": {
+        "whetherIncludeIP": {
+          "Type": "String",
+          "ValueSelector": ".Items.DBClusterIPArray[] | select(.DBClusterIPArrayName == \"default\") | .SecurityIps | test(\"{{securityIp}}\")"
+        }
+      }
+    },
+    {
+      "Name": "whetherToAppendIpToWhitelist",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by modify mode",
+        "zh-cn": "根据修改白名单方式选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "appendIpToWhitelist",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Delete",
+                "{{ modifyMode }}"
+              ]
+            },
+            "NextTask": "deleteIpFromWhitelist"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "appendIpToWhitelist",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "{{ describeDBClusterAccessWhitelist.whetherIncludeIP }}",
+          false
+        ]
+      },
+      "Description": {
+        "en": "Append ipaddress to the whitelist",
+        "zh-cn": "添加IP到白名单"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "ModifyDBClusterAccessWhitelist",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ dbClusterId }}",
+          "WhiteListType": "IP",
+          "ModifyMode": "Append",
+          "SecurityIps": "{{ securityIp }}"
+        }
+      }
+    },
+    {
+      "Name": "deleteIpFromWhitelist",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "{{ describeDBClusterAccessWhitelist.whetherIncludeIP }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Delete ipaddress from whitelist",
+        "zh-cn": "从白名单删除IP"
+      },
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "ModifyDBClusterAccessWhitelist",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ dbClusterId }}",
+          "WhiteListType": "IP",
+          "ModifyMode": "Delete",
+          "SecurityIps": "{{ securityIp }}"
+        }
+      }
+    }
+  ]
+}

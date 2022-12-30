@@ -1,0 +1,68 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::SAE::CreateApplication
+  name-zh-cn: 创建SAE应用程序
+  en: Create SAE application
+  zh-cn: 创建SAE应用程序
+Parameters:
+  applicationInfo:
+    Description:
+      en: The info of application
+      zh-cn: 应用程序信息
+    Type: Json
+Tasks:
+  - Name: createApplication
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Creates an application
+      zh-cn: 创建应用程序
+    Properties:
+      Service: SAE
+      API: CreateApplication
+      Parameters:
+        AppName:
+          'Fn::Select':
+            - appName
+            - '{{ applicationInfo }}'
+        ImageUrl:
+          'Fn::Select':
+            - imageUrl
+            - '{{ applicationInfo }}'
+        PackageType: Image
+        Cpu: 1000
+        Memory: 2048
+        Deploy: true
+        Replicas: 1
+        AutoConfig: true
+    Outputs:
+      ChangeOrderId:
+        ValueSelector: .Data.ChangeOrderId
+        Type: String
+      AppId:
+        ValueSelector: .Data.AppId
+        Type: String
+  - Name: describeChangeOrder
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Waits for the application to be created
+      zh-cn: 等待应用程序创建完成
+    Properties:
+      Service: SAE
+      API: DescribeChangeOrder
+      Parameters:
+        ChangeOrderId: '{{ createApplication.ChangeOrderId }}'
+      StopRetryValues:
+        - 2
+        - 3
+        - 6
+        - 10
+      DesiredValues:
+        - 2
+      PropertySelector: .Data.Status
+    DelayType: Constant
+    Delay: 10
+    Retries: 43
+Outputs:
+  appId:
+    Type: String
+    Value: '{{ createApplication.AppId }}'

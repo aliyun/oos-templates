@@ -1,0 +1,184 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS-ECS-BulkyApplyPatchBaseline",
+    "name-zh-cn": "批量在ECS实例中配置补丁基线",
+    "en": "Bulky apply patch baseline on ECS instance",
+    "zh-cn": "批量在ECS实例中配置补丁基线"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "action": {
+      "Label": {
+        "en": "Action",
+        "zh-cn": "配置补丁基线的方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "scan"
+      ],
+      "Default": "install"
+    },
+    "rebootIfNeed": {
+      "Label": {
+        "en": "RebootIfNeed",
+        "zh-cn": "是否重启"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    },
+    "timeout": {
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "ECS实例中执行命令的超时时间"
+      },
+      "Type": "Number",
+      "Default": 86400
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "RegionId": "{{ regionId }}",
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "applyPatchBaseline",
+      "Description": {
+        "en": "Apply patch baseline on ECS instance",
+        "zh-cn": "在ECS实例中配置补丁基线"
+      },
+      "Action": "ACS::ECS::ApplyPatchBaseline",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "action": "{{ action }}",
+        "rebootIfNeed": "{{ rebootIfNeed }}",
+        "timeout": "{{ timeout }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ applyPatchBaseline.commandOutputs }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "action",
+            "rebootIfNeed",
+            "timeout"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

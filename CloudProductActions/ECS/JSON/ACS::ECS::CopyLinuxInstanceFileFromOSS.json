@@ -1,28 +1,48 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Copies the file from OSS to linux instance by RunCommand.",
+  "Description": {
+    "name-en": "ACS::ECS::CopyLinuxInstanceFileFromOSS",
+    "name-zh-cn": "复制OSS中的文件到ECS实例",
+    "en": "Copies the file from OSS to ECS instance by run command",
+    "zh-cn": "通过执行命令复制OSS中的文件到ECS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of ECS Instance.",
+      "Description": {
+        "en": "The ID of ECS Instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MaxLength": 30,
       "MinLength": 1
     },
     "instanceRole": {
-      "Description": "The ramRole attached on the instance.",
+      "Description": {
+        "en": "The ramRole attached on the instance",
+        "zh-cn": "ECS实例上挂载的RAM角色"
+      },
       "Type": "String"
     },
     "srcUrl": {
-      "Description": "Current directory of the file in OSS.",
+      "Description": {
+        "en": "Current directory of the file in OSS",
+        "zh-cn": "文件在OSS中的存储目录"
+      },
       "Type": "String"
     },
     "destUrl": {
-      "Description": "Target directory for file copy in linux instance.",
+      "Description": {
+        "en": "Target directory for file copy in linux instance",
+        "zh-cn": "文件在实例中的目录"
+      },
       "Type": "String"
     }
   },
@@ -30,7 +50,10 @@
     {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Checks the ECS instance is in running status.",
+      "Description": {
+        "en": "Checks wether the ECS instance is in Running status",
+        "zh-cn": "检查实例是否处于运行中状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -49,7 +72,10 @@
     {
       "Name": "checkInstanceRAMRoleReady",
       "Action": "ACS::CheckFor",
-      "Description": "Checks the instance RAMrole is available.",
+      "Description": {
+        "en": "Checks wether the instance RAMrole is available",
+        "zh-cn": "检查实例上挂载的RAM角色是否可用"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstanceRAMRole",
@@ -69,7 +95,10 @@
     {
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
-      "Description": "Invokes ECS instance runcommand and gets invocation output.",
+      "Description": {
+        "en": "Runs command to copy file",
+        "zh-cn": "执行复制文件的命令"
+      },
       "Properties": {
         "regionId": "{{ regionId }}",
         "commandContent": {

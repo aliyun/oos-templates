@@ -1,0 +1,220 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::DeleteImageByName",
+    "name-zh-cn": "通过名称删除镜像",
+    "en": "Deletes ECS image by specified image name",
+    "zh-cn": "根据镜像名称删除ECS的镜像"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      }
+    },
+    "imageName": {
+      "Type": "String",
+      "Description": {
+        "en": "The name of image",
+        "zh-cn": "镜像名称"
+      }
+    },
+    "deleteSnapshot": {
+      "Type": "Boolean",
+      "Description": {
+        "en": "Deletes the snapshots of specified image name or not meanwhile, the default is true",
+        "zh-cn": "删除镜像时是否同时删除快照，默认为删除"
+      },
+      "Default": true,
+      "AllowedValues": [
+        false,
+        true
+      ]
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "queryImageByName",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries existing image id with the specified name",
+        "zh-cn": "根据镜像名称获取镜像ID"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageName": "{{ imageName }}",
+          "Status": "Creating,Waiting,Available,UnAvailable,CreateFailed,Deprecated"
+        }
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "Images.Image[0].ImageId",
+          "Type": "String"
+        },
+        "snapshotIds": {
+          "ValueSelector": ".Images.Image[0].DiskDeviceMappings.DiskDeviceMapping|select(.)|.[].SnapshotId",
+          "Type": "List"
+        },
+        "imageCount": {
+          "ValueSelector": "Images.Image|length|tostring",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "whetherDeleteImage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose the next task by image count",
+        "zh-cn": "根据镜像的数量选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "1",
+                "{{ queryImageByName.imageCount }}"
+              ]
+            },
+            "NextTask": "deleteImage"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "deleteImage",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Deletes an ECS image with the specified name",
+        "zh-cn": "通过指定名称删除ECS的镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ queryImageByName.imageId }}",
+          "Force": true
+        },
+        "DesiredValues": [
+          "OperationDenied.ImageCopying",
+          "null"
+        ],
+        "PropertySelector": ".Code|tostring"
+      },
+      "Outputs": {
+        "code": {
+          "ValueSelector": ".Code|tostring",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "whetherCancelCopyImage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by DeleteImage code",
+        "zh-cn": "根据DeleteImage的错误码选择下一个任务的类型"
+      },
+      "Properties": {
+        "DefaultTask": "whetherDeleteSnapshot",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "OperationDenied.ImageCopying",
+                "{{ deleteImage.code }}"
+              ]
+            },
+            "NextTask": "cancelCopyImage"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "cancelCopyImage",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "whetherDeleteSnapshot",
+      "OnError": "deleteImageAgain",
+      "Description": {
+        "en": "Cancel the copying image",
+        "zh-cn": "取消复制镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CancelCopyImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ queryImageByName.imageId }}"
+        }
+      }
+    },
+    {
+      "Name": "deleteImageAgain",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "whetherDeleteSnapshot",
+      "Description": {
+        "en": "Deletes an ECS image with the specified name",
+        "zh-cn": "通过指定名称删除ECS镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ queryImageByName.imageId }}",
+          "Force": true
+        }
+      }
+    },
+    {
+      "Name": "whetherDeleteSnapshot",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by user option",
+        "zh-cn": "选择是否执行删除快照"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                "{{ deleteSnapshot }}"
+              ]
+            },
+            "NextTask": "deleteSnapshot"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "deleteSnapshot",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes snapshot of image with the specified name",
+        "zh-cn": "通过镜像名称删除快照"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteSnapshot",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "SnapshotId": "{{ ACS::TaskLoopItem }}",
+          "Force": true
+        }
+      },
+      "Loop": {
+        "Items": "{{ queryImageByName.snapshotIds }}"
+      }
+    }
+  ]
+}

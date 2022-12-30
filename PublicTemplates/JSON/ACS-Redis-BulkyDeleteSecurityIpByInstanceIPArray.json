@@ -1,0 +1,144 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky del specified ip from the ip white list array of redis instances",
+    "zh-cn": "批量从Redis实例IP白名单分组里删除指定IP",
+    "name-en": "ACS-Redis-BulkyDeleteSecurityIpByInstanceIPArray",
+    "name-zh-cn": "批量从Redis实例IP白名单分组里删除指定IP",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "The id of Redis instances",
+        "zh-cn": "Redis实例ID"
+      },
+      "Type": "String"
+    },
+    "securityIp": {
+      "Label": {
+        "en": "The security ip to delete",
+        "zh-cn": "要删除的IP"
+      },
+      "Type": "String",
+      "Default": "0.0.0.0/0"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeSecurityIps",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query SecurityIPList of a redis instance",
+        "zh-cn": "查询一个redis实例包含的SecurityIPList"
+      },
+      "Properties": {
+        "Service": "R-KVSTORE",
+        "API": "DescribeSecurityIps",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "SecurityIpGroupName": {
+          "Type": "List",
+          "ValueSelector": ".SecurityIpGroups.SecurityIpGroup[] | {\"SecurityIpList\": .SecurityIpList, \"SecurityIpGroupName\": .SecurityIpGroupName}"
+        }
+      }
+    },
+    {
+      "Name": "modifySecurityIps",
+      "Action": "ACS::Redis::DeleteSecurityIpByInstanceIPArray",
+      "Description": {
+        "en": "Query SecurityIPList of a redis instance",
+        "zh-cn": "查询一个redis实例包含的SecurityIPList"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "securityIpList": {
+          "Fn::Select": [
+            "SecurityIpList",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "securityIpGroupName": {
+          "Fn::Select": [
+            "SecurityIpGroupName",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "securityIp": "{{ securityIp }}"
+      },
+      "Loop": {
+        "Items": "{{ describeSecurityIps.SecurityIpGroupName }}",
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        }
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "securityIp"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

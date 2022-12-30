@@ -1,0 +1,97 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Run command on the specified scaling activity instance",
+    "zh-cn": "指定实例中执行命令",
+    "name-en": "ACS::ESS::RunCommandOnSpecifiedInstance",
+    "name-zh-cn": "在指定实例中执行命令"
+  },
+  "Parameters": {
+    "commandContent": {
+      "Description": {
+        "en": "Command content to run in ECS instance",
+        "zh-cn": "在ECS实例中执行的云助手命令"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
+    },
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID  ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "commandInstanceId": {
+      "Description": {
+        "en": "The ECS instance to run command",
+        "zh-cn": "执行命令的ECS实例"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstanceIpAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Gets ECS instance ip address",
+        "zh-cn": "获取ECS实例IP"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "ipAddress": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress[]"
+        },
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[]|.ZoneId"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommandForLongTime",
+      "Description": {
+        "en": "Execute cloud assistant command",
+        "zh-cn": "执行云助手命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "#!/bin/bash\nexport COMMAND_IP=\"{{getInstanceIpAddress.ipAddress}}\"\nexport ZONE_ID=\"{{getInstanceIpAddress.zoneId}}\"\n{{ commandContent }}",
+        "instanceId": "{{ commandInstanceId }}",
+        "commandType": "RunShellScript"
+      },
+      "Outputs": {
+        "invocationOutput": {
+          "Type": "String",
+          "ValueSelector": ".invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "invocationOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.invocationOutput }}"
+    }
+  }
+}

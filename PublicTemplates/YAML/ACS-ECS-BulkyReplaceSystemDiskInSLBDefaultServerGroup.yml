@@ -1,27 +1,27 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky replaces system disk of ECS instances in default server group.
-  zh-cn: 批量替换SLB默认服务组内的ECS实例的系统盘。
+  en: Bulky replaces system disk of ECS instances in default server group
+  zh-cn: 批量替换SLB默认服务组内的ECS实例的系统盘
   name-en: ACS-ECS-BulkyReplaceSystemDiskInSLBDefaultServerGroup
   name-zh-cn: 批量替换SLB默认服务组内的ECS实例的系统盘
   categories:
     - slb_management
 Parameters:
   imageId:
-    Description:
-      en: The image ID for the ECS instance.
-      zh-cn: 源镜像ID。
+    Label:
+      en: The image ID for the ECS instance
+      zh-cn: 源镜像ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
   loadBalancerId:
-    Description:
-      en: The ID of the SLB instance.
-      zh-cn: 负载均衡实例ID。
+    Label:
+      en: LoadBalancerId
+      zh-cn: 负载均衡实例ID
     Type: String
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -29,9 +29,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 1
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -39,8 +39,8 @@ Tasks:
   - Name: describeLoadBalancerAttribute
     Action: ACS::ExecuteApi
     Description:
-      en: Views loadbalancer attribute.
-      zh-cn: 获取负载均衡默认服务组属性。
+      en: Views loadbalancer attribute
+      zh-cn: 获取负载均衡默认服务组属性
     Properties:
       Service: SLB
       API: DescribeLoadBalancerAttribute
@@ -56,8 +56,8 @@ Tasks:
   - Name: replaceSystemDisk
     Action: ACS::ECS::ElegantReplaceSystemDiskInSLBDefaultServerGroup
     Description:
-      en: Replaces the system disk of ECS instances.
-      zh-cn: 更换系统盘。
+      en: Replaces the system disk of ECS instances
+      zh-cn: 更换系统盘
     Properties:
       loadBalancerId: '{{ LoadBalancerId }}'
       imageId: '{{ imageId }}'
@@ -89,3 +89,20 @@ Outputs:
   newSystemDiskIds:
     Type: List
     Value: '{{ replaceSystemDisk.newSystemDiskIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - imageId
+          - loadBalancerId
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

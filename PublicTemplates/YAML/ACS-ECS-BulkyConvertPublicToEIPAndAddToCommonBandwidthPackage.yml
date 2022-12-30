@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky convert the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.
-  zh-cn: 批量把公网IP转换为EIP并加入到共享带宽包中。
+  en: Bulky convert the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package
+  zh-cn: 批量把公网IP转换为EIP并加入到共享带宽包中
   name-en: ACS-ECS-BulkyConvertPublicToEIPAndAddToCommonBandwidthPackage
   name-zh-cn: 批量把公网IP转换为EIP并加入到共享带宽包中
   categories:
@@ -9,26 +9,29 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   targets:
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   bandwidthPackageId:
-    Description:
-      en: The ID of the common bandwidth package.
-      zh-cn: 共享带宽包ID。
+    Label:
+      en: BandwidthPackageId
+      zh-cn: 共享带宽包ID
     Type: String
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -36,17 +39,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
@@ -60,8 +63,8 @@ Tasks:
   - Name: convertsPublicIPToEIPAndAddItToCommonBandwidthPackage
     Action: ACS::ECS::ConvertPublicToEIPAndAddToCommonBandwidthPackage
     Description:
-      en: converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.
-      zh-cn: 批量把公网IP转换为EIP并加入到共享带宽包中。
+      en: converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package
+      zh-cn: 批量把公网IP转换为EIP并加入到共享带宽包中
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
@@ -69,4 +72,26 @@ Tasks:
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ getInstance.instanceIds }}'
-
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - bandwidthPackageId
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

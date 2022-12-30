@@ -1,34 +1,56 @@
 FormatVersion: OOS-2019-06-01
-Description: Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group.
+Description:
+  name-en: ACS::ECS::AlarmSpotPriceOrDiscountThresholdByScalingGroup
+  name-zh-cn: 监控伸缩组内实例的现价或折扣的阈值
+  en: Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group
+  zh-cn: 监控弹性伸缩组弹出的预付费实例的最新价格与折扣，超出阈值时发出报警通知
 Parameters:
   regionId:
-    Description: The region id
+    Description:
+      en:  The ID of region
+      zh-cn: 地域ID
     Type: String
   zoneIds:
-    Description: The zone id.
+    Description:
+      en: The ID of zone
+      zh-cn: 可用区ID
     Type: List
   threshold:
-    Description: 'The discount threshold(example:10 is 1% off, 50 is 50% off).'
+    Description:
+      en:  'The discount threshold(example:10 is 1% off, 50 is 50% off)'
+      zh-cn: 折扣阈值（例：输入10是1折，50为5折）
     Type: Number
   taskType:
-    Description: Monitoring threshold task type.
+    Description:
+      en: Monitoring threshold task type
+      zh-cn: 监控阈值的任务类型
     Type: String
   vSwitchId:
-    Description: Query vswitch id for zone id.
+    Description:
+      en: Query vswitch id for zone id
+      zh-cn: 为了可用区ID而查询的交换机
     Type: String
   scalingGroupId:
-    Description: The scaling group id.
+    Description:
+      en: The ID of scaling group
+      zh-cn: 伸缩组ID
     Type: String
   scalingConfigurationId:
-    Description: The scaling configuration id.
+    Description:
+      en: The ID of scaling configuration
+      zh-cn: 伸缩配置ID
     Type: String
   configurationInfos:
-    Description: The configuration infos.
+    Description:
+      en: The scaling configuration infos
+      zh-cn: 伸缩配置信息
     Type: List
 Tasks:
   - Name: describeSpotPriceHistory
     Action: 'ACS::ExecuteAPI'
-    Description: Get the latest discounts on spot instance.
+    Description:
+      en: Queries the latest discounts on spot instance
+      zh-cn: 获取预付费实例的最新折扣
     Properties:
       Service: ECS
       API: DescribeSpotPriceHistory
@@ -59,7 +81,9 @@ Tasks:
           AggregateField: discountAndPrice
   - Name: alarmThresholdInfo
     Action: 'ACS::ECS::AlarmScalingThreshold'
-    Description: Alarm notification when spot instance discount or spot price exceeds threshold.
+    Description:
+      en: Alarm notification when spot instance discount or spot price exceeds threshold
+      zh-cn: 监控预付费实例的最新折扣与价格，超过阈值时发出报警通知
     Properties:
         regionId: '{{regionId}}'
         zoneId:

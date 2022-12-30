@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Creates a new database in an instance.",
+  "Description": {
+    "name-en": "ACS::RDS::CreateDatabase",
+    "name-zh-cn": "在EDS实例中创建新数据库",
+    "en": "Creates a new database in RDS instance",
+    "zh-cn": "在RDS实例中创建新数据库"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "characterSetName": {
-      "Description": "The charset name of database.",
+      "Description": {
+        "en": "The charset name of database",
+        "zh-cn": "数据库的字符集名称"
+      },
       "Type": "String"
     },
     "dBInstanceId": {
-      "Description": "The ID of DB instance that will handled.",
+      "Description": {
+        "en": "The ID of DB instance that will handled",
+        "zh-cn": "要处理的DB实例的ID"
+      },
       "Type": "String"
     },
     "dBName": {
-      "Description": "The name of database.",
+      "Description": {
+        "en": "The name of database",
+        "zh-cn": "数据库的名称"
+      },
       "Type": "String"
     }
   },
@@ -24,7 +41,10 @@
     {
       "Name": "checkForInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Check wether the DB Instance is running status.",
+      "Description": {
+        "en": "Checks wether the DB Instance is running status",
+        "zh-cn": "检查DB实例是否为running状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeDBInstanceAttribute",
@@ -41,7 +61,10 @@
     {
       "Name": "createDatabase",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Creates a new database in an instance.",
+      "Description": {
+        "en": "Creates a new database in an instance",
+        "zh-cn": "在实例中创建新数据库"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "CreateDatabase",
@@ -56,7 +79,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for DB instance to enter running status.",
+      "Description": {
+        "en": "Waits for DB instance to enter running status",
+        "zh-cn": "等待DB实例进入运行状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeDatabases",

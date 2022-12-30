@@ -1,31 +1,31 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Run command on k8s cluster.",
-    "zh-cn": "\u5728k8s\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4\u3002",
+    "en": "Run command on k8s cluster",
+    "zh-cn": "在k8s集群中执行命令",
     "name-en": "ACS-CS-RunCommand",
-    "name-zh-cn": "\u5728k8s\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4"
+    "name-zh-cn": "在k8s集群中执行命令"
   },
   "Parameters": {
     "clusterId": {
-      "Description": {
-        "en": "The ID of cluster.",
-        "zh-cn": "\u96c6\u7fa4ID\u3002"
+      "Label": {
+        "en": "ClusterId",
+        "zh-cn": "集群ID"
       },
       "Type": "String"
     },
     "commandContent": {
-      "Description": {
-        "en": "Command content to run in cluster.",
-        "zh-cn": "\u5728\u96c6\u7fa4\u4e2d\u6267\u884c\u7684\u547d\u4ee4\u3002"
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "在集群中执行的命令"
       },
       "Type": "String",
       "AssociationProperty": "Code"
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -37,8 +37,8 @@
       "Name": "runCommand",
       "Action": "ACS::CS::RunCommand",
       "Description": {
-        "en": "Executes a command in cluster.",
-        "zh-cn": "\u5728\u96c6\u7fa4\u4e2d\u6267\u884c\u547d\u4ee4\u3002"
+        "en": "Executes a command in cluster",
+        "zh-cn": "在集群中执行命令"
       },
       "Properties": {
         "clusterId": "{{ clusterId }}",
@@ -56,6 +56,35 @@
     "commandOutput": {
       "Type": "String",
       "Value": "{{ runCommand.commandOutput }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "clusterId",
+            "commandContent"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

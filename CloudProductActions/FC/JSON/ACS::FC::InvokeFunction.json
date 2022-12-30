@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Invoke Created Function.",
+  "Description": {
+    "name-en": "ACS::FC::InvokeFunction",
+    "name-zh-cn": "执行FC函数",
+    "en": "Invoke Created Function",
+    "zh-cn": "执行创建的函数"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The region id.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "functionName": {
-      "Description": "Function name To Invoke.",
+      "Description": {
+        "en": "Function name To Invoke",
+        "zh-cn": "需要执行的函数名称"
+      },
       "Type": "String"
     },
     "serviceName": {
-      "Description": "Service name To Invoke.",
+      "Description": {
+        "en": "Service name To Invoke",
+        "zh-cn": "需要执行的服务名称"
+      },
       "Type": "String"
     },
     "invocationType": {
-      "Description": "Invocation Type.",
+      "Description": {
+        "en": "Invocation Type",
+        "zh-cn": "需要执行的执行类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "Sync",
@@ -25,12 +42,18 @@
       "Default": "Sync"
     },
     "event": {
-      "Description": "The parameters of the function are inside the event.",
+      "Description": {
+        "en": "The parameters of the function are inside the event",
+        "zh-cn": "函数脚本的参数值"
+      },
       "Type": "String",
       "Default": ""
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS扮演的RAM角色。"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -40,7 +63,10 @@
     {
       "Name": "invokeFunction",
       "Action": "ACS::ExecuteAPI",
-      "Description": "invoke function.",
+      "Description": {
+        "en": "Invokes function",
+        "zh-cn": "执行函数"
+      },
       "Properties": {
         "Service": "FC",
         "API": "InvokeFunction",

@@ -1,41 +1,51 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Execute specified template when alarm is raised according to alarm rule. AlarmTrigger will always run until being canceled.",
-    "zh-cn": "\u6307\u5b9a\u544a\u8b66\u89c4\u5219\uff0c\u5f53\u544a\u8b66\u53d1\u751f\u65f6\u6267\u884c\u6307\u5b9a\u7684\u6a21\u677f\u3002\u5728\u4e3b\u52a8\u53d6\u6d88\u524d\u544a\u8b66\u89e6\u53d1\u5668\u4f1a\u4e00\u76f4\u8fd0\u884c\u3002",
+    "en": "Execute specified template when alarm is raised according to alarm rule. AlarmTrigger will always run until being canceled",
+    "zh-cn": "指定告警规则，当告警发生时执行指定的模板。在主动取消前告警触发器会一直运行",
     "name-en": "ACS-OOS-ExecuteTemplateByAlarm",
-    "name-zh-cn": "\u5728\u544a\u8b66\u53d1\u751f\u65f6\u6267\u884c\u6307\u5b9a\u7684\u6a21\u677f",
+    "name-zh-cn": "在告警发生时执行指定的模板",
     "categories": [
       "alarm-trigger"
     ]
   },
   "Parameters": {
     "alarmTriggerProperties": {
-      "Description": {
-        "en": "The properties of alarm trigger task.",
-        "zh-cn": "\u544a\u8b66\u89e6\u53d1\u4efb\u52a1\u7684\u5c5e\u6027\u3002"
+      "Label": {
+        "en": "AlarmTriggerProperties",
+        "zh-cn": "告警触发任务的属性"
       },
-      "Type": "Json"
+      "Type": "Json",
+      "AssociationProperty": "ALIYUN::OOS::Alarm::AlarmTrigger"
     },
     "alarmOutputTransformer": {
-      "Description": {
-        "en": "The transformer from alarm message to template parameters.",
-        "zh-cn": "\u544a\u8b66\u6d88\u606f\u4f53\u5230\u8c03\u7528\u6a21\u677f\u53c2\u6570\u7684\u8f6c\u6362\u5668\u3002"
+      "Label": {
+        "en": "AlarmOutputTransformer",
+        "zh-cn": "告警消息体到调用模板参数的转换器"
       },
       "Type": "Json"
     },
     "templateName": {
-      "Description": {
-        "en": "The name of template to trigger.",
-        "zh-cn": "\u89e6\u53d1\u7684\u6a21\u677f\u540d\u79f0\u3002"
+      "Label": {
+        "en": "TemplateName",
+        "zh-cn": "触发的模板名称"
       },
       "Type": "String",
       "AssociationProperty": "TemplateName"
     },
+    "tags": {
+      "Type": "Json",
+      "Label": {
+        "en": "InstanceTags",
+        "zh-cn": "实例的标签"
+      },
+      "AssociationProperty": "Tags",
+      "Default": []
+    },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -47,6 +57,7 @@
       "Name": "alarmTrigger",
       "Action": "ACS::AlarmTrigger",
       "Properties": {
+        "Tags": "{{ tags }}",
         "Namespace": {
           "Fn::Select": [
             "namespace",
@@ -126,8 +137,8 @@
       "Name": "executeTemplate",
       "Action": "ACS::Template",
       "Description": {
-        "en": "Execute template.",
-        "zh-cn": "\u6267\u884c\u6a21\u677f\u3002"
+        "en": "Execute template",
+        "zh-cn": "执行模板"
       },
       "Properties": {
         "TemplateName": "{{ templateName }}",

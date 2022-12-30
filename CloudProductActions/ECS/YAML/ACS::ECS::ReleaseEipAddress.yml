@@ -1,11 +1,19 @@
 FormatVersion: OOS-2019-06-01
-Description: Detach the eip from the special instance.
+Description:
+  name-en: ACS::ECS::ReleaseEipAddress
+  name-zh-cn: 从实例上解绑并释放EIP
+  en: Detach and releasse the EIP from the bound instance
+  zh-cn: 将EIP从绑定的实例上解绑并释放
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
   instanceId:
-    Description: The ecs instance id.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
 Tasks:
   - Name: waitInstanceReady
@@ -13,7 +21,9 @@ Tasks:
     Delay: 15
     Retries: 7
     DelayType: Constant
-    Description: Wait ECS instance is in the running or stopped status.
+    Description:
+      en: Waits for ECS instance is in the Running or Stopped status
+      zh-cn: 等待ECS实例至运行中或已停止状态
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -27,7 +37,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: describeEipAddresses
     Action: 'ACS::ExecuteAPI'
-    Description: Describe the eip addresses.
+    Description:
+      en: Views the allocationIds of EIP
+      zh-cn: 获取EIP的实例ID
     Properties:
       Service: ECS
       API: DescribeEipAddresses
@@ -41,7 +53,9 @@ Tasks:
         ValueSelector: '.EipAddresses.EipAddress[].AllocationId'
   - Name: unassociateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Unasscocatie the eip from network interface.
+    Description:
+      en: Unasscocaties the EIP from network interface
+      zh-cn: 将弹性公网IP（EIP）从绑定的云产品上解绑
     OnError: waitEipAddressAvailable
     Properties:
       Service: ECS
@@ -54,7 +68,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIds }}'
   - Name: waitEipAddressAvailable
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the EIP util Available
+      zh-cn: 等待EIP至可用状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -72,7 +88,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIds }}'
   - Action: 'ACS::ExecuteAPI'
     Name: releaseEipAddress
-    Description: Release the eip.
+    Description:
+      en: Releases the EIP
+      zh-cn: 释放EIP
     Properties:
       Service: ECS
       API: ReleaseEipAddress

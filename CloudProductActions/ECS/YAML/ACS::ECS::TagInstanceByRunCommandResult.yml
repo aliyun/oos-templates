@@ -1,31 +1,37 @@
 FormatVersion: OOS-2019-06-01
-Description: Tag a Linux ECS using RunCommand invocation result as tag value.
+Description:
+  name-en: ACS::ECS::TagInstanceByRunCommandResult
+  name-zh-cn: 以执行执行云助手命令的结果为标签值为实例打标签
+  en: Tag a Linux ECS using RunCommand invocation result as tag value
+  zh-cn: 以执行执行云助手命令的结果为标签值为实例打标签
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
-      en: Instance ID of the Linux ECS.
-      zh-cn: Linux类型的实例的ID。
+      en: Instance ID of the Linux ECS instance
+      zh-cn: Linux类型的实例的ID
     Type: String
     MaxLength: 30
     MinLength: 1
   tagKey:
     Description:
-      en: The tag key.
-      zh-cn: 标签键。
+      en: The tag key
+      zh-cn: 标签键
     Type: String
   commandContent:
     Description:
-      en: Command content to run in Linux ECS Instance.
-      zh-cn: 在linux类型实例中运行的云助手命令。
+      en: Command content to run in Linux ECS Instance
+      zh-cn: 在linux类型实例中运行的云助手命令
     Type: String
   OOSAssumeRole:
     Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+      en: The RAM role to be assumed by OOS
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -33,8 +39,8 @@ Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
   Description:
-    en: Checks ECS instance is in the running status.
-    zh-cn: 检查ECS实例是否处于Running状态。
+    en: Checks ECS instance is in the Running status
+    zh-cn: 检查ECS实例是否处于运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -48,8 +54,8 @@ Tasks:
 - Name: queryInstanceCommandOutput
   Action: ACS::ECS::RunCommand
   Description:
-    en: Invokes cloud assisant command and gets invocation output.
-    zh-cn: 获取云助手命令的执行结果。
+    en: Invokes cloud assisant command and gets invocation output
+    zh-cn: 执行云助手命令的并获取执行结果
   Properties:
     regionId: '{{ regionId }}'
     commandContent: '{{ commandContent }}'
@@ -62,8 +68,8 @@ Tasks:
 - Name: tagResources
   Action: ACS::ExecuteApi
   Description:
-    en: Creates and attaches tag to ECS instance.
-    zh-cn: 创建标签并挂载到ECS实例。
+    en: Creates and attaches tag to ECS instance
+    zh-cn: 创建标签并挂载到ECS实例
   Properties:
     Service: ECS
     API: TagResources

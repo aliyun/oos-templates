@@ -1,20 +1,38 @@
 FormatVersion: OOS-2019-06-01
-Description: Stops an ECS instance.
+Description:
+  name-en: ACS::ECS::StopInstance
+  name-zh-cn: 停止ECS实例
+  en: Stops an ECS instance
+  zh-cn: 停止一台ECS实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
   stoppedMode:
-    Description: Indicates whether the ECS instance is still charged after it is stopped.
+    Description:
+      en: Indicates whether the ECS instance is still charged after it is stopped
+      zh-cn: 停止按量付费ECS实例后，是否继续计费
     Type: String
     Default: ''
+  hibernate:
+    Description:
+      en: Whether to hibernate the instance
+      zh-cn: 实例是否休眠
+    Type: Boolean
+    Default: false
 Tasks:
 - Name: getInstanceStatus
-  Description: Views the ECS instances status.
+  Description:
+    en: Queries the ECS instances status
+    zh-cn: 获取ECS实例的状态
   Action: ACS::ExecuteApi
   Properties:
     Service: ECS
@@ -29,7 +47,9 @@ Tasks:
       ValueSelector: Instances.Instance[].Status
 - Name: whetherInstanceIsStopped
   Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Description:
+    en: Choose next task by instance Stopped status
+    zh-cn: 根据实例的已停止状态选择下一个任务
   Properties:
     DefaultTask: whetherInstanceIsStopping
     Choices:
@@ -40,7 +60,9 @@ Tasks:
         NextTask: 'ACS::END'
 - Name: whetherInstanceIsStopping
   Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Description:
+    en: Choose next task by instance Stopping status
+    zh-cn: 根据实例的停止中状态选择下一个任务
   Properties:
     DefaultTask: stopInstance
     Choices:
@@ -51,7 +73,9 @@ Tasks:
         NextTask: untilInstanceReady
 - Name: stopInstance
   Action: ACS::ExecuteAPI
-  Description: Stops an ECS instance.
+  Description:
+    en: Stops ECS instance
+    zh-cn: 停止ECS实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -59,9 +83,12 @@ Tasks:
       RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
       StoppedMode: '{{ stoppedMode }}'
+      Hibernate: '{{ hibernate }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter stooped status.
+  Description:
+    en: Waits for the ECS instance to enter Stopped status
+    zh-cn: 等待ECS实例至已停止状态
   Properties:
     Service: ECS
     API: DescribeInstances

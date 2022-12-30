@@ -1,17 +1,27 @@
 FormatVersion: OOS-2019-06-01
-Description: Deletes DB instance.
+Description:
+  name-en: ACS::RDS::DeleteDbInstance
+  name-zh-cn: 删除数据库实例
+  en: Deletes DB instance
+  zh-cn: 删除数据库实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   dBInstanceId:
-    Description: The ID of DB Instance that will be deleted.
+    Description:
+      en: The ID of DB Instance that will be deleted
+      zh-cn: 要删除的DB实例ID
     Type: String
 Tasks:
 - Name: checkForInstanceReady
   Action: ACS::CheckFor
-  Description: Check weather the DB Instance is running status.
+  Description:
+    en: Check weather the DB Instance is running status
+    zh-cn: 检查DB实例是否处于运行状态
   Properties:
     Service: RDS
     API: DescribeDBInstances
@@ -23,7 +33,9 @@ Tasks:
     PropertySelector: Items.DBInstance[].DBInstanceStatus
 - Name: deleteDBInstance
   Action: ACS::ExecuteAPI
-  Description: Deletes DB instance with the specified DBInstanceId.
+  Description:
+    en: Deletes DB instance with the specified DBInstanceId
+    zh-cn: 删除指定DBInstanceId的DB实例
   Properties:
     Service: RDS
     API: DeleteDBInstance
@@ -33,7 +45,9 @@ Tasks:
       DBInstanceId: '{{ dBInstanceId }}'
 - Name: untilInstanceDeleting
   Action: ACS::WaitFor
-  Description: Waits for DB instance to enter deleting status.
+  Description:
+    en: Waits for DB instance to enter deleting status
+    zh-cn: 等待DB实例进入删除状态
   Properties:
     Service: RDS
     API: DescribeDBInstances

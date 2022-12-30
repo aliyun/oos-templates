@@ -1,25 +1,41 @@
 FormatVersion: OOS-2019-06-01
-Description: Alarm notification when spot instance discount or spot price exceeds threshold.
+Description:
+  name-en: ACS::ECS::AlarmSpotPriceByDiscountThreshold
+  name-zh-cn: 监控折扣或现价的阈值
+  en: Alarm notification when spot instance discount or spot price exceeds threshold.
+  zh-cn: 监控预付费实例的折扣与价格，当超出阈值时发出报警通知
 Parameters:
   regionId:
-    Description: The region id.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
   zoneId:
-    Description: The zone id.
+    Description:
+      en: The ID of zone
+      zh-cn: 可用区ID
     Type: String
   discountJsonInfo:
-    Description: The discount info.
+    Description:
+      en: The discount info
+      zh-cn: 折扣详情
     Type: Json
   threshold:
-    Description: The discount or price threshold.
+    Description:
+      en: The discount or price threshold
+      zh-cn: 折扣或现价阈值
     Type: Number
   taskType:
-    Description: The monitoring threshold task type.
+    Description:
+      en: The monitoring threshold task type
+      zh-cn: 监控阈值的任务类型
     Type: String
 Tasks:
   - Name: selectTask
     Action: 'ACS::Choice'
-    Description: Select the type of task that performs the monitoring threshold.
+    Description:
+      en: Selects the type of task that performs the monitoring threshold
+      zh-cn: 选择执行监控的任务类型
     Properties:
       DefaultTask: 'ACS::END'
       Choices:
@@ -35,7 +51,9 @@ Tasks:
           NextTask: checkSpotPriceThreshold
   - Name: checkDiscountThreshold
     Action: 'ACS::Choice'
-    Description: Check if the actual discount exceeds the threshold.
+    Description:
+      en: Check if the actual discount exceeds the threshold
+      zh-cn: 检测实际折扣是否超过阈值
     Properties:
       DefaultTask: 'ACS::END'
       Choices:
@@ -49,7 +67,9 @@ Tasks:
           NextTask: describeSpotPriceHistory
   - Name: checkSpotPriceThreshold
     Action: 'ACS::Choice'
-    Description: Check if the actual discount exceeds the threshold.
+    Description:
+      en: Checks if the actual price exceeds the threshold
+      zh-cn: 检测预付费实例的实际价格是否超过阈值
     Properties:
       DefaultTask: 'ACS::END'
       Choices:
@@ -63,7 +83,9 @@ Tasks:
           NextTask: describeSpotPriceHistory
   - Name: describeSpotPriceHistory
     Action: 'ACS::ExecuteAPI'
-    Description: Get the latest discounts or spot price on spot instance.
+    Description:
+      en: Queries the latest discounts or spot price on spot instance
+      zh-cn: 获取预付费实例的最新折扣与价格
     Properties:
       Service: ECS
       API: DescribeSpotPriceHistory

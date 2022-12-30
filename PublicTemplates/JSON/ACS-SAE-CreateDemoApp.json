@@ -1,0 +1,112 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Create SAE application and bind them to SLB",
+    "zh-cn": "创建SAE应用并为应用绑定SLB",
+    "name-en": "ACS-SAE-CreateDemoApp",
+    "name-zh-cn": "创建SAE应用"
+  },
+  "Parameters": {
+    "applicationInfos": {
+      "Label": {
+        "en": "SAEApplicationInfos",
+        "zh-cn": "SAE应用信息"
+      },
+      "Type": "Json",
+      "Default": [
+        {
+          "appName": "appName",
+          "imageUrl": "imageUrl"
+        }
+      ]
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createApplications",
+      "Action": "ACS::SAE::CreateApplication",
+      "Description": {
+        "en": "Create SAE application",
+        "zh-cn": "创建SAE应用"
+      },
+      "Properties": {
+        "applicationInfo": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ applicationInfos }}",
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 3
+        },
+        "Outputs": {
+          "appIds": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "appId"
+          }
+        }
+      },
+      "Outputs": {
+        "appId": {
+          "Type": "String",
+          "ValueSelector": "appId"
+        }
+      }
+    },
+    {
+      "Name": "bindSlb",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Bind app to SLB",
+        "zh-cn": "为应用绑定SLB"
+      },
+      "Properties": {
+        "Service": "SAE",
+        "API": "BindSlb",
+        "Parameters": {
+          "AppId": {
+            "Fn::Select": [
+              0,
+              "{{ createApplications.appIds }}"
+            ]
+          },
+          "Internet": "[{\"port\":80,\"targetPort\":9999,\"protocol\":\"TCP\"}]"
+        }
+      },
+      "Outputs": {
+        "ChangeOrderId": {
+          "ValueSelector": ".Data.ChangeOrderId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "describeBindSlbChangeOrder",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the APP bind to SLB",
+        "zh-cn": "等待应用成功绑定SLB"
+      },
+      "Properties": {
+        "Service": "SAE",
+        "API": "DescribeChangeOrder",
+        "Parameters": {
+          "ChangeOrderId": "{{ bindSlb.ChangeOrderId }}"
+        },
+        "StopRetryValues": [
+          2,
+          3,
+          6,
+          10
+        ],
+        "DesiredValues": [
+          2
+        ],
+        "PropertySelector": ".Data.Status"
+      },
+      "DelayType": "Constant",
+      "Delay": 6,
+      "Retries": 10
+    }
+  ]
+}

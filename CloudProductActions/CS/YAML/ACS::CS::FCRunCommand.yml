@@ -1,22 +1,34 @@
 FormatVersion: OOS-2019-06-01
-Description: Run kubectl command on CS command.
+Description:
+  name-en: ACS::CS::FCRunCommand
+  name-zh-cn: 通过函数计算服务在集群节点上执行命令
+  en: Run command on cluster nodes by FC
+  zh-cn: 通过函数计算服务在集群节点上执行命令
 Parameters:
   clusterId:
-    Description: The ID of cluster.
+    Description:
+      en: The ID of cluster
+      zh-cn: 集群ID
     Type: String
   commandContent:
-    Description: The content of command.
+    Description:
+      en: The content of command
+      zh-cn: 命令内容
     Type: String
     AssociationProperty: Code
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description:
+      en: The RAM role to be assumed by OOS
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getUserKubeconfig
     Action: 'ACS::ExecuteAPI'
-    Description: Views the Kubeconfig of specified cluster.
+    Description:
+      en: Queries the Kubeconfig of specified cluster
+      zh-cn: 获取指定集群的Kubeconfig
     Properties:
       Service: CS
       API: DescribeClusterV2UserKubeconfig
@@ -28,7 +40,9 @@ Tasks:
         ValueSelector: .config
   - Name: getService
     Action: 'ACS::ExecuteAPI'
-    Description: Views specified service's status.
+    Description:
+      en: Queries specified service's status
+      zh-cn: 获取指定服务的状态
     OnError: getVPC
     OnSuccess: createInvokerStack
     Properties:
@@ -42,7 +56,9 @@ Tasks:
       Body: Null
   - Name: getVPC
     Action: 'ACS::ExecuteAPI'
-    Description: Views cluster's kubeconfig.
+    Description:
+      en: Queries cluster's vpc
+      zh-cn: 获取集群的VPC
     Properties:
       Service: CS
       API: DescribeClusters
@@ -57,7 +73,9 @@ Tasks:
         ValueSelector: security_group_id
   - Name: getCidrBlock
     Action: 'ACS::ExecuteAPI'
-    Description: Views VPC's CidrBlock.
+    Description:
+      en: Queries VPC's CidrBlock
+      zh-cn: 获取VPC的网段
     Properties:
       Service: VPC
       API: DescribeVpcAttribute
@@ -69,7 +87,9 @@ Tasks:
         ValueSelector: .CidrBlock
   - Name: createVSwitch
     Action: 'ACS::ExecuteAPI'
-    Description: Create a VSwitch.
+    Description:
+      en: Creates a VSwitch
+      zh-cn: 创建一个交换机
     Properties:
       Service: VPC
       API: CreateVSwitch
@@ -179,7 +199,9 @@ Tasks:
         ValueSelector: VSwitchId
   - Name: untilVSwitchReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the VSwitch to be available.
+    Description:
+      en: Waits for the VSwitch to be available
+      zh-cn: 等待交换机到达可用状态
     Properties:
       Service: ECS
       API: DescribeVSwitches
@@ -190,7 +212,9 @@ Tasks:
       PropertySelector: 'VSwitches.VSwitch[].Status'
   - Name: createStack
     Action: 'ACS::ExecuteAPI'
-    Description: Create a resource stack.
+    Description:
+      en: Creates a resource stack
+      zh-cn: 创建资源栈
     Properties:
       Service: ROS
       API: CreateStack
@@ -301,7 +325,9 @@ Tasks:
   - Name: untilStackReady
     Action: 'ACS::WaitFor'
     OnSuccess: 'ACS::END'
-    Description: Wait the stack status util CREATE_COMPLETE.
+    Description:
+      en: Waits for the stack status util CREATE_COMPLETE
+      zh-cn: 等待资源栈创建完成
     Properties:
       Service: ROS
       API: GetStack
@@ -321,7 +347,9 @@ Tasks:
         ValueSelector: 'Outputs[].OutputValue'
   - Name: createInvokerStack
     Action: 'ACS::ExecuteAPI'
-    Description: Create a resource stack.
+    Description:
+      en: Invokes resource stack
+      zh-cn: 触发执行资源栈
     Properties:
       Service: ROS
       API: CreateStack
@@ -388,6 +416,13 @@ Tasks:
                     ]
                 }
               }
+            },
+            "Metadata": {
+              "ALIYUN::ROS::Interface": {
+                "TemplateTags": [
+                  "acs:integrate:oos:cs_fc_run_command"
+                ]
+              }
             }
           }
     Outputs:
@@ -397,7 +432,9 @@ Tasks:
   - Name: untilInvokerStackReady
     Action: 'ACS::WaitFor'
     OnError: deleteStack
-    Description: Wait the stack status util CREATE_COMPLETE.
+    Description:
+      en: Waits for the stack status util CREATE_COMPLETE
+      zh-cn: 等待资源栈到达CREATE_COMPLETE状态
     Properties:
       Service: ROS
       API: GetStack
@@ -418,8 +455,8 @@ Tasks:
   - Name: deleteStack
     Action: 'ACS::ExecuteApi'
     Description:
-      en: Delete the stack.
-      zh-cn: 删除资源栈。
+      en: Deletes the stack
+      zh-cn: 删除资源栈
     Properties:
       Service: ROS
       API: DeleteStack
@@ -429,3 +466,4 @@ Outputs:
   invokeResult:
     Type: String
     Value: '{{ untilInvokerStackReady.result }}'
+

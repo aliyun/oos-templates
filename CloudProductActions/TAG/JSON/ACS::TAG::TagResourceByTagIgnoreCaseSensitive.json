@@ -1,0 +1,124 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Create and bind a single tag for a specified single cloud resource",
+    "zh-cn": "为指定的单个云资源创建并绑定单个标签",
+    "name-en": "ACS::TAG::TagResourceByTagIgnoreCaseSensitive",
+    "name-zh-cn": "为指定的单个云资源创建并绑定单个标签(忽略标签大小写)"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "tagKey": {
+      "Description": {
+        "en": "The resource tag key",
+        "zh-cn": "资源标签键"
+      },
+      "Type": "String"
+    },
+    "tagValue": {
+      "Description": {
+        "en": "The resource tag value",
+        "zh-cn": "资源标签值"
+      },
+      "Type": "String"
+    },
+    "resourceARN": {
+      "Description": {
+        "en": "Resource ARN",
+        "zh-cn": "资源ARN"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "listTagResources",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the resource tags",
+        "zh-cn": "查询资源标签信息"
+      },
+      "Properties": {
+        "Service": "TAG",
+        "API": "ListTagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceARN": [
+            "{{ resourceARN }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "duplicateKey": {
+          "Type": "String",
+          "ValueSelector": ".TagResources[].Tags[].Key | match(\"^{{ tagKey }}$\"; \"ig\") | .string"
+        },
+        "tags": {
+          "Type": "List",
+          "ValueSelector": ".TagResources[].Tags[]"
+        }
+      }
+    },
+    {
+      "Name": "unTagResource",
+      "Action": "ACS::ExecuteApi",
+      "When": {
+        "Fn::Not": {
+          "Fn::Equals": [
+            null,
+            "{{ listTagResources.duplicateKey }}"
+          ]
+        }
+      },
+      "Description": {
+        "en": "Untag the resources",
+        "zh-cn": "解绑标签"
+      },
+      "Properties": {
+        "Service": "TAG",
+        "API": "UnTagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceARN": [
+            "{{ resourceARN }}"
+          ],
+          "TagKey": [
+            "{{listTagResources.duplicateKey}}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "tagResource",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Tag the resources through resource management",
+        "zh-cn": "通过资源管理给资源打标签"
+      },
+      "Properties": {
+        "Service": "TAG",
+        "API": "TagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceARN": [
+            "{{ resourceARN }}"
+          ],
+          "Tags": {
+            "Fn::Jq": [
+              "First",
+              "{\"{{tagKey}}\":\"{{tagValue}}\"}",
+              {}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

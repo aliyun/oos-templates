@@ -1,0 +1,207 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS-ECS-ModifyAutoRenewAttributeAfterOrderPaid",
+    "name-zh-cn": "等待指定订单支付成功后修改实例的自动续费属性",
+    "en": "Modify the automatic renewal properties of the instance after waiting for the specified order to be paid successfully",
+    "zh-cn": "等待指定订单支付成功后修改实例的自动续费属性"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "orderId": {
+      "Label": {
+        "en": "OrderId",
+        "zh-cn": "订单号"
+      },
+      "Type": "Number"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "实例ID"
+      },
+      "Type": "List"
+    },
+    "periodUnit": {
+      "Label": {
+        "en": "PeriodUnit",
+        "zh-cn": "续费时长的时间单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month",
+        "Year"
+      ],
+      "Default": "Month"
+    },
+    "duration": {
+      "Description": {
+        "en": "The duration of instance When PeriodUnit is set to Year, valid values of Duration are 1, 2, and 3 When PeriodUnit is set to Month, valid values of Duration are 1, 2, 3, 6, 12 When PeriodUnit is set to Week, valid values of Duration are 1, 2, 3, 4",
+        "zh-cn": "实例续费时长， PeriodUnit为Year（年）时，Duration的取值范围为：{\"1\", \"2\", \"3\"} PeriodUnit为Month（月）时，Duration的取值范围为：{\"1\", \"2\", \"3\", \"6\", \"12\"} PeriodUnit为Week（周）时，Duration的取值范围为：{\"1\", \"2\", \"3\", \"4\"}"
+      },
+      "Label": {
+        "en": "Duration",
+        "zh-cn": "实例续费时长"
+      },
+      "Type": "Number"
+    },
+    "autoRenew": {
+      "Label": {
+        "en": "AutoRenew",
+        "zh-cn": "实例到期前是否自动续费"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "renewalStatus": {
+      "Description": {
+        "en": "Valid values: AutoRenewal: Auto-renewal is enabled for the instance. Normal: Auto-renewal is disabled for the instance. NotRenewal: The instance will not be renewed upon expiration. The system no longer sends an expiration reminder, but sends only a non-renewal reminder three days before the expiration date. You can change the value of this parameter from NotRenewal to Normal for an instance, and then manually renew the instance. Alternatively, you can set the RenewalStatus parameter to AutoRenewal.",
+        "zh-cn": "取值范围： AutoRenewal：设置为自动续费。 Normal：取消自动续费。 NotRenewal：不再续费。传入该值后，系统不再发送到期提醒，只在到期前第三天发送不续费提醒。不再续费的ECS实例可以更改成待续费（Normal）后，再自行续费或设置为自动续费。"
+      },
+      "Label": {
+        "en": "RenewalStatus",
+        "zh-cn": "实例的自动续费状态"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "AutoRenewal",
+        "Normal",
+        "NotRenewal"
+      ],
+      "Default": "AutoRenewal"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "untilOrderPaiedReady",
+      "Action": "ACS::WaitFor",
+      "Retries": 57,
+      "Description": {
+        "en": "Waits for the order is paied",
+        "zh-cn": "等待订单支付完成"
+      },
+      "Properties": {
+        "Service": "BssOpenApi",
+        "API": "GetOrderDetail",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "OrderId": "{{ orderId }}"
+        },
+        "DesiredValues": [
+          "Paid"
+        ],
+        "StopRetryValues": [
+          "Cancelled"
+        ],
+        "PropertySelector": "Data.OrderList.Order[].PaymentStatus"
+      }
+    },
+    {
+      "Name": "waitOrderPaidCompleted",
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "PT30S"
+      }
+    },
+    {
+      "Name": "modifyInstanceRenewAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modifies instance auto renew attr",
+        "zh-cn": "修改实例自动续费属性"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceAutoRenewAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
+          "PeriodUnit": "{{ periodUnit }}",
+          "Duration": "{{ duration }}",
+          "AutoRenew": "{{ autoRenew }}",
+          "RenewalStatus": "{{ renewalStatus }}"
+        }
+      },
+      "Loop": {
+        "Items": "{{ instanceIds }}",
+        "RateControl": "{{ rateControl }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "periodUnit",
+            "duration",
+            "autoRenew",
+            "renewalStatus"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "自动续费参数配置",
+              "en": "Autorenew Parameter Configure"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "orderId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

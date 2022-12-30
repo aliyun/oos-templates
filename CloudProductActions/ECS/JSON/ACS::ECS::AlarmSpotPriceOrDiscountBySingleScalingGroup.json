@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Alarm notification when spot instance discount or spot price exceeds threshold in the single scaling group existing instances.",
+  "Description": {
+    "name-en": "ACS::ECS::AlarmSpotPriceOrDiscountBySingleScalingGroup",
+    "name-zh-cn": "监控单个伸缩组内实例的现价或折扣的阈值",
+    "en": "Alarm notification when spot instance discount or spot price exceeds threshold in the single scaling group existing instances",
+    "zh-cn": "监控弹性伸缩组弹出的预付费实例的最新价格与折扣，超出阈值时发出报警通知"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The region id.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String"
     },
     "threshold": {
-      "Description": "The discount threshold(example:10 is 1% off, 50 is 50% off).",
+      "Description": {
+        "en": "The discount threshold(example:10 is 1% off, 50 is 50% off)",
+        "zh-cn": "折扣阈值（例：输入10是1折，50为5折）"
+      },
       "Type": "Number"
     },
     "taskType": {
-      "Description": "Monitoring threshold task type.",
+      "Description": {
+        "en": "Monitoring threshold task type",
+        "zh-cn": "监控阈值的任务类型"
+      },
       "Type": "String"
     },
     "scalingGroupId": {
-      "Type": "String",
-      "Description": "The scaling group id."
+      "Description": {
+        "en": "The ID of scaling group",
+        "zh-cn": "弹性伸缩组ID"
+      },
+      "Type": "String"
     }
   },
   "Tasks": [
@@ -24,8 +41,8 @@
       "Name": "describeScalingInstances",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Describe the scaling instances.",
-        "zh-cn": "\u67e5\u8be2\u4f38\u7f29\u7ec4\u5185\u7684\u5b9e\u4f8b\u3002"
+        "en": "Queries the scaling ECS instance IDs",
+        "zh-cn": "获取伸缩组内ECS实例的ID"
       },
       "Properties": {
         "Service": "ESS",
@@ -46,8 +63,8 @@
       "Name": "wetherExistInstance",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Detect if an alarm notification is required.",
-        "zh-cn": "\u68c0\u6d4b\u662f\u5426\u9700\u8981\u53d1\u62a5\u8b66\u901a\u77e5\u3002"
+        "en": "Check wether an alarm notification is required",
+        "zh-cn": "检测是否需要发报警通知"
       },
       "Properties": {
         "DefaultTask": "describeInstances",
@@ -68,8 +85,8 @@
       "Name": "describeInstances",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Describe the instances.",
-        "zh-cn": "\u67e5\u8be2\u5b9e\u4f8b\u3002"
+        "en": "Queries instance type and zone of the ECS instance",
+        "zh-cn": "获取ECS实例的规格和可用区"
       },
       "Properties": {
         "Service": "ECS",
@@ -103,8 +120,8 @@
       "Name": "describeScalingGroups",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Describe the scaling groups.",
-        "zh-cn": "\u67e5\u8be2\u5f39\u6027\u4f38\u7f29\u7ec4\u3002"
+        "en": "Queries the name of scaling group",
+        "zh-cn": "获取伸缩组名称"
       },
       "Properties": {
         "Service": "ESS",
@@ -124,7 +141,10 @@
     {
       "Name": "outPutSingleScalingGroupInfo",
       "Action": "ACS::ECS::AlarmSpotPriceOrDiscountByScalingGroupInstance",
-      "Description": "Monitor discounts or prices of all created spot instance types under a single scaling group.",
+      "Description": {
+        "en": "Monitor discounts or prices of all created spot instance types under a single scaling group",
+        "zh-cn": "监控单个伸缩组下所有预付费实例类型的折扣与价格"
+      },
       "Properties": {
         "regionId": "{{regionId}}",
         "threshold": "{{ threshold }}",
@@ -188,7 +208,7 @@
           {
             "Fn::Jq": [
               "First",
-              ".[0] as $item | \"\\n### \u4f38\u7f29\u7ec4\u540d\u79f0\uff1a{{describeScalingGroups.scalingGroupName}}\\n### \u4f38\u7f29\u7ec4ID\uff1a{{scalingGroupId}}\\n|&emsp;\u673a\u578b&emsp;|&emsp;&emsp;\u53ef\u7528\u533a|\u73b0\u4ef7|\u6298\u6263%|\\n|:----|:----|:----:|:----|\\n\" + $item",
+              ".[0] as $item | \"\\n### 伸缩组名称：{{describeScalingGroups.scalingGroupName}}\\n### 伸缩组ID：{{scalingGroupId}}\\n|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\\n|:----|:----|:----:|:----|\\n\" + $item",
               [
                 {
                   "Fn::Jq": [

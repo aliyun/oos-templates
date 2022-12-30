@@ -1,0 +1,397 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Sleep control plane, make etcd snapshot and upload it to oss bucket
+  zh-cn: ACK专属版master休眠&etcd备份上传
+  name-en: ACS-CS-DedicatedMigration
+  name-zh-cn: ACK专属版master休眠&etcd备份上传
+  categories:
+    - others
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  workingDir:
+    Label:
+      en: WorkingDir
+      zh-cn: ECS实例中运行命令的目录
+    Type: String
+    Default: /root
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 5
+  targets:
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  action:
+    Type: String
+    Label:
+      en: Action
+      zh-cn: 配置方式
+    Default: rollback
+    AllowedValues:
+      - migrate
+      - rollback
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+  BucketName:
+    Label:
+      en: BucketName
+      zh-cn: 需要上传snapshot的oss路径
+    Type: String
+  OSSEndpoint:
+    Label:
+      en: OSSEndpoint
+      zh-cn: 需要上传snapshot的oss对应的endpoint
+    Type: String
+  ClusterID:
+    Label:
+      en: ClusterID
+      zh-cn: 集群的ID
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Action: ACS::ECS::RunCommand
+    OnError: rollback
+    Description:
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: |-
+        #!/bin/bash
+        set -e
+        if [ "{{action}}" = "migrate" ]; then
+            mkdir -p /etc/kubernetes/manifests.backup
+            if_move=$(ls /etc/kubernetes/manifests/ | wc -l)
+            if [ "$if_move" != "0" ]; then
+                mv -f /etc/kubernetes/manifests/* /etc/kubernetes/manifests.backup/
+            fi
+            is_ok=0
+            set +e
+            ps -o cmd -p `pidof kubelet` | grep 'container-runtime-endpoint=/var/run/containerd/containerd.sock'
+            if [ $? -ne 0 ]; then
+                echo "容器运行时不为containerd"
+                for ((integer = 0; integer < 150; integer++)); do
+                    count=$(docker ps | grep kube-apiserver | wc -l)
+                    if [ "$count" = "0" ]; then
+                        is_ok=1
+                        break
+                    else
+                        sleep 2
+                    fi
+                done
+            else
+                echo "容器运行时为containerd"
+                for ((integer = 0; integer < 150; integer++)); do
+                    count=$(crictl --runtime-endpoint /var/run/containerd/containerd.sock  ps |grep kube-apiserver | wc -l)
+                    if [ "$count" = "0" ]; then
+                        is_ok=1
+                        break
+                    else
+                        sleep 2
+                    fi
+                done
+            fi
+            set -e
+            if [ "$is_ok" == "0" ]; then
+                mv -f /etc/kubernetes/manifests.backup/* /etc/kubernetes/manifests/
+                echo "Rollback finish"
+                exit 1
+            else
+                echo "The control plane is sleeping now."
+            fi
+        elif [ "{{action}}" = "rollback" ]; then
+            mkdir -p /etc/kubernetes/manifests.backup
+            if_move=$(ls /etc/kubernetes/manifests.backup/ | wc -l)
+            if [ "$if_move" != "0" ]; then
+                mv -f /etc/kubernetes/manifests.backup/* /etc/kubernetes/manifests/
+            fi
+            echo "The control plane is wakeup now."
+        else
+            echo "action must be migrate or rollback"
+            exit 1
+        fi
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: 240
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        ValueSelector: invocationOutput
+        Type: String
+    Name: sleepOrWakeupControlPlane
+  - Action: ACS::ECS::RunCommand
+    OnError: rollback
+    Description:
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: |-
+        #!/bin/bash
+        set -e
+        if [ "{{action}}" = "rollback" ]; then
+            exit 0
+        fi
+        # 获取eth0 IP
+        IP=$(/sbin/ifconfig eth0 | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:")
+        ENDPOINT="https://$IP:2379"
+        echo "ENDPOINT:  "$ENDPOINT
+        set +e
+        # 查询etcd endpoints status，判断该etcd是否为leader
+        ETCDCTL_API=3 /usr/bin/etcdctl --cacert=/var/lib/etcd/cert/ca.pem --cert=/var/lib/etcd/cert/etcd-server.pem --key=/var/lib/etcd/cert/etcd-server-key.pem --endpoints=$ENDPOINT endpoint status | grep true
+        if [ $? -ne 0 ]; then
+            echo "不为etcd leader所在机器，退出。"
+            exit 0
+        fi
+        set -e
+        yum install curl wget -y
+        if [ ! -f "/tmp/ossutil64" ]; then
+            # wget ossutil，保存到/tmp/目录下
+            wget -c -t 10 -O /tmp/ossutil64 https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/x64/ossutil64
+            if [ $? -ne 0 ]; then
+                echo "下载ossutil工具，退出。"
+                exit 1
+            fi
+            chmod +x /tmp/ossutil64
+        fi
+        if [ ! -f "/tmp/modify-prefix" ]; then
+            echo "下载modify-prefix"
+            wget -c -t 10 -O /tmp/modify-prefix https://aliacs-k8s-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/public/pkg/etcd/modify-prefix
+            if [ $? -ne 0 ]; then
+                echo "下载修改prefix工具出错，退出。"
+                exit 1
+            fi
+            chmod +x /tmp/modify-prefix
+        fi
+        if ! [[ {{ClusterID}} =~ ^c.* ]];then
+        	echo "clusterID: {{ClusterID}}不是正确的集群id,退出。"
+            exit 1
+        fi
+        echo "clusterID: {{ClusterID}}"
+        # 为leader则做snapshot，将snapshot存在在/tmp/
+        TIMESTAMP=$(date "+%Y%m%d%H%M%S")
+        mkdir -p /tmp/etcdsnap
+        set -x
+        SNAP_NAME=etcd_$TIMESTAMP
+        echo "开始备份，备份名为/tmp/"$SNAP_NAME
+        DestPrefix="/"{{ClusterID}}
+        ETCDCTL_API=3 /usr/bin/etcdctl --cacert=/var/lib/etcd/cert/ca.pem --cert=/var/lib/etcd/cert/etcd-server.pem --key=/var/lib/etcd/cert/etcd-server-key.pem --endpoints=$ENDPOINT snapshot save /tmp/etcdsnap/$SNAP_NAME
+        /tmp/modify-prefix modify-prefix --db=/tmp/etcdsnap/$SNAP_NAME --src-prefix=/registry --dest-prefix=$DestPrefix --bucket=key
+        if [ $? -ne 0 ]; then
+            echo "修改prefix出错，退出。"
+            exit 1
+        fi
+        # 获取oss 相关地址，上传
+        ROLE=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/)
+        ROLERES=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/$ROLE)
+        AccessKeyId=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['AccessKeyId']")
+        AccessKeySecret=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['AccessKeySecret']")
+        SecurityToken=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['SecurityToken']")
+        # put object to oss
+        echo "begin put object to oss"
+        /tmp/ossutil64 -t $SecurityToken -i $AccessKeyId -k $AccessKeySecret -e {{OSSEndpoint}} cp /tmp/etcdsnap/$SNAP_NAME oss://{{BucketName}}/$SNAP_NAME
+        # sign
+        oss_url=$(/tmp/ossutil64 -t $SecurityToken -i $AccessKeyId -k $AccessKeySecret -e {{OSSEndpoint}} sign --timeout 2400 oss://{{BucketName}}/$SNAP_NAME | grep -v "elapsed" | tr -d '\n')
+        set +x
+        sakey=$(cat /etc/kubernetes/pki/sa.key | base64 -w0)
+        sapub=$(cat /etc/kubernetes/pki/sa.pub | base64 -w0)
+        frontcrt=$(cat /etc/kubernetes/pki/front-proxy-ca.crt | base64 -w0)
+        frontkey=$(cat /etc/kubernetes/pki/front-proxy-ca.key | base64 -w0)
+        echo "{\"sakey\":\"$sakey\",\"sapub\":\"$sapub\",\"frontcrt\":\"$frontcrt\",\"frontkey\":\"$frontkey\",\"oss_url\":\"$oss_url\"}" >/tmp/etcdsnap/sign
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: 600
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        ValueSelector: invocationOutput
+        Type: String
+    Name: etcdCheckout
+  - Action: 'ACS::ECS::RunCommand'
+    OnError: rollback
+    Description:
+      En: Execute cloud assistant command
+      Zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: |-
+        #!/bin/bash
+        if [ "{{action}}" = "rollback" ]; then
+            exit 0
+        fi
+        if [ -e  /tmp/etcdsnap/sign ]; then
+            curl --retry 10 -sSL 100.100.100.200/latest/meta-data/instance-id
+        fi
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: 60
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        ValueSelector: invocationOutput
+        Type: String
+    Name: findLeader
+  - Action: 'ACS::ECS::RunCommand'
+    OnError: rollback
+    OnSuccess: ACS::END
+    Description:
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: |-
+        #!/bin/bash
+        if [ "{{action}}" = "rollback" ]; then
+            exit 0
+        fi
+        if [ -e  /tmp/etcdsnap/sign ]; then
+            cat /tmp/etcdsnap/sign
+            rm -rf /tmp/etcdsnap/sign
+        fi
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: 60
+    Loop:
+      Items:
+        'Fn::Intersection':
+          - '{{ getInstance.instanceIds }}'
+          - '{{ findLeader.commandOutputs }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        ValueSelector: invocationOutput
+        Type: String
+    Name: readSign
+  - Action: ACS::ECS::RunCommand
+    Description:
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: |-
+        #!/bin/bash
+        set -e
+        mkdir -p /etc/kubernetes/manifests.backup
+        if_move=$(ls /etc/kubernetes/manifests.backup/ | wc -l)
+        if [ "$if_move" != "0" ]; then
+            mv -f /etc/kubernetes/manifests.backup/* /etc/kubernetes/manifests/
+        fi
+        echo "The control plane is wakeup now."
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      timeout: 240
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        ValueSelector: invocationOutput
+        Type: String
+    Name: rollback
+Outputs:
+  sleepOrWakeupControlPlaneOutputs:
+    Type: List
+    Value: '{{ sleepOrWakeupControlPlane.commandOutputs }}'
+  etcdCheckoutOutputs:
+    Type: List
+    Value: '{{ etcdCheckout.commandOutputs }}'
+  findLeaderOutputs:
+    Type: List
+    Value: '{{ findLeader.commandOutputs }}'
+  readSignOutputs:
+    Type: List
+    Value: '{{ readSign.commandOutputs }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - ClusterID
+          - action
+          - BucketName
+          - OSSEndpoint
+          - workingDir
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instance
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

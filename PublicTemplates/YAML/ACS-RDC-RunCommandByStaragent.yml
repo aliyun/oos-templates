@@ -1,15 +1,15 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky run command on ECS instances.
-  zh-cn: 批量在多台实例上运行命令。
+  en: Bulky run command on ECS instances
+  zh-cn: 批量在多台实例上运行命令
   name-en: ACS-RDC-RunCommandByStaragent
   name-zh-cn: 云效批量运行命令
 Parameters:
   instanceInfos:
-    Description: The infos list of the ECS instance.
+    Description: The infos list of the ECS instance
     Type: List
   batchNumber:
-    Description: The number of times of wholesale distribution.
+    Description: The number of times of wholesale distribution
     Type: Number
     MinValue: 1
     MaxValue: 10
@@ -27,13 +27,13 @@ Parameters:
     Type: String
     Default: 53082708-5ec4-4734-9299-dc986cb1845f
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description: The RAM role to be assumed by OOS
     Type: String
     Default: OOSServiceRole
 RamRole: '{{OOSAssumeRole}}'
 Tasks:
   - Name: loopRunCommand
-    Description: Bulky run cloud assistant command.
+    Description: Bulky run cloud assistant command
     Action: 'ACS::RDC::RunCommandByStaragent'
     Properties:
       ServiceTags:
@@ -50,7 +50,7 @@ Tasks:
       DeployId: '{{DeployId}}'
     Loop:
       Items: '{{ instanceInfos }}'
-      MaxErrors: 1
+      MaxErrors: 0
       Concurrency:
         'Fn::CalculateBatch':
           - '{{ batchNumber }}'

@@ -1,0 +1,87 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::ModifyInstanceSpec",
+    "name-zh-cn": "修改按量付费ECS实例的实例规格",
+    "en": "Modify postpaid ECS instance spec",
+    "zh-cn": "修改按量付费ECS实例的实例规格"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The Instance type of ECS instance",
+        "zh-cn": "ECS实例类型"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stops the ECS instances",
+        "zh-cn": "停止ECS实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
+      }
+    },
+    {
+      "Name": "modifyPostPaidInstanceSpec",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modifies the instance type of a pay-as-you-go instance",
+        "zh-cn": "修改按量付费ECS实例的实例规格"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceSpec",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "InstanceType": "{{ instanceType }}"
+        }
+      }
+    },
+    {
+      "Name": "waitInstanceReady",
+      "Action": "ACS::Sleep",
+      "Description": {
+        "en": "Waits for the instance type modify successfully",
+        "zh-cn": "等待实例规格修改成功"
+      },
+      "Properties": {
+        "Duration": "PT10S"
+      }
+    },
+    {
+      "Name": "startInstance",
+      "Action": "ACS::ECS::StartInstance",
+      "Description": {
+        "en": "Starts the ECS instances",
+        "zh-cn": "启动ECS实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
+      }
+    }
+  ]
+}

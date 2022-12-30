@@ -2,44 +2,52 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "en": "This template uses existing SAP HANA instances(source instance and destination instance) to restore the source instance backup data to the destination instance through the HBR service, and check the restored destination instance status.",
-    "zh-cn": "\u5728\u5df2\u6709\u7684\u4e24\u53f0SAP HANA\u5b9e\u4f8b(\u6e90\u5b9e\u4f8b\u548c\u76ee\u7684\u5b9e\u4f8b)\uff0c\u901a\u8fc7HBR\u670d\u52a1\u5c06\u6e90\u5b9e\u4f8b\u5907\u4efd\u6570\u636e\u6062\u590d\u5230\u76ee\u7684\u5b9e\u4f8b\uff0c\u5e76\u68c0\u67e5\u6062\u590d\u540e\u7684\u76ee\u7684\u5b9e\u4f8b\u72b6\u6001\u3002",
+    "zh-cn": "在已有的两台SAP HANA实例(源实例和目的实例)，通过HBR服务将源实例备份数据恢复到目的实例，并检查恢复后的目的实例状态",
     "name-en": "ACS-HBR-SAPHanaRestorationAutomationByExistingECS",
-    "name-zh-cn": "SAP HANA\u5907\u4efd\u53ef\u7528\u6027\u9a8c\u8bc1\uff08\u6062\u590d\u5230\u5df2\u6709\u5b9e\u4f8b\uff09"
+    "name-zh-cn": "SAP HANA备份可用性验证（恢复到已有实例）"
   },
   "Parameters": {
     "vaultId": {
+      "Label": {
+        "zh-cn": "HBR备份库ID",
+        "en": "Backup Vault ID"
+      },
       "Description": {
-        "name-zh-cn": "HBR\u5907\u4efd\u5e93ID",
-        "name-en": "Backup Vault ID",
-        "zh-cn": "\u5907\u4efd\u5e93\u7684Id\u3002",
-        "en": "Backup vault ID."
+        "zh-cn": "备份库的Id",
+        "en": "Backup vault ID"
       },
       "Type": "String"
     },
     "sourceClusterId": {
+      "Label": {
+        "zh-cn": "HBR源实例Id",
+        "en": "Source SAP HANA instance ID"
+      },
       "Description": {
-        "name-zh-cn": "HBR\u6e90\u5b9e\u4f8bId",
-        "name-en": "Source SAP HANA instance ID",
-        "zh-cn": "\u6e90\u5b9e\u4f8bId, \u9700\u8981\u6062\u590d\u7684SAP HANA\u5907\u4efd\u5b9e\u4f8b\u7684Id\uff0c\u8bf7\u5728\u6df7\u5408\u4e91\u5907\u4efd\u63a7\u5236\u53f0-ECS\u5e94\u7528\u5907\u4efd-\u5b9e\u4f8b\u540d\u79f0/Id\u4e00\u680f\u67e5\u770b\u3002",
+        "zh-cn": "源实例Id, 需要恢复的SAP HANA备份实例的Id，请在混合云备份控制台-ECS应用备份-实例名称/Id一栏查看。",
         "en": "Source SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID."
       },
       "Type": "String"
     },
     "destinationClusterId": {
+      "Label": {
+        "zh-cn": "HBR目的实例Id",
+        "en": "Destination SAP HANA instance ID"
+      },
       "Description": {
-        "name-zh-cn": "HBR\u76ee\u7684\u5b9e\u4f8bId",
-        "name-en": "Destination SAP HANA instance ID",
-        "zh-cn": "\u76ee\u7684\u5b9e\u4f8bId, \u6d4b\u8bd5\u7684SAP HANA\u5907\u4efd\u7684\u5b9e\u4f8bId\uff0c\u8bf7\u5728\u6df7\u5408\u4e91\u5907\u4efd\u63a7\u5236\u53f0-ECS\u5e94\u7528\u5907\u4efd-\u5b9e\u4f8b\u540d\u79f0/Id\u4e00\u680f\u67e5\u770b\u3002",
+        "zh-cn": "目的实例Id, 测试的SAP HANA备份的实例Id，请在混合云备份控制台-ECS应用备份-实例名称/Id一栏查看。",
         "en": "Destination SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID."
       },
       "Type": "String"
     },
     "databaseName": {
+      "Label": {
+        "zh-cn": "数据库实例列表",
+        "en": "SAP HANA Database List"
+      },
       "Description": {
-        "name-zh-cn": "\u6570\u636e\u5e93\u5b9e\u4f8b\u5217\u8868",
-        "name-en": "SAP HANA Database List",
-        "zh-cn": "\u9700\u8981\u6062\u590d\u5907\u4efd\u7684SAP HANA\u6570\u636e\u5e93\u5b9e\u4f8b\u5217\u8868\uff0c\u683c\u5f0f\uff1a<\u6e90\u6570\u636e\u5e93\u540d>@&lt;SID&gt;:<\u76ee\u7684\u6570\u636e\u5e93\u540d>\uff0c\u591a\u4e2a\u6570\u636e\u5e93\u5b9e\u4f8b\u8bf7\u4ee5\u6362\u884c\u5206\u9694\u3002",
-        "en": "SAP HANA database list in format of \"<Source SAP HANA database name>@<Source SAP HANA system Id>\". Separate multiple SAP HANA database with line breaks."
+        "zh-cn": "需要恢复备份的SAP HANA数据库实例列表，格式：<源数据库名>@&lt;SID&gt;:<目的数据库名>，多个数据库实例请以换行分隔",
+        "en": "SAP HANA database list in format of \"<Source SAP HANA database name>@<Source SAP HANA system Id>\". Separate multiple SAP HANA database with line breaks"
       },
       "Type": "List",
       "Default": [
@@ -49,50 +57,58 @@
     "HANASID": {
       "Type": "String",
       "ConstraintDescription": {
-        "zh-cn": "\u5fc5\u987b\u8f93\u51653\u4e2a\u5b57\u7b26,\u53ef\u5305\u542b\u5927\u5199\u5b57\u6bcd\u6216\u6570\u5b57\uff0c\u9996\u4f4d\u5fc5\u987b\u662f\u5927\u5199\u5b57\u6bcd\u3002",
+        "zh-cn": "必须输入3个字符,可包含大写字母或数字，首位必须是大写字母。",
         "en": "3 characters,can including capital letter or number, must starting with capital letter."
       },
+      "Label": {
+        "zh-cn": "目的实例SAP HANA SID",
+        "en": "SAP HANA  SID"
+      },
       "Description": {
-        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA SID",
-        "name-en": "SAP HANA  SID",
-        "zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA SID\u3002",
-        "en": "Destination instance SAP HANA SID."
+        "zh-cn": "目的实例SAP HANA SID",
+        "en": "Destination instance SAP HANA SID"
       },
       "AllowedPattern": "^[A-Z][A-Z0-9][A-Z0-9]$"
     },
     "ECSHostname": {
       "Type": "String",
+      "Label": {
+        "zh-cn": "目的实例主机名",
+        "en": "Hostname"
+      },
       "Description": {
-        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u4e3b\u673a\u540d",
-        "name-en": "Hostname",
-        "zh-cn": "\u76ee\u7684\u5b9e\u4f8b\u4e3b\u673a\u540d\u3002",
-        "en": "SAP HANA ECS hostname."
+        "zh-cn": "目的实例主机名",
+        "en": "SAP HANA ECS hostname"
       },
       "AllowedPattern": "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-])*([a-zA-Z0-9])$",
       "ConstraintDescription": {
-        "zh-cn": "\u957f\u5ea6\u4e3a 2-13 \u4e2a\u5b57\u7b26\uff0c\u5141\u8bb8\u4f7f\u7528\u5927\u5c0f\u5199\u5b57\u6bcd\u3001\u6570\u5b57\u6216\u8fde\u5b57\u7b26(-)\uff0c\u4f46\u4e0d\u80fd\u4ee5\u8fde\u5b57\u7b26(-)\u5f00\u5934\u6216\u7ed3\u5c3e\u3002",
+        "zh-cn": "长度为 2-13 个字符，允许使用大小写字母、数字或连字符(-)，但不能以连字符(-)开头或结尾",
         "en": "The length is 2-13 characters,can starting with a capital or lowercase letter,and can contain numbers,or -,but can't starting with - or end with -."
       }
     },
     "HANAInstanceNumber": {
       "Type": "String",
+      "Label": {
+        "zh-cn": "目的实例SAP HANA实例编号",
+        "en": "SAP HANA Instance Number"
+      },
       "Description": {
-        "name-zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA\u5b9e\u4f8b\u7f16\u53f7",
-        "name-en": "SAP HANA Instance Number",
-        "zh-cn": "\u76ee\u7684\u5b9e\u4f8bSAP HANA\u5b9e\u4f8b\u7f16\u53f7\u3002",
-        "en": "SAP HANA instance number."
+        "zh-cn": "目的实例SAP HANA实例编号",
+        "en": "SAP HANA instance number"
       },
       "ConstraintDescription": {
-        "zh-cn": "2\u4f4d\u6570\u5b57\uff0c00-97\u3002",
+        "zh-cn": "2位数字，00-97",
         "en": "2 numbers,00-97."
       },
       "AllowedPattern": "^([0-8][0-9]|9[0-6])$"
     },
     "dingTalkWebhook": {
+      "Label": {
+        "zh-cn": "钉钉机器人Webhook地址",
+        "en": "DingTalk Robot Webhook"
+      },
       "Description": {
-        "name-zh-cn": "\u9489\u9489\u673a\u5668\u4ebaWebhook\u5730\u5740",
-        "name-en": "DingTalk Robot Webhook",
-        "zh-cn": "\u9489\u9489\u81ea\u5b9a\u4e49\u673a\u5668\u4ebaWebhook\u5730\u5740\uff0c\u7528\u4ee5\u5411\u9489\u9489\u53d1\u9001\u6d4b\u8bd5\u7ed3\u679c\u6d88\u606f\u548c\u5220\u9664\u4e91\u8d44\u6e90\u5ba1\u6279\u6d88\u606f\uff0c\u66f4\u591a\u8bf7\u6d4f\u89c8<a href='https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq' target='_blank'>\u9489\u9489\u81ea\u5b9a\u4e49\u673a\u5668\u4eba</a>\u3002",
+        "zh-cn": "钉钉自定义机器人Webhook地址，用以向钉钉发送测试结果消息和删除云资源审批消息，更多请浏览<a href='https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq' target='_blank'>钉钉自定义机器人</a>。",
         "en": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details."
       },
       "Type": "String"
@@ -103,7 +119,7 @@
       "Name": "checkHanaBackupSetting",
       "Action": "ACS::CheckFor",
       "Description": {
-        "zh-cn": "\u67e5\u8be2\u6e90\u5b9e\u4f8bSAP HANA\u6570\u636e\u5e93\u5907\u4efd\u8bbe\u7f6e",
+        "zh-cn": "查询源实例SAP HANA数据库备份设置",
         "en": "Check source SAP HANA backup settings"
       },
       "Properties": {
@@ -144,7 +160,7 @@
       "Action": "ACS::CheckFor",
       "OnError": "getExecutionFaildMessage",
       "Description": {
-        "zh-cn": "\u68c0\u67e5\u5ba2\u6237\u7aef\u662f\u5426\u4e3a\u6fc0\u6d3b\u72b6\u6001",
+        "zh-cn": "检查客户端是否为激活状态",
         "en": "Check for client status(activated)"
       },
       "Properties": {
@@ -178,7 +194,7 @@
       "Action": "ACS::HBR::RestoreHanaDatabaseBackup",
       "OnError": "getExecutionFaildMessage",
       "Description": {
-        "zh-cn": "\u6062\u590d\u5e76\u9a8c\u8bc1\u5907\u4efd",
+        "zh-cn": "恢复并验证备份",
         "en": "Restore and verify backup"
       },
       "Properties": {
@@ -227,7 +243,7 @@
       "OnError": "getExecutionFaildMessage",
       "Description": {
         "en": "Verify the running status of the SAP HANA instance",
-        "zh-cn": "\u6821\u9a8cSAP HANA\u5b9e\u4f8b\u8fd0\u884c\u72b6\u6001"
+        "zh-cn": "校验SAP HANA实例运行状态"
       },
       "Properties": {
         "regionId": "{{ ACS::RegionId }}",
@@ -267,7 +283,7 @@
       "Action": "ACS::ExecuteAPI",
       "Description": {
         "en": "Get execution failure information",
-        "zh-cn": "\u83b7\u53d6\u6267\u884c\u5931\u8d25\u4fe1\u606f"
+        "zh-cn": "获取执行失败信息"
       },
       "Properties": {
         "Service": "OOS",
@@ -289,7 +305,7 @@
       "OnSuccess": "ACS::END",
       "Description": {
         "en": "Notification execution failure message",
-        "zh-cn": "\u901a\u77e5\u6267\u884c\u5931\u8d25\u6d88\u606f"
+        "zh-cn": "通知执行失败消息"
       },
       "Properties": {
         "NotifyType": "WebHook",
@@ -301,15 +317,15 @@
           "Content": {
             "msgtype": "markdown",
             "markdown": {
-              "title": "{{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6267\u884c\u5931\u8d25\u62a5\u544a",
+              "title": "{{ ACS::CurrentUTCTime }}-HBR自动测试执行失败报告",
               "text": {
                 "Fn::Join": [
                   "\n\n",
                   [
-                    "#### {{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u6267\u884c\u5931\u8d25\u62a5\u544a",
-                    "\u68c0\u6d4b\u6570\u636e\u5e93\uff1a{{ databaseName }}",
-                    "\u9519\u8bef\u4fe1\u606f\uff1a{{ getExecutionFaildMessage.statusMessage }}",
-                    "**\u8be6\u60c5\u8bf7\u5230[OOS\u63a7\u5236\u53f0](https://oos.console.aliyun.com/{{ ACS::RegionId }}/execution/detail/{{ ACS::ExecutionId }})\u67e5\u770b**"
+                    "#### {{ ACS::CurrentUTCTime }}-HBR自动测试执行失败报告",
+                    "检测数据库：{{ databaseName }}",
+                    "错误信息：{{ getExecutionFaildMessage.statusMessage }}",
+                    "**详情请到[OOS控制台](https://oos.console.aliyun.com/{{ ACS::RegionId }}/execution/detail/{{ ACS::ExecutionId }})查看**"
                   ]
                 ]
               }
@@ -327,7 +343,7 @@
       "Action": "ACS::Notify",
       "Description": {
         "en": "Notify test results",
-        "zh-cn": "\u9489\u9489\u901a\u77e5\u6d4b\u8bd5\u7ed3\u679c"
+        "zh-cn": "钉钉通知测试结果"
       },
       "Properties": {
         "NotifyType": "WebHook",
@@ -339,17 +355,17 @@
           "Content": {
             "msgtype": "markdown",
             "markdown": {
-              "title": "{{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u62a5\u544a",
+              "title": "{{ ACS::CurrentUTCTime }}-HBR自动测试报告",
               "text": {
                 "Fn::Join": [
                   "\n\n",
                   [
-                    "#### {{ ACS::CurrentUTCTime }}-HBR\u81ea\u52a8\u6d4b\u8bd5\u62a5\u544a",
-                    "\u6d4b\u8bd5\u7ed3\u679c\uff1aSUCCESS",
-                    "\u68c0\u6d4b\u6570\u636e\u5e93\uff1a{{ databaseName }}",
-                    "\u76ee\u7684\u5b9e\u4f8b\uff1a{{ ECSHostname }}",
-                    "\u76ee\u7684\u5b9e\u4f8bId\uff1a{{ checkForActivateClient.InstanceId }}",
-                    "**\u8be6\u7ec6\u4fe1\u606f\u8bf7\u5230[OOS\u63a7\u5236\u53f0](https://oos.console.aliyun.com/{{ACS::RegionId}}/execution/detail/{{ ACS::ExecutionId }})\u67e5\u770b**"
+                    "#### {{ ACS::CurrentUTCTime }}-HBR自动测试报告",
+                    "测试结果：SUCCESS",
+                    "检测数据库：{{ databaseName }}",
+                    "目的实例：{{ ECSHostname }}",
+                    "目的实例Id：{{ checkForActivateClient.InstanceId }}",
+                    "**详细信息请到[OOS控制台](https://oos.console.aliyun.com/{{ACS::RegionId}}/execution/detail/{{ ACS::ExecutionId }})查看**"
                   ]
                 ]
               }

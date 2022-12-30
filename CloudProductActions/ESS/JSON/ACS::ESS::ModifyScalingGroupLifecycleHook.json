@@ -1,0 +1,130 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "ModifyScalingGroupLifecycleHook",
+    "zh-cn": "修改伸缩组的生命周期挂钩配置",
+    "name-en": "ACS::ESS::ModifyScalingGroupLifecycleHook",
+    "name-zh-cn": "修改伸缩组的生命周期挂钩配置"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "Region",
+        "zh-cn": "地域"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "scalingGroupId": {
+      "Label": {
+        "en": "ScalingGroupId",
+        "zh-cn": "伸缩组ID"
+      },
+      "Type": "String"
+    },
+    "lifecycleHookName": {
+      "Label": {
+        "en": "LifecycleHook Name",
+        "zh-cn": "生命周期挂钩名称"
+      },
+      "Type": "String"
+    },
+    "lifecycleTransition": {
+      "Label": {
+        "en": "LifecycleHook Transition",
+        "zh-cn": "生命周期挂钩适用的伸缩活动类型"
+      },
+      "Type": "String"
+    },
+    "notificationMetadata": {
+      "Label": {
+        "en": "LifecycleHook Notification Metadata",
+        "zh-cn": "伸缩活动的等待状态的固定字符串信息"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getLifecycleHook",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get lifecycle hook",
+        "zh-cn": "获取生命周期挂钩"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeLifecycleHooks",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "LifecycleHookName": "{{ lifecycleHookName }}"
+        }
+      },
+      "Outputs": {
+        "totalCount": {
+          "Type": "String",
+          "ValueSelector": ".TotalCount"
+        }
+      }
+    },
+    {
+      "Name": "getLifecycleHookContent",
+      "When": {
+        "Fn::Equals": [
+          "{{ getLifecycleHook.totalCount }}",
+          1
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get lifecycle hook",
+        "zh-cn": "获取生命周期挂钩"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeLifecycleHooks",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "LifecycleHookName": "{{ lifecycleHookName }}"
+        }
+      },
+      "Outputs": {
+        "lifecycleHook": {
+          "Type": "String",
+          "ValueSelector": ".LifecycleHooks.LifecycleHook[0]"
+        }
+      }
+    },
+    {
+      "Name": "modifyLifecycleHookOfUpgrade",
+      "When": {
+        "Fn::Equals": [
+          "{{ getLifecycleHook.totalCount }}",
+          1
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle hook of upgrade",
+        "zh-cn": "修改用于升级的生命周期挂钩"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyLifecycleHook",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "NotificationMetadata": {
+            "Fn::Jq": [
+              "First",
+              ".NotificationMetadata | gsub(\"\\n\";\"\\\\n\") | fromjson | . + {{ notificationMetadata }} | tostring",
+              "{{ getLifecycleHookContent.lifecycleHook }}"
+            ]
+          },
+          "LifecycleTransition": "{{ lifecycleTransition }}",
+          "LifecycleHookName": "{{ lifecycleHookName }}"
+        }
+      }
+    }
+  ]
+}

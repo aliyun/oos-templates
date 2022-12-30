@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Schedules to execute specified template.
-  zh-cn: 定时执行指定模板。
+  en: Schedules to execute specified template
+  zh-cn: 定时执行指定模板
   name-en: ACS-ECS-ScheduleToExecuteTemplate
   name-zh-cn: 定时执行指定模板
   categories:
@@ -9,21 +9,28 @@ Description:
 Parameters:
   timerTrigger:
     Type: Json
+    Label:
+      en: TimerTrigger
+      zh-cn: 定时类型
+    AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
   templateName:
     Type: String
+    Label:
+      en: TemplateName
+      zh-cn: 模板名称
     AssociationProperty: TemplateName
   templateParameters:
-    Description:
-      en: Template paremeters to execute with.
-      zh-cn: 触发执行模板的参数。
+    Label:
+      en: TemplateParemeters
+      zh-cn: 触发执行模板的参数
     Type: Json
     AssociationProperty: TemplateParameter
     AssociationPropertyMetadata:
-      TemplateName: $templateName
+      TemplateName: templateName
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -31,8 +38,8 @@ Tasks:
   - Name: timerTrigger
     Action: 'ACS::TimerTrigger'
     Description:
-      en: Triggers a task as scheduled by specifying type and expression.
-      zh-cn: 通过指定触发类型和表达式按计划触发任务。
+      en: Triggers a task as scheduled by specifying type and expression
+      zh-cn: 通过指定触发类型和表达式按计划触发任务
     Properties:
       Type:
         'Fn::Select':
@@ -53,8 +60,8 @@ Tasks:
   - Name: executeTemplate
     Action: 'ACS::Template'
     Description:
-      en: Execute template.
-      zh-cn: 执行模板。
+      en: Execute template
+      zh-cn: 执行模板
     Properties:
       TemplateName: '{{ templateName }}'
       Parameters: '{{ templateParameters }}'

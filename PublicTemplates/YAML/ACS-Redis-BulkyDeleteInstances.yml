@@ -1,0 +1,51 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky delete Redis postpaid instances
+  zh-cn: 批量删除Redis按量付费实例
+  name-en: ACS-Redis-BulkyDeleteInstances
+  name-zh-cn: 批量删除Redis按量付费实例
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Type: List
+    Label:
+      en: RedisInstanceIds
+      zh-cn: Redis实例ID列表
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: deleteInstance
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Deletes Redis instance
+    zh-cn: 删除Redis实例
+  Properties:
+    Service: R-kvstore
+    API: DeleteInstance
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ instanceIds }}'

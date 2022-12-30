@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Set or modify the access permission (ACL) of the bucket.",
-    "zh-cn": "\u8bbe\u7f6e\u6216\u4fee\u6539\u5b58\u50a8\u7a7a\u95f4\uff08Bucket\uff09\u7684\u8bbf\u95ee\u6743\u9650\uff08ACL\uff09\u3002",
+    "en": "Set or modify the access permission (ACL) of the bucket",
+    "zh-cn": "设置或修改存储空间（Bucket）的访问权限（ACL）",
     "name-en": "ACS-OSS-PutBucketAcl",
-    "name-zh-cn": "\u8bbe\u7f6e\u5b58\u50a8\u7a7a\u95f4\u7684\u8bbf\u95ee\u6743\u9650",
+    "name-zh-cn": "设置存储空间的访问权限",
     "categories": [
       "security"
     ]
@@ -12,21 +12,24 @@
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": "The id of target region.",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "bucketName": {
-      "Description": {
-        "en": "The OSS bucket name.",
-        "zh-cn": "OSS bucket \u540d\u79f0\u3002"
+      "Label": {
+        "en": "BucketName",
+        "zh-cn": "OSS Bucket 名称"
       },
       "Type": "String"
     },
     "permissionName": {
-      "Description": {
-        "en": "The acl permission name.",
-        "zh-cn": "Acl\u6743\u9650\u540d\u79f0\u3002"
+      "Label": {
+        "en": "PermissionName",
+        "zh-cn": "Acl权限名称"
       },
       "Type": "String",
       "AllowedValues": [
@@ -35,23 +38,10 @@
         "private"
       ]
     },
-    "rateControl": {
-      "Description": {
-        "en": "Concurrency ratio of task execution.",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
-      },
-      "Type": "Json",
-      "AssociationProperty": "RateControl",
-      "Default": {
-        "Mode": "Concurrency",
-        "MaxErrors": 0,
-        "Concurrency": 10
-      }
-    },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -63,8 +53,8 @@
       "Name": "putBucketAcl",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Set or modify the access permission (ACL) of the bucket.",
-        "zh-cn": "\u8bbe\u7f6e\u6216\u4fee\u6539\u5b58\u50a8\u7a7a\u95f4\uff08Bucket\uff09\u7684\u8bbf\u95ee\u6743\u9650\uff08ACL\uff09\u3002"
+        "en": "Set or modify the access permission (ACL) of the bucket",
+        "zh-cn": "设置或修改存储空间（Bucket）的访问权限（ACL）"
       },
       "Properties": {
         "Service": "OSS",

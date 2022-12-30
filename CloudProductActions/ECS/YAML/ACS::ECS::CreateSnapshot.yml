@@ -1,19 +1,41 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates a snapshot for a disk.
+Description:
+  name-en: ACS::ECS::CreateSnapshot
+  name-zh-cn: 为云盘创建快照
+  en: Creates a snapshot for a disk
+  zh-cn: 为一块云盘创建一个快照
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   diskId:
-    Description: The ID of the disk.
+    Description:
+      en: The ID of the disk
+      zh-cn: 云盘ID
     Type: String
     MinLength: 1
     MaxLength: 30
+  snapshotName:
+    Description:
+      en: The name of snapshot
+      zh-cn: 快照名称
+    Type: String
+    Default: ''
+  retentionDays:
+    Description:
+      en: 'The retention period of the snapshot. Valid values: 1 to 65536. Unit: days'
+      zh-cn: 快照的保留时间，取值范围：1~65536,单位为天
+    Type: String
+    Default: ''
 Tasks:
   - Action: 'ACS::ExecuteAPI'
     Name: describeDisks
-    Description: Query one or more cloud disks and local disks you have created.
+    Description:
+      en: Queries created cloud disks info
+      zh-cn: 获取已经创建的云盘信息
     Properties:
       Service: ECS
       API: DescribeDisks
@@ -25,9 +47,24 @@ Tasks:
       instanceIds:
         Type: String
         ValueSelector: 'Disks.Disk[].InstanceId'
+  - Name: whetherDiskAttachedToInstance
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose the next task based on the status of whether the disk is attached to ECS
+      zh-cn: 根据磁盘是否已挂载到ECS的状态选择下一个任务
+    Properties:
+      DefaultTask: waitUtilInstanceRunningOrStopped
+      Choices:
+        - When:
+            'Fn::Equals':
+              - ''
+              - '{{ describeDisks.instanceIds }}'
+          NextTask: createSnapshot
   - Name: waitUtilInstanceRunningOrStopped
     Action: 'ACS::WaitFor'
-    Description: Waits for ECS instance status is running or stopped.
+    Description:
+      en: Waits for ECS instance status enter to Running or Stopped status
+      zh-cn: 等待ECS实例的状态至运行中或已停止状态
     Delay: 20
     Retries: 30
     DelayType: Constant
@@ -44,20 +81,33 @@ Tasks:
         - Stopped
   - Name: createSnapshot
     Action: 'ACS::ExecuteAPI'
-    Description: Create a snapshot with the specified disk ID and snapshot name.
+    Description:
+      en: Creates a snapshot with the specified disk ID and snapshot name
+      zh-cn: 通过云盘ID创建一个快照
     Properties:
       Service: ECS
       API: CreateSnapshot
       Parameters:
         RegionId: '{{ regionId }}'
         DiskId: '{{ diskId }}'
+        SnapshotName: '{{ snapshotName }}'
+        RetentionDays:
+          'Fn::If':
+            - 'Fn::Equals':
+                - ''
+                - '{{ retentionDays }}'
+            - Null
+            - '{{ retentionDays }}'
     Outputs:
       snapshotId:
         Type: String
         ValueSelector: SnapshotId
   - Name: untilSnapshotsReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the snapshot to be accomplished.
+    Description:
+      en: Waits for the snapshot to be accomplished
+      zh-cn: 等待快照创建完成
+    Retries: 57
     Properties:
       Service: ECS
       API: DescribeSnapshots
@@ -67,6 +117,8 @@ Tasks:
           - '{{ createSnapshot.snapshotId }}'
       DesiredValues:
         - accomplished
+      StopRetryValues:
+        - failed
       PropertySelector: 'Snapshots.Snapshot[].Status'
 Outputs:
   snapshotId:

@@ -1,44 +1,74 @@
 FormatVersion: OOS-2019-06-01
-Description: Recoveries database to an existed or new instance.
+Description:
+  name-en: ACS::RDS::RecoveryDbInstance
+  name-zh-cn: 将数据库恢复到已存在的实例或新实例
+  en: Recoveries database to an existed or new instance
+  zh-cn: 将数据库恢复到已存在的实例或新实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   targetDBInstanceId:
-    Description: The ID of target DB Instance that will be handled.
+    Description:
+      en: The ID of target DB Instance
+      zh-cn: 目标DB实例的ID
     Type: String
   dBInstanceId:
-    Description: The ID of DB instance that will be handled.
+    Description:
+      en: The ID of DB instance
+      zh-cn: DB实例的ID
     Type: String
   dBInstanceClass:
-    Description: The class of DB Instance will be recovered.
+    Description:
+      en: The instance type (specifications)
+      zh-cn: 实例类型(规格)
     Type: String
   restoreTime:
-    Description: The time that database will be recovered.
+    Description:
+      en: The time that database will be recovered
+      zh-cn: 数据库恢复的时间
     Type: String
   instanceNetworkType:
-    Description: The network type of DB Instance will be recovered.
+    Description:
+      en: The network type of DB Instance will be recovered
+      zh-cn: DB实例的网络类型恢复成功
     Type: String
   payType:
-    Description: The billing method of the instance.
+    Description:
+      en: The billing method of the instance
+      zh-cn: 实例的计费方法
     Type: String
   vPCId:
-    Description: The VPC ID of DB Instance will be recovered.
+    Description:
+      en: The VPC ID of DB Instance will be recovered
+      zh-cn: 恢复DB实例的VPC
     Type: String
   vSwitchId:
-    Description: The vSwitch ID of DB Instance will be recovered.
+    Description:
+      en: The vSwitch ID of DB Instance will be recovered
+      zh-cn: 恢复DB实例的vSwitch
     Type: String
   dBInstanceStorage:
-    Description: The Storage of DB Instance will be recovered.
+    Description:
+      en: The Storage of DB Instance will be recovered
+      zh-cn: 恢复DB实例的存储方式
     Type: String
   dBName:
-    Description: The name of DB Instance will be recovered.
+    Description:
+      name-en: dBName
+      name-zh-cn: DB实例名称
+      en: The name of DB Instance will be recovered.
+      zh-cn: 恢复DB实例的名称。
     Type: String
 Tasks:
 - Name: recoveryDBInstance
   Action: ACS::ExecuteAPI
-  Description: Recoveries database to an existed or new instance.
+  Description:
+    en: Recoveries database to an existed or new instance
+    zh-cn: 将数据库恢复到已存在的实例或新实例
   Properties:
     Service: RDS
     API: RecoveryDBInstance
@@ -58,7 +88,9 @@ Tasks:
       ValueSelector: DBInstanceId
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the database to enter running status.
+  Description:
+    en: Waits for the database to enter running status
+    zh-cn: 等待数据库进入运行状态
   Properties:
     Service: RDS
     API: DescribeDatabases

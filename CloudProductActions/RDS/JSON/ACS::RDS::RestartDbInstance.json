@@ -1,14 +1,25 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Restarts an RDS instance.",
+  "Description": {
+    "name-en": "ACS::RDS::RestartDbInstance",
+    "name-zh-cn": "重启RDS实例",
+    "en": "Restarts an RDS instance",
+    "zh-cn": "重启一台RDS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "dBInstanceId": {
-      "Description": "The ID of DB Instance that will be restarted.",
+      "Description": {
+        "en": "The ID of DB Instance that will be restarted",
+        "zh-cn": "将要重启的DB实例的ID"
+      },
       "Type": "String"
     }
   },
@@ -16,7 +27,10 @@
     {
       "Name": "restartDBInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Restarts an RDS instance.",
+      "Description": {
+        "en": "Restarts an RDS instance",
+        "zh-cn": "重新启动RDS实例"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "RestartDBInstance",
@@ -29,7 +43,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the DB Instance to enter running status.",
+      "Description": {
+        "en": "Waits for the DB Instance to enter running status",
+        "zh-cn": "等待DB实例进入running状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeDBInstances",

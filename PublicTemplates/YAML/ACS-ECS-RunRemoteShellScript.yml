@@ -1,77 +1,85 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Run remote shell script.
-  zh-cn: 运行远端shell脚本。
+  en: Run remote shell script
+  zh-cn: 运行远端shell脚本
   name-en: ACS-ECS-RunRemoteShellScript
   name-zh-cn: 运行远端shell脚本
   categories:
     - run_command
 Parameters:
-  instanceId:
-    Description:
-      en: The ID of ECS Instance.
-      zh-cn: ECS实例ID。
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     Type: String
-    MaxLength: 30
-    MinLength: 1
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   instanceRole:
-    Description:
-      en: The ramRole attached on the instance.
-      zh-cn: 挂载到实例上的RAM角色。
+    Label:
+      en: InstanceRole
+      zh-cn: 挂载到实例上的RAM角色
     Type: String
   fileName:
-    Description:
-      en: The name of the file to execute.
-      zh-cn: 执行的文件名。
+    Label:
+      en: FileName
+      zh-cn: 执行的文件名
     Type: String
   srcUrl:
-    Description:
-      en: Current directory of the file in OSS.
-      zh-cn: 文件在OSS中的目录。
+    Label:
+      en: SrcUrl
+      zh-cn: 文件在OSS中的目录
     Type: String
   destUrl:
-    Description:
-      en: Target directory for file copy in linux instance.
-      zh-cn: 文件复制到ECS实例中的目录。
+    Label:
+      en: DestUrl
+      zh-cn: 文件复制到ECS实例中的目录
     Type: String
   workingDir:
-    Description:
-      en: The directory where the created command runs on the ECS instances.
-      zh-cn: 在实例中运行命令的目录。
+    Label:
+      en: WorkingDir
+      zh-cn: 在实例中运行命令的目录
     Type: String
     Default: /root
   timeout:
-    Description:
-      en: >-
-        The value of the invocation timeout period of a command on ECS
-        instances.
-      zh-cn: 运行命令最大超时时间。
+    Label:
+      en: Timeout
+      zh-cn: 运行命令最大超时时间
     Type: Number
     Default: 600
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: copyOSSFileToInstance
     Description:
-      en: Copies OSS file to linux instace.
-      zh-cn: 复制OSS中的文件到Linux实例中。
+      en: Copies OSS file to linux instace
+      zh-cn: 复制OSS中的文件到Linux实例中
     Action: 'ACS::ECS::CopyLinuxInstanceFileFromOSS'
     Properties:
+      regionId: '{{ regionId }}'
       instanceId: '{{ instanceId }}'
       instanceRole: '{{ instanceRole }}'
       srcUrl: '{{ srcUrl }}/{{ fileName }}'
       destUrl: '{{ destUrl }}'
   - Name: runCommand
     Description:
-      en: Execute cloud assistant command.
-      zh-cn: 执行云助手命令。
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
     Action: 'ACS::ECS::RunCommand'
     Properties:
+      regionId: '{{ regionId }}'
       commandContent: '/bin/bash {{ destUrl }}/{{ fileName }}'
       instanceId: '{{ instanceId }}'
       commandType: RunShellScript
@@ -85,3 +93,29 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - instanceRole
+          - fileName
+          - srcUrl
+          - destUrl
+          - workingDir
+          - timeout
+        Label:
+          default:
+            zh-cn: 执行Shell脚本选型
+            en: Run Shell Script Options
+      - Parameters:
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instance
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

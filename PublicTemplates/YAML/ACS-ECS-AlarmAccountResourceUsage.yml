@@ -1,34 +1,40 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Resource usage exceeds threshold alarm notification.
-  zh-cn: 账户资源使用率超出阈值后报警通知。
+  en: Resource usage exceeds threshold alarm notification
+  zh-cn: 账户资源使用率超出阈值后报警通知
   name-en: ACS-ECS-AlarmAccountResourceUsage
   name-zh-cn: 账户资源使用率超出阈值后报警
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   threshold:
+    Label:
+      en: Threshold
+      zh-cn: 资源使用率警报的阈值
     Description:
-      en: 'The threshold of resource usage alarm(example:10 is 10%,50 is 50%).'
-      zh-cn: 资源使用率警报的阈值（例如：10为10％，50为50％）。
+      en: example:10 is 10%,50 is 50%
+      zh-cn: 例如：10为10％，50为50％
     Type: Number
     Default: 80
     MinValue: 20
     MaxValue: 99
   webHookUrl:
     Description:
-      en: 'The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.'
-      zh-cn: '钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。'
+      en: 'e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.'
+      zh-cn: '形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。'
+    Label:
+      en: WebHookUrl
+      zh-ch: 钉钉群助手的webhook地址
     Type: String
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -36,8 +42,8 @@ Tasks:
   - Name: timerTrigger
     Action: 'ACS::TimerTrigger'
     Description:
-      en: Triggers a task as scheduled by specifying Cron expression.
-      zh-cn: 通过指定Cron表达式按计划触发任务。
+      en: Triggers a task as scheduled by specifying Cron expression
+      zh-cn: 通过指定Cron表达式按计划触发任务
     Properties:
       Type: rate
       Expression: 30 minutes
@@ -45,8 +51,8 @@ Tasks:
   - Name: getAccountAttributes
     Action: 'ACS::ExecuteApi'
     Description:
-      en: Query the quotas of ECS resources that you can create in a region.
-      zh-cn: 查询指定地域下能创建的ECS资源配额。
+      en: Query the quotas of ECS resources that you can create in a region
+      zh-cn: 查询指定地域下能创建的ECS资源配额
     Properties:
       Service: ECS
       API: DescribeAccountAttributes
@@ -86,8 +92,8 @@ Tasks:
   - Name: checkResourceUsage
     Action: 'ACS::Choice'
     Description:
-      en: Choose the notification task by usage.
-      zh-cn: 通过使用率选择通知任务。
+      en: Choose the notification task by usage
+      zh-cn: 通过使用率选择通知任务
     Properties:
       DefaultTask: 'ACS::END'
       Choices:
@@ -135,8 +141,8 @@ Tasks:
     Action: 'ACS::Notify'
     OnSuccess: 'ACS::END'
     Description:
-      en: Resource usage exceeds threshold alarm notification.
-      zh-cn: 资源使用率超出阈值报警通知。
+      en: Resource usage exceeds threshold alarm notification
+      zh-cn: 资源使用率超出阈值报警通知
     Properties:
       NotifyType: WebHook
       WebHook:
@@ -194,3 +200,20 @@ Tasks:
                               - '{"": ""}'
                       - '(The PostpaidYundiskCapacityCloudEssd usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费cloud_essd云盘容量 使用率已超过{{threshold}}%。)'
                       - ''
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - threshold
+          - webHookUrl
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

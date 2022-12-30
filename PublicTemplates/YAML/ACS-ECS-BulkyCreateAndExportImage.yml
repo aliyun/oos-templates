@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky creates ECS image and exports them into OSS.
-  zh-cn: 批量创建并导出镜像到OSS-Bucket。
+  en: Bulky creates ECS image and exports them into OSS
+  zh-cn: 批量创建并导出镜像到OSS-Bucket
   name-en: ACS-ECS-BulkyCreateAndExportImage
   name-zh-cn: 批量创建并导出镜像到OSS-Bucket
   categories:
@@ -9,29 +9,30 @@ Description:
 Parameters:
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
   OSSBucket:
-    Description:
-      en: The OSS bucket to which the image is to be exported.
-      zh-cn: 保存导出镜像的OSS bucket。
+    Label:
+      en: OSSBucket
+      zh-cn: 保存导出镜像的OSS bucket
     Type: String
-
   tags:
-    Description:
-      en: The image tag.
-      zh-cn: 镜像标签。
+    Label:
+      en: Tags
+      zh-cn: 镜像标签
     Type: Json
     AssociationProperty: Tags
     AssociationPropertyMetadata:
       ShowSystem: false
     Default: []
-
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -39,17 +40,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: getInstance
   Description:
-    en: Views the ECS instances.
-    zh-cn: 获取ECS实例。
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
@@ -62,8 +63,8 @@ Tasks:
 - Name: createImage
   Action: ACS::ECS::CreateImage
   Description:
-    en: Create new image with the specified image name and instance ID.
-    zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
+    en: Create new image with the specified image name and instance ID
+    zh-cn: 通过指定实例ID和镜像名称创建新的镜像
   Properties:
     instanceId: '{{ ACS::TaskLoopItem }}'
     tags: '{{tags}}'
@@ -82,8 +83,8 @@ Tasks:
 - Name: importImageToOSS
   Action: ACS::ExecuteApi
   Description:
-    en: EXport image to OSS bucket.
-    zh-cn: 导出镜像到OSS-Bucket。
+    en: EXport image to OSS bucket
+    zh-cn: 导出镜像到OSS-Bucket
   Properties:
     Service: ECS
     API: ExportImage
@@ -97,3 +98,21 @@ Outputs:
   imageIds:
     Type: List
     Value: '{{ createImage.imageIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - targets
+          - OSSBucket
+          - tags
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

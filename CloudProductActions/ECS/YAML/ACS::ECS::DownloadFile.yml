@@ -1,34 +1,52 @@
 FormatVersion: OOS-2019-06-01
-Description: SownLoads file to instance.
+Description:
+  name-en: ACS::ECS::DownloadFile
+  name-zh-cn: 到ECS实例中下载文件
+  en: Download the file to the ECS instance
+  zh-cn: 到ECS实例中下载文件
 Parameters:
   regionId:
-    Description: The id of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The id of instace.
+    Description:
+      en: The ID of ECS instace
+      zh-cn: ECS实例ID
     Type: String
   sourceType:
-    Description: The type of file storage.
+    Description:
+      en: The type of file storage
+      zh-cn: 文件存储方式
     Type: String
     AllowedValues:
       - oss
       - https
-      - github
+      - local
   sourcePath:
-    Description: You must specify a URL where the file is stored.
+    Description:
+      en: You must specify a URL where the file is stored
+      zh-cn: 您必须指定一个用于存储文件的URL
     Type: String
   tokenInfo:
-    Description: Specify a token to download file.It is only required when downloading file from GitHub.
+    Description:
+      en: Specify a token to download file.It is only required when downloading file from GitHub
+      zh-cn: 指定一个token来下载文件，只有从GitHub下载文件时会用到
     Type: String
     Default: ''
   destinationDir:
-    Description: Target directory for file copy in instance.
+    Description:
+      en: Target directory for file download in instance
+      zh-cn: 文件在实例中的下载目录
     Type: String
 Tasks:
   - Name: queryInstanceOSType
     Action: 'ACS::ExecuteApi'
-    Description: Queries ECS instance OS type.
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取实例操作系统类型
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -46,12 +64,37 @@ Tasks:
         - '{{ queryInstanceOSType.OSType }}'
         - linux
     Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Execute download file command on linux instance
+      zh-cn: 在linux类型实例上执行下载文件命令
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'
       commandType: RunShellScript
       commandContent: |-
-        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\','{{destinationDir}}'
+        #/bin/bash
+        if [ {{sourceType}} = 'local' ]; then
+          filePath=$(echo "{{sourcePath}}" | awk -F'?' '{print$1}')
+          fileName=$(echo $filePath | awk -F'/' '{print$5}')
+          wget "{{sourcePath}}" -O {{destinationDir}}/$fileName -q
+          echo "{{destinationDir}}/$fileName Execute Success"
+        else
+          current_version=`aliyun-service -v`
+          specified_version=1.0.2.497
+
+          if [[ $current_version > $specified_version ]]; then
+            acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'"{{sourcePath}}"',\''{{ tokenInfo }}'\','{{destinationDir}}'
+          else
+            version='{{ ACS::OOSUtilVersion }}'
+            path=/usr/local/share/aliyun-oosutil/$version
+            currentPath=`pwd`
+            test -e $path || mkdir -p $path
+            cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
+            chmod +x oosutil_linux
+            cd $currentPath
+            $path/oosutil_linux download_content {{ sourceType }} {{ sourcePath }} \''{{ tokenInfo }}'\' {{destinationDir}}
+          fi
+        fi
     Outputs:
       commandOutput:
         Type: String
@@ -62,12 +105,50 @@ Tasks:
         - '{{ queryInstanceOSType.OSType }}'
         - windows
     Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Executes download file command on windows instance
+      zh-cn: 在windows类型实例上执行下载文件命令
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'
       commandType: RunPowerShellScript
       commandContent: |-
-        acs-plugin-manager.exe --exec -P oosutil_win --param download_content,{{ sourceType }},'{{ sourcePath }}','`{{ tokenInfo }}`','{{destinationDir}}'
+        $sourcePath = "{{ sourcePath }}"
+        if ("{{ sourceType }}" -eq "local"){
+          $destinationDir = "{{ destinationDir }}"
+          $httpFilePath = $sourcePath.Split("?")[0]
+          $fileName = $httpFilePath.Split("/")[4]
+          $client = new-object System.Net.WebClient
+          $client.DownloadFile($sourcePath, "$destinationDir/$fileName")
+          echo "{{destinationDir}}/$fileName Execute Success"
+        }else{
+          $current_version=(aliyun_assist_service.exe -v)
+          $specified_version="1.0.0.134"
+          if ($current_version -gt $specified_version){
+            acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',{{destinationDir}}"
+            if ($LASTEXITCODE -ne 0){
+              exit $LASTEXITCODE;
+            }
+          }else{
+            $version="{{ACS::OOSUtilVersion}}"
+            $path = "C:\aliyun-oosutil\$version"
+            $currentPath=(pwd)
+            $pathExistOrNot = Test-Path -Path "$path"
+            if ($pathExistOrNot){
+                cd $path
+            }else{
+                mkdir $path
+                cd $path
+            }
+            $client = new-object System.Net.WebClient
+            $client.DownloadFile("https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe", "$path/oosutil_windows.exe")
+            cd $currentPath
+            C:\aliyun-oosutil\{{ ACS::OOSUtilVersion }}\oosutil_windows.exe download_content {{ sourceType }} $sourcePath '`{{ tokenInfo }}`' {{destinationDir}}
+            if ($LASTEXITCODE -ne 0){
+              exit $LASTEXITCODE;
+            }
+          }
+        }
     Outputs:
       commandOutput:
         Type: String

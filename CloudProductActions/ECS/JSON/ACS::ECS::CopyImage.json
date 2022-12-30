@@ -1,30 +1,66 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Cross Region copy images.",
+  "Description": {
+    "name-en": "ACS::ECS::CopyImage",
+    "name-zh-cn": "跨地域复制镜像",
+    "en": "Cross Region copy images",
+    "zh-cn": "跨区地域复制镜像"
+  },
   "Parameters": {
     "imageId": {
-      "Description": "The image to clone.",
+      "Description": {
+        "en": "The ID of image to clone",
+        "zh-cn": "要克隆的镜像的ID"
+      },
       "Type": "String"
     },
     "regionId": {
-      "Description": "The Source Region Id.",
+      "Description": {
+        "en": "The source Region Id",
+        "zh-cn": "源地域ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetRegionId": {
-      "Description": "The Target Region Id.",
+      "Description": {
+        "en": "The Target Region ID",
+        "zh-cn": "目标地域ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetImageName": {
-      "Description": "The Target image name.",
+      "Description": {
+        "en": "The Target image name",
+        "zh-cn": "目标镜像名称"
+      },
       "Type": "String",
       "Default": "{{ imageId }}-{{ACS::ExecutionId}}"
     },
+    "encrypted": {
+      "Description": {
+        "en": "Specifies whether to encrypt the image copy",
+        "zh-cn": "是否加密复制后的镜像"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "KMSKeyId": {
+      "Description": {
+        "en": "The ID of the key used to encrypt the image copy",
+        "zh-cn": "加密镜像使用的密钥ID"
+      },
+      "Type": "String",
+      "Default": ""
+    },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -32,9 +68,34 @@
   "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
     {
+      "Name": "whetheToCopyImage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Whether to copy image by target region id",
+        "zh-cn": "是否根据目标地域ID复制镜像"
+      },
+      "Properties": {
+        "DefaultTask": "copyImage",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "{{ regionId }}",
+                "{{ targetRegionId }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
       "Name": "copyImage",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Copy image.",
+      "Description": {
+        "en": "Copies image",
+        "zh-cn": "复制镜像"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CopyImage",
@@ -42,7 +103,20 @@
           "RegionId": "{{ regionId }}",
           "ImageId": "{{ imageId }}",
           "DestinationRegionId": "{{ targetRegionId }}",
-          "DestinationImageName": "{{ targetImageName }}"
+          "DestinationImageName": "{{ targetImageName }}",
+          "Encrypted": "{{ encrypted }}",
+          "KMSKeyId": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  false,
+                  "{{ encrypted }}"
+                ]
+              },
+              null,
+              "{{ KMSKeyId }}"
+            ]
+          }
         }
       },
       "Outputs": {
@@ -55,7 +129,10 @@
     {
       "Name": "untilCopyImageReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for copied image available.",
+      "Description": {
+        "en": "Waits for copied image available",
+        "zh-cn": "等待复制的镜像可用"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeImages",
@@ -68,7 +145,7 @@
         ],
         "PropertySelector": "Images.Image[].Status"
       },
-      "Retries": 17
+      "Retries": 57
     }
   ],
   "Outputs": {

@@ -1,0 +1,201 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Publish a message to the specified MNS topic. After the message is published to the topic, it will be pushed to Endpoint for consumption",
+    "zh-cn": "向指定的MNS主题发布消息，消息发布到主题后随即会被推送给Endpoint消费",
+    "name-en": "ACS-MNS-PublishMessage",
+    "name-zh-cn": "发布消息至MNS主题",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "topicName": {
+      "Label": {
+        "en": "TopicName",
+        "zh-cn": "主题名称"
+      },
+      "Type": "String"
+    },
+    "message": {
+      "Label": {
+        "en": "Message",
+        "zh-cn": "MNS推送的消息"
+      },
+      "Type": "String"
+    },
+    "messageType": {
+      "Label": {
+        "en": "MessageType",
+        "zh-cn": "MNS推送消息的类型"
+      },
+      "Description": {
+        "en": "(defalut:to publish a message to the subject of MNS, SMS:to push the message to smsendpoint, mail:to push the message to mailendpoint)",
+        "zh-cn": "（defalut：为向mns的主题发布消息，sms：消息推送到SmsEndpoint,mail：消息推送到MailEndpoint）"
+      },
+      "Type": "String",
+      "Default": "default",
+      "AllowedValues": [
+        "default",
+        "sms",
+        "mail"
+      ]
+    },
+    "messageAttributes": {
+      "Label": {
+        "en": "MessageAttributes",
+        "zh-cn": "推送消息的属性"
+      },
+      "Description": {
+        "en": "Required when message type is SMS and mail (the content of mail and ssm are different, please refer to the document https://help.aliyun.com/document_detail/27497.html).",
+        "zh-cn": "当messageType为sms与mail时为必填项（mail与ssm的内容不同请参考文档https://help.aliyun.com/document_detail/27497.html）。"
+      },
+      "Type": "Json",
+      "Default": {}
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "publishMessage",
+      "When": {
+        "Fn::Equals": [
+          "{{ messageType }}",
+          "default"
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Publish a message to the specified topic",
+        "zh-cn": "向指定的主题发布消息"
+      },
+      "Properties": {
+        "Service": "MNS",
+        "API": "PublishMessage",
+        "Method": "POST",
+        "URI": "/topics/{{ topicName }}/messages",
+        "Headers": {},
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AccountId": "{{ ACS::AccountId }}"
+        },
+        "Body": "<?xml version=\"1.0\" encoding=\"utf-8\"?><Message xmlns=\"http://mns.aliyuncs.com/doc/v1/\"><MessageBody>{{ message }}</MessageBody></Message>"
+      },
+      "Outputs": {
+        "message": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    },
+    {
+      "Name": "publishSmsMessage",
+      "When": {
+        "Fn::Equals": [
+          "{{ messageType }}",
+          "sms"
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Publish a message to the specified topic abourt sms, and push it to sms endpoint",
+        "zh-cn": "向指定的主题发布相关消息，并推送给短信"
+      },
+      "Properties": {
+        "Service": "MNS",
+        "API": "PublishMessage",
+        "Method": "POST",
+        "URI": "/topics/{{ topicName }}/messages",
+        "Headers": {},
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AccountId": "{{ ACS::AccountId }}"
+        },
+        "Body": "<?xml version=\"1.0\" encoding=\"utf-8\"?><Message xmlns=\"http://mns.aliyuncs.com/doc/v1/\"><MessageBody>{{ message }}</MessageBody><MessageAttributes><DirectSMS>{{ messageAttributes }}</DirectSMS></MessageAttributes></Message>"
+      },
+      "Outputs": {
+        "message": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    },
+    {
+      "Name": "publishMailMessage",
+      "When": {
+        "Fn::Equals": [
+          "{{ messageType }}",
+          "mail"
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Publish a message to the specified topic abourt mail, and push it to mail endpoint",
+        "zh-cn": "向指定的主题发布邮箱相关的消息，并推送给邮箱"
+      },
+      "Properties": {
+        "Service": "MNS",
+        "API": "PublishMessage",
+        "Method": "POST",
+        "URI": "/topics/{{ topicName }}/messages",
+        "Headers": {},
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AccountId": "{{ ACS::AccountId }}"
+        },
+        "Body": "<?xml version=\"1.0\" encoding=\"utf-8\"?><Message xmlns=\"http://mns.aliyuncs.com/doc/v1/\"><MessageBody>{{ message }}</MessageBody><MessageAttributes><DirectMail>{{ messageAttributes }}</DirectMail></MessageAttributes></Message>"
+      },
+      "Outputs": {
+        "message": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "message": {
+      "Type": "Json",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "default",
+              "{{ messageType }}"
+            ]
+          },
+          "{{ publishMessage.message }}",
+          {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "ssm",
+                  "{{ messageType }}"
+                ]
+              },
+              "{{ publishSmsMessage.message }}",
+              "{{ publishMailMessage.message }}"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::PutInventory",
+    "name-zh-cn": "收集Inventory数据",
+    "en": "Put inventory data",
+    "zh-cn": "收集Inventory数据"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "linuxOptions": {
+      "Description": {
+        "en": "Options string for linux upload inventory",
+        "zh-cn": "linux收集inventory的操作字符串"
+      },
+      "Type": "String"
+    },
+    "windowsOptions": {
+      "Description": {
+        "en": "Options string for windows upload_inventory",
+        "zh-cn": "windows收集inventory的操作字符串"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "queryInstanceOSType",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "查询ECS实例的操作系统类型"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "OSType": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSType"
+        }
+      }
+    },
+    {
+      "Name": "putLinuxInventoryData",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Puts inventory data by run command on linux instance.",
+        "zh-cn": "通过在linux类型实例上执行命令收集Inventory数据"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  acs-plugin-manager --exec -P oosutil --separator=^ --param upload_inventory^\\''{{linuxOptions}}'\\'\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  currentPath=`pwd`\n  test -e $path || mkdir -p $path\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  $path/oosutil_linux upload_inventory '{{linuxOptions}}'\nfi"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "putWindowsInventoryData",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Puts inventory data by run command on windows instance.",
+        "zh-cn": "通过在windows类型实例上执行命令收集Inventory数据"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": {
+          "Fn::Join": [
+            "",
+            [
+              "$current_version=(aliyun_assist_service.exe -v)\n$specified_version=\"1.0.0.134\"\nif ($current_version -gt $specified_version){\n  acs-plugin-manager.exe --exec -P oosutil_win --separator=^ --param upload_inventory^'",
+              {
+                "Fn::Escape": [
+                  {
+                    "Fn::Escape": [
+                      "{{ windowsOptions }}",
+                      "powershell"
+                    ]
+                  },
+                  "powershell"
+                ]
+              },
+              "'\n}else{\n  $version=\"{{ACS::OOSUtilVersion}}\"\n  $path = \"C:\\aliyun-oosutil\\$version\"\n  $currentPath=(pwd)\n  $pathExistOrNot = Test-Path -Path \"$path\"\n  if ($pathExistOrNot){\n      cd $path\n  }else{\n      mkdir $path\n      cd $path\n  }\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile(\"https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe\", \"$path/oosutil_windows.exe\")\n  cd $currentPath\n  C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe upload_inventory '",
+              {
+                "Fn::Escape": [
+                  "{{ windowsOptions }}",
+                  "powershell"
+                ]
+              },
+              "'\n}"
+            ]
+          ]
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "linux",
+              "{{ queryInstanceOSType.OSType }}"
+            ]
+          },
+          "{{ putLinuxInventoryData.commandOutput }}",
+          "{{ putWindowsInventoryData.commandOutput }}"
+        ]
+      }
+    }
+  }
+}

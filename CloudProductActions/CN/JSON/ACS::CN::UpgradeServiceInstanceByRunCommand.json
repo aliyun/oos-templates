@@ -1,0 +1,303 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "DownLoad file and run command in ComputeNest service instance‘s Upgrade stage",
+    "zh-cn": "通过下载OSS文件与运行命令执行服务实例升级",
+    "name-en": "ACS::CN::UpgradeServiceInstanceByRunCommand",
+    "name-zh-cn": "执行升级阶段命令",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "Region",
+        "zh-cn": "地域"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "serviceInstanceId": {
+      "Description": {
+        "en": "The ID of the ComputeNest service instance",
+        "zh-cn": "计算巢服务实例ID"
+      },
+      "Type": "String"
+    },
+    "resourceName": {
+      "Description": {
+        "en": "The resource name of ECS instance",
+        "zh-cn": "运行命令的ECS实例资源名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "applicationGroupName": {
+      "Description": {
+        "en": "The applicationGroup name of ECS instance",
+        "zh-cn": "运行命令的ECS实例应用分组名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "artifactsUrl": {
+      "Description": {
+        "en": "软件包地址",
+        "zh-cn": "The URL of file artifacts"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "artifactsDownloadDirectory": {
+      "Description": {
+        "en": "软件包下载目录",
+        "zh-cn": "The artifacts download to directory"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "commandType": {
+      "Label": {
+        "en": "CommandType",
+        "zh-cn": "命令类型"
+      },
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "ECSCommandType"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunShellScript",
+        "RunPythonScript",
+        "RunPerlScript",
+        "RunBatScript",
+        "RunPowerShellScript"
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "命令内容"
+      },
+      "Type": "String",
+      "MaxLength": 16384,
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
+      "AssociationPropertyMetadata": {
+        "CommandType": "${commandType}"
+      }
+    },
+    "workingDir": {
+      "Description": {
+        "en": "Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32",
+        "zh-cn": "Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32"
+      },
+      "Label": {
+        "en": "WorkingDir",
+        "zh-cn": "运行目录"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Value": [
+          {
+            "Condition": {
+              "Fn::Or": [
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunShellScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPythonScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPerlScript"
+                  ]
+                }
+              ]
+            },
+            "Value": "/root"
+          },
+          {
+            "Condition": {
+              "Fn::Or": [
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunBatScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPowerShellScript"
+                  ]
+                }
+              ]
+            },
+            "Value": "C:\\\\Windows\\\\System32"
+          }
+        ]
+      }
+    },
+    "timeout": {
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "超时时间"
+      },
+      "Type": "Number",
+      "Default": 600
+    },
+    "enableParameter": {
+      "Label": {
+        "en": "EnableParameter",
+        "zh-cn": "命令中是否包含加密参数或自定义参数"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "parameters": {
+      "Description": {
+        "en": "The parameters of the command",
+        "zh-cn": "命令参数"
+      },
+      "Type": "Json",
+      "Default": {}
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          {
+            "Type": "Tags",
+            "RegionId": "{{ regionId }}",
+            "Tags": {
+              "Fn::If": [
+                {
+                  "Fn::Equals": [
+                    "",
+                    "{{ resourceName }}"
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "",
+                        "{{ applicationGroupName }}"
+                      ]
+                    },
+                    [
+                      {
+                        "Key": "acs:computenest:serviceInstanceId",
+                        "Value": "{{ serviceInstanceId }}"
+                      }
+                    ],
+                    [
+                      {
+                        "Key": "acs:computenest:serviceInstanceId",
+                        "Value": "{{ serviceInstanceId }}"
+                      },
+                      {
+                        "Key": "acs:computenest:applicationGroup",
+                        "Value": "{{ applicationGroupName }}"
+                      }
+                    ]
+                  ]
+                },
+                [
+                  {
+                    "Key": "acs:computenest:serviceInstanceId",
+                    "Value": "{{ serviceInstanceId }}"
+                  },
+                  {
+                    "Key": "acs:computenest:resourceName",
+                    "Value": "{{ resourceName }}"
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "downloadFileAndRunCommand",
+      "Action": "ACS::CN::UpgradeServiceInstanceStep",
+      "Description": {
+        "en": "Execute command to upgrade service instance",
+        "zh-cn": "下载文件及执行升级服务实例命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "artifactsUrl": "{{ artifactsUrl }}",
+        "artifactsDownloadDirectory": "{{ artifactsDownloadDirectory }}",
+        "commandType": "{{ commandType }}",
+        "commandContent": "{{ commandContent }}",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}",
+        "enableParameter": "{{ enableParameter }}",
+        "parameters": "{{ parameters }}"
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        },
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "List",
+      "Value": "{{ downloadFileAndRunCommand.commandOutputs }}"
+    }
+  }
+}

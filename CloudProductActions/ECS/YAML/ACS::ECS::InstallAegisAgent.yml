@@ -1,0 +1,74 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Install aegis agent
+  zh-cn: 安装Aegis插件
+  name-en: ACS::ECS::InstallAegisAgent
+  name-zh-cn: 安装egis插件
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+Tasks:
+  - Name: getUuid
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Get uuid by ECS instance
+      zh-cn: 获取ECS对应UUID
+    Properties:
+      Service: SAS
+      API: DescribeCloudCenterInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        Criteria: '[{"name": "instanceId","value":"{{ instanceId }}"}]'
+    Outputs:
+      Uuid:
+        Type: String
+        ValueSelector: .Instances[].Uuid
+  - Name: installAegisAgent
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Install aegis agent
+      zh-cn: 安装安骑士客户端
+    Properties:
+      Service: SAS
+      API: OperateAgentClientInstall
+      Parameters:
+        RegionId: '{{ regionId }}'
+        Uuids: '{{ getUuid.Uuid }}'
+    Outputs:
+      RecordId:
+        Type: String
+        ValueSelector: .AegisCelintInstallResposeList[].RecordId
+  - Name: waitInstallResult
+    Action: ACS::WaitFor
+    Description:
+      en: Wait for agent install success
+      zh-cn: 等待插件安装完成
+    Retries: 15
+    DelayType: Constant
+    Delay: 20
+    Properties:
+      Service: SAS
+      API: DescribeAgentInstallStatus
+      Parameters:
+        Uuids: '{{ getUuid.Uuid }}'
+      PropertySelector: AegisClientInvokeStatusResponseList[].ResuleCode
+      DesiredValues:
+        - '0'
+      NotDesiredValues: []
+      StopRetryValues:
+        - '1008'
+        - '2'
+    Outputs:
+      invocationOutput:
+        Type: String
+        ValueSelector: .AegisClientInvokeStatusResponseList[].Message
+    BackOff: 2

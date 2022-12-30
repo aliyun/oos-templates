@@ -1,19 +1,29 @@
 FormatVersion: OOS-2019-06-01
-Description: Installs cloud assistant on ECS instance by specifying instanceId.
+Description:
+  name-en: ACS::ECS::InstallCloudAssistant
+  name-zh-cn: 在ECS实例中安装云助手Agent
+  en: Installs cloud assistant on ECS instance
+  zh-cn: 在ECS实例中安装云助手Agent
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The Id of ECS instance you will install cloud assistant.
+    Description:
+      en: The Id of ECS instance you will install cloud assistant
+      zh-cn: 将要安装云助手客户端的ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
 Tasks:
   - Name: checkInstanceReady
     Action: 'ACS::CheckFor'
-    Description: Checks whether the ECS instance status is running or stopped.
+    Description:
+      en: Checks whether the ECS instance status is running or stopped
+      zh-cn: 检测实例的状态是否为Running或Stopped
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -26,7 +36,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: queryCloudAssistantReady
     Action: 'ACS::ExecuteAPI'
-    Description: Views the cloud assistanat status.
+    Description:
+      en: Queries the cloud assistanat status
+      zh-cn: 查看云助手客户端的状态
     Properties:
       Service: ECS
       API: DescribeCloudAssistantStatus
@@ -41,7 +53,9 @@ Tasks:
           InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus
   - Name: whetherCloudAssistantIsReady
     Action: 'ACS::Choice'
-    Description: Choose next task by CloudAssistant status.
+    Description:
+      en: Choose next task by CloudAssistant status
+      zh-cn: 通过云助手客户端的状态来选择下一个任务的类型
     Properties:
       DefaultTask: waitDataRecover
       Choices:
@@ -53,12 +67,16 @@ Tasks:
 
   - Name: waitDataRecover
     Action: 'ACS::Sleep'
-    Description: Waits data recover.
+    Description:
+      en: Waits for the cloud assistant to install successfully
+      zh-cn: 等待云助手安装成功
     Properties:
       Duration: PT1M
   - Name: queryCloudAssistantStatus
     Action: 'ACS::ExecuteAPI'
-    Description: Views the cloud assistanat status.
+    Description:
+      en: Queries the cloud assistanat status
+      zh-cn: 查看云助手客户端状态
     Properties:
       Service: ECS
       API: DescribeCloudAssistantStatus
@@ -73,7 +91,9 @@ Tasks:
           InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus
   - Name: whetherCloudAssistantStatusIsTrue
     Action: 'ACS::Choice'
-    Description: Choose next task by CloudAssistant status.
+    Description:
+      en: Choose next task by CloudAssistant status
+      zh-cn: 根据云助手客户端的状态选择下一步的任务
     Properties:
       DefaultTask: installCloudAssistant
       Choices:
@@ -84,7 +104,9 @@ Tasks:
           NextTask: waitCloudAssistantStatusReachtrue
   - Name: installCloudAssistant
     Action: 'ACS::ExecuteAPI'
-    Description: Install cloud assistant with specified instance ID.
+    Description:
+      en: Install cloud assistant with specified instance ID
+      zh-cn: 下载云助手客户端到指定的实例上
     Properties:
       Service: ECS
       API: InstallCloudAssistant
@@ -94,7 +116,9 @@ Tasks:
           - '{{ instanceId }}'
   - Name: rebootInstance
     Action: 'ACS::ExecuteAPI'
-    Description: Restarts an ECS instance.
+    Description:
+      en: Restarts the ECS instance
+      zh-cn: 重启ECS实例
     Properties:
       Service: ECS
       API: RebootInstance
@@ -103,7 +127,9 @@ Tasks:
         InstanceId: '{{ instanceId }}'
   - Name: untilInstanceReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the instance restart successfully.
+    Description:
+      en: Waits for the instance restart successfully
+      zh-cn: 等待实例重启成功
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -116,7 +142,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: waitCloudAssistantStatusReachtrue
     Action: 'ACS::WaitFor'
-    Description: Wait for the cloud assistant status reach true.
+    Description:
+      en: Wait for the cloud assistant status reach true
+      zh-cn: 等待云助手客户端进入可用状态
     Properties:
       Service: ECS
       API: DescribeCloudAssistantStatus

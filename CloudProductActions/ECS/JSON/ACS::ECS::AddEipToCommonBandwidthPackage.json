@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Add EIP to common bandwidth package.",
+  "Description": {
+    "name-en": "ACS::ECS::AddEipToCommonBandwidthPackage",
+    "name-zh-cn": "添加EIP到共享带宽包",
+    "en": "Add EIP to common bandwidth package",
+    "zh-cn": "添加EIP到共享带宽包"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "eipAddress": {
-      "Description": "The list of Eip address.",
+      "Description": {
+        "en": "The Eip address",
+        "zh-cn": "EIP的IP地址"
+      },
       "Type": "String"
     },
     "bandwidthPackageId": {
-      "Description": "The ID of the common bandwidth package.",
+      "Description": {
+        "en": "The ID of the common bandwidth package",
+        "zh-cn": "共享带宽包ID"
+      },
       "Type": "String"
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -26,7 +43,10 @@
     {
       "Name": "getEipAttribute",
       "Action": "ACS::ExecuteApi",
-      "Description": "Views the id of Eip.",
+      "Description": {
+        "en": "Queries the allocation ID of EIP",
+        "zh-cn": "获取EIP实例ID"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "DescribeEipAddresses",
@@ -49,7 +69,10 @@
     {
       "Name": "whetherEipInPackage",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by Eip status.",
+      "Description": {
+        "en": "Choose next task by Eip status",
+        "zh-cn": "根据EIP的状态选择执行任务"
+      },
       "Properties": {
         "DefaultTask": "removeCommonBandwidthPackageEip",
         "Choices": [
@@ -77,7 +100,10 @@
     {
       "Name": "removeCommonBandwidthPackageEip",
       "Action": "ACS::ExecuteApi",
-      "Description": "Removes Eip from CommonBandwidthPackage.",
+      "Description": {
+        "en": "Removes Eip from CommonBandwidthPackage",
+        "zh-cn": "从共享带宽包中移出EIP"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "RemoveCommonBandwidthPackageIp",
@@ -91,7 +117,10 @@
     {
       "Name": "addCommonBandwidthPackageIp",
       "Action": "ACS::ExecuteApi",
-      "Description": "Add Eip from CommonBandwidthPackage.",
+      "Description": {
+        "en": "Adds EIP to CommonBandwidthPackage",
+        "zh-cn": "添加EIP到共享带宽包"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "AddCommonBandwidthPackageIp",

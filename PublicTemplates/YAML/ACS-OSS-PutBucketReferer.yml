@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: 'Put the bucket referer.'
-  zh-cn: 设置存储空间防盗链。
+  en: Put the bucket referer
+  zh-cn: 设置存储空间防盗链
   name-en: ACS-OSS-PutBucketReferer
   name-zh-cn: 设置存储空间防盗链
   categories:
@@ -9,18 +9,20 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description: The id of target region.
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   bucketName:
-    Description:
-      en: The  OSS bucket names.
-      zh-cn: OSS bucket 名称。
+    Label:
+      en: BucketName
+      zh-cn: OSS bucket 名称
     Type: String
   allowEmptyReferer:
     Description:
-      en: Specify whether to allow access to requests whose Referer field is empty.
-      zh-cn: 指定是否允许Referer字段为空的请求访问。
+      en: Specify whether to allow access to requests whose Referer field is empty
+      zh-cn: 指定是否允许Referer字段为空的请求访问
     Type: String
     Default: 'true'
     AllowedValues:
@@ -28,24 +30,17 @@ Parameters:
       - 'false'
   refererList:
     Description:
-      en: Save Referer access whitelist URL(for example:[http://www.aliyun.com, https://www.aliyun.com]).
-      zh-cn: 保存Referer访问白名单的网址（例如：[http://www.aliyun.com, https://www.aliyun.com]）。
+      en: for example:[http://www.aliyun.com, https://www.aliyun.com]
+      zh-cn: 例如：[http://www.aliyun.com, https://www.aliyun.com]
+    Label:
+      en: Save Referer Access Whitelist URL
+      zh-cn: 保存Referer访问白名单的网址
     Type: List
     Default: []
-  rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
-    Type: Json
-    AssociationProperty: RateControl
-    Default:
-      Mode: Concurrency
-      MaxErrors: 0
-      Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -53,8 +48,8 @@ Tasks:
   - Name: convertXmlParameters
     Action: 'ACS::ECS::SMCConversionConstantByJqScript'
     Description:
-      en: Automatically make bucket referer configuration.
-      zh-cn: 自动生成存储空间防盗链规则。
+      en: Automatically make bucket referer configuration
+      zh-cn: 自动生成存储空间防盗链规则
     Properties:
       parameter: '{{ refererList }}'
       jqScript:
@@ -67,8 +62,8 @@ Tasks:
   - Name: putBucketReferer
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: 'Enable the bucket referer.'
-      zh-cn: 开启存储空间防盗链。
+      en: 'Enable the bucket referer'
+      zh-cn: 开启存储空间防盗链
     Properties:
       Service: OSS
       API: PutBucketReferer
@@ -81,6 +76,44 @@ Tasks:
         BucketName: '{{ bucketName }}'
         RegionId: '{{ regionId }}'
       Body: '<?xml version="1.0" encoding="UTF-8"?>{{ convertXmlParameters.xmlValues }}</RefererConfiguration>'
+  - Name: waitBucketRefererNoRefererList
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Wait for the bucket referer modification to complete when referer is allowed to be empty
+      zh-cn: 等待存储空间防盗链允许为空时修改完成
+    When:
+      'Fn::Equals':
+        - '{{ refererList }}'
+        - []
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: OSS
+      API: GetBucketReferer
+      Method: GET
+      URI: '?referer'
+      Headers: {}
+      Parameters:
+        BucketName: '{{ bucketName }}'
+        RegionId: '{{ regionId }}'
+      DesiredValues:
+        - '{{ allowEmptyReferer }}'
+      PropertySelector: '.RefererConfiguration.AllowEmptyReferer'
+  - Name: waitBucketReferer
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Wait for the bucket referer modification to complete
+      zh-cn: 等待存储空间防盗链修改完成
+    Properties:
+      Service: OSS
+      API: GetBucketReferer
+      Method: GET
+      URI: '?referer'
+      Headers: {}
+      Parameters:
+        BucketName: '{{ bucketName }}'
+        RegionId: '{{ regionId }}'
+      NotDesiredValues: '{{ refererList }}'
+      PropertySelector: '.RefererConfiguration.RefererList.Referer-{{ refererList }}'
 Outputs:
   refererInfo:
     Type: Json

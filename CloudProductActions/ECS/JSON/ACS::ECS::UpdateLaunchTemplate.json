@@ -1,0 +1,377 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::UpdateLaunchTemplate",
+    "name-zh-cn": "更新启动模板",
+    "en": "Update the launch template",
+    "zh-cn": "更新启动模板"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "imageId": {
+      "Description": {
+        "en": "The image ID of the launch template to update",
+        "zh-cn": "要将启动模板默认版本的镜像ID更新成的值"
+      },
+      "Type": "String"
+    },
+    "launchTemplateName": {
+      "Description": {
+        "en": "The name of the launch template",
+        "zh-cn": "要更新的启动模板名称"
+      },
+      "Type": "String"
+    },
+    "deleteSourceTemplateVersion": {
+      "Description": {
+        "en": "delete launch template source version or not,the default is true",
+        "zh-cn": "删除启动模版的原版本"
+      },
+      "Type": "Boolean",
+      "Default": true,
+      "AllowedValues": [
+        false,
+        true
+      ]
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeLaunchTemplates",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query launch default template version",
+        "zh-cn": "查询启动模版的版本号"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeLaunchTemplates",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LaunchTemplateName": [
+            "{{ launchTemplateName }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "defaultVersionNumber": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateSets.LaunchTemplateSet[].DefaultVersionNumber"
+        }
+      }
+    },
+    {
+      "Name": "describeLaunchTemplateVersions",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the content of launch template default version",
+        "zh-cn": "查询启动模版默认版本的内容"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeLaunchTemplateVersions",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LaunchTemplateName": "{{ launchTemplateName }}",
+          "LaunchTemplateVersion": [
+            "{{describeLaunchTemplates.defaultVersionNumber}}"
+          ]
+        }
+      },
+      "Outputs": {
+        "imageOwnerAlias": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.ImageOwnerAlias"
+        },
+        "description": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.Description"
+        },
+        "resourceGroupId": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.ResourceGroupId"
+        },
+        "dataDisks": {
+          "Type": "List",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.DataDisks.DataDisk[]"
+        },
+        "userData": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.UserData"
+        },
+        "instanceChargeType": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InstanceChargeType"
+        },
+        "spotDuration": {
+          "Type": "Number",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SpotDuration"
+        },
+        "systemDiskSize": {
+          "Type": "Number",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.Size\" ])"
+        },
+        "ramRoleName": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.RamRoleName"
+        },
+        "networkType": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.NetworkType"
+        },
+        "networkInterfaces": {
+          "Type": "List",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.NetworkInterfaces.NetworkInterface[]"
+        },
+        "spotPriceLimit": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SpotPriceLimit"
+        },
+        "systemDiskCategory": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.Category\" ])"
+        },
+        "instanceType": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InstanceType"
+        },
+        "hostName": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.HostName"
+        },
+        "spotStrategy": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SpotStrategy"
+        },
+        "tags": {
+          "Type": "List",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.Tags.InstanceTag[]"
+        },
+        "keyPairName": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.KeyPairName"
+        },
+        "ioOptimized": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.IoOptimized"
+        },
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.ZoneId"
+        },
+        "securityGroupId": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SecurityGroupId"
+        },
+        "vSwitchId": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.VSwitchId"
+        },
+        "internetChargeType": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InternetChargeType"
+        },
+        "instanceName": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InstanceName"
+        },
+        "internetMaxBandwidthOut": {
+          "Type": "Number",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InternetMaxBandwidthOut"
+        },
+        "internetMaxBandwidthIn": {
+          "Type": "Number",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.InternetMaxBandwidthIn"
+        },
+        "vpcId": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.VpcId"
+        },
+        "versionDescription": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].VersionDescription"
+        },
+        "securityEnhancementStrategy": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SecurityEnhancementStrategy"
+        },
+        "passwordInherit": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.PasswordInherit"
+        },
+        "autoReleaseTime": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.AutoReleaseTime"
+        },
+        "period": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.Period"
+        },
+        "systemDiskDescription": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.Description\" ])"
+        },
+        "systemDiskDiskName": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.DiskName\" ])"
+        },
+        "securityGroupIds": {
+          "Type": "Json",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.SecurityGroupIds"
+        }
+      }
+    },
+    {
+      "Name": "createLaunchTemplateVersion",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create launch template new version",
+        "zh-cn": "创建启动模版的新版本"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateLaunchTemplateVersion",
+        "Parameters": {
+          "LaunchTemplateName": "{{launchTemplateName}}",
+          "RegionId": "{{regionId}}",
+          "VersionDescription": "{{describeLaunchTemplateVersions.versionDescription}}",
+          "ImageId": "{{ imageId }}",
+          "VpcId": "{{describeLaunchTemplateVersions.vpcId}}",
+          "ImageOwnerAlias": "{{ describeLaunchTemplateVersions.imageOwnerAlias }}",
+          "Description": "{{ describeLaunchTemplateVersions.description }}",
+          "ResourceGroupId": "{{ describeLaunchTemplateVersions.resourceGroupId }}",
+          "UserData": "{{ describeLaunchTemplateVersions.userData }}",
+          "InstanceChargeType": "{{ describeLaunchTemplateVersions.instanceChargeType }}",
+          "SpotDuration": "{{ describeLaunchTemplateVersions.spotDuration }}",
+          "SystemDiskSize": "{{ describeLaunchTemplateVersions.systemDiskSize }}",
+          "RamRoleName": "{{ describeLaunchTemplateVersions.ramRoleName }}",
+          "NetworkType": "{{ describeLaunchTemplateVersions.networkType }}",
+          "NetworkInterfaces": "{{ describeLaunchTemplateVersions.networkInterfaces }}",
+          "SpotPriceLimit": "{{ describeLaunchTemplateVersions.spotPriceLimit }}",
+          "SystemDiskCategory": "{{ describeLaunchTemplateVersions.systemDiskCategory }}",
+          "InstanceType": "{{ describeLaunchTemplateVersions.instanceType }}",
+          "HostName": "{{ describeLaunchTemplateVersions.hostName }}",
+          "SpotStrategy": "{{ describeLaunchTemplateVersions.spotStrategy }}",
+          "Tags": "{{ describeLaunchTemplateVersions.tags }}",
+          "KeyPairName": "{{ describeLaunchTemplateVersions.keyPairName }}",
+          "IoOptimized": "{{ describeLaunchTemplateVersions.ioOptimized }}",
+          "ZoneId": "{{ describeLaunchTemplateVersions.zoneId }}",
+          "SecurityGroupId": "{{ describeLaunchTemplateVersions.securityGroupId }}",
+          "VSwitchId": "{{ describeLaunchTemplateVersions.vSwitchId }}",
+          "InternetChargeType": "{{ describeLaunchTemplateVersions.internetChargeType }}",
+          "InstanceName": "{{ describeLaunchTemplateVersions.instanceName }}",
+          "InternetMaxBandwidthOut": "{{ describeLaunchTemplateVersions.internetMaxBandwidthOut }}",
+          "InternetMaxBandwidthIn": "{{ describeLaunchTemplateVersions.internetMaxBandwidthIn }}",
+          "SecurityEnhancementStrategy": "{{ describeLaunchTemplateVersions.securityEnhancementStrategy }}",
+          "PasswordInherit": "{{ describeLaunchTemplateVersions.passwordInherit }}",
+          "SystemDiskDescription": "{{ describeLaunchTemplateVersions.systemDiskDescription }}",
+          "AutoReleaseTime": "{{ describeLaunchTemplateVersions.autoReleaseTime }}",
+          "SystemDiskDiskName": "{{ describeLaunchTemplateVersions.systemDiskDiskName }}",
+          "Period": "{{ describeLaunchTemplateVersions.period }}",
+          "SecurityGroupIds": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  null,
+                  "{{ describeLaunchTemplateVersions.securityGroupIds }}"
+                ]
+              },
+              null,
+              {
+                "Fn::Select": [
+                  "SecurityGroupId",
+                  "{{ describeLaunchTemplateVersions.securityGroupIds }}"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "launchTemplateVersionNumber": {
+          "Type": "String",
+          "ValueSelector": "LaunchTemplateVersionNumber"
+        }
+      }
+    },
+    {
+      "Name": "modifyLaunchTemplateDefaultVersion",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify launch template default version",
+        "zh-cn": "更改启动模版的默认版本"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyLaunchTemplateDefaultVersion",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LaunchTemplateName": "{{ launchTemplateName }}",
+          "DefaultVersionNumber": "{{ createLaunchTemplateVersion.launchTemplateVersionNumber }}"
+        }
+      }
+    },
+    {
+      "Name": "waitModifyLaunchTemplateDefaultVersionSuccess",
+      "Action": "ACS::WaitFor",
+      "OnSuccess": "deleteLaunchTemplateVersion",
+      "Description": {
+        "en": "Waits for modifying launch template fefault version success",
+        "zh-cn": "等待启动模版默认版本更改成功"
+      },
+      "Retries": 7,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeLaunchTemplates",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LaunchTemplateName": [
+            "{{ launchTemplateName }}"
+          ]
+        },
+        "DesiredValues": [
+          "true"
+        ],
+        "PropertySelector": ".LaunchTemplateSets.LaunchTemplateSet[].DefaultVersionNumber|tostring == \"{{ createLaunchTemplateVersion.launchTemplateVersionNumber }}\"|tostring"
+      }
+    },
+    {
+      "Name": "deleteLaunchTemplateVersion",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "{{ deleteSourceTemplateVersion }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Delete source launch template version",
+        "zh-cn": "删除启动模版原默认版本"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteLaunchTemplateVersion",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LaunchTemplateName": "{{ launchTemplateName }}",
+          "DeleteVersion": [
+            "{{describeLaunchTemplates.defaultVersionNumber}}"
+          ]
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "defaultVersionNumber": {
+      "Type": "String",
+      "Value": "{{ createLaunchTemplateVersion.launchTemplateVersionNumber }}"
+    }
+  }
+}

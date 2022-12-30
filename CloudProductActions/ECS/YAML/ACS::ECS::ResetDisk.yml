@@ -1,23 +1,35 @@
 FormatVersion: OOS-2019-06-01
-Description: Rolls back a disk to the specific disk status by using one of its snapshots.
+Description:
+  name-en: ACS::ECS::ResetDisk
+  name-zh-cn: 使用指定快照回滚云盘
+  en: Rolls back a disk to the specific disk status by using one of its snapshots
+  zh-cn: 使用磁盘的历史快照回滚至某一阶段的磁盘状态
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   diskId:
-    Description: The ID of disk.
+    Description:
+      en: The ID of disk
+      zh-cn: 指定的磁盘设备ID
     Type: String
     AllowedPattern: d-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   snapshotId:
-    Description: The ID of snapshot.
+    Description:
+      en: The ID of snapshot.
+      zh-cn: 需要恢复到某一磁盘阶段的历史快照ID。
     Type: String
     AllowedPattern: s-[A-Za-z0-9]*
     MinLength: 1
@@ -25,7 +37,9 @@ Parameters:
 Tasks:
 - Name: stopInstance
   Action: ACS::ExecuteAPI
-  Description: Stops the ECS instance with specified Instace ID.
+  Description:
+    en: Stops the ECS instance with specified Instace ID
+    zh-cn: 通过实例ID停止ECS实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -34,7 +48,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceStopped
   Action: ACS::WaitFor
-  Description: Waits for the ECS Instace to enter stopped status.
+  Description:
+    en: Waits for the ECS Instace to enter stopped status
+    zh-cn: 等待ECS实例至Stopped状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -47,7 +63,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: resetDisk
   Action: ACS::ExecuteAPI
-  Description: Rolls back a disk to the specific disk status by using one of its snapshots.
+  Description:
+    en: Rolls back a disk to the specific disk status by using one of its snapshots
+    zh-cn: 使用磁盘的历史快照回滚至某一阶段的磁盘状态
   Properties:
     Service: ECS
     API: ResetDisk
@@ -57,7 +75,9 @@ Tasks:
       SnapshotId: '{{ snapshotId }}'
 - Name: untilDiskIdReady
   Action: ACS::WaitFor
-  Description: describe Disk
+  Description:
+    en: Waits for disk enter to In_use status
+    zh-cn: 等待磁盘到达In_use状态
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -70,7 +90,9 @@ Tasks:
     PropertySelector: Disks.Disk[].Status
 - Name: startInstance
   Action: ACS::ExecuteAPI
-  Description: Starts the ECS instance with specified Instace ID.
+  Description:
+    en: Starts the ECS instance with specified Instace ID
+    zh-cn: 通过实例ID启动一台实例
   Properties:
     Service: ECS
     API: StartInstance
@@ -79,7 +101,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS Instace to enter running status.
+  Description:
+    en: Waits for the ECS Instace to enter running status
+    zh-cn: 等待实例状态至Running
   Properties:
     Service: ECS
     API: DescribeInstances

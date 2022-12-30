@@ -1,31 +1,42 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky tag ECS instances using RunCommand invocation result as tag value.
-  zh-cn: 批量根据运行云助手命令的结果标记实例。
+  en: Bulky tag ECS instances using RunCommand invocation result as tag value
+  zh-cn: 批量根据运行云助手命令的结果标记实例
   name-en: ACS-ECS-BulkyTagInstanceByRunCommandResult
   name-zh-cn: 批量根据运行命令的结果标记ECS实例
   categories:
     - instance_manage
 Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
   tagKey:
-    Description:
-      en: The tag key.
-      zh-cn: 标签键。
+    Label:
+      en: TagKey
+      zh-cn: 标签键
     Type: String
   commandContent:
-    Description:
-      en: Command content to run in Linux ECS Instnce.
-      zh-cn: 在linux类型ECS实例中运行的云助手命令。
+    Label:
+      en: Command content to run in Linux ECS Instnce
+      zh-cn: 在linux类型ECS实例中运行的云助手命令
     Type: String
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -33,20 +44,21 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: getInstance
   Description:
-    en: Views the ECS instances.
-    zh-cn: 获取ECS实例。
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
     Filters:
       - '{{ targets }}'
   Outputs:
@@ -56,12 +68,37 @@ Tasks:
 - Name: tagECSInstances
   Action: ACS::ECS::TagInstanceByRunCommandResult
   Description:
-    en: Creates and attaches tag to ECS instance.
-    zh-cn: 创建标签并将其附加到ECS实例。
+    en: Creates and attaches tag to ECS instance
+    zh-cn: 创建标签并将其附加到ECS实例
   Properties:
+    regionId: '{{ regionId }}'
     commandContent: '{{ commandContent }}'
     instanceId: '{{ ACS::TaskLoopItem }}'
     tagKey: '{{ tagKey }}'
   Loop:
     RateControl: '{{ rateControl }}'
     Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - tagKey
+          - commandContent
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

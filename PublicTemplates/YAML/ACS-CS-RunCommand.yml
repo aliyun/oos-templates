@@ -1,34 +1,34 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Run command on k8s cluster.
-  zh-cn: 在k8s集群中执行命令。
+  en: Run command on k8s cluster
+  zh-cn: 在k8s集群中执行命令
   name-en: ACS-CS-RunCommand
   name-zh-cn: 在k8s集群中执行命令
 Parameters:
   clusterId:
-    Description:
-      en: The ID of cluster.
-      zh-cn: 集群ID。
+    Label:
+      en: ClusterId
+      zh-cn: 集群ID
     Type: String
   commandContent:
-    Description:
-      en: Command content to run in cluster.
-      zh-cn: 在集群中执行的命令。
+    Label:
+      en: CommandContent
+      zh-cn: 在集群中执行的命令
     Type: String
     AssociationProperty: Code
   OOSAssumeRole:
-      Description:
-        en: The RAM role to be assumed by OOS.
-        zh-cn: OOS扮演的RAM角色。
-      Type: String
-      Default: OOSServiceRole
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: runCommand
   Action: 'ACS::CS::RunCommand'
   Description:
-    en: Executes a command in cluster.
-    zh-cn: 在集群中执行命令。
+    en: Executes a command in cluster
+    zh-cn: 在集群中执行命令
   Properties:
     clusterId: '{{ clusterId }}'
     commandContent: '{{ commandContent }}'
@@ -40,3 +40,19 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - clusterId
+          - commandContent
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

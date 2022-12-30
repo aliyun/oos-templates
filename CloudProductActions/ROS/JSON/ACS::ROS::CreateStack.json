@@ -1,28 +1,56 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Create a ROS stack.",
+  "Description": {
+    "name-en": "ACS::ROS::CreateStack",
+    "name-zh-cn": "创建ROS资源栈",
+    "en": "Create ROS stack",
+    "zh-cn": "创建ROS资源栈"
+  },
   "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The source region ID",
+        "zh-cn": "源地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ACS::RegionId}}"
+    },
     "parameters": {
-      "Description": "The parameters that Ros template need. e.g.[ { \"ParameterValue\": \"System\", \"ParameterKey\": \"PolicyType\" }, { \"ParameterValue\": \"zhangsan\", \"ParameterKey\": \"UserName\" }, { \"ParameterValue\": \"AliyunOSSReadOnlyAccess\", \"ParameterKey\": \"PolicyName\" } ].",
+      "Description": {
+        "en": "The parameters that ROS template need. e.g.[ { \"ParameterValue\": \"System\", \"ParameterKey\": \"PolicyType\" }, { \"ParameterValue\": \"zhangsan\", \"ParameterKey\": \"UserName\" }, { \"ParameterValue\": \"AliyunOSSReadOnlyAccess\", \"ParameterKey\": \"PolicyName\" } ]",
+        "zh-cn": "ROS模板需要的参数。例如[{\"ParameterValue\": \"System\"， \"ParameterKey\": \"PolicyType\"}， {\"ParameterValue\": \"zhangsan\"， \"ParameterKey\": \"UserName\"}， {\"ParameterValue\": \"AliyunOSSReadOnlyAccess\"， \"ParameterKey\": \"PolicyName\"}]"
+      },
       "Type": "Json"
     },
     "templateBody": {
-      "Description": "The Ros template content.",
+      "Description": {
+        "en": "The ROS template content",
+        "zh-cn": "ROS模板内容"
+      },
       "Type": "Json",
       "AssociationProperty": "Code"
     },
     "stackName": {
-      "Description": "The Ros stack mame.",
+      "Description": {
+        "en": "The ROS stack mame",
+        "zh-cn": "ROS资源栈名称"
+      },
       "Type": "String",
       "Default": "OOS-{{ACS::ExecutionId}}"
     },
     "timeoutInMinutes": {
-      "Description": "The Ros timeout in minutes.",
+      "Description": {
+        "en": "The ROS timeout in minutes",
+        "zh-cn": "ROS超时时间(分钟)"
+      },
       "Type": "String",
       "Default": 10
     },
     "disableRollback": {
-      "Description": "The Ros stack disable rollback .",
+      "Description": {
+        "en": "The ROS stack disable rollback",
+        "zh-cn": "ROS资源禁用回滚"
+      },
       "Type": "String",
       "Default": false
     }
@@ -31,11 +59,15 @@
     {
       "Name": "createStack",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Create a ROS stack.",
+      "Description": {
+        "en": "Create ROS stack",
+        "zh-cn": "创建ROS堆栈"
+      },
       "Properties": {
         "Service": "ROS",
         "API": "CreateStack",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "StackName": "{{stackName}}",
           "TimeoutInMinutes": "{{timeoutInMinutes}}",
           "DisableRollback": "{{disableRollback}}",
@@ -55,11 +87,15 @@
       "Action": "ACS::WaitFor",
       "OnError": "queryStackStatusReason",
       "OnSuccess": "ACS::END",
-      "Description": "Wait for the stack status CREATE_COMPLETE.",
+      "Description": {
+        "en": "Wait for the stack status CREATE_COMPLETE",
+        "zh-cn": "等待资源栈状态为CREATE_COMPLETE"
+      },
       "Properties": {
         "Service": "ROS",
         "API": "GetStack",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "StackId": "{{createStack.StackId}}"
         },
         "DesiredValues": [
@@ -84,8 +120,10 @@
     {
       "Name": "queryStackStatusReason",
       "Action": "ACS::ExecuteAPI",
-      "OnError": "ACS::NEXT",
-      "Description": "Query the reson of failed created stack.",
+      "Description": {
+        "en": "Queries the reson of failed created stack",
+        "zh-cn": "获取创建资源栈失败的原因"
+      },
       "Properties": {
         "Service": "ROS",
         "API": "GetStack",
@@ -97,18 +135,6 @@
         "statusReason": {
           "Type": "String",
           "ValueSelector": "StatusReason"
-        }
-      }
-    },
-    {
-      "Name": "deleteStack",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Delete the ros resource stack.",
-      "Properties": {
-        "Service": "ROS",
-        "API": "DeleteStack",
-        "Parameters": {
-          "StackId": "{{createStack.StackId}}"
         }
       }
     }

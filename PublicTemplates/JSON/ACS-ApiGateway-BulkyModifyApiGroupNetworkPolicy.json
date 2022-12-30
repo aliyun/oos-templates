@@ -1,0 +1,200 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify the https version of apigateway instance to support tls1.2",
+    "zh-cn": "修改API网关https版本支持tls1.2版本",
+    "name-en": "ACS-ApiGateway-BulkyModifyApiGroupNetworkPolicy",
+    "name-zh-cn": "修改API网关https版本支持tls1.2版本",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "groupId": {
+      "Label": {
+        "en": "GroupId",
+        "zh-cn": "API网关实例分组ID"
+      },
+      "Type": "String"
+    },
+    "httpsPolicy": {
+      "Label": {
+        "en": "HttpsPolicy",
+        "zh-cn": "HTTPS安全策略"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "HTTPS1_1_TLS1_0",
+        "HTTPS2_TLS1_0",
+        "HTTPS2_TLS1_2"
+      ]
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeApiGroups",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the detailed instance type of apigateway",
+        "zh-cn": "查询API网关实例类型"
+      },
+      "Properties": {
+        "Service": "CLOUDAPI",
+        "API": "DescribeApiGroups",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "GroupId": "{{ groupId }}"
+        }
+      },
+      "Outputs": {
+        "instanceType": {
+          "Type": "String",
+          "ValueSelector": ".ApiGroupAttributes.ApiGroupAttribute[].InstanceType"
+        },
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": ".ApiGroupAttributes.ApiGroupAttribute[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "checkInstanceType",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Identify the detailed instance type of apigateway",
+        "zh-cn": "判断API网关实例类型"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "VPC_SHARED",
+                "{{ describeApiGroups.instanceType }}"
+              ]
+            },
+            "NextTask": "modifyApiGroupNetworkPolicyForShared"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                "VPC_DEDICATED",
+                "{{ describeApiGroups.instanceType }}"
+              ]
+            },
+            "NextTask": "modifyApiGroupNetworkPolicyForDedicated"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifyApiGroupNetworkPolicyForShared",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Modify the https version of shared apigateway instance to support tls1.2",
+        "zh-cn": "修改共享实例类型的API网关https版本支持tls1.2版本"
+      },
+      "Properties": {
+        "Service": "CLOUDAPI",
+        "API": "ModifyApiGroupNetworkPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "GroupId": "{{ groupId }}",
+          "HttpsPolicy": "{{ httpsPolicy }}"
+        }
+      }
+    },
+    {
+      "Name": "modifyApiGroupNetworkPolicyForDedicated",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Modify the https version of dedicated apigateway instance to support tls1.2",
+        "zh-cn": "修改专享实例类型的API网关https版本支持tls1.2版本"
+      },
+      "Properties": {
+        "Service": "CLOUDAPI",
+        "API": "ModifyInstanceAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ describeApiGroups.instanceId }}",
+          "HttpsPolicy": "{{ httpsPolicy }}"
+        }
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "httpsPolicy"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "groupId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instance"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

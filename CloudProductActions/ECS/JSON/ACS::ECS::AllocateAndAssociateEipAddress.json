@@ -1,0 +1,173 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::AllocateAndAssociateEipAddress",
+    "name-zh-cn": "创建并绑定EIP到实例",
+    "en": "Allocate and associate eip address to instance",
+    "zh-cn": "创建并绑定EIP到实例"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS Instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The type of instance",
+        "zh-cn": "实例类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Nat",
+        "SlbInstance",
+        "EcsInstance",
+        "NetworkInterface",
+        "HaVip"
+      ],
+      "Default": "NetworkInterface"
+    },
+    "internetChargeType": {
+      "Description": {
+        "en": "EIP measurement method",
+        "zh-cn": "EIP的计费方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "PayByBandwidth",
+        "PayByTraffic"
+      ],
+      "Default": "PayByBandwidth"
+    },
+    "bandwidth": {
+      "Description": {
+        "en": "Peak bandwidth of eip",
+        "zh-cn": "EIP的带宽峰值"
+      },
+      "Type": "Number",
+      "Default": 5
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getNetworkInterfaceAttr",
+      "Description": {
+        "en": "Views the NetworkInterface attr",
+        "zh-cn": "获取网卡属性"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeNetworkInterfaces",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "NetworkInterfaceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "associatedPublicIp": {
+          "Type": "String",
+          "ValueSelector": "NetworkInterfaceSets.NetworkInterfaceSet[].PrivateIpSets.PrivateIpSet[].AssociatedPublicIp.PublicIpAddress"
+        }
+      }
+    },
+    {
+      "Name": "whetherToAllocateEipAddress",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by NetworkInterface attr",
+        "zh-cn": "根据网卡属性选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                null,
+                "{{ getNetworkInterfaceAttr.associatedPublicIp }}"
+              ]
+            },
+            "NextTask": "allocateEipAddress"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "allocateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Allocates an EIP",
+        "zh-cn": "获取一个弹性公网IP"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AllocateEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InternetChargeType": "{{ internetChargeType }}",
+          "Bandwidth": "{{ bandwidth }}"
+        }
+      },
+      "Outputs": {
+        "allocationId": {
+          "Type": "String",
+          "ValueSelector": ".AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "waitEipAddressReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the EIP enter to Available status",
+        "zh-cn": "等待EIP可用"
+      },
+      "Delay": 15,
+      "Retries": 7,
+      "DelayType": "Constant",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
+      }
+    },
+    {
+      "Name": "AssociateEipAddress",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Associates Eip address to instance",
+        "zh-cn": "绑定EIP到实例"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "AssociateEipAddress",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "InstanceType": "{{ InstanceType }}",
+          "AllocationId": "{{ allocateEipAddress.allocationId }}"
+        }
+      }
+    }
+  ]
+}

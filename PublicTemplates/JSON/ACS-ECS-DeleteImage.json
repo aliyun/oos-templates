@@ -1,27 +1,43 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Deletes an ECS image.",
-    "zh-cn": "\u5220\u9664\u4e00\u4e2aECS\u955c\u50cf\u3002",
-    "name-en": "ACS-ECS-DeleteImage",
-    "name-zh-cn": "\u5220\u9664ECS\u955c\u50cf",
+    "en": "Deletes an ECS image",
+    "zh-cn": "删除一个ECS镜像",
+    "name-en": "Delete Image",
+    "name-zh-cn": "删除镜像",
     "categories": [
-      "image_manage"
+      "image_manage",
+      "application_manage"
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "imageId": {
-      "Description": {
-        "en": "The image ID for the ECS instance.",
-        "zh-cn": "\u955c\u50cfID\u3002"
+      "Label": {
+        "en": "ImageId",
+        "zh-cn": "镜像ID"
       },
       "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Image::ImageId"
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "ImageOwnerAlias": [
+          "self"
+        ]
+      }
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -33,10 +49,11 @@
       "Name": "deleteImage",
       "Action": "ACS::ECS::DeleteImage",
       "Description": {
-        "en": "Deletes the specified ECS image.",
-        "zh-cn": "\u5220\u9664\u6307\u5b9a\u7684ECS\u955c\u50cf\u3002"
+        "en": "Deletes the specified ECS image",
+        "zh-cn": "删除指定的ECS镜像"
       },
       "Properties": {
+        "regionId": "{{ regionId }}",
         "imageId": "{{ imageId }}"
       },
       "Outputs": {
@@ -46,5 +63,34 @@
         }
       }
     }
-  ]
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "imageId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择镜像",
+              "en": "Select Image"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

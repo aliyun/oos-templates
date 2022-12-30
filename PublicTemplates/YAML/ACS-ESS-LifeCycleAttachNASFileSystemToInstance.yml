@@ -1,74 +1,76 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Use lifecyclehook to attach NAS file system to instance (only supports elastic expansion activities).
-  zh-cn: 使用生命周期挂钩挂载NAS文件系统到实例上（仅支持弹性扩张活动）。
+  en: Use lifecyclehook to attach NAS file system to instance (only supports elastic expansion activities)
+  zh-cn: 使用生命周期挂钩挂载NAS文件系统到实例上（仅支持弹性扩张活动）
   name-en: ACS-ESS-LifeCycleAttachNASFileSystemToInstance
   name-zh-cn: 使用生命周期挂钩挂载NAS文件系统到实例
   categories:
     - elastic_manage
 Parameters:
   mountTargetDomain:
-    Description:
-      name-en: mountTargetDomain
-      name-zh-cn: 挂载点域名
-      en: The MountTargetDomain.
-      zh-cn: 挂载点域名。
+    Label:
+      en: MountTargetDomain
+      zh-cn: 挂载点域名
     Type: String
   mountDir:
+    Label:
+      en: MountDir
+      zh-cn: 挂载目录
     Description:
-      name-en: mountDir
-      name-zh-cn: 挂载目录
-      en: The dir to mount file systen in instance.
-      zh-cn: 实例中挂载文件系统的目录。
+      en: The dir to mount file systen in instance
+      zh-cn: 实例中挂载文件系统的目录
     Type: String
     Default: /mnt
   fileSystemVersion:
+    Label:
+      en: FileSystemVersion
+      zh-cn: 文件系统版本
     Description:
-      name-en: fileSystemVersion
-      name-zh-cn: 文件系统版本
-      en: The version of file system.0 means V4, 1 means V3.
-      zh-cn: 文件系统版本。0表示V4，1表示V3。
+      en: The version of file system.0 means V4, 1 means V3
+      zh-cn: 文件系统版本。0表示V4，1表示V3
     Type: String
     Default: 0
   regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     Description:
-      name-en: regionId
-      name-zh-cn: 地域ID
-      en: The ID of region.
+      en: The ID of region
       zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
     Type: String
     Default: '${regionId}'
   instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
     Description:
-      name-en: instanceIds
-      name-zh-cn: ECS实例ID列表
-      en: The ID list of the ECS instance.
+      en: The ID list of the ECS instance
       zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
     Type: List
     Default:
       - '${instanceIds}'
   lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
     Description:
-      name-en: lifecycleHookId
-      name-zh-cn: 生命周期挂钩ID
-      en: The ID of the lifecycle hook.
+      en: The ID of the lifecycle hook
       zh-cn: '生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
     Type: String
     Default: '${lifecycleHookId}'
   lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
     Description:
-      name-en: lifecycleActionToken
-      name-zh-cn: 实例关联的特定伸缩活动的令牌
-      en: The token that indicates a specific scaling activity associated with an instance.
+      en: The token that indicates a specific scaling activity associated with an instance
       zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
     Type: String
     Default: '${lifecycleActionToken}'
   rateControl:
-    Description:
-      name-en: rateControl
-      name-zh-cn: 速率控制
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 速率控制
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -76,11 +78,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 5
   OOSAssumeRole:
-    Description:
-      name-en: OOSAssumeRole
-      name-zh-cn: OOS扮演的RAM角色
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -90,8 +90,8 @@ Tasks:
     OnSuccess: CompleteLifecycleActionForContinue
     OnError: CompleteLifecycleActionForAbandon
     Description:
-      en: Attach NAS file ststem to instance.
-      zh-cn: 挂载NAS文件系统到实例。
+      en: Attach NAS file ststem to instance
+      zh-cn: 挂载NAS文件系统到实例
     Properties:
       regionId: '{{regionId}}'
       instanceId: '{{ ACS::TaskLoopItem }}'
@@ -104,8 +104,8 @@ Tasks:
   - Name: CompleteLifecycleActionForContinue
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Modify lifecycle action for continue.
-      zh-cn: 修改伸缩活动的等待状态为继续完成。
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
     OnSuccess: 'ACS::END'
     Properties:
       Service: ESS
@@ -118,8 +118,8 @@ Tasks:
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Complete lifecycle action for Abandon.
-      zh-cn: 修改伸缩活动的等待状态为弃用。
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
     Properties:
       Service: ESS
       API: CompleteLifecycleAction

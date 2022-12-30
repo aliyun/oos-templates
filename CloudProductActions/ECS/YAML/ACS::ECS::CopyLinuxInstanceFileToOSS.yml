@@ -1,28 +1,44 @@
 FormatVersion: OOS-2019-06-01
-Description: Copies the file from linux instance to OSS by RunCommand.
+Description:
+  name-en: ACS::ECS::CopyLinuxInstanceFileToOSS
+  name-zh-cn: 复制ECS实例中的文件到OSS
+  en: Copies the file from ECS instance to OSS by RunCommand
+  zh-cn: 通过执行命令复制Linux实例中的文件到OSS
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of ECS Instance.
+    Description:
+      en: The ID of ECS Instance
+      zh-cn: ECS实例ID
     Type: String
     MaxLength: 30
     MinLength: 1
   instanceRole:
-    Description: The ramRole attached on the instance.
+    Description:
+      en: The ramRole attached on the instance
+      zh-cn: 实例上挂载的RAM角色
     Type: String
   srcUrl:
-    Description: Current directory of the file in linux instance.
+    Description:
+      en: Current directory of the file in linux instance
+      zh-cn: 文件在实例中的目录
     Type: String
   destUrl:
-    Description: Target directory for file copy in OSS.
+    Description:
+      en: Target directory for file copy in OSS
+      zh-cn: 文件在OSS中存储的目录
     Type: String
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
-  Description: Checks the ECS instance is in running status.
+  Description:
+    en: Checks the ECS instance is in running status
+    zh-cn: 检查实例是否是running状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -35,7 +51,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: checkInstanceRAMRoleReady
   Action: ACS::CheckFor
-  Description: Checks the instance RAMrole is available.
+  Description:
+    en: Checks the instance RAMrole is available
+    zh-cn: 检查实例上挂载的RAM角色是否可用
   Properties:
     Service: ECS
     API: DescribeInstanceRAMRole
@@ -49,7 +67,9 @@ Tasks:
     PropertySelector: InstanceRamRoleSets.InstanceRamRoleSet[].RamRoleName
 - Name: runCommand
   Action: ACS::ECS::RunCommand
-  Description: Invokes ECS instance runcommand and gets invocation output.
+  Description:
+    en: Runs command to copy file
+    zh-cn: 执行复制文件的命令
   Properties:
     regionId: '{{ regionId }}'
     commandContent:

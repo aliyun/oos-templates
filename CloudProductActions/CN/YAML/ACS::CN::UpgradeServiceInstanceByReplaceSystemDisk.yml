@@ -1,0 +1,101 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Replace system disk in computeNest service instance‘s artifact upgrade stage
+  zh-cn: 通过替换Ecs镜像执行服务实例升级
+  name-en: ACS::CN::UpgradeServiceInstanceByReplaceSystemDisk
+  name-zh-cn: 通过替换Ecs镜像执行服务实例升级
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: Region
+      zh-cn: 地域
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  serviceInstanceId:
+    Description:
+      en: The ID of the ComputeNest service instance
+      zh-cn: 计算巢服务实例ID
+    Type: String
+  applicationGroupName:
+    Description:
+      en: The applicationGroup name of ECS instance
+      zh-cn: 运行命令的ECS实例应用分组名称
+    Type: String
+    Default: ''
+  imageId:
+    Description:
+      en: ImageId
+      zh-cn: 镜像ID
+    Type: String
+  password:
+    Label:
+      en: Password
+      zh-cn: 实例的用户名密码
+    Type: String
+    Default: ''
+  keyPairName:
+    Label:
+      en: KeyPairName
+      zh-cn: 密钥对名称
+    Type: String
+    Default: ''
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+Tasks:
+  - Name: getEcsInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - Type: Tags
+          RegionId: '{{ regionId }}'
+          Tags:
+            Fn::If:
+              - Fn::Equals:
+                  - ''
+                  - '{{ applicationGroupName }}'
+              - - Key: acs:computenest:serviceInstanceId
+                  Value: '{{ serviceInstanceId }}'
+              - - Key: acs:computenest:serviceInstanceId
+                  Value: '{{ serviceInstanceId }}'
+                - Key: acs:computenest:applicationGroup
+                  Value: '{{ applicationGroupName }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: bulkyReplaceSystemDisk
+    Action: ACS::ECS::ReplaceSystemDisk
+    Description:
+      en: Replaces the system disk of ECS instances
+      zh-cn: 更换系统盘
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      imageId: '{{ imageId }}'
+      keyPairName: '{{ keyPairName }}'
+      password: '{{ password }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getEcsInstance.instanceIds }}'
+      Outputs:
+        newSystemDiskIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: newSystemDiskId
+    Outputs:
+      newSystemDiskId:
+        Type: String
+        ValueSelector: newSystemDiskId

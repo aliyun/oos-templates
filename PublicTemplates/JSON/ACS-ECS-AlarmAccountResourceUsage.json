@@ -1,25 +1,29 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Resource usage exceeds threshold alarm notification.",
-    "zh-cn": "\u8d26\u6237\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u540e\u62a5\u8b66\u901a\u77e5\u3002",
+    "en": "Resource usage exceeds threshold alarm notification",
+    "zh-cn": "账户资源使用率超出阈值后报警通知",
     "name-en": "ACS-ECS-AlarmAccountResourceUsage",
-    "name-zh-cn": "\u8d26\u6237\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u540e\u62a5\u8b66"
+    "name-zh-cn": "账户资源使用率超出阈值后报警"
   },
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "threshold": {
+      "Label": {
+        "en": "Threshold",
+        "zh-cn": "资源使用率警报的阈值"
+      },
       "Description": {
-        "en": "The threshold of resource usage alarm(example:10 is 10%,50 is 50%).",
-        "zh-cn": "\u8d44\u6e90\u4f7f\u7528\u7387\u8b66\u62a5\u7684\u9608\u503c\uff08\u4f8b\u5982\uff1a10\u4e3a10\uff05\uff0c50\u4e3a50\uff05\uff09\u3002"
+        "en": "example:10 is 10%,50 is 50%",
+        "zh-cn": "例如：10为10％，50为50％"
       },
       "Type": "Number",
       "Default": 80,
@@ -28,15 +32,19 @@
     },
     "webHookUrl": {
       "Description": {
-        "en": "The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
-        "zh-cn": "\u9489\u9489\u7fa4\u52a9\u624b\u7684webhook\u5730\u5740\uff0c\u5f62\u5982https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414\uff0c\u5177\u4f53\u9489\u9489WebHook\u83b7\u53d6\u8bf7\u53c2\u8003https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5\u3002"
+        "en": "e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
+        "zh-cn": "形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。"
+      },
+      "Label": {
+        "en": "WebHookUrl",
+        "zh-ch": "钉钉群助手的webhook地址"
       },
       "Type": "String"
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -48,8 +56,8 @@
       "Name": "timerTrigger",
       "Action": "ACS::TimerTrigger",
       "Description": {
-        "en": "Triggers a task as scheduled by specifying Cron expression.",
-        "zh-cn": "\u901a\u8fc7\u6307\u5b9aCron\u8868\u8fbe\u5f0f\u6309\u8ba1\u5212\u89e6\u53d1\u4efb\u52a1\u3002"
+        "en": "Triggers a task as scheduled by specifying Cron expression",
+        "zh-cn": "通过指定Cron表达式按计划触发任务"
       },
       "Properties": {
         "Type": "rate",
@@ -61,8 +69,8 @@
       "Name": "getAccountAttributes",
       "Action": "ACS::ExecuteApi",
       "Description": {
-        "en": "Query the quotas of ECS resources that you can create in a region.",
-        "zh-cn": "\u67e5\u8be2\u6307\u5b9a\u5730\u57df\u4e0b\u80fd\u521b\u5efa\u7684ECS\u8d44\u6e90\u914d\u989d\u3002"
+        "en": "Query the quotas of ECS resources that you can create in a region",
+        "zh-cn": "查询指定地域下能创建的ECS资源配额"
       },
       "Properties": {
         "Service": "ECS",
@@ -118,8 +126,8 @@
       "Name": "checkResourceUsage",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose the notification task by usage.",
-        "zh-cn": "\u901a\u8fc7\u4f7f\u7528\u7387\u9009\u62e9\u901a\u77e5\u4efb\u52a1\u3002"
+        "en": "Choose the notification task by usage",
+        "zh-cn": "通过使用率选择通知任务"
       },
       "Properties": {
         "DefaultTask": "ACS::END",
@@ -207,8 +215,8 @@
       "Action": "ACS::Notify",
       "OnSuccess": "ACS::END",
       "Description": {
-        "en": "Resource usage exceeds threshold alarm notification.",
-        "zh-cn": "\u8d44\u6e90\u4f7f\u7528\u7387\u8d85\u51fa\u9608\u503c\u62a5\u8b66\u901a\u77e5\u3002"
+        "en": "Resource usage exceeds threshold alarm notification",
+        "zh-cn": "资源使用率超出阈值报警通知"
       },
       "Properties": {
         "NotifyType": "WebHook",
@@ -238,7 +246,7 @@
                             }
                           ]
                         },
-                        "(The PostpaidInstanceVcpuCount usage under your account exceeds {{ threshold }}%.   \u60a8\u8d26\u6237\u7684 \u6309\u91cf\u4ed8\u8d39\u5b9e\u4f8b\u7684VCPU\u6838\u6570 \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        "(The PostpaidInstanceVcpuCount usage under your account exceeds {{ threshold }}%.   您账户的 按量付费实例的VCPU核数 使用率已超过{{threshold}}%。)",
                         ""
                       ]
                     },
@@ -256,7 +264,7 @@
                             }
                           ]
                         },
-                        "(The SpotInstanceVcpuCount usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u62a2\u5360\u5f0f\u5b9e\u4f8bVCPU\u6838\u6570 \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        "(The SpotInstanceVcpuCount usage under your account exceeds {{ threshold }}%.  您账户的 抢占式实例VCPU核数 使用率已超过{{threshold}}%。)",
                         ""
                       ]
                     },
@@ -274,7 +282,7 @@
                             }
                           ]
                         },
-                        "(The PostpaidYundiskCapacityCloudEfficiency usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39Cloud_efficiency\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        "(The PostpaidYundiskCapacityCloudEfficiency usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费Cloud_efficiency云盘容量 使用率已超过{{threshold}}%。)",
                         ""
                       ]
                     },
@@ -292,7 +300,7 @@
                             }
                           ]
                         },
-                        "(The PostpaidYundiskCapacityCloudSsd usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39cloud_ssd\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        "(The PostpaidYundiskCapacityCloudSsd usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费cloud_ssd云盘容量 使用率已超过{{threshold}}%。)",
                         ""
                       ]
                     },
@@ -310,7 +318,7 @@
                             }
                           ]
                         },
-                        "(The PostpaidYundiskCapacityCloudEssd usage under your account exceeds {{ threshold }}%.  \u60a8\u8d26\u6237\u7684 \u7528\u4f5c\u6570\u636e\u76d8\u7684\u6309\u91cf\u4ed8\u8d39cloud_essd\u4e91\u76d8\u5bb9\u91cf \u4f7f\u7528\u7387\u5df2\u8d85\u8fc7{{threshold}}%\u3002)",
+                        "(The PostpaidYundiskCapacityCloudEssd usage under your account exceeds {{ threshold }}%.  您账户的 用作数据盘的按量付费cloud_essd云盘容量 使用率已超过{{threshold}}%。)",
                         ""
                       ]
                     }
@@ -322,5 +330,35 @@
         }
       }
     }
-  ]
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "threshold",
+            "webHookUrl"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

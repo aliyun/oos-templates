@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Create new account in a db instance.",
+  "Description": {
+    "name-en": "ACS::RDS::CreateAccount",
+    "name-zh-cn": "在RDS实例中创建新帐户",
+    "en": "Create new account in a db instance",
+    "zh-cn": "在RDS实例中创建新帐户"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The region id of DB instance.",
+      "Description": {
+        "en": "The region ID of DB instance",
+        "zh-cn": "DB实例的地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "dbInstanceId": {
-      "Description": "The id of DB instance to create account in.",
+      "Description": {
+        "en": "The ID of DB instance to create account in",
+        "zh-cn": "要创建帐户的DB实例ID"
+      },
       "Type": "String"
     },
     "accountName": {
-      "Description": "The account name to create.",
+      "Description": {
+        "en": "The account name to create",
+        "zh-cn": "要创建的帐户名"
+      },
       "Type": "String"
     },
     "accountType": {
-      "Description": "The account type to create.",
+      "Description": {
+        "en": "The account type to create",
+        "zh-cn": "要创建的帐户类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "Normal",
@@ -25,11 +42,17 @@
       "Default": "Normal"
     },
     "accountPassword": {
-      "Description": "The account password to create.",
+      "Description": {
+        "en": "The account password to create",
+        "zh-cn": "要创建的帐户密码"
+      },
       "Type": "String"
     },
     "accountDescription": {
-      "Description": "The account description to create.",
+      "Description": {
+        "en": "The account description to create",
+        "zh-cn": "要创建的帐户描述"
+      },
       "Type": "String",
       "Default": ""
     }
@@ -38,7 +61,10 @@
     {
       "Name": "checkForInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Check wether the DB instance is running status.",
+      "Description": {
+        "en": "Checks wether the DB instance is running status",
+        "zh-cn": "检查DB实例是否为运行中状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeDBInstanceAttribute",
@@ -55,7 +81,10 @@
     {
       "Name": "CreateAccount",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Create new account in an instance.",
+      "Description": {
+        "en": "Creates new account in DB instance",
+        "zh-cn": "在实例中创建新帐户"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "CreateAccount",
@@ -72,7 +101,10 @@
     {
       "Name": "untilAccountReady",
       "Action": "ACS::WaitFor",
-      "Description": "Wait for new account to enter Available status.",
+      "Description": {
+        "en": "Waits for new account to enter Available status",
+        "zh-cn": "等待新帐户进入可用状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeAccounts",

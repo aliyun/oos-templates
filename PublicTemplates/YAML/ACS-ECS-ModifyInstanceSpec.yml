@@ -1,0 +1,129 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Modify postpaid instance's type
+  zh-cn: 修改按量付费实例的规格
+  name-en: ACS-ECS-ModifyInstanceSpec
+  name-zh-cn: 修改按量付费实例的规格
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  modifyInstanceSpecInfo:
+    Description:
+      en: 'upgrade:{"ecs.g6.large":"ecs.g6.xlarge", "ecs.g6.xlarge":"ecs.g6.2xlarge"} downgrade:{"ecs.g6.2xlarge":"ecs.g6.xlarge","ecs.g6.xlarge":"ecs.g6.large"}'
+      zh-cn: |
+        升配格式：{"ecs.g6.large":"ecs.g6.xlarge", "ecs.g6.xlarge":"ecs.g6.2xlarge"}
+        降配格式：{"ecs.g6.2xlarge":"ecs.g6.xlarge", "ecs.g6.xlarge":"ecs.g6.large"}
+    Label:
+      en: ModifyInstanceSpecInfo
+      zh-cn: 用于实例升降配的规格信息
+    Type: Json
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstanceType
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      zh-cn: Query instnace type
+      en: 获取实例规格信息
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      instanceType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].InstanceType'
+  - Name: checkForInstanceTypeAvalible
+    Action: 'ACS::CheckFor'
+    Description:
+      en: Check weather the instance type is avaliable
+      zh-cn: 检查实例规格是否可用
+    Properties:
+      Service: ECS
+      API: DescribeInstanceTypes
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceTypess:
+          - 'Fn::Select':
+              - '{{ getInstanceType.instanceType }}'
+              - '{{ modifyInstanceSpecInfo }}'
+      NotDesiredValues:
+        - []
+      PropertySelector: InstanceTypes.InstanceType
+  - Name: ModifyInstanceSpec
+    Action: 'ACS::ECS::ModifyInstanceSpec'
+    Description:
+      en: Modify instance type
+      zh-cn: 修改实例规格
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      instanceType:
+        'Fn::Select':
+          - '{{ getInstanceType.instanceType }}'
+          - '{{ modifyInstanceSpecInfo }}'
+  - Name: describeInstances
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      zh-cn: Query ECS instnaces
+      en: 获取ECS实例信息
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      instanceIdAndInstanceType:
+        Type: List
+        ValueSelector: 'Instances.Instance[] | {"InstanceId": .InstanceId, "InstanceType" : .InstanceType}'
+Outputs:
+  instanceIdAndInstanceType:
+    Type: List
+    Value: '{{ describeInstances.instanceIdAndInstanceType }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - modifyInstanceSpecInfo
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Parameter Configure
+      - Parameters:
+          - regionId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

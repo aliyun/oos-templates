@@ -1,20 +1,32 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates backups of a RDS instance.
+Description:
+  name-en: ACS::RDS::CreateBackup
+  name-zh-cn: 创建RDS实例的备份
+  en: Creates backups of a RDS instance
+  zh-cn: 创建RDS实例的备份
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   backupMethod:
-    Description: Logical
+    Description:
+      en: The backup method
+      zh-cn: 备份方式
     Type: String
   instanceId:
-    Description: The ID of DB Instance that will be handled.
+    Description:
+      en: The ID of DB Instance that will be handled
+      zh-cn: 要处理的DB实例的ID
     Type: String
 Tasks:
 - Name: createBackup
   Action: ACS::ExecuteAPI
-  Description: Creates backups of a RDS instance.
+  Description:
+    en: Creates backups of a RDS instance
+    zh-cn: 创建RDS实例的备份
   Properties:
     Service: RDS
     API: CreateBackup

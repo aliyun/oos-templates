@@ -1,0 +1,140 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use this template to install sls logtail on ecs
+  zh-cn: 使用这个模板批量的在ECS安装日志服务插件
+  name-en: ACS-LOG-BulkyInstallLogtail
+  name-zh-cn: 批量安装日志服务插件
+  categories:
+    - run_command
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  action:
+    Type: String
+    Label:
+      en: Action
+      zh-cn: 操作类型
+    AllowedValues:
+      - install
+      - upgrade
+      - uninstall
+    Default: install
+  overwrite:
+    Description:
+      en: If Logtail exists in the instance, choose whether to overwrite Logtail(Default no).
+      zh-cn: 如果实例内存在Logtail时，选择是否覆盖Logtail(默认不覆盖)
+    Label:
+      en: Overwrite
+      zh-cn: 是否覆盖Logtail
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+      instanceInfos:
+        Type: List
+        ValueSelector: .Instances.Instance[] | {"osType":.OSType, "instanceId":.InstanceId}
+  - Name: invokeCommand
+    Action: ACS::ECS::InvokeCommand
+    Properties:
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      regionId: '{{ regionId }}'
+      parameters:
+        regionid: '{{ regionId }}'
+        action: '{{ action }}'
+        overwrite: '{{ overwrite }}'
+      commandId:
+        Fn::If:
+          - Fn::Equals:
+              - Fn::Jq:
+                  - First
+                  - .|map(select(.instanceId == "{{ ACS::TaskLoopItem }}").osType)[]
+                  - '{{ getInstance.instanceInfos }}'
+              - linux
+          - cmd-ACS-LOG-InstallLogtail-for-linux.sh
+          - cmd-ACS-LOG-InstallLogtail-for-windows.ps1
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ invokeCommand.commandOutputs }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - action
+          - overwrite
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

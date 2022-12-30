@@ -1,54 +1,82 @@
 FormatVersion: OOS-2019-06-01
-Description: 'Use this template to run Ansible playbooks on ECS Instance.Only supports CentOS, AliyunLinux and Ubuntu.'
+Description:
+  name-en: ACS::ECS::ApplyAnsiblePlayBook
+  name-zh-cn: 在ECS实例中执行Ansible-playbook
+  en: 'Run Ansible playbooks on ECS Instance.Only supports CentOS, AliyunLinux and Ubuntu'
+  zh-cn: 在ECS实例中执行Ansible-playbook，仅支持CentOS，AliyunLinux，Ubuntu类型实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The id of instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
   sourceType:
-    Description: The type of playbook storage.
+    Description:
+      en: The type of playbook storage
+      zh-cn: playbook存储类型
     Type: String
     AllowedValues:
       - oss
       - https
       - github
   sourcePath:
-    Description: 'You must specify a URL where the playbook is stored.You can specify the URL in the following formats: https://example.com/playbook.yml'
+    Description:
+      en: 'You must specify a URL where the playbook is stored.You can specify the URL in the following formats: https://example.com/playbook.yml'
+      zh-cn: '您必须指定一个用于存储playbook的URL。您可以采用以下格式指定URL:https://example.com/playbook.yml'
     Type: String
   playbookFile:
-    Description: 'The name of playbook to apply. For example: example.yml'
+    Description:
+      en: 'The name of playbook to apply. For example: example.yml'
+      zh-cn: '要执行的playbook的名称，举例:example.yml'
     Type: String
   tokenInfo:
     Type: String
-    Description: Specify a token to download ansible playbook.It is only required when downloading palybook from GitHub.
+    Description:
+      en: Specify a token to download ansible playbook.It is only required when downloading palybook from GitHub
+      zh-cn: 指定一个token来下载playbook，只有从GitHub下载时用到
     Default: ''
   hosts:
-    Description: The hosts used to execute  palybook.
+    Description:
+      en: The hosts used to execute palybook
+      zh-cn: 运行执行palybook的hosts
     Type: String
     Default: /etc/ansible/hosts
   installDependencies:
-    Description: 'If set to True,  OOS installs Ansible and its dependencies, including Python, from the PyPI repo.  If set to False, then verify that Ansible and its dependencies are installed on the target instances.'
+    Description:
+      en: 'If set to True,  OOS installs Ansible and its dependencies, including Python, from the PyPI repo.  If set to False, then verify that Ansible and its dependencies are installed on the target instances'
+      zh-cn: '如果设置为True，OOS将从PyPI存储库中安装Ansible及其依赖项，包括Python。如果设置为False，则验证Ansible及其依赖项是否已安装在目标实例上'
     Type: Boolean
     Default: true
   workingDir:
-    Description: The directory to apply playbook.
+    Description:
+      en: The directory to apply playbook
+      zh-cn: 执行playbook的目录
     Type: String
     Default: /root/ansible-workspace
   check:
-    Description: Use the check parameter to perform a dry run of the Ansible execution.
+    Description:
+      en: Use the check parameter to perform a dry run of the Ansible execution
+      zh-cn: 使用check参数检查Ansible的执行
     Type: Boolean
     Default: true
   extraVariables:
     Type: String
-    Description: 'Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime'
+    Description:
+      en: 'Additional variables to pass to Ansible at runtime. Enter a space separated list of key/value pairs. For example: color=red flavor=lime'
+      zh-cn: '附带变量在运行时传递给Ansible。输入以空格分隔的键/值对列表。例如：color = red flavour = lime'
     Default: color=red
     AllowedPattern: ^$|^\w+\=\S+(\s\w+\=\S+)*$
   verbose:
     Type: String
-    Description: 'Set the verbosity level for logging Playbook executions. Specify -v for low verbosity, -vv or –vvv for medium verbosity, and -vvvv for debug level.'
+    Description:
+      en: 'Set the verbosity level for logging Playbook executions. Specify -v for low verbosity, -vv or –vvv for medium verbosity, and -vvvv for debug level'
+      zh-cn: '设置用于记录Playbook执行情况的详细程度。指定-v表示低级别，-vv或–vvv表示中等级别，-vvvv表示调试级别'
     AllowedValues:
       - '-v'
       - '-vv'
@@ -58,7 +86,9 @@ Parameters:
 Tasks:
   - Name: applyPlaybook
     Action: 'ACS::ECS::RunCommand'
-    Description: Apply the specified playbook.
+    Description:
+      en: Executes the specified playbook on ECS instance
+      zh-cn: 在ECS实例中执行指定的playbook
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ instanceId }}'
@@ -88,7 +118,7 @@ Tasks:
           fi
         fi
         echo "Downloading playbook"
-        acs-plugin-manager --exec -P oosutil --param  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\','{{workingDir}}'
+        acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\','{{workingDir}}'
         echo "Running Ansible in {{workingDir}}"
         cd {{workingDir}}
         for zip in $(find -iname '*.zip'); do

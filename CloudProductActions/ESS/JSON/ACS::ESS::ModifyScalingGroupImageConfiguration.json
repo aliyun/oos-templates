@@ -1,0 +1,102 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "ModifyScalingGroupImageConfiguration",
+    "zh-cn": "修改伸缩组的镜像配置",
+    "name-en": "ACS::ESS::ModifyScalingGroupImageConfiguration",
+    "name-zh-cn": "修改伸缩组的镜像配置"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "Region",
+        "zh-cn": "地域"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "imageId": {
+      "Label": {
+        "en": "ImageId",
+        "zh-cn": "镜像ID"
+      },
+      "Type": "String"
+    },
+    "scalingGroupId": {
+      "Label": {
+        "en": "ScalingGroupId",
+        "zh-cn": "伸缩组ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeScalingGroups",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries scaling group",
+        "zh-cn": "获取伸缩配置Id"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingGroups",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId1": "{{ scalingGroupId }}"
+        }
+      },
+      "Outputs": {
+        "configurationId": {
+          "Type": "String",
+          "ValueSelector": "ScalingGroups.ScalingGroup[].ActiveScalingConfigurationId"
+        }
+      }
+    },
+    {
+      "Name": "whetherToModifyScalingConfiguration",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by ScalingConfigurationId",
+        "zh-cn": "根据伸缩配置ID判断是否修改伸缩配置"
+      },
+      "Properties": {
+        "DefaultTask": "modifyScalingConfiguration",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "",
+                "{{ describeScalingGroups.configurationId }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifyScalingConfiguration",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify scaling configuration",
+        "zh-cn": "修改伸缩配置"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyScalingConfiguration",
+        "Parameters": {
+          "ScalingConfigurationId": "{{ describeScalingGroups.configurationId }}",
+          "ImageId": "{{ imageId }}"
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": ".invocationOutput"
+        }
+      }
+    }
+  ]
+}

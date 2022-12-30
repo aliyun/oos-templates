@@ -1,0 +1,110 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky stops the ECS instances with public ip
+  zh-cn: 批量停止有公网IP的ECS实例
+  name-en: ACS-ECS-BulkyStopInstancesWithPublicIp
+  name-zh-cn: 批量停止有公网IP的ECS实例
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  stoppedMode:
+    Description:
+      en: About StoppedMode details please refer to <a href="https://help.aliyun.com/document_detail/25501.html" target="_blank">document</a>
+      zh-cn: 停止按量付费ECS实例后，是否继续计费，有关StoppedMode详情请<a href="https://help.aliyun.com/document_detail/25501.html" target="_blank">参考</a>
+    Label:
+      en: StoppedMode
+      zh-cn: 停止模式
+    Type: String
+    AllowedValues:
+      - StopCharging
+      - KeepCharging
+    Default: KeepCharging
+    AssociationPropertyMetadata:
+      LocaleKey: ECSStoppedMode
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: .Instances.Instance | map(select((.EipAddress.IpAddress != "") or (.PublicIpAddress.IpAddress[]|length > 0))) | .[].InstanceId
+- Name: stopInstance
+  Action: ACS::ECS::StopInstance
+  Description:
+    en: Stops the ECS instances
+    zh-cn: 停止实例
+  Properties:
+    regionId: '{{ regionId }}'
+    stoppedMode: '{{ stoppedMode }}'
+    instanceId: '{{ ACS::TaskLoopItem }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'
+Outputs:
+  instanceIds:
+    Type: List
+    Value: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - stoppedMode
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

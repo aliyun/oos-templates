@@ -1,0 +1,178 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use lifecycleHook to run command in the specified scaling activity instance",
+    "zh-cn": "使用生命周期挂钩到指定实例中执行命令",
+    "name-en": "ACS-ESS-LifeCycleRunCommandOnSpecifiedInstance",
+    "name-zh-cn": "使用生命周期挂钩到指定实例中执行命令",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "commandInstanceId": {
+      "Label": {
+        "en": "CommandInstanceId",
+        "zh-cn": "执行命令的ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "commandContent": {
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "云助手命令"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code",
+      "Default": "echo hello"
+    },
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID，请使用弹性伸缩系统默认值 ${regionId}"
+      },
+      "Type": "String",
+      "Default": "${regionId}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "ECS实例ID列表"
+      },
+      "Description": {
+        "en": "The ID list of the ECS instance",
+        "zh-cn": "ECS实例ID列表,请使用弹性伸缩系统默认值 [\"${instanceId}\"]"
+      },
+      "Type": "List",
+      "Default": [
+        "${instanceIds}"
+      ]
+    },
+    "lifecycleHookId": {
+      "Label": {
+        "en": "LifecycleHookId",
+        "zh-cn": "生命周期挂钩ID"
+      },
+      "Description": {
+        "en": "The ID of the lifecycle hook",
+        "zh-cn": "生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleHookId}"
+    },
+    "lifecycleActionToken": {
+      "Label": {
+        "en": "LifecycleActionToken",
+        "zh-cn": "实例关联的特定伸缩活动的令牌"
+      },
+      "Description": {
+        "en": "The token that indicates a specific scaling activity associated with an instance",
+        "zh-cn": "实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleActionToken}"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "速率控制"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 1
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "runCommandOnSpecifiedInstance",
+      "Action": "ACS::ESS::RunCommandOnSpecifiedInstance",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Description": {
+        "en": "Execute cloud  assistant command",
+        "zh-cn": "执行云助手命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "{{ commandContent }}",
+        "commandInstanceId": "{{ commandInstanceId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForContinue",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle action for continue",
+        "zh-cn": "修改伸缩活动的等待状态为继续完成"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "CONTINUE"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForAbandon",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Complete lifecycle action for Abandon",
+        "zh-cn": "修改伸缩活动的等待状态为弃用"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ runCommandOnSpecifiedInstance.commandOutputs }}"
+    }
+  }
+}

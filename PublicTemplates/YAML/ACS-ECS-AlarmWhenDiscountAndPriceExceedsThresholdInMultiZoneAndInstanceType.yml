@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Alarm when monitoring the discount and spot price of multi-instance types in multi-availability zone exceeding the threshold.
-  zh-cn: 监控多可用区下的多实例类型的折扣与现价超出阈值时报警。
+  en: Alarm when monitoring the discount and spot price of multi-instance types in multi-availability zone exceeding the threshold
+  zh-cn: 监控多可用区下的多实例类型的折扣与现价超出阈值时报警
   name-en: ACS-ECS-AlarmWhenDiscountAndPriceExceedsThresholdInMultiZoneAndInstanceType
   name-zh-cn: 监控多可用区下的多实例类型的折扣与现价超出阈值时报警
   categories:
@@ -9,19 +9,18 @@ Description:
 Parameters:
   region:
     Type: String
-    Description:
-      name-en: regionId
-      name-zh-cn: 地域
-      en: The region id.
-      zh-cn: 地域。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   zoneId:
     Description:
-      en: The zone id.
-      zh-cn: 可用区ID。
-      name-en: zoneId
-      name-zh-cn: 可用区
+      en: The zone id
+      zh-cn: 可用区ID
+    Label:
+      en: ZoneId
+      zh-cn: 可用区
     AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
     Type: List
     AssociationPropertyMetadata:
@@ -29,10 +28,11 @@ Parameters:
       RegionId: region
   instanceType:
     Description:
-      en: The instance type.
-      zh-cn: 实例规格。
-      name-en: instanceType
-      name-zh-cn: 实例规格
+      en: The instance type
+      zh-cn: 实例规格
+    Label:
+      en: InstanceType
+      zh-cn: 实例规格
     Type: List
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
     AssociationPropertyMetadata:
@@ -40,10 +40,11 @@ Parameters:
       RegionId: region
   taskType:
     Description:
-      en: The monitoring threshold task type（Discount：Monitor discount, Price：monitor price）.
-      zh-cn: 监控阈值任务类型（Discount：折扣监控, Price：价格监控）。
-      name-en: taskType
-      name-zh-cn: 监控任务类型
+      en: The monitoring threshold task type（Discount：Monitor discount, Price：monitor price）
+      zh-cn: 监控阈值任务类型（Discount：折扣监控, Price：价格监控）
+    Label:
+      en: TaskType
+      zh-cn: 监控任务类型
     Type: String
     Default: Discount
     AllowedValues:
@@ -52,19 +53,23 @@ Parameters:
   threshold:
     Description:
       en: 'The discount/price threshold(example:10 is 1% off,50 is 50% off,Or directly enter the price threshold).'
-      zh-cn: 价格/折扣阈值（例：10为1折，50为5折，或者直接输入价格的阈值）。
-      name-en: threshold
-      name-zh-cn: 价格/折扣阈值
+      zh-cn: 价格/折扣阈值（例：10为1折，50为5折，或者直接输入价格的阈值）
+    Label:
+      en: Threshold
+      zh-cn: 价格/折扣阈值
     Type: Number
   webhook:
+    Label:
+      en: Webhook
+      zh-cn: '钉钉接收信息的地址'
     Description:
-      en: 'DingTalk webhook(example:https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx).'
-      zh-cn: '钉钉接收信息的地址（例：https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx）。'
+      en: '(example:https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx).'
+      zh-cn: '（例：https://oapi.dingtalk.com/robot/send?access_token=bac51db2e39418ec6c2dbb27fd111bc7xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx）。'
     Type: String
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -72,9 +77,9 @@ Parameters:
       MaxErrors: 100
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -82,8 +87,8 @@ Tasks:
   - Name: alarmThresholdInfo
     Action: 'ACS::ECS::AlarmSpotPriceByDiscountThresholdWithMultiTypes'
     Description:
-      en: Alarm when monitoring the discount and spot price of multi-instance types under multi-availability zone exceeding the threshold.
-      zh-cn: 监控多可用区下的多实例类型的折扣与现价超出阈值时报警。
+      en: Alarm when monitoring the discount and spot price of multi-instance types under multi-availability zone exceeding the threshold
+      zh-cn: 监控多可用区下的多实例类型的折扣与现价超出阈值时报警
     Properties:
         regionId: '{{ region }}'
         zoneId: '{{ ACS::TaskLoopItem }}'
@@ -104,8 +109,8 @@ Tasks:
   - Name: wetherNodifyWebhook
     Action: 'ACS::Choice'
     Description:
-      en: Detect if an alarm notification is required.
-      zh-cn: 检测是否需要发报警通知。
+      en: Detect if an alarm notification is required
+      zh-cn: 检测是否需要发报警通知
     Properties:
       DefaultTask: alarmNotify
       Choices:
@@ -118,8 +123,8 @@ Tasks:
   - Name: alarmNotify
     Action: 'ACS::Notify'
     Description:
-      en: Instance discount / spot price exceeds threshold alarm notification.
-      zh-cn: 实例的折扣/现价超出阈值报警通知。
+      en: Instance discount / spot price exceeds threshold alarm notification
+      zh-cn: 实例的折扣/现价超出阈值报警通知
     Properties:
       NotifyType: WebHook
       WebHook:
@@ -191,3 +196,24 @@ Outputs:
                                     - All
                                     - 'map(.| .threshold=.threshold+"&emsp;|\n," )'
                                     - 'Fn::MergeList': '{{ alarmThresholdInfo.allThresholdInfos }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - region
+          - zoneId
+          - instanceType
+          - taskType
+          - threshold
+          - webhook
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -1,0 +1,96 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify protection module status",
+    "zh-cn": "开启WAF防护功能模块模块",
+    "name-en": "ACS-WAF-BulkyModifyProtectionModuleStatus",
+    "name-zh-cn": "开启WAF防护功能模块",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "domains": {
+      "Type": "List",
+      "Label": {
+        "en": "Domains",
+        "zh-cn": "要操作的网站域名"
+      }
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "要操作的WAF实例的ID"
+      },
+      "Type": "String"
+    },
+    "defenseType": {
+      "Label": {
+        "en": "DefenseType",
+        "zh-cn": "要操作的WAF防护功能模块"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "waf",
+        "ac_cc",
+        "tamperproof"
+      ]
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyProtectionModuleStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify protection module status",
+        "zh-cn": "开启WAF防护功能模块-规则防护引擎"
+      },
+      "Properties": {
+        "Service": "WAF-OPENAPI",
+        "API": "ModifyProtectionModuleStatus",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DefenseType": "{{ defenseType }}",
+          "Domain": "{{ ACS::TaskLoopItem }}",
+          "InstanceId": "{{ instanceId }}",
+          "ModuleStatus": 1
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ domains }}"
+      }
+    }
+  ]
+}

@@ -1,52 +1,59 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image.
-  zh-cn: 通过运行命令更新一个已存在的ECS镜像后创建一个新ECS镜像。
-  name-en: ACS-ECS-UpdateImage
-  name-zh-cn: 更新ECS镜像
+  en: Updates an existing ECS image via ECS Cloud Assistant then creates an ECS image
+  zh-cn: 通过运行命令更新一个已存在的ECS镜像后创建一个新ECS镜像
+  name-en: Update Image
+  name-zh-cn: 更新镜像
   categories:
     - image_manage
+    - application_manage
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   targetImageName:
-    Description:
-      en: The name of new image.
-      zh-cn: 新镜像的名称。
+    Label:
+      en: TargetImageName
+      zh-cn: 新镜像的名称
     Type: String
-    MinLength: 1
-    Default: UpdateImage_from_{{ sourceImageId }}_on_{{ ACS::ExecutionId }}
+    Description:
+      en: <p class="p">Note:</p> <ul class="ul"> <li class="li">Length is 2~128 English or Chinese characters</li> <li class="li"><font color='red'>must start with big or small letters or Chinese, not http:// and https://. </font></li> <li class="li">Can contain numbers, colons (:), underscores (_), or dashes (-). </li> </ul>
+      zh-cn: <p class="p">注意：</p> <ul class="ul"> <li class="li">长度为2~128个英文或中文字符</li> <li class="li"><font color='red'>必须以大小字母或中文开头，不能以http://和https://开头。</font></li> <li class="li">可以包含数字、半角冒号（:）、下划线（_）或者短划线（-）。</li> </ul>
+    Default: 'UpdateImage_from_{{sourceImageId}}_on_{{ACS::ExecutionId}}'
   sourceImageId:
-    Description:
-      en: The image ID for the ECS instance.
-      zh-cn: 源镜像ID。
+    Label:
+      en: SourceImageId
+      zh-cn: 源镜像ID
     Type: String
-    AllowedPattern: '[A-Za-z0-9_\-\.]*'
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ImageOwnerAlias:
+        - self
   instanceType:
-    Description:
-      en: The instance type for the ECS instances.
-      zh-cn: 实例类型。
+    Label:
+      en: InstanceType
+      zh-cn: 实例类型
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
-    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
-    Default: 'ecs.g5.large'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   securityGroupId:
-    Description:
-      en: The security group ID for the ECS instances.
-      zh-cn: 安全组ID。
+    Label:
+      en: SecurityGroupId
+      zh-cn: 安全组ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
     AssociationPropertyMetadata:
       RegionId: regionId
   vSwitchId:
-    Description:
-      en: The virtual switch ID for the ECS instances。
-      zh-cn: 交换机ID。
+    Label:
+      en: VSwitchId
+      zh-cn: 交换机ID
     Type: String
     AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
     AssociationPropertyMetadata:
@@ -54,43 +61,43 @@ Parameters:
       Filters:
         - SecurityGroupId: securityGroupId
   ramRoleName:
-    Description:
-      en: The ram role for the ECS instances.
-      zh-cn: 实例的RAM角色。
+    Label:
+      en: RamRoleName
+      zh-cn: 实例的RAM角色
     Type: String
     Default: ''
   commandType:
-    Description:
-      en: The type of command.
-      zh-cn: 云助手命令类型。
+    Label:
+      en: CommandType
+      zh-cn: 云助手命令类型
     Type: String
+    AssociationPropertyMetadata:
+      LocaleKey: PricingCycle
     AllowedValues:
       - RunBatScript
       - RunPowerShellScript
       - RunShellScript
     Default: RunShellScript
-
   tags:
-    Description:
-      en: The image tag.
-      zh-cn: 镜像标签。
+    Label:
+      en: Tags
+      zh-cn: 镜像标签
     Type: Json
     AssociationProperty: Tags
     AssociationPropertyMetadata:
       ShowSystem: false
     Default: []
-
   commandContent:
-    Description:
-      en: Command content to run in ECS instance.
-      zh-cn: 在ECS实例中执行的云助手命令。
+    Label:
+      en: CommandContent
+      zh-cn: 在ECS实例中执行的云助手命令
     Type: String
     AssociationProperty: Code
     Default: 'echo hello'
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -98,8 +105,8 @@ Tasks:
 - Name: checkNewImageName
   Action: ACS::CheckFor
   Description:
-    en: Check image name is available.
-    zh-cn: 检查镜像名称是可用的。
+    en: Check image name is available
+    zh-cn: 检查镜像名称是可用的
   Properties:
     Service: ECS
     API: DescribeImages
@@ -112,8 +119,8 @@ Tasks:
 - Name: runInstances
   Action: ACS::ECS::RunInstances
   Description:
-    en: Create a ECS instance with source image.
-    zh-cn: 用源镜像创建一台ECS实例。
+    en: Create a ECS instance with source image
+    zh-cn: 用源镜像创建一台ECS实例
   Properties:
     regionId: '{{ regionId }}'
     imageId: '{{ sourceImageId }}'
@@ -128,8 +135,8 @@ Tasks:
 - Name: installCloudAssistant
   Action: ACS::ECS::InstallCloudAssistant
   Description:
-    en: Install cloud assostant for ECS instance.
-    zh-cn: 给实例安装云助手。
+    en: Install cloud assostant for ECS instance
+    zh-cn: 给实例安装云助手
   OnError: deleteInstance
   Properties:
     regionId: '{{ regionId }}'
@@ -137,8 +144,8 @@ Tasks:
 - Name: runCommand
   Action: ACS::ECS::RunCommand
   Description:
-    en: Run cloud assostant command on ECS instance.
-    zh-cn: 在实例中运行云助手命令。
+    en: Run cloud assostant command on ECS instance
+    zh-cn: 在实例中运行云助手命令
   OnError: deleteInstance
   Properties:
     regionId: '{{ regionId }}'
@@ -148,16 +155,16 @@ Tasks:
 - Name: stopInstance
   Action: ACS::ECS::StopInstance
   Description:
-    en: Stops the ECS instance.
-    zh-cn: 停止ECS实例。
+    en: Stops the ECS instance
+    zh-cn: 停止ECS实例
   Properties:
     regionId: '{{ regionId }}'
     instanceId: '{{ runInstances.instanceId }}'
 - Name: createImage
   Action: ACS::ECS::CreateImage
   Description:
-    en: Create new image with the specified image name and instance ID.
-    zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
+    en: Create new image with the specified image name and instance ID
+    zh-cn: 通过指定实例ID和镜像名称创建新的镜像
   OnError: deleteInstance
   Properties:
     regionId: '{{ regionId }}'
@@ -171,8 +178,8 @@ Tasks:
 - Name: deleteInstance
   Action: ACS::ExecuteAPI
   Description:
-    en: Deletes the ECS instance.
-    zh-cn: 删除ECS实例。
+    en: Deletes the ECS instance
+    zh-cn: 删除ECS实例
   Properties:
     Service: ECS
     API: DeleteInstance
@@ -185,3 +192,42 @@ Outputs:
   imageId:
     Type: String
     Value: '{{ createImage.imageId }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - sourceImageId
+        Label:
+          default:
+            zh-cn: 选择源镜像
+            en: Select Origin Image
+      - Parameters:
+          - targetImageName
+          - tags
+        Label:
+          default:
+            zh-cn: 镜像设置
+            en: Image Configure
+      - Parameters:
+          - instanceType
+          - securityGroupId
+          - vSwitchId
+          - ramRoleName
+        Label:
+          default:
+            zh-cn: 配置中转实例
+            en: ECS Instance Configure
+      - Parameters:
+          - commandType
+          - commandContent
+        Label:
+          default:
+            zh-cn: 发送远程命令
+            en: Run Command
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

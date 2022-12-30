@@ -1,25 +1,45 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Alarm notification when spot instance discount or spot price exceeds threshold in multiple instance type.",
+  "Description": {
+    "name-en": "ACS::ECS::AlarmSpotPriceByDiscountThresholdWithMultiTypes",
+    "name-zh-cn": "监控多种实例类型的折扣或现价的阈值",
+    "en": "Alarm notification when spot instance discount or spot price exceeds threshold in multiple instance type",
+    "zh-cn": "监控多种实例类型的预付费实例的折扣与价格，当超出阈值时发出报警通知"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The region id",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String"
     },
     "zoneId": {
-      "Description": "The zone id.",
+      "Description": {
+        "en": "The ID of zone",
+        "zh-cn": "可用区ID"
+      },
       "Type": "String"
     },
     "instanceTypes": {
-      "Description": "The instance type.",
+      "Description": {
+        "en": "The type of ECS instance",
+        "zh-cn": "ECS实例类型"
+      },
       "Type": "List"
     },
     "threshold": {
-      "Description": "The discount or price threshold.",
+      "Description": {
+        "en": "The discount or price threshold",
+        "zh-cn": "折扣与现价的阈值"
+      },
       "Type": "Number"
     },
     "taskType": {
-      "Description": "The monitoring threshold task type.",
+      "Description": {
+        "en": "The monitoring threshold task type",
+        "zh-cn": "监控阈值的任务类型"
+      },
       "Type": "String"
     }
   },
@@ -27,7 +47,10 @@
     {
       "Name": "describeAvailableResource",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Get the avaliable resource.",
+      "Description": {
+        "en": "Queries the avaliable resource",
+        "zh-cn": "获取可用的资源"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeAvailableResource",
@@ -60,7 +83,10 @@
     {
       "Name": "checkInstanceTypeSize",
       "Action": "ACS::Choice",
-      "Description": "Check if the instance type size is zero.",
+      "Description": {
+        "en": "Choose the next task by the count of available instance types being zero",
+        "zh-cn": "检测实例类型的数量是否为零"
+      },
       "Properties": {
         "DefaultTask": "describeSpotPriceHistory",
         "Choices": [
@@ -84,8 +110,8 @@
       "Name": "describeSpotPriceHistory",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Get the latest discounts on spot instance.",
-        "zh-cn": "\u83b7\u53d6\u62a2\u5360\u5f0f\u5b9e\u4f8b\u6700\u65b0\u6298\u6263\u3002"
+        "en": "Queries the latest discounts on spot instance",
+        "zh-cn": "获取抢占式实例最新折扣"
       },
       "Properties": {
         "Service": "ECS",
@@ -122,7 +148,10 @@
     {
       "Name": "alarmThresholdInfo",
       "Action": "ACS::ECS::AlarmSpotPriceByDiscountThreshold",
-      "Description": "Alarm notification when spot instance discount or spot price exceeds threshold.",
+      "Description": {
+        "en": "Alarm notification when spot instance discount or spot price exceeds threshold",
+        "zh-cn": "当预付费实例的折扣与价格超出阈值时发布报警通知"
+      },
       "Properties": {
         "regionId": "{{regionId}}",
         "zoneId": "{{ zoneId }}",

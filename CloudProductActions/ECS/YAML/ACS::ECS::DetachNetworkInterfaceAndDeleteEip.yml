@@ -1,12 +1,20 @@
 FormatVersion: OOS-2019-06-01
-Description: Detach the network interface and eip from the special instance.
+Description:
+  name-en: ACS::ECS::DetachNetworkInterfaceAndDeleteEip
+  name-zh-cn: 卸载弹性网卡并释放EIP
+  en: Detach the network interface from the special instance and release EIP
+  zh-cn: 从实例上卸载弹性网卡并释放EIP
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ecs instance id.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
 Tasks:
   - Name: waitInstanceReady
@@ -14,7 +22,9 @@ Tasks:
     Delay: 15
     Retries: 7
     DelayType: Constant
-    Description: Wait ECS instance is in the running or stopped status.
+    Description:
+      en: Waits for ECS instance tnter to Running or Stopped status
+      zh-cn: 等待ECS实例状态至运行中或已停止状态
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -27,7 +37,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: describeNetworkInterfaces
     Action: 'ACS::ExecuteAPI'
-    Description: Describe the network interfaces.
+    Description:
+      en: Queries the network interfaces ID
+      zh-cn: 获取弹性网卡ID
     Properties:
       Service: ECS
       API: DescribeNetworkInterfaces
@@ -40,7 +52,9 @@ Tasks:
         ValueSelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].NetworkInterfaceId'
   - Name: describeEipAddresses
     Action: 'ACS::ExecuteAPI'
-    Description: Describe the eip addresses.
+    Description:
+      en: Queries the allocationId of EIP
+      zh-cn: 获取EIP的实例ID
     Properties:
       Service: ECS
       API: DescribeEipAddresses
@@ -59,7 +73,9 @@ Tasks:
           AggregateField: allocationId
   - Name: unassociateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Unasscocatie the eip from network interface.
+    Description:
+      en: Unasscocaties the eip from network interface
+      zh-cn: 将弹性公网IP（EIP）从绑定的云产品上解绑
     OnError: waitEipAddressReady
     Properties:
       Service: ECS
@@ -79,7 +95,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIdInfo }}'
   - Name: waitEipAddressReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the EIP enter to Available status
+      zh-cn: 等待EIP进入可用状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -99,7 +117,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIdInfo }}'
   - Action: 'ACS::ExecuteAPI'
     Name: releaseEipAddress
-    Description: Release the eip.
+    Description:
+      en: Releases the EIP
+      zh-cn: 释放EIP
     OnError: detachNetworkInterface
     Properties:
       Service: ECS
@@ -114,7 +134,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIdInfo }}'
   - Action: 'ACS::ExecuteAPI'
     Name: detachNetworkInterface
-    Description: Detach the network interface.
+    Description:
+      en: Detaches the network interface
+      zh-cn: 从一台ECS实例上分离一个弹性网卡
     OnError: waitNetworkInterfaceAvailable
     Properties:
       Service: ECS
@@ -130,7 +152,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIdInfo }}'
   - Name: waitNetworkInterfaceAvailable
     Action: 'ACS::WaitFor'
-    Description: Waits for the network interface util Available.
+    Description:
+      en: Waits for the network interface util Available
+      zh-cn: 等待弹性网卡至可用状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -151,7 +175,9 @@ Tasks:
       Items: '{{ describeEipAddresses.allocationIdInfo }}'
   - Action: 'ACS::ExecuteAPI'
     Name: deleteNetworkInterface
-    Description: Delete the network interface.
+    Description:
+      en: Deletes the network interface
+      zh-cn: 删除一个弹性网卡
     Properties:
       Service: ECS
       API: DeleteNetworkInterface

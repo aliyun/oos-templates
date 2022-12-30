@@ -1,30 +1,46 @@
 FormatVersion: OOS-2019-06-01
-Description: Replaces the system disk of an ECS instance.
+Description:
+  name-en: ACS::ECS::ReplaceSystemDisk
+  name-zh-cn: 更换ECS实例的系统盘
+  en: Replaces the system disk of an ECS instance
+  zh-cn: 更换一台ECS实例的系统盘
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   imageId:
-    Description: The ID of image.
+    Description:
+      en: The ID of image
+      zh-cn: 镜像ID
     Type: String
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   password:
-    Description: The password.
+    Description:
+      en: The password of ECS instance
+      zh-cn: ECS实例密码
     Type: String
     Default: ''
   keyPairName:
-    Description: The keypair name.
+    Description:
+      en: The keypair name
+      zh-cn: 密钥对名称
     Type: String
     Default: ''
 Tasks:
 - Name: viewInstanceStatus
   Action: ACS::ExecuteApi
-  Description: Views ECS instance status.
+  Description:
+    en: Queries ECS instance status
+    zh-cn: 获取实例状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -38,7 +54,9 @@ Tasks:
       ValueSelector: Instances.Instance[].Status
 - Name: whetherInstanceStatusIsRunning
   Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Description:
+    en: Choose the next task according to whether the instance is in a running state
+    zh-cn: 根据实例是否处于运行中状态选择下一个任务
   Properties:
     DefaultTask: stopInstance
     Choices:
@@ -49,7 +67,9 @@ Tasks:
         NextTask: replaceSystemDisk
 - Name: stopInstance
   Action: ACS::ExecuteAPI
-  Description: Stops the ECS instance with the specified instance ID.
+  Description:
+    en: Stops the ECS instance
+    zh-cn: 停止ECS实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -58,7 +78,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter stopped status.
+  Description:
+    en: Waits for the ECS instance to enter stopped status
+    zh-cn: 等待实例到达stopped状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -71,7 +93,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: replaceSystemDisk
   Action: ACS::ExecuteAPI
-  Description: Replaces the system disk of an ECS instance.
+  Description:
+    en: Replaces the system disk of an ECS instance
+    zh-cn: 更换ECS实例的系统盘
   Properties:
     Service: ECS
     API: ReplaceSystemDisk
@@ -99,7 +123,9 @@ Tasks:
       ValueSelector: DiskId
 - Name: untilNewDiskReady
   Action: ACS::WaitFor
-  Description: Waits for the disks to be created successfully.
+  Description:
+    en: Waits for the disk to be replaced successfully
+    zh-cn: 等待磁盘替换成功
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -112,7 +138,9 @@ Tasks:
     PropertySelector: Disks.Disk[].Status
 - Name: startInstance
   Action: ACS::ExecuteAPI
-  Description: Starts an ECS instance.
+  Description:
+    en: Starts ECS instance
+    zh-cn: 启动ECS实例
   Properties:
     Service: ECS
     API: StartInstance
@@ -121,7 +149,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceToRunning
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter running status.
+  Description:
+    en: Waits for the ECS instance to enter running status
+    zh-cn: 等待实例到达running状态
   Properties:
     Service: ECS
     API: DescribeInstances

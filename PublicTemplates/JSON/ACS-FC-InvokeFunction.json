@@ -1,47 +1,47 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Invoke the function and return the result.",
-    "zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97\uff0c\u5e76\u8fd4\u56de\u51fd\u6570\u8ba1\u7b97\u7684\u7ed3\u679c\u3002",
+    "en": "Invoke the function and return the result",
+    "zh-cn": "执行函数计算，并返回函数计算的结果",
     "name-en": "ACS-FC-InvokeFunction",
-    "name-zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97"
+    "name-zh-cn": "执行函数计算"
   },
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "serviceName": {
-      "Description": {
-        "en": "Service name To Invoke.",
-        "zh-cn": "\u9700\u8981\u88ab\u6267\u884c\u51fd\u6570\u7684\u670d\u52a1\u540d\u79f0\u3002"
+      "Label": {
+        "en": "ServiceName",
+        "zh-cn": "服务名称"
       },
       "Type": "String"
     },
     "functionName": {
-      "Description": {
-        "en": "Function name To Invoke.",
-        "zh-cn": "\u9700\u8981\u88ab\u6267\u884c\u51fd\u6570\u7684\u51fd\u6570\u540d\u79f0\u3002"
+      "Label": {
+        "en": "FunctionName",
+        "zh-cn": "函数名称"
       },
       "Type": "String"
     },
     "parameters": {
-      "Description": {
-        "en": "The parameters required by the function to invoke.",
-        "zh-cn": "\u51fd\u6570\u8ba1\u7b97\u5185\u90e8\u7684\u6267\u884c\u51fd\u6570\u9700\u8981\u7684\u53c2\u6570\u3002"
+      "Label": {
+        "en": "Parameters",
+        "zh-cn": "函数参数"
       },
       "Type": "String",
       "Default": ""
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -53,8 +53,8 @@
       "Name": "invokeFunction",
       "Action": "ACS::FC::InvokeFunction",
       "Description": {
-        "en": "Invoke the function.",
-        "zh-cn": "\u6267\u884c\u51fd\u6570\u8ba1\u7b97\u3002"
+        "en": "Invoke the function",
+        "zh-cn": "执行函数计算"
       },
       "Properties": {
         "functionName": "{{ functionName }}",

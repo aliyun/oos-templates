@@ -1,0 +1,67 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky modify the logon configurations of a RAM user
+  zh-cn: 批量修改指定RAM用户的控制台登录信息
+  name-en: ACS-RAM-BulkyUpdateLoginProfile
+  name-zh-cn: 批量修改指定RAM用户的控制台登录信息
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  userNames:
+    Type: List
+    Label:
+      en: UserNames
+      zh-cn: 用户名列表
+  MFABindRequired:
+    Type: Boolean
+    Label:
+      en: MFABindRequired
+      zh-cn: 用户在下次登录时是否必须绑定多因素认证设备
+    Default: true
+  passwordResetRequired:
+    Type: Boolean
+    Label:
+      en: PasswordResetRequired
+      zh-cn: 用户在登录时是否需要修改密码
+    Default: false
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: updateLoginProfile
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Modifies the logon configurations of a RAM user
+      zh-cn: 修改指定RAM用户的控制台登录信息
+    Properties:
+      Service: RAM
+      API: UpdateLoginProfile
+      Parameters:
+        RegionId: '{{ regionId }}'
+        PasswordResetRequired: '{{ passwordResetRequired }}'
+        MFABindRequired: '{{ MFABindRequired }}'
+        UserName: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ userNames }}'

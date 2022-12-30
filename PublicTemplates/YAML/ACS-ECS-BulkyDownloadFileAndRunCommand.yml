@@ -1,0 +1,142 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky downLoad file to instances and run command
+  zh-cn: 批量下载文件到多个ECS实例并执行云助手命令
+  name-en: ACS-ECS-BulkyDownloadFileAndRunCommand
+  name-zh-cn: 批量下载文件到多个ECS实例并执行云助手命令
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  sourceType:
+    Type: String
+    Label:
+      en: SourceType
+      zh-cn: 文件存储的类型
+    AllowedValues:
+      - oss
+      - https
+  sourcePath:
+    Type: String
+    Label:
+      en: SourcePath
+      zh-cn: 存储文件的URL
+  destinationDir:
+    Label:
+      en: DestinationDir
+      zh-cn: 实例中文件复制的目标目录
+    Type: String
+  commandContent:
+    Label:
+      en: CommandContent
+      zh-cn: 在ECS实例中执行的云助手命令
+    Type: String
+    AssociationProperty: Code
+    Default: echo hello
+  workingDir:
+    Label:
+      en: WorkingDir
+      zh-cn: 脚本在ECS实例中的运行目录
+    Description:
+      en: 'The directory where the created command runs on the ECS instances.Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\Windows\System32.'
+      zh-cn: '脚本在ECS实例中的运行目录。Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\Windows\System32。'
+    Type: String
+    Default: ''
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: ECS实例中执行命令的超时时间
+    Type: Number
+    Default: 600
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: 'ACS::SelectTargets'
+    Properties:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: 'Instances.Instance[].InstanceId'
+  - Name: downloadFileAndRunCommand
+    Action: ACS::ECS::DownloadFileAndRunCommand
+    Description:
+      en: Downloads file to the ECS instances adn run command
+      zh-cn: 下载文件到实例并执行命令
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      sourceType: '{{ sourceType }}'
+      sourcePath: '{{ sourcePath }}'
+      destinationDir: '{{ destinationDir }}'
+      commandContent: '{{ commandContent }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      RateControl: '{{ rateControl }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - sourceType
+          - sourcePath
+          - commandContent
+          - destinationDir
+          - workingDir
+          - timeout
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

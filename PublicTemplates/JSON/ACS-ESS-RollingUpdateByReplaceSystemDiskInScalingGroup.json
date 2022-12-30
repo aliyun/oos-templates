@@ -1,19 +1,19 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Rolling update ECS instances that in scaling group by replace system disk.",
-    "zh-cn": "\u901a\u8fc7\u66f4\u6362\u7cfb\u7edf\u76d8\u7684\u65b9\u5f0f\u6eda\u52a8\u66f4\u65b0\u4f38\u7f29\u7ec4\u5185\u7684ECS\u5b9e\u4f8b\u3002",
+    "en": "Rolling update ECS instances that in scaling group by replace system disk",
+    "zh-cn": "通过更换系统盘的方式滚动更新伸缩组内的ECS实例",
     "name-en": "ACS-ESS-RollingUpdateByReplaceSystemDiskInScalingGroup",
-    "name-zh-cn": "\u901a\u8fc7\u66f4\u6362\u7cfb\u7edf\u76d8\u7684\u65b9\u5f0f\u6eda\u52a8\u66f4\u65b0\u4f38\u7f29\u7ec4\u5185\u7684ECS\u5b9e\u4f8b",
+    "name-zh-cn": "通过更换系统盘的方式滚动更新伸缩组内的ECS实例",
     "categories": [
       "elastic_manage"
     ]
   },
   "Parameters": {
     "invokeType": {
-      "Description": {
-        "en": "The type of invoke.",
-        "zh-cn": "\u6267\u884c\u64cd\u4f5c\u7c7b\u578b\u3002"
+      "Label": {
+        "en": "InvokeType",
+        "zh-cn": "操作类型"
       },
       "Type": "String",
       "AllowedValues": [
@@ -22,16 +22,16 @@
       ]
     },
     "scalingGroupId": {
-      "Description": {
-        "en": "The id of scaling group.",
-        "zh-cn": "\u4f38\u7f29\u7ec4ID."
+      "Label": {
+        "en": "ScalingGroupId",
+        "zh-cn": "伸缩组ID"
       },
       "Type": "String"
     },
     "enterProcess": {
-      "Description": {
-        "en": "The enter process of scaling group.",
-        "zh-cn": "\u6267\u884c\u5f00\u59cb\u8981\u6682\u505c\u7684\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      "Label": {
+        "en": "EnterProcess",
+        "zh-cn": "执行开始要暂停的伸缩组流程"
       },
       "Type": "List",
       "Default": [
@@ -43,9 +43,9 @@
       ]
     },
     "exitProcess": {
-      "Description": {
-        "en": "The exit process of scaling group.",
-        "zh-cn": "\u6267\u884c\u7ed3\u675f\u8981\u6062\u590d\u7684\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+      "Label": {
+        "en": "ExitProcess",
+        "zh-cn": "执行结束要恢复的伸缩组流程"
       },
       "Type": "List",
       "Default": [
@@ -57,41 +57,41 @@
       ]
     },
     "imageId": {
-      "Description": {
-        "en": "The id of image.",
-        "zh-cn": "\u6267\u884c\u64cd\u4f5c\u7684\u76ee\u6807\u955c\u50cfid\u3002"
+      "Label": {
+        "en": "InvokeImageId",
+        "zh-cn": "用于更新的镜像"
       },
       "Type": "String",
       "Default": ""
     },
     "sourceImageId": {
-      "Description": {
-        "en": "The id of source image.",
-        "zh-cn": "\u56de\u6eda\u64cd\u4f5c\u6267\u884c\u7684\u76ee\u6807\u955c\u50cf\u3002"
+      "Label": {
+        "en": "RollbackImageId",
+        "zh-cn": "用于回滚的镜像"
       },
       "Type": "String",
       "Default": ""
     },
     "sourceExecutionId": {
-      "Description": {
-        "en": "The id of source execution.",
-        "zh-cn": "\u56de\u6eda\u64cd\u4f5c\u6267\u884c\u7684\u76ee\u6807OOS\u6267\u884cID\u3002"
+      "Label": {
+        "en": "SourceExecutionId",
+        "zh-cn": "用于回滚的OOS执行ID"
       },
       "Type": "String",
       "Default": ""
     },
     "scalingConfigurationId": {
-      "Description": {
-        "en": "The ID of the scaling configuration to be modified.",
-        "zh-cn": "\u5f85\u4fee\u6539\u7684\u4f38\u7f29\u914d\u7f6eID\u3002"
+      "Label": {
+        "en": "ScalingConfigurationId",
+        "zh-cn": "伸缩配置ID"
       },
       "Type": "String",
       "Default": ""
     },
     "batchPauseOption": {
-      "Description": {
-        "en": "The type of batches in batch execution.",
-        "zh-cn": "\u5206\u6279\u6a21\u5f0f\u3002"
+      "Label": {
+        "en": "BatchPauseOption",
+        "zh-cn": "分批模式"
       },
       "Type": "String",
       "AllowedValues": [
@@ -102,19 +102,27 @@
       "Default": "Automatic"
     },
     "batchNumber": {
-      "Description": {
-        "en": "The number of batches in batch execution.",
-        "zh-cn": "\u5206\u6279\u6267\u884c\u4e2d\u7684\u6279\u6b21\u3002"
+      "Label": {
+        "en": "BatchNumber",
+        "zh-cn": "分批执行的批次"
       },
       "Type": "Number",
       "MinValue": 1,
-      "MaxValue": 10,
+      "MaxValue": 100,
       "Default": 5
     },
+    "maxErrors": {
+      "Label": {
+        "en": "MaxErrors",
+        "zh-cn": "分批执行的最大错误次数"
+      },
+      "Type": "Number",
+      "Default": 0
+    },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -126,11 +134,11 @@
       "Name": "choiceNextTask",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by invoke type.",
-        "zh-cn": "\u6839\u636e\u6267\u884c\u7c7b\u578b\u9009\u62e9\u4e0b\u4e00\u4e2a\u4efb\u52a1\u3002"
+        "en": "Choose next task by invoke type",
+        "zh-cn": "根据执行类型选择下一个任务"
       },
       "Properties": {
-        "DefaultTask": "whetherTosuspendProcess",
+        "DefaultTask": "getInstance",
         "Choices": [
           {
             "When": {
@@ -145,48 +153,10 @@
       }
     },
     {
-      "Name": "whetherTosuspendProcess",
-      "Action": "ACS::Choice",
-      "Description": {
-        "en": "Choose next task by process.",
-        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6682\u505c\u6d41\u7a0b\u3002"
-      },
-      "Properties": {
-        "DefaultTask": "suspendProcess",
-        "Choices": [
-          {
-            "When": {
-              "Fn::Equals": [
-                [],
-                "{{ enterProcess }}"
-              ]
-            },
-            "NextTask": "getInstance"
-          }
-        ]
-      }
-    },
-    {
-      "Name": "suspendProcess",
-      "Action": "ACS::ExecuteAPI",
-      "Description": {
-        "en": "Suspend process.",
-        "zh-cn": "\u6682\u505c\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
-      },
-      "Properties": {
-        "Service": "ESS",
-        "API": "SuspendProcesses",
-        "Parameters": {
-          "ScalingGroupId": "{{ scalingGroupId }}",
-          "Process": "{{ enterProcess }}"
-        }
-      }
-    },
-    {
       "Name": "getInstance",
       "Description": {
-        "en": "Views the ECS instances.",
-        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
       },
       "Action": "ACS::ExecuteApi",
       "Properties": {
@@ -205,11 +175,71 @@
       }
     },
     {
+      "Name": "whetherTheScalingGroupInstanceIsEmpty",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Check whether the instances in the services in the scaling group are empty",
+        "zh-cn": "检查伸缩组内服务中的实例是否为空"
+      },
+      "Properties": {
+        "DefaultTask": "whetherTosuspendProcess",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ getInstance.instanceIds }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherTosuspendProcess",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by process",
+        "zh-cn": "根据流程值判断是否暂停流程"
+      },
+      "Properties": {
+        "DefaultTask": "suspendProcess",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ enterProcess }}"
+              ]
+            },
+            "NextTask": "whetherToModifyScalingConfiguration"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "suspendProcess",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Suspend process",
+        "zh-cn": "暂停伸缩组流程"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "SuspendProcesses",
+        "Parameters": {
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "Process": "{{ enterProcess }}"
+        }
+      }
+    },
+    {
       "Name": "whetherToModifyScalingConfiguration",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by ScalingConfigurationId.",
-        "zn-cn": "\u6839\u636e\u4f38\u7f29\u914d\u7f6eID\u5224\u65ad\u662f\u5426\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+        "en": "Choose next task by ScalingConfigurationId",
+        "zh-cn": "根据伸缩配置ID判断是否修改伸缩配置"
       },
       "Properties": {
         "DefaultTask": "modifyScalingConfiguration",
@@ -230,8 +260,8 @@
       "Name": "modifyScalingConfiguration",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Modify scaling configuration.",
-        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+        "en": "Modify scaling configuration",
+        "zh-cn": "修改伸缩配置"
       },
       "Properties": {
         "Service": "ESS",
@@ -246,8 +276,8 @@
       "Name": "invokeByReplaceImage",
       "Action": "ACS::ESS::ReplaceSystemDisk",
       "Description": {
-        "en": "Replaces the system disk of ECS instances.",
-        "zh-cn": "\u66f4\u6362\u7cfb\u7edf\u76d8\u3002"
+        "en": "Replaces the system disk of ECS instances",
+        "zh-cn": "更换系统盘"
       },
       "Properties": {
         "instanceId": "{{ ACS::TaskLoopItem }}",
@@ -257,6 +287,7 @@
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",
         "BatchPauseOption": "{{ batchPauseOption }}",
+        "MaxErrors": "{{ maxErrors }}",
         "Concurrency": {
           "Fn::CalculateBatch": [
             "{{ batchNumber }}",
@@ -281,14 +312,16 @@
       "Name": "tagInstance",
       "Action": "ACS::ExecuteApi",
       "Description": {
-        "en": "Creates and attaches tag to ECS instance.",
-        "zh-cn": "\u521b\u5efa\u5e76\u6302\u8f7d\u6807\u7b7e\u5230ECS\u5b9e\u4f8b\u3002"
+        "en": "Creates and attaches tag to ECS instance",
+        "zh-cn": "创建并挂载标签到ECS实例"
       },
       "Properties": {
         "Service": "ECS",
         "API": "TagResources",
         "Parameters": {
-          "ResourceIds": "{{ getInstance.instanceIds }}",
+          "ResourceIds": [
+            "{{ ACS::TaskLoopItem }}"
+          ],
           "ResourceType": "Instance",
           "Tags": [
             {
@@ -297,14 +330,20 @@
             }
           ]
         }
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
       }
     },
     {
       "Name": "whetherToResumeProcesses",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by process.",
-        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6062\u590d\u6d41\u7a0b\u3002"
+        "en": "Choose next task by process",
+        "zh-cn": "根据流程值判断是否恢复流程"
       },
       "Properties": {
         "DefaultTask": "resumeProcesses",
@@ -326,8 +365,8 @@
       "Action": "ACS::ExecuteAPI",
       "OnSuccess": "ACS::END",
       "Description": {
-        "en": "Resume process.",
-        "zh-cn": "\u6062\u590d\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+        "en": "Resume process",
+        "zh-cn": "恢复伸缩组流程"
       },
       "Properties": {
         "Service": "ESS",
@@ -342,8 +381,8 @@
       "Name": "getExecutionInstanceIds",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Get the instance that has been executed.",
-        "zh-cn": "\u83b7\u53d6\u5df2\u7ecf\u6267\u884c\u8fc7\u6267\u884c\u811a\u672c\u7684\u5b9e\u4f8b\u3002"
+        "en": "Get the instance that has been executed",
+        "zh-cn": "获取已经执行过执行脚本的实例"
       },
       "Properties": {
         "Service": "OOS",
@@ -362,8 +401,8 @@
     {
       "Name": "getExistInstanceIds",
       "Description": {
-        "en": "Views the ECS instances.",
-        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
       },
       "Action": "ACS::SelectTargets",
       "Properties": {
@@ -386,8 +425,8 @@
       "Name": "getRollbackProcess",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Views resource parameters.",
-        "zh-cn": "\u83b7\u53d6\u6e90\u6267\u884c\u7684\u53c2\u6570\u3002"
+        "en": "Views resource parameters",
+        "zh-cn": "获取源执行的参数"
       },
       "Properties": {
         "Service": "OOS",
@@ -411,8 +450,8 @@
       "Name": "suspendProcessWithRollBack",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Suspend process.",
-        "zh-cn": "\u6682\u505c\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+        "en": "Suspend process",
+        "zh-cn": "暂停伸缩组流程"
       },
       "Properties": {
         "Service": "ESS",
@@ -427,8 +466,8 @@
       "Name": "rollbackByReplaceImage",
       "Action": "ACS::ESS::ReplaceSystemDisk",
       "Description": {
-        "en": "Replaces the system disk of ECS instances.",
-        "zh-cn": "\u66f4\u6362\u7cfb\u7edf\u76d8\u3002"
+        "en": "Replaces the system disk of ECS instances",
+        "zh-cn": "更换系统盘"
       },
       "Properties": {
         "instanceId": "{{ ACS::TaskLoopItem }}",
@@ -439,6 +478,7 @@
       "Loop": {
         "Items": "{{ getExistInstanceIds.instanceIds }}",
         "BatchPauseOption": "{{ batchPauseOption }}",
+        "MaxErrors": "{{ maxErrors }}",
         "Concurrency": {
           "Fn::CalculateBatch": [
             "{{ batchNumber }}",
@@ -463,8 +503,8 @@
       "Name": "whetherToResumeProcessesWithRollback",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by process.",
-        "zn-cn": "\u6839\u636e\u6d41\u7a0b\u503c\u5224\u65ad\u662f\u5426\u6062\u590d\u6d41\u7a0b\u3002"
+        "en": "Choose next task by process",
+        "zh-cn": "根据流程值判断是否恢复流程"
       },
       "Properties": {
         "DefaultTask": "resumeProcessesWithRollback",
@@ -485,8 +525,8 @@
       "Name": "resumeProcessesWithRollback",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Resume process.",
-        "zh-cn": "\u6062\u590d\u4f38\u7f29\u7ec4\u6d41\u7a0b\u3002"
+        "en": "Resume process",
+        "zh-cn": "恢复伸缩组流程"
       },
       "Properties": {
         "Service": "ESS",

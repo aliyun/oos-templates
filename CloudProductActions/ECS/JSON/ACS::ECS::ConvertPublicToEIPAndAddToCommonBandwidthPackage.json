@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package.",
+  "Description": {
+    "name-en": "ACS::ECS::ConvertPublicToEIPAndAddToCommonBandwidthPackage",
+    "name-zh-cn": "把公网IP转换为EIP并加入到共享带宽包",
+    "en": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address and add it to common bandwith package",
+    "zh-cn": "把公网IP转换为EIP并加入到共享带宽包"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID instance.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "bandwidthPackageId": {
-      "Description": "The ID of the common bandwidth package.",
+      "Description": {
+        "en": "The ID of common bandwidth package",
+        "zh-cn": "共享带宽包ID"
+      },
       "Type": "String"
     }
   },
@@ -20,7 +34,10 @@
     {
       "Name": "getInstancePublicIP",
       "Action": "ACS::ExecuteApi",
-      "Description": "Gets ECS instance public IP.",
+      "Description": {
+        "en": "Gets ECS instance public ip address",
+        "zh-cn": "获取实例的公网IP"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -33,7 +50,7 @@
       },
       "Outputs": {
         "publicIpAddress": {
-          "Type": "List",
+          "Type": "String",
           "ValueSelector": "Instances.Instance[].PublicIpAddress.IpAddress[]"
         }
       }
@@ -41,7 +58,10 @@
     {
       "Name": "whetherInstanceIsReady",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by instance public IpAddress.",
+      "Description": {
+        "en": "Choose next task by instance public IpAddress",
+        "zh-cn": "根据公网IP的信息选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "convertNatPublicIpToEip",
         "Choices": [
@@ -60,7 +80,10 @@
     {
       "Name": "convertNatPublicIpToEip",
       "Action": "ACS::ExecuteApi",
-      "Description": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address.",
+      "Description": {
+        "en": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address",
+        "zh-cn": "将连接VPC的ECS实例的公共IP地址转换为弹性IP（EIP）地址"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "ConvertNatPublicIpToEip",
@@ -72,29 +95,37 @@
     },
     {
       "Name": "getInstanceEIP",
-      "Action": "ACS::ExecuteApi",
-      "Description": "Gets ECS instance EIP.",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Gets ECS instance EIP allocationId",
+        "zh-cn": "获取ECS实例挂载的EIP的实例ID"
+      },
       "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
+        "Service": "VPC",
+        "API": "DescribeEipAddresses",
         "Parameters": {
           "RegionId": "{{ regionId }}",
-          "InstanceId": [
-            "{{ instanceId }}"
-          ]
-        }
+          "EipAddress": "{{ getInstancePublicIP.publicIpAddress }}"
+        },
+        "DesiredValues": [
+          "InUse"
+        ],
+        "PropertySelector": "EipAddresses.EipAddress[].Status"
       },
       "Outputs": {
         "allocationId": {
           "Type": "String",
-          "ValueSelector": "Instances.Instance[].EipAddress.AllocationId"
+          "ValueSelector": "EipAddresses.EipAddress[].AllocationId"
         }
       }
     },
     {
       "Name": "addCommonBandwidthPackageIp",
       "Action": "ACS::ExecuteApi",
-      "Description": "Add Eip from CommonBandwidthPackage.",
+      "Description": {
+        "en": "Add Eip from CommonBandwidthPackage",
+        "zh-cn": "添加EIP到共享带宽包"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "AddCommonBandwidthPackageIp",

@@ -1,28 +1,47 @@
 FormatVersion: OOS-2019-06-01
-Description: Restarts the ECS instance by specifying instanceId.
+Description:
+  name-en: ACS::ECS::RebootInstance
+  name-zh-cn: 重启ECS实例
+  en: Restarts the ECS instance by specifying instanceId
+  zh-cn: 重启指定的ECS实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of ECS instance you will reboot.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
+  forceStop:
+    Description:
+      en: Specifies whether to forcibly stop the instance to restart it
+      zh-cn: 重启ECS实例前，是否强制关机
+    Type: Boolean
+    Default: false
 Tasks:
 - Name: rebootInstance
   Action: ACS::ExecuteAPI
-  Description: Restarts an ECS instance.
+  Description:
+    en: Restarts the ECS instance
+    zh-cn: 重启ECS实例
   Properties:
     Service: ECS
     API: RebootInstance
     Parameters:
       RegionId: '{{ regionId }}'
       InstanceId: '{{ instanceId }}'
+      ForceStop: '{{ forceStop }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter running status.
+  Description:
+    en: Waits for the ECS instance to enter Running status
+    zh-cn: 等待ECS实例至运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances

@@ -1,26 +1,26 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address.",
-    "zh-cn": "\u5c06\u4e00\u53f0\u7f51\u7edc\u7c7b\u578b\u4e3a\u4e13\u6709\u7f51\u7edcVPC\u7684ECS\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP\u3002",
+    "en": "Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address",
+    "zh-cn": "将一台网络类型为专有网络VPC的ECS实例的公网IP转化为其它弹性公网IP",
     "name-en": "ACS-ECS-ConvertsPublicIPToNewEIPByInstanceId",
-    "name-zh-cn": "\u5c06\u4e00\u53f0\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5176\u5b83\u5f39\u6027\u516c\u7f51IP",
+    "name-zh-cn": "将一台实例的公网IP转化为其它弹性公网IP",
     "categories": [
       "instance_manage"
     ]
   },
   "Parameters": {
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance.",
-        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "ECS实例ID"
       },
       "Type": "String"
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -32,8 +32,8 @@
       "Name": "modifyInstanceNetworkSpec",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Modifies the network charge type of the ECS instance with the specified parameters.",
-        "zh-cn": "\u8f6c\u6362ECS\u5b9e\u4f8b\u7f51\u7edc\u4ed8\u8d39\u65b9\u5f0f\u3002"
+        "en": "Modifies the network charge type of the ECS instance with the specified parameters",
+        "zh-cn": "转换ECS实例网络付费方式"
       },
       "Properties": {
         "Service": "ECS",
@@ -48,8 +48,8 @@
       "Name": "convertNatPublicIpToEip",
       "Action": "ACS::ExecuteApi",
       "Description": {
-        "en": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address.",
-        "zh-cn": "\u5c06\u4e00\u53f0\u7f51\u7edc\u7c7b\u578b\u4e3a\u4e13\u6709\u7f51\u7edcVPC\u7684ECS\u5b9e\u4f8b\u7684\u516c\u7f51IP\u8f6c\u5316\u4e3a\u5f39\u6027\u516c\u7f51IP\u3002"
+        "en": "Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address",
+        "zh-cn": "将一台网络类型为专有网络VPC的ECS实例的公网IP转化为弹性公网IP"
       },
       "Properties": {
         "Service": "ECS",
@@ -63,8 +63,8 @@
       "Name": "getInstanceEIP",
       "Action": "ACS::ExecuteApi",
       "Description": {
-        "en": "Gets ECS instance EIP.",
-        "zh-cn": "\u83b7\u53d6\u5b9e\u4f8b\u5f39\u6027\u516c\u7f51IP\u3002"
+        "en": "Gets ECS instance EIP",
+        "zh-cn": "获取实例弹性公网IP"
       },
       "Properties": {
         "Service": "ECS",
@@ -86,8 +86,8 @@
       "Name": "unassociateEipAddress",
       "Action": "ACS::ExecuteApi",
       "Description": {
-        "en": "Elastic public network IP (EIP) is unbound from an ECS instacne.",
-        "zh-cn": "\u5f39\u6027\u516c\u7f51IP\uff08EIP\uff09\u4ece\u7ed1\u5b9a\u7684ECS\u5b9e\u4f8b\u4e0a\u89e3\u7ed1\u3002"
+        "en": "Elastic public network IP (EIP) is unbound from an ECS instacne",
+        "zh-cn": "弹性公网IP（EIP）从绑定的ECS实例上解绑"
       },
       "Properties": {
         "Service": "ECS",
@@ -102,8 +102,8 @@
       "Name": "AllocateEipAddress",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Allocate an Eip address.",
-        "zh-cn": "\u7533\u8bf7\u4e00\u4e2a\u5f39\u6027\u516c\u7f51IP\u3002"
+        "en": "Allocate an Eip address",
+        "zh-cn": "申请一个弹性公网IP"
       },
       "Properties": {
         "Service": "ECS",
@@ -125,8 +125,8 @@
       "Name": "DescribeEipAddresses",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Waits for the Eip to enter Available status.",
-        "zh-cn": "\u7b49\u5f85EIP\u53ef\u7528\u3002"
+        "en": "Waits for the Eip to enter Available status",
+        "zh-cn": "等待EIP可用"
       },
       "Properties": {
         "Service": "VPC",
@@ -144,8 +144,8 @@
       "Name": "AssociateEipAddress",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Bind the new EIP to the ECS instance in the same region.",
-        "zh-cn": "\u7ed1\u5b9a\u65b0EIP\u5230\u540c\u5730\u57df\u7684ECS\u5b9e\u4f8b\u4e0a\u3002"
+        "en": "Bind the new EIP to the ECS instance in the same region",
+        "zh-cn": "绑定新EIP到同地域的ECS实例上"
       },
       "Properties": {
         "Service": "ECS",
@@ -165,6 +165,34 @@
     "EipAddress": {
       "Type": "String",
       "Value": "{{ AllocateEipAddress.EipAddress }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

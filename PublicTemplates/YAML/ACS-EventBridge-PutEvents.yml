@@ -1,0 +1,61 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-EventBridge-PutEvents
+  name-zh-cn: EventBridge发布事件
+  en: Put one or more events
+  zh-cn: 发布一个或多个事件
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  eventBusName:
+    Label:
+      en: EventBusName
+      zh-cn: 事件总线的名称
+    Type: String
+  eventList:
+    Label:
+      en: EventListField
+      zh-cn: 事件列表字段
+    Description:
+      en: For other types, please refer to the document:https://help.aliyun.com/document_detail/181428.html
+      zh-cn: 其它类型请参考文档：https://help.aliyun.com/document_detail/181428.html
+    Type: String
+    Default: '[{"aliyunaccountid":"{{ACS::AccountId}}","data":{"meetingName":"meetingName","groupId":"456","action":"camera_off","time":1590592527490,"userId":"199525","meetingUUID":"hz-20864c8f-b10d-45cd-9935-884bca1b****"},"aliyunpublishtime":"{{ACS::CurrentDate}}","subject":"acs.aliyuncvc:cn-hangzhou:{{ACS::AccountId}}:215672","specversion":"1.0","aliyuneventbusname":"eventBusName","id":"{{ACS::ExecutionId}}","source":"acs:aliyuncvc","time":"2020-11-19T21:04:41+08:00","type":"aliyuncvc:MeetingEvent:MemberOperate"}]'
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: putEvents
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Put the bucket referer
+      zh-cn: 发布一个或多个事件
+    Properties:
+      Service: EVENTBRIDGE
+      API: PutEvents
+      Method: POST
+      URI: /openapi/putEvents
+      Headers: {}
+      Parameters:
+        AccountId: '{{ ACS::AccountId }}'
+        RegionId: '{{ regionId }}'
+      Body: '{"EventBusName":"{{ eventBusName }}", "EventList":{{eventList}}}'
+    Outputs:
+      response:
+        Type: List
+        ValueSelector: .
+Outputs:
+  responses:
+    Type: Json
+    Value: '{{ putEvents.response }}'

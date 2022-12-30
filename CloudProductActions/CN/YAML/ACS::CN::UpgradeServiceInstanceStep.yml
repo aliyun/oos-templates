@@ -1,0 +1,188 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: 'ACS::CN::UpgradeServiceInstanceStep'
+  name-zh-cn: 升级服务实例步骤
+  en: Bulky downLoad file to instances and run command
+  zh-cn: 批量下载文件到多个ECS实例并执行云助手命令
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+  artifactsUrl:
+    Type: String
+    Default: ''
+  artifactsDownloadDirectory:
+    Type: String
+    Default: ''
+  commandType:
+    Description:
+      en: The type of command
+      zh-cn: 云助手命令类型
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+      - RunShellScript
+      - RunPythonScript
+      - RunPerlScript
+  commandContent:
+    Description:
+      en: The content of command
+      zh-cn: 云助手命令内容
+    Type: String
+    AssociationProperty: Code
+  workingDir:
+    Description:
+      en: The directory where the created command runs on the ECS instances
+      zh-cn: 脚本在ECS实例中的运行目录
+    Type: String
+    Default: ''
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances
+      zh-cn: 执行脚本的超时时间
+    Type: Number
+    Default: 3600
+  enableParameter:
+    Description:
+      en: Whether to include secret parameters or custom parameters in the command
+      zh-cn: 命令中是否包含加密参数或自定义参数
+    Type: Boolean
+    Default: false
+  parameters:
+    Description:
+      en: The parameters of the command
+      zh-cn: 命令参数
+    Type: Json
+    Default: {}
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取ECS实例操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: downloadLinuxFile
+    When:
+      'Fn::And':
+        - 'Fn::Equals':
+            - '{{ queryInstanceOSType.OSType }}'
+            - linux
+        - 'Fn::Not':
+            'Fn::Equals':
+              - '{{ artifactsUrl }}'
+              - ''
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs download file command on linux instance
+      zh-cn: 在linux类型实例上执行下载文件命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #/bin/bash
+        current_version=`aliyun-service -v`
+        specified_version=1.0.2.497
+
+        if [[ $current_version > $specified_version ]]; then
+          acs-plugin-manager --exec -P oosutil --params  download_content,https,'{{ artifactsUrl }}',\'''\','{{artifactsDownloadDirectory}}'
+        else
+          version='{{ ACS::OOSUtilVersion }}'
+          path=/usr/local/share/aliyun-oosutil/$version
+          currentPath=`pwd`
+          test -e $path || mkdir -p $path
+          cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
+          chmod +x oosutil_linux
+          cd $currentPath
+          $path/oosutil_linux download_content https {{ artifactsUrl }} \'''\' {{artifactsDownloadDirectory}}
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: downloadWindowsFile
+    When:
+      'Fn::And':
+        - 'Fn::Equals':
+            - '{{ queryInstanceOSType.OSType }}'
+            - windows
+        - 'Fn::Not':
+            'Fn::Equals':
+              - '{{ artifactsUrl }}'
+              - ''
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs download file command on windows instance
+      zh-cn: 在windows类型实例上执行下载文件命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        $current_version=(aliyun_assist_service.exe -v)
+        $specified_version="1.0.0.134"
+        if ($current_version -gt $specified_version){
+          acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,https,{{ artifactsUrl }},'``',{{artifactsDownloadDirectory}}"
+        }else{
+          $version="{{ACS::OOSUtilVersion}}"
+          $path = "C:\aliyun-oosutil\$version"
+          $currentPath=(pwd)
+          $pathExistOrNot = Test-Path -Path "$path"
+          if ($pathExistOrNot){
+              cd $path
+          }else{
+              mkdir $path
+              cd $path
+          }
+          $client = new-object System.Net.WebClient
+          $client.DownloadFile("https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe", "$path/oosutil_windows.exe")
+          cd $currentPath
+          C:\aliyun-oosutil\{{ ACS::OOSUtilVersion }}\oosutil_windows.exe download_content https {{ artifactsUrl }} '``' {{artifactsDownloadDirectory}}
+        }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: runCommand
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Executes a cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      regionId: '{{ regionId }}'
+      commandContent: '{{ commandContent }}'
+      instanceId: '{{ instanceId }}'
+      commandType: '{{ commandType }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+      enableParameter: '{{ enableParameter }}'
+      parameters: '{{ parameters }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: .invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ runCommand.commandOutput }}'

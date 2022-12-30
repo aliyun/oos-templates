@@ -1,38 +1,67 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Creates an RDS instance.",
+  "Description": {
+    "name-en": "ACS::RDS::CreateDbInstance",
+    "name-zh-cn": "创建RDS实例",
+    "en": "Creates an RDS instance",
+    "zh-cn": "创建一台RDS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "dBInstanceClass": {
-      "Description": "The instance type (specifications).",
+      "Description": {
+        "en": "The instance type (specifications)",
+        "zh-cn": "实例类型(规格)"
+      },
       "Type": "String"
     },
     "dBInstanceNetType": {
-      "Description": "The network type of the instance, Internet or Intranet.",
+      "Description": {
+        "en": "The network type of the instance, Internet or Intranet",
+        "zh-cn": "实例的网络类型，Internet或Intranet"
+      },
       "Type": "String"
     },
     "dBInstanceStorage": {
-      "Description": "The storage capacity of the instance.",
+      "Description": {
+        "en": "The storage capacity of the instance",
+        "zh-cn": "实例的存储容量"
+      },
       "Type": "String"
     },
     "engine": {
-      "Description": "The engine type of the database.",
+      "Description": {
+        "en": "The engine type of the database",
+        "zh-cn": "数据库的引擎类型"
+      },
       "Type": "String"
     },
     "engineVersion": {
-      "Description": "The version of the database.",
+      "Description": {
+        "en": "The version of the database",
+        "zh-cn": "数据库的版本"
+      },
       "Type": "String"
     },
     "payType": {
-      "Description": "The billing method of the instance.",
+      "Description": {
+        "en": "The billing method of the instance",
+        "zh-cn": "实例的计费方法"
+      },
       "Type": "String"
     },
     "securityIPList": {
-      "Description": "The IP whitelist of the instance.",
+      "Description": {
+        "en": "The IP whitelist of the instance",
+        "zh-cn": "实例的IP白名单"
+      },
       "Type": "String"
     }
   },
@@ -40,7 +69,10 @@
     {
       "Name": "createDBInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Creates an RDS instance.",
+      "Description": {
+        "en": "Creates an RDS instance",
+        "zh-cn": "创建一台RDS实例"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "CreateDBInstance",
@@ -65,7 +97,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for DB Instance to enter running status.",
+      "Description": {
+        "en": "Waits for DB Instance to enter running status",
+        "zh-cn": "等待DB实例进入运行状态"
+      },
       "Properties": {
         "Service": "RDS",
         "API": "DescribeDBInstances",

@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Add a security group policy to multiple security groups.",
-    "zh-cn": "\u5c06\u4e00\u6761\u5b89\u5168\u7ec4\u7b56\u7565\u6dfb\u52a0\u81f3\u591a\u4e2a\u5b89\u5168\u7ec4\u3002",
+    "en": "Add a security group policy to multiple security groups",
+    "zh-cn": "将一条安全组策略添加至多个安全组",
     "name-en": "ACS-ECS-BulkyAuthorizeSecurityGroup",
-    "name-zh-cn": "\u6279\u91cf\u6388\u6743\u5b89\u5168\u7ec4\u7b56\u7565",
+    "name-zh-cn": "批量授权安全组策略",
     "categories": [
       "instance_manage"
     ]
@@ -12,24 +12,24 @@
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "securityGroupIds": {
-      "Description": {
-        "en": "The security group id.",
-        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      "Label": {
+        "en": "SecurityGroupIds",
+        "zh-cn": "安全组ID"
       },
       "Type": "List"
     },
     "ipProtocol": {
-      "Description": {
-        "en": "Transport layer protocol.",
-        "zh-cn": "\u4f20\u8f93\u5c42\u534f\u8bae\u3002"
+      "Label": {
+        "en": "IpProtocol",
+        "zh-cn": "传输层协议"
       },
       "Type": "String",
       "AllowedValues": [
@@ -41,16 +41,24 @@
       ]
     },
     "portRange": {
+      "Label": {
+        "en": "PortRange",
+        "zh-cn": "传输层协议端口范围"
+      },
       "Description": {
-        "en": "Transport layer protocol, correct style:1/200, error style:200/1. ranges:(TCP/UDP:1~65535, ICMP:-1/-1, GRE:-1/-1, IpProtocol value is all:-1/-1).",
-        "zh-cn": "\u4f20\u8f93\u5c42\u534f\u8bae\u7aef\u53e3\u8303\u56f4\uff0c\u6b63\u786e\u6837\u5f0f\uff1a1/200, \u9519\u8bef\u6837\u5f0f200/1\uff1a\u3002\u53d6\u503c\u8303\u56f4:(TCP/UDP\uff1a1~65535, ICMP\u534f\u8bae\uff1a-1/-1, GRE\u534f\u8bae\uff1a-1/-1, IpProtocol\u53d6\u503c\u4e3aall\uff1a-1/-1)\u3002"
+        "en": "correct style:1/200, error style:200/1. ranges:(TCP/UDP:1~65535, ICMP:-1/-1, GRE:-1/-1, IpProtocol value is all:-1/-1)",
+        "zh-cn": "正确样式：1/200, 错误样式200/1：。取值范围:(TCP/UDP：1~65535, ICMP协议：-1/-1, GRE协议：-1/-1, IpProtocol取值为all：-1/-1)"
       },
       "Type": "String"
     },
     "nicType": {
+      "Label": {
+        "en": "NicType",
+        "zh-cn": "网卡类型"
+      },
       "Description": {
-        "en": "Network card type (internet:public network card, intrant:inner network card).",
-        "zh-cn": "\u7f51\u5361\u7c7b\u578b\uff08internet\uff1a\u516c\u7f51\u7f51\u5361\uff0cintranet\uff1a\u5185\u7f51\u7f51\u5361\uff09\u3002"
+        "en": "(internet:public network card, intrant:inner network card)",
+        "zh-cn": "（internet：公网网卡，intranet：内网网卡）"
       },
       "Type": "String",
       "AllowedValues": [
@@ -60,9 +68,9 @@
       "Default": "intranet"
     },
     "policy": {
-      "Description": {
-        "en": "Set access(accept:Accept interview, drop:Access denied).",
-        "zh-cn": "\u8bbe\u7f6e\u8bbf\u95ee\u6743\u9650(accept:\u63a5\u53d7\u8bbf\u95ee,drop:\u62d2\u7edd\u8bbf\u95ee)\u3002"
+      "Label": {
+        "en": "Policy",
+        "zh-cn": "设置访问权限(accept:接受访问,drop:拒绝访问)"
       },
       "Type": "String",
       "AllowedValues": [
@@ -72,9 +80,9 @@
       "Default": "accept"
     },
     "priority": {
-      "Description": {
-        "en": "Security group rule priority.",
-        "zh-cn": "\u5b89\u5168\u7ec4\u89c4\u5219\u4f18\u5148\u7ea7\u3002\u53d6\u503c\u8303\u56f4\uff1a1~100\u3002"
+      "Label": {
+        "en": "Priority",
+        "zh-cn": "安全组规则优先级。取值范围：1~100"
       },
       "Type": "Number",
       "MinValue": 1,
@@ -82,16 +90,16 @@
       "Default": 1
     },
     "sourceCidrIp": {
-      "Description": {
-        "en": "Source IPv4 CIDR address segment, for example:10.0.0.0/8.",
-        "zh-cn": "\u6e90\u7aefIPv4 CIDR\u5730\u5740\u6bb5, \u4f8b\u5982\uff1a10.0.0.0/8\u3002"
+      "Label": {
+        "en": "SourceCidrIp",
+        "zh-cn": "源端IPv4 CIDR地址段, 例如：10.0.0.0/8"
       },
       "Type": "String"
     },
     "rateControl": {
-      "Description": {
-        "en": "Concurrency ratio of task execution.",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
       },
       "Type": "Json",
       "AssociationProperty": "RateControl",
@@ -102,9 +110,9 @@
       }
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -116,8 +124,8 @@
       "Name": "AuthorizeSecurityGroup",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Authorize Security Group Policy to multiple Security Group.",
-        "zh-cn": "\u6388\u6743\u5b89\u5168\u7ec4\u7b56\u7565\u81f3\u591a\u4e2a\u5b89\u5168\u7ec4\u3002"
+        "en": "Authorize Security Group Policy to multiple Security Group",
+        "zh-cn": "授权安全组策略至多个安全组"
       },
       "Properties": {
         "Service": "ECS",
@@ -138,5 +146,41 @@
         "Items": "{{ securityGroupIds }}"
       }
     }
-  ]
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "securityGroupIds",
+            "ipProtocol",
+            "portRange",
+            "nicType",
+            "policy",
+            "priority",
+            "sourceCidrIp"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

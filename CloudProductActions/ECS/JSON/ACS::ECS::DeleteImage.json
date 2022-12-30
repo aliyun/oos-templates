@@ -1,22 +1,97 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Deletes ECS image by specifying imageId.",
+  "Description": {
+    "name-en": "ACS::ECS::DeleteImage",
+    "name-zh-cn": "删除ECS镜像",
+    "en": "Deletes image image of ECS instance by specifying image ID",
+    "zh-cn": "通过镜像ID删除ECS镜像"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "imageId": {
-      "Description": "The ID of ECS image.",
+      "Description": {
+        "en": "The ID of ECS image",
+        "zh-cn": "镜像ID"
+      },
       "Type": "String"
     }
   },
   "Tasks": [
     {
+      "Name": "describeImageSharePermission",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describe an image share permission",
+        "zh-cn": "查询一份自定义镜像已经共享的所有用户"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImageSharePermission",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ imageId }}"
+        }
+      },
+      "Outputs": {
+        "accounts": {
+          "Type": "List",
+          "ValueSelector": ".Accounts.Account[].AliyunId"
+        }
+      }
+    },
+    {
+      "Name": "whetherToModifyImageSharePermission",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by share permission",
+        "zh-cn": "根据共享用户选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "modifyImageSharePermission",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ describeImageSharePermission.accounts }}"
+              ]
+            },
+            "NextTask": "deleteImage"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifyImageSharePermission",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify an image share permission",
+        "zh-cn": "修改一份自定义镜像已经共享的所有用户"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyImageSharePermission",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ imageId }}",
+          "RemoveAccount": "{{ describeImageSharePermission.accounts }}"
+        }
+      }
+    },
+    {
       "Name": "deleteImage",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Deletes an ECS image with the specified imageId.",
+      "Description": {
+        "en": "Deletes an ECS image with the specified imageId",
+        "zh-cn": "通过镜像ID删除ECS镜像"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteImage",

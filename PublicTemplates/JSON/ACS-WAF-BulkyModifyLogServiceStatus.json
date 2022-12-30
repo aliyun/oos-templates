@@ -1,0 +1,83 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify log service status",
+    "zh-cn": "开启指定域名配置的日志采集功能",
+    "name-en": "ACS-WAF-BulkyModifyLogServiceStatus",
+    "name-zh-cn": "开启指定域名配置的日志采集功能",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "domains": {
+      "Type": "List",
+      "Label": {
+        "en": "Domains",
+        "zh-cn": "已添加域名名称"
+      }
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "waf实例Id"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyLogServiceStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify log service status",
+        "zh-cn": "开启指定域名配置的日志采集功能"
+      },
+      "Properties": {
+        "Service": "WAF-OPENAPI",
+        "API": "ModifyLogServiceStatus",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "Domain": "{{ ACS::TaskLoopItem }}",
+          "Enabled": 1,
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ domains }}"
+      }
+    }
+  ]
+}

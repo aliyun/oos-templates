@@ -1,20 +1,34 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Install OOS util.",
+  "Description": {
+    "name-en": "ACS::ECS::ConfigureOOSUtil",
+    "name-zh-cn": "安装OOSUtil",
+    "en": "Install OOS util",
+    "zh-cn": "安装OOSUtil"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "Instance ID of the ECS instance.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MaxLength": 30,
       "MinLength": 1
     },
     "version": {
-      "Description": "The version of OOS util.",
+      "Description": {
+        "en": "The version of OOS util",
+        "zh-cn": "OOSUtil的版本"
+      },
       "Type": "String",
       "Default": "{{ ACS::OOSUtilVersion }}"
     }
@@ -23,7 +37,10 @@
     {
       "Name": "queryInstanceOSType",
       "Action": "ACS::ExecuteApi",
-      "Description": "Queries ECS instance OS type.",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "查询ECS实例的操作系统类型。"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -44,7 +61,10 @@
     {
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
-      "Description": "Executes a cloud assistant command.",
+      "Description": {
+        "en": "Executes cloud assistant command to configure OOS util",
+        "zh-cn": "通过执行云助手命令安装OOSUtil"
+      },
       "Properties": {
         "commandContent": {
           "Fn::If": [

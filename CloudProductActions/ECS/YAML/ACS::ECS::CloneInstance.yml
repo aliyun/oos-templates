@@ -1,0 +1,286 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::CloneInstance
+  name-zh-cn: 克隆ECS实例
+  en: Clone ECS instance
+  zh-cn: 克隆ECS实例
+Parameters:
+  regionId:
+    Description:
+      en: The source region ID
+      zh-cn: 源区域ID
+    Type: String
+    Default: '{{ACS::RegionId}}'
+  instanceId:
+    Description:
+      en: The ID of the source ECS instance
+      zh-cn: 源ECS实例的ID
+    Type: String
+  imageName:
+    Description:
+      en: The image name for source instance
+      zh-cn: 源实例的镜像名称
+    Type: String
+  targetVSwitchId:
+    Description:
+      en: The virtual switch ID for the new ECS instance
+      zh-cn: 新ECS实例的虚拟交换机ID
+    Type: String
+  targetSecurityGroupIds:
+    Description:
+      en: The security group id for the new ECS instance
+      zh-cn: 新ECS实例的安全组ID
+    Type: List
+  targetInstanceType:
+    Description:
+      en: The instance type for the new ECS instance
+      zh-cn: 新ECS实例的实例类型
+    Type: String
+  targetInstanceChargeType:
+    Description:
+      en: The charge type for ECS new instance
+      zh-cn: 新ECS实例的收费类型
+    Type: String
+  targetPassword:
+    Description:
+      en: The Instance password
+      zh-cn: 新ECS的实例密码
+    Type: String
+  targetPeriodUnit:
+    Description:
+      en: The unit of the subscription period
+      zh-cn: 包年包月计费方式的时长单位
+    Type: String
+  targetPeriod:
+    Description:
+      en: The subscription period of the instance
+      zh-cn: 购买包年包月资源的时长
+    Type: Number
+  targetSystemDiskCategory:
+    Description:
+      en: The type of system disk
+      zh-cn: 系统盘的云盘种类
+    Type: String
+  targetDataDiskCategory:
+    Description:
+      en: The type of data disk
+      zh-cn: 数据盘的云盘种类
+    Type: String
+Tasks:
+  - Name: queryInstanceInfo
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Views the ECS instance's Info
+      zh-cn: 查看ECS实例信息
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      deploymentSetId:
+        ValueSelector: 'Instances.Instance[0].DeploymentSetId'
+        Type: String
+      instanceName:
+        ValueSelector: 'Instances.Instance[0].InstanceName'
+        Type: String
+      hostName:
+        ValueSelector: 'Instances.Instance[0].HostName'
+        Type: String
+      instanceType:
+        ValueSelector: 'Instances.Instance[0].InstanceType'
+        Type: String
+      resourceGroupId:
+        ValueSelector: 'Instances.Instance[0].ResourceGroupId'
+        Type: String
+      keyPairName:
+        ValueSelector: 'Instances.Instance[0].KeyPairName'
+        Type: String
+      tags:
+        ValueSelector: 'Instances.Instance[0].Tags'
+        Type: List
+  - Name: queryDisks
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Views disk info of the ECS instance
+      zh-cn: 查看实例的磁盘信息
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+    Outputs:
+      dataDisks:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "data" )|{"Category": "{{ targetDataDiskCategory }}","Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})'
+      systemDisk:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "system" )|{"Category": "{{ targetSystemDiskCategory }}","Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})[]'
+  - Name: queryVSwitchInfo
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Views the VSwitch info
+      zh-cn: 查看VSwitch信息
+    Properties:
+      Service: ECS
+      API: DescribeVSwitches
+      Parameters:
+        RegionId: '{{ regionId }}'
+        VSwitchId: '{{ targetVSwitchId }}'
+    Outputs:
+      zoneId:
+        ValueSelector: 'VSwitches.VSwitch[0].ZoneId'
+        Type: String
+  - Name: checkTargetInstanceTypeAvailable
+    Action: 'ACS::Template'
+    Description:
+      en: Check wether the specified target InstanceType is Available
+      zh-cn: 检查指定的目标实例类型是否可用
+    Properties:
+      TemplateName: 'ACS::ECS::CheckAvailableInstanceTypes'
+      Parameters:
+        zoneId: '{{ queryVSwitchInfo.zoneId }}'
+        regionId: '{{ regionId }}'
+        instanceTypes:
+          - 'Fn::If':
+              - 'Fn::Equals':
+                  - ' '
+                  - '{{ targetInstanceType }}'
+              - '{{queryInstanceInfo.instanceType}}'
+              - '{{ targetInstanceType }}'
+        instanceChargeType:  '{{targetInstanceChargeType}}'
+  - Name: createImage
+    Action: 'ACS::ExecuteAPI'
+    OnError: deleteImage
+    Description:
+      en: Creates image for source instance
+      zh-cn: 为源实例创建镜像
+    Properties:
+      Service: ECS
+      API: CreateImage
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageName: '{{ imageName }}'
+        InstanceId: '{{ instanceId }}'
+    Outputs:
+      ImageId:
+        ValueSelector: ImageId
+        Type: String
+  - Name: untilCreateImageReady
+    Action: 'ACS::WaitFor'
+    OnError: deleteImage
+    Description:
+      en: Waits for created image available
+      zh-cn: 等待创建的镜像可用
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ createImage.ImageId }}'
+      DesiredValues:
+        - Available
+      PropertySelector: 'Images.Image[].Status'
+    Retries: 57
+  - Name: runInstances
+    Action: 'ACS::ExecuteAPI'
+    OnError: deleteImage
+    Description:
+      en: Runs instance in new availbable zone
+      zh-cn: 在新的可用分区中运行instance
+    Properties:
+      Service: ECS
+      API: RunInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ createImage.ImageId }}'
+        DataDisks: '{{queryDisks.dataDisks}}'
+        SystemDiskCategory:
+          'Fn::Select':
+            - Category
+            - '{{ queryDisks.systemDisk }}'
+        SystemDiskSize:
+          'Fn::Select':
+            - Size
+            - '{{ queryDisks.systemDisk }}'
+        SystemDiskDiskName:
+          'Fn::Select':
+            - DiskName
+            - '{{ queryDisks.systemDisk }}'
+        SystemDiskPerformanceLevel:
+          'Fn::Select':
+            - PerformanceLevel
+            - '{{ queryDisks.systemDisk }}'
+        InstanceType: '{{ targetInstanceType }}'
+        SecurityGroupIds: '{{ targetSecurityGroupIds }}'
+        VSwitchId: '{{ targetVSwitchId }}'
+        InstanceChargeType: '{{targetInstanceChargeType}}'
+        PeriodUnit:
+          'Fn::If':
+            - 'Fn::Equals':
+                - PrePaid
+                - '{{targetInstanceChargeType}}'
+            - '{{ targetPeriodUnit }}'
+            - ''
+        Period:
+          'Fn::If':
+            - 'Fn::Equals':
+                - PrePaid
+                - '{{targetInstanceChargeType}}'
+            - '{{ targetPeriod }}'
+            - ''
+        Password: '{{targetPassword}}'
+        InstanceName: '{{queryInstanceInfo.instanceName}}'
+        HostName: '{{queryInstanceInfo.hostName}}'
+        Tags:
+          'Fn::If':
+            - 'Fn::Equals':
+                - - Null
+                - '{{ queryInstanceInfo.tags }}'
+            - Null
+            - 'Fn::Jq':
+                - All
+                - '.[].Tag | map(select( .TagKey | test("^(?!acs).*"))) | .[] | {"Key": .TagKey, "Value": .TagValue}'
+                - '{{queryInstanceInfo.tags}}'
+        ResourceGroupId: '{{queryInstanceInfo.resourceGroupId}}'
+        DeploymentSetId: '{{queryInstanceInfo.deploymentSetId}}'
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: 'InstanceIdSets.InstanceIdSet[]'
+  - Name: untilInstanceReady
+    Action: 'ACS::WaitFor'
+    OnError: deleteImage
+    Description:
+      en: Waits for new instance running
+      zh-cn: 等待新实例运行
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ runInstances.instanceId }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: deleteImage
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Deletes the temporary image
+      zh-cn: 删除临时镜像
+    Properties:
+      Service: ECS
+      API: DeleteImage
+      Risk: Normal
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ createImage.ImageId }}'
+        Force: true
+Outputs:
+  instanceId:
+    Type: String
+    Value: '{{ runInstances.instanceId }}'

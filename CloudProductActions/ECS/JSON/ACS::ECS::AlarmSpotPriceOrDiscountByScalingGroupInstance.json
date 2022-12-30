@@ -1,25 +1,45 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group existing instances.",
+  "Description": {
+    "name-en": "ACS::ECS::AlarmSpotPriceOrDiscountByScalingGroupInstance",
+    "name-zh-cn": "监控伸缩组内实例的现价或折扣的阈值",
+    "en": "Alarm notification when spot instance discount or spot price exceeds threshold in the scaling group existing instances",
+    "zh-cn": "监控弹性伸缩组弹出的预付费实例的最新价格与折扣，超出阈值时发出报警通知"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The region id.",
+      "Description": {
+        "en": "The ID the region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String"
     },
     "threshold": {
-      "Description": "The discount threshold(example:10 is 1% off, 50 is 50% off).",
+      "Description": {
+        "en": "The discount threshold(example:10 is 1% off, 50 is 50% off)",
+        "zh-cn": "折扣阈值（例：输入10是1折，50为5折）"
+      },
       "Type": "Number"
     },
     "taskType": {
-      "Description": "Monitoring threshold task type.",
+      "Description": {
+        "en": "Monitoring threshold task type",
+        "zh-cn": "监控阈值的任务类型"
+      },
       "Type": "String"
     },
     "instanceType": {
-      "Description": "The instance type.",
+      "Description": {
+        "en": "The instance type",
+        "zh-cn": "ECS实例类型"
+      },
       "Type": "String"
     },
     "zoneId": {
-      "Description": "The zone id.",
+      "Description": {
+        "en": "The ID of zone",
+        "zh-cn": "可用区ID"
+      },
       "Type": "String"
     }
   },
@@ -27,7 +47,10 @@
     {
       "Name": "describeSpotPriceHistoryInfos",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Get the latest discounts on spot instance.",
+      "Description": {
+        "en": "Queries the latest discounts on spot instance",
+        "zh-cn": "获取预付费实例的最新折扣"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeSpotPriceHistory",
@@ -48,7 +71,10 @@
     {
       "Name": "selectTask",
       "Action": "ACS::Choice",
-      "Description": "Select the type of task that performs the monitoring threshold.",
+      "Description": {
+        "en": "Queries the type of task that performs the monitoring threshold",
+        "zh-cn": "获取监控阈值的任务类型"
+      },
       "Properties": {
         "DefaultTask": "ACS::END",
         "Choices": [
@@ -76,7 +102,10 @@
     {
       "Name": "checkDiscountThreshold",
       "Action": "ACS::Choice",
-      "Description": "Check if the actual discount exceeds the threshold.",
+      "Description": {
+        "en": "Check wether the actual discount exceeds the threshold",
+        "zh-cn": "检测实际折扣是否超过阈值"
+      },
       "Properties": {
         "DefaultTask": "ACS::END",
         "Choices": [
@@ -101,7 +130,10 @@
     {
       "Name": "checkSpotPriceThreshold",
       "Action": "ACS::Choice",
-      "Description": "Check if the actual discount exceeds the threshold.",
+      "Description": {
+        "en": "Check wether the actual price exceeds the threshold",
+        "zh-cn": "检测实际价格是否超过阈值"
+      },
       "Properties": {
         "DefaultTask": "ACS::END",
         "Choices": [
@@ -126,7 +158,10 @@
     {
       "Name": "describeSpotPriceHistory",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Get the latest discounts or spot price on spot instance.",
+      "Description": {
+        "en": "Queries the latest discounts or spot price on spot instance",
+        "zh-cn": "获取预付费实例的最新折扣与价格"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeSpotPriceHistory",

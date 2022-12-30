@@ -1,31 +1,47 @@
-Description: Excute python script.
 FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::FC::ExecuteScript
+  name-zh-cn: 执行脚本
+  en: Excute python script
+  zh-cn: 执行python脚本
 Parameters:
   runtime:
     Type: String
-    Description: The version of python.
+    Description:
+      en: The version of python.
+      zh-cn: python的版本。
     AllowedValues:
       - python2.7
       - python3
   handler:
     Type: String
-    Description: Python script function name(example:index.handler, index is the file name, handler is the name of the script function.).
+    Description:
+      en: Python script function name(example:index.handler, index is the file name, handler is the name of the script function.)
+      zh-cn: python脚本函数名称(例:index.handler, index是文件名，handler是脚本函数名)
   inputPayload:
     Type: Json
-    Description: The parameter value of the script.
+    Description:
+      en: The parameter value of the script
+      zh-cn: 脚本的参数值
     Default: ''
   script:
     Type: String
-    Description: Python script code.
+    Description:
+      en: Python script code
+      zh-cn: python脚本代码
     Default: ''
   attachment:
     Type: String
-    Description: Specify zipFile as the base64 encoded content of the zip package.
+    Description:
+      en: Specify zipFile as the base64 encoded content of the zip package
+      zh-cn: 指定zipFile作为zip包的base64编码内容
     Default: ''
 Tasks:
   - Name: createStack
     Action: 'ACS::ExecuteAPI'
-    Description: Create a resource stack.
+    Description:
+      en: Creates a resource stack
+      zh-cn: 创建资源栈
     Properties:
       Service: ROS
       API: CreateStack
@@ -122,6 +138,13 @@ Tasks:
                               ]
                           }
                       }
+                  },
+                  "Metadata": {
+                      "ALIYUN::ROS::Interface": {
+                          "TemplateTags": [
+                              "acs:integrate:oos:fc_execute_script"
+                          ]
+                      }
                   }
               }
     Outputs:
@@ -131,7 +154,9 @@ Tasks:
   - Name: untilStackReady
     Action: 'ACS::WaitFor'
     OnError: deleteStack
-    Description: Wait the stack status util CREATE_COMPLETE.
+    Description:
+      en: Waits for the stack status util CREATE_COMPLETE
+      zh-cn: 等待资源栈状态至CREATE_COMPLETE
     Properties:
       Service: ROS
       API: GetStack
@@ -151,7 +176,9 @@ Tasks:
         ValueSelector: 'Outputs[].OutputValue'
   - Name: deleteStack
     Action: 'ACS::ExecuteApi'
-    Description: Delete the stack.
+    Description:
+      en: Deletes the stack
+      zh-cn: 删除资源栈
     Properties:
       Service: ROS
       API: DeleteStack
@@ -161,3 +188,4 @@ Outputs:
   Result:
     Type: String
     Value: '{{ untilStackReady.result }}'
+    

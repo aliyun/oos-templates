@@ -1,0 +1,155 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Del the security gorup rule
+  zh-cn: 删除安全组规则
+  name-en: ACS-ECS-RevokeSecurityGroupRules
+  name-zh-cn: 删除安全组规则
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  securityGroupId:
+    Label:
+      en: SecurityGroupId
+      zh-cn: 安全组ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId
+    AssociationPropertyMetadata:
+      regionId: regionId
+  direction:
+    Label:
+      en: Direction
+      zh-cn: 安全组规则授权方向
+    Description:
+      en: <ul class="ul">
+        <li class="li" >egress： security group outbound direction</li>
+        <li class="li" >ingress： security group incoming direction</li>
+        <li class="li">all： direction-insensitive</li></ul>
+      zh-cn: <ul class="ul">
+        <li class="li" >egress：安全组出方向</li>
+        <li class="li" >ingress：安全组入方向</li>
+        <li class="li">all：不区分方向</li></ul>
+    Type: String
+    AllowedValues:
+      - egress
+      - ingress
+      - all
+  policy:
+    Label:
+      en: Policy
+      zh-cn: 安全组规则访问权限
+    Description:
+      en: <ul class="ul">
+        <li class="li">Accept：Accept access</li>
+        <li class="li">Arop：Access denied</li>
+        </ul>
+      zh-cn: <ul class="ul">
+        <li class="li">Accept：接受访问</li>
+        <li class="li">Arop：拒绝访问</li>
+        </ul>
+    Type: String
+    AllowedValues:
+      - Accept
+      - Drop
+  portRange:
+    Label:
+      en: PortRange
+      zh-cn: 端口范围
+    Description:
+      en: 'Use a slash (/) to separate the start and end ports. Example: 1/200, -1/-1, 22/22'
+      zh-cn: 使用斜线（/）隔开起始端口和终止端口。例如：1/200，-1/-1，22/22
+    Type: String
+  sourceCidrIp:
+    Label:
+      en: SourceCidrIp
+      zh-cn: 源端IPv4 CIDR地址块
+    Description:
+      en: 'Example: 10.0.0.0/8，10.0.0.0/0'
+      zh-cn: 例如：10.0.0.0/8，0.0.0.0/0
+    Type: String
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: describeSecurityGroupRules
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Get security group rules
+    zh-cn: 获取安全组规则
+  Properties:
+    Service: ECS
+    API: DescribeSecurityGroupAttribute
+    Parameters:
+      RegionId: '{{ regionId }}'
+      SecurityGroupId: '{{ securityGroupId }}'
+      Direction: '{{ direction }}'
+  Outputs:
+    rules:
+      Type: Json
+      ValueSelector: .Permissions.Permission | map( select(.Policy == "{{ policy }}") ) | map( select(.PortRange == "{{ portRange }}") ) |  map( select(.SourceCidrIp == "{{ sourceCidrIp }}") )
+- Name: delSecurityGroupRule
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Delete security group rule
+    zh-cn: 删除安全组规则
+  Properties:
+    Service: ECS
+    API: RevokeSecurityGroup
+    Parameters:
+      SecurityGroupId: '{{ securityGroupId }}'
+      RegionId: '{{ regionId }}'
+      Policy:
+        Fn::Select:
+          - Policy
+          - '{{ ACS::TaskLoopItem }}'
+      PortRange:
+        Fn::Select:
+          - PortRange
+          - '{{ ACS::TaskLoopItem }}'
+      SourceCidrIp:
+        Fn::Select:
+          - SourceCidrIp
+          - '{{ ACS::TaskLoopItem }}'
+      IpProtocol:
+        Fn::Select:
+          - IpProtocol
+          - '{{ ACS::TaskLoopItem }}'
+  Loop:
+    Items: '{{ describeSecurityGroupRules.rules }}'
+    RateControl:
+      MaxErrors: 0
+      Mode: Concurrency
+      Concurrency: 1
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - direction
+          - policy
+          - portRange
+          - sourceCidrIp
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - securityGroupId
+        Label:
+          default:
+            zh-cn: 选择安全组
+            en: Select Security Group
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

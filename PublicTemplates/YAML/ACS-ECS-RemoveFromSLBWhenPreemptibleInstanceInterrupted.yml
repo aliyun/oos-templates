@@ -1,26 +1,34 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Remove backend servers from SLB when preemptible instance of current region is about to be interrupted.
-  zh-cn: 当前地域的抢占式实例即将释放时，将实例从其所在负载均衡后端服务器列表移除。
+  en: Remove backend servers from SLB when preemptible instance of current region is about to be interrupted
+  zh-cn: 当前地域的抢占式实例即将释放时，将实例从其所在负载均衡后端服务器列表移除
   name-en: ACS-ECS-RemoveFromSLBWhenPreemptibleInstanceInterrupted
   name-zh-cn: 将即将释放的抢占式实例从其所在负载均衡后端服务器列表移除
   categories:
     - event-trigger
 Parameters:
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
+  tags:
+    Type: Json
+    Label:
+      en: Tags
+      zh-cn: 实例的标签
+    AssociationProperty: Tags
+    Default: []
 RamRole: '{{OOSAssumeRole}}'
 Tasks:
   - Name: eventTrigger
     Description:
-      en: Monitor the preemptible instance interruption event.
-      zh-cn: 监控抢占式实例的释放事件。
+      en: Monitor the preemptible instance interruption event
+      zh-cn: 监控抢占式实例的释放事件
     Action: 'ACS::EventTrigger'
     Properties:
+      Tags: '{{ tags }}'
       Product: ECS
       Name:
         - 'Instance:PreemptibleInstanceInterruption'
@@ -36,8 +44,8 @@ Tasks:
         Type: String
   - Name: describeSLB
     Description:
-      en: Views the SLB id of preemptible instance interrupted.
-      zh-cn: 查询释放的抢占实例所在负载均衡ID。
+      en: Views the SLB id of preemptible instance interrupted
+      zh-cn: 查询释放的抢占实例所在负载均衡ID
     Action: 'ACS::ExecuteAPI'
     Properties:
       Service: SLB
@@ -50,8 +58,8 @@ Tasks:
         Type: String
   - Name: setBackendServers
     Description:
-      en: Set the weight of interrupted instance zero on SLB.
-      zh-cn: 将释放的实例在负载均衡上的权重设置为0。
+      en: Set the weight of interrupted instance zero on SLB
+      zh-cn: 将释放的实例在负载均衡上的权重设置为0
     Action: 'ACS::ExecuteAPI'
     Properties:
       Service: SLB
@@ -63,15 +71,15 @@ Tasks:
         LoadBalancerId: '{{describeSLB.loadBalancerId}}'
   - Name: waitConnectionExpire
     Description:
-      en: Wait created connection expire.
-      zh-cn: 等待已经建立的网络连接断开。
+      en: Wait created connection expire
+      zh-cn: 等待已经建立的网络连接断开
     Action: 'ACS::Sleep'
     Properties:
       Duration: 'PT1M'
   - Name: removeBackendServers
     Description:
-      en: Remove the interrupted instance from SLB backend servers list.
-      zh-cn: 将释放的实例从负载均衡后端服务器列表上移除。
+      en: Remove the interrupted instance from SLB backend servers list
+      zh-cn: 将释放的实例从负载均衡后端服务器列表上移除
     Action: 'ACS::ExecuteAPI'
     Properties:
       Service: SLB
@@ -85,3 +93,18 @@ Outputs:
   instanceId:
     Value: '{{ eventTrigger.instanceId }}'
     Type: String
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - tags
+        Label:
+          default:
+            zh-cn: 选择标签
+            en: Select Tags
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

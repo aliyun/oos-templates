@@ -1,20 +1,34 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Modifies the VPC attributes of an ECS instance.",
+  "Description": {
+    "name-en": "ACS::ECS::ModifyInstanceVpcAttribute",
+    "name-zh-cn": "修改ECS实例的Vpc属性",
+    "en": "Modifies the VPC attributes of an ECS instance",
+    "zh-cn": "修改一台专有网络类型ECS实例的专有网络VPC属性"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of the instance.",
+      "Description": {
+        "en": "The ID of the instance",
+        "zh-cn": "实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "vSwitchId": {
-      "Description": "The vSwitch ID for the specific VPC.",
+      "Description": {
+        "en": "The vSwitch ID for the specific VPC",
+        "zh-cn": "虚拟交换机ID"
+      },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MinLength": 1,
@@ -25,7 +39,10 @@
     {
       "Name": "stopInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Stops the ECS instance with the specified instance ID.",
+      "Description": {
+        "en": "Stops the ECS instance with the specified instance ID",
+        "zh-cn": "通过实例ID停止ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "StopInstance",
@@ -38,7 +55,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the ECS instance to enter stooped status.",
+      "Description": {
+        "en": "Waits for the ECS instance to enter stoped status",
+        "zh-cn": "等待ECS的实例状态至Stopped"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -57,7 +77,10 @@
     {
       "Name": "modifyInstanceVpcAttribute",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Modifies the VPC attributes of an ECS instance.",
+      "Description": {
+        "en": "Modifies the VPC attributes of an ECS instance",
+        "zh-cn": "修改一台专有网络类型ECS实例的专有网络VPC属性"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "ModifyInstanceVpcAttribute",

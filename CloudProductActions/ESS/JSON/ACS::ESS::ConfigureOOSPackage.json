@@ -1,14 +1,25 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Install package on ECS.",
+  "Description": {
+    "name-en": "ACS::ESS::ConfigureOOSPackage",
+    "name-zh-cn": "在伸缩组内的ECS实例中安装OOS自定义软件包",
+    "en": "Configure oos package on ECS instances that in scaling group",
+    "zh-cn": "在伸缩组内的ECS实例中安装OOS自定义软件包"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "rollBack": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "Whether to roll back",
+        "zh-cn": "是否回滚"
+      },
       "Type": "String",
       "AllowedValues": [
         "true",
@@ -17,13 +28,19 @@
       "Default": "false"
     },
     "instanceId": {
-      "Description": "The ID of ECS instance that will install package.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "action": {
-      "Description": "The action to configure package.",
+      "Description": {
+        "en": "The action to configure package",
+        "zh-cn": "安装软件包的方式"
+      },
       "Type": "String",
       "AllowedValues": [
         "install",
@@ -32,16 +49,25 @@
       "Default": "install"
     },
     "packageName": {
-      "Description": "The name of package.",
+      "Description": {
+        "en": "The name of package",
+        "zh-cn": "软件包名称"
+      },
       "Type": "String"
     },
     "packageVersion": {
-      "Description": "The version of package.",
+      "Description": {
+        "en": "The version of OOS package",
+        "zh-cn": "OOS软件包版本"
+      },
       "Type": "String",
       "Default": ""
     },
     "scalingGroupId": {
-      "Description": "The id of scaling group.",
+      "Description": {
+        "en": "The ID of scaling group",
+        "zh-cn": "伸缩组ID"
+      },
       "Type": "String"
     }
   },
@@ -49,7 +75,10 @@
     {
       "Name": "viewInstanceLifecycleState",
       "Action": "ACS::ExecuteApi",
-      "Description": "Views ECS instance lifecycle status.",
+      "Description": {
+        "en": "Queries ECS instance lifecycle status",
+        "zh-cn": "获取实例生命周期挂钩的状态"
+      },
       "Properties": {
         "Service": "ESS",
         "API": "DescribeScalingInstances",
@@ -68,7 +97,10 @@
     {
       "Name": "whetherLifecycleStateIsStandby",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by lifecycle status.",
+      "Description": {
+        "en": "Choose next task by lifecycle status",
+        "zh-cn": "根据实例生命周期挂钩的状态选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "enterStandby",
         "Choices": [
@@ -87,9 +119,13 @@
     {
       "Name": "enterStandby",
       "Action": "ACS::WaitFor",
-      "Description": "Enter standby.",
-      "Retries": 15,
+      "Description": {
+        "en": "Waits for ECS instance to enter standby status",
+        "zh-cn": "等待实例进入standby状态"
+      },
+      "Retries": 30,
       "Delay": 10,
+      "DelayType": "Constant",
       "Properties": {
         "Service": "ESS",
         "API": "EnterStandby",
@@ -112,7 +148,10 @@
     {
       "Name": "queryInstanceOSType",
       "Action": "ACS::ExecuteApi",
-      "Description": "Queries ECS instance OS type.",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "获取实例操作系统类型"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -132,6 +171,10 @@
     },
     {
       "Name": "configureLinuxPackage",
+      "Description": {
+        "en": "Configures OOS package on Linux instance",
+        "zh-cn": "在Linux类型实例中安装OOS软件包"
+      },
       "When": {
         "Fn::Equals": [
           "{{ queryInstanceOSType.OSType }}",
@@ -143,7 +186,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunShellScript",
-        "commandContent": "if  [ '{{ packageVersion }}' = '' ] ; then\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}}\nelse\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\nfi"
+        "commandContent": "#/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  if  [ '{{ packageVersion }}' = '' ] ; then\n     acs-plugin-manager --exec -P oosutil --params configure_package,{{action}},{{packageName}}\n  else\n     acs-plugin-manager --exec -P oosutil --params configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\n  fi\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  test -e $path || mkdir -p $path\n  currentPath=`pwd`\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  if  [ '{{ packageVersion }}' = '' ] ; then\n    $path/oosutil_linux configure_package {{action}} {{packageName}}\n  else\n    $path/oosutil_linux configure_package {{action}} {{packageName}} --package-version {{packageVersion}}\n  fi\nfi"
       },
       "Outputs": {
         "commandOutput": {
@@ -154,6 +197,10 @@
     },
     {
       "Name": "configureWindowsPackage",
+      "Description": {
+        "en": "Configures OOS package on Windows instance",
+        "zh-cn": "在Windows类型实例中安装OOS软件包"
+      },
       "When": {
         "Fn::Equals": [
           "{{ queryInstanceOSType.OSType }}",
@@ -165,18 +212,7 @@
         "regionId": "{{ regionId }}",
         "instanceId": "{{ instanceId }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": {
-          "Fn::If": [
-            {
-              "Fn::Equals": [
-                "",
-                "{{ packageVersion }}"
-              ]
-            },
-            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}}",
-            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}"
-          ]
-        }
+        "commandContent": "$current_version=(aliyun_assist_service.exe -v)\n$specified_version=\"1.0.0.134\"\nif ($current_version -gt $specified_version){\n  if ('{{ packageVersion }}'){\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\"\n  }else{\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"configure_package,{{action}},{{packageName}}\"\n  }\n}else{\n  $version=\"{{ACS::OOSUtilVersion}}\"\n  $path = \"C:\\aliyun-oosutil\\$version\"\n  $currentPath=(pwd)\n  $pathExistOrNot = Test-Path -Path \"$path\"\n  if ($pathExistOrNot){\n      cd $path\n  }else{\n      mkdir $path\n      cd $path\n  }\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile(\"https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe\", \"$path/oosutil_windows.exe\")\n  cd $currentPath\n  if ('{{ packageVersion }}'){\n    C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe configure_package {{action}} {{packageName}} --package-version {{ packageVersion }}\n  }else{\n    C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe configure_package {{action}} {{packageName}}\n  }\n}"
       },
       "Outputs": {
         "commandOutput": {
@@ -188,7 +224,10 @@
     {
       "Name": "whetherToRollbackExitStandBy",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by rollback status.",
+      "Description": {
+        "en": "Choose next task by rollback parameter",
+        "zh-cn": "根据回滚参数选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "whetherToExitStandBy",
         "Choices": [
@@ -207,7 +246,10 @@
     {
       "Name": "whetherToExitStandBy",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by lifecycle status.",
+      "Description": {
+        "en": "Choose next task by instance lifecycle status",
+        "zh-cn": "根据实例生命周期挂钩的状态选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "exitStandBy",
         "Choices": [
@@ -226,9 +268,13 @@
     {
       "Name": "exitStandBy",
       "Action": "ACS::WaitFor",
-      "Description": "Exit standby.",
-      "Retries": 15,
+      "Description": {
+        "en": "Modifies the state of ECS instances in a scaling group from Standby to Running",
+        "zh-cn": "设置伸缩组内处于备用状态的ECS实例为运行中状态"
+      },
+      "Retries": 30,
       "Delay": 10,
+      "DelayType": "Constant",
       "Properties": {
         "Service": "ESS",
         "API": "ExitStandBy",

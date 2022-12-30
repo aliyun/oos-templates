@@ -1,22 +1,39 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Creates one or more instances by specifying launch template.",
+  "Description": {
+    "name-en": "ACS::ECS::RunInstancesFromTemplate",
+    "name-zh-cn": "通过指定启动模板创建一个或多个ECS实例",
+    "en": "Creates one or more ECS instances by specifying launch template",
+    "zh-cn": "通过指定启动模板创建一个或多个ECS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "launchTemplateId": {
-      "Description": "The ID of the instance launch template.",
+      "Description": {
+        "en": "The ID of the instance launch template",
+        "zh-cn": "实例启动模板的ID"
+      },
       "Type": "String"
     },
     "launchTemplateName": {
-      "Description": "The name of the instance launch template.",
+      "Description": {
+        "en": "The name of the instance launch template",
+        "zh-cn": "实例启动模板的名称"
+      },
       "Type": "String"
     },
     "amount": {
-      "Description": "The specified number of instances you want to create.",
+      "Description": {
+        "en": "The specified number of instances you want to create",
+        "zh-cn": "要创建的指定实例数量"
+      },
       "Type": "Number",
       "Default": 1
     }
@@ -25,7 +42,10 @@
     {
       "Name": "runInstances",
       "Action": "ACS::ExecuteAPI",
-      "Description": "run instances",
+      "Description": {
+        "en": "Runs ECS instances",
+        "zh-cn": "创建ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "RunInstances",
@@ -46,7 +66,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the created instances to be Running.",
+      "Description": {
+        "en": "Waits for the created instances to be running status",
+        "zh-cn": "等待创建的实例到running状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

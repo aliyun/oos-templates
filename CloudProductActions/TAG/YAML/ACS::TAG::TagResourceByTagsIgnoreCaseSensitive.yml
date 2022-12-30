@@ -1,0 +1,49 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Create and bind multiple tags to a specified single cloud resource
+  zh-cn: 为指定的单个云资源创建并绑定多个标签
+  name-en: ACS::TAG::TagResourceByTagsIgnoreCaseSensitive
+  name-zh-cn: 为指定的单个云资源创建并绑定多个标签(忽略标签大小写)
+Parameters:
+  regionId:
+    Description:
+      en: The id of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  tags:
+    Description:
+      en: The resource tag
+      zh-cn: 资源标签
+    Type: Json
+    AssociationProperty: Tags
+  resourceARN:
+    Description:
+      en: Resource ARN
+      zh-cn: 资源ARN
+    Type: String
+Tasks:
+  - Name: tagResource
+    Action: ACS::TAG::TagResourceByTagIgnoreCaseSensitive
+    Description:
+      en: Tag the resources through resource management
+      zh-cn: 通过资源管理给资源打标签
+    Properties:
+      regionId: '{{ regionId }}'
+      resourceARN: '{{ resourceARN }}'
+      tagKey:
+        Fn::Jq:
+          - First
+          - .Key
+          - '{{ ACS::TaskLoopItem }}'
+      tagValue:
+        Fn::Jq:
+          - First
+          - .Value
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ tags }}'
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 10

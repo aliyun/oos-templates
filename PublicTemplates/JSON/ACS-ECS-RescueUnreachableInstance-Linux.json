@@ -2,25 +2,33 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "en": "When using ECS instances, some situations can lead to system disk corruption, such as instances being forced to stop or restart, or sudden downtime, failure to update /etc/fstab when the disk is unloaded, or even loss or corruption of /etc/fstab or initrd files. When the instance cannot be accessed, the state of the instance displayed in the ECS instance console may still be Running, but the application in the instance cannot be accessed, the network in the instance cannot be reached, and the connection cannot be established through workbench or SSH. If you can connect to an instance from the console with VNC, you will probably see a page that indicates a system startup failure. At this point, you can consider executing the template to cure the damaged instance. The cure process is that the system disk of the damaged instance will be mounted to the newly created temporary instance, then a cure script will be executed in the temporary instance, and finally the cured system disk will be mounted back to the original instance.",
-    "zh-cn": "\u4f7f\u7528ECS\u5b9e\u4f8b\u65f6\uff0c\u6709\u4e9b\u60c5\u51b5\u53ef\u80fd\u5bfc\u81f4\u7cfb\u7edf\u76d8\u635f\u4f24\uff0c\u6bd4\u5982\u5b9e\u4f8b\u88ab\u5f3a\u5236\u5730\u505c\u6b62\u6216\u91cd\u542f\uff0c\u6291\u6216\u7a81\u7136\u53d1\u751f\u4e86\u5b95\u673a\uff0c\u4ee5\u53ca\u6570\u636e\u76d8\u88ab\u5378\u8f7d\u540e\u672a\u66f4\u65b0/etc/fstab\uff0c\u751a\u81f3\u4e8e/etc/fstab\u6216initrd\u6587\u4ef6\u4e22\u5931\u6216\u635f\u574f\u3002\u5f53\u65e0\u6cd5\u8bbf\u95ee\u5b9e\u4f8b\u65f6\uff0c\u8be5\u5b9e\u4f8b\u5728ECS\u5b9e\u4f8b\u63a7\u5236\u53f0\u663e\u793a\u7684\u72b6\u6001\u53ef\u80fd\u8fd8\u662f\u8fd0\u884c\u4e2d\uff0c\u4f46\u5b9e\u4f8b\u5185\u7684\u5e94\u7528\u4e0d\u53ef\u8bbf\u95ee\uff0c\u5b9e\u4f8b\u5185\u7684\u7f51\u7edc\u4e0d\u53ef\u8fbe\uff0c\u66f4\u65e0\u6cd5\u901a\u8fc7workbench\u6216\u8005ssh\u5efa\u7acb\u8fde\u63a5\u3002\u5982\u679c\u60a8\u5728\u63a7\u5236\u53f0\u901a\u8fc7vnc\u80fd\u8fde\u63a5\u4e0a\u5b9e\u4f8b\uff0c\u770b\u5230\u7684\u9875\u9762\u5927\u6982\u662f\u7cfb\u7edf\u542f\u52a8\u5931\u8d25\u7684\u63d0\u793a\u4fe1\u606f\u3002\u6b64\u65f6\u60a8\u53ef\u8003\u8651\u6267\u884c\u8be5\u6a21\u7248\u5bf9\u635f\u4f24\u5b9e\u4f8b\u8fdb\u884c\u6551\u6cbb\uff0c\u6551\u6cbb\u6d41\u7a0b\u4e3b\u8981\u662f\u635f\u4f24\u7684\u5b9e\u4f8b\u7684\u7cfb\u7edf\u76d8\u5c06\u88ab\u6302\u8f7d\u5230\u65b0\u521b\u5efa\u7684\u4e34\u65f6\u5b9e\u4f8b\u4e0a\uff0c\u63a5\u7740\u5728\u4e34\u65f6\u5b9e\u4f8b\u4e2d\u4f1a\u6267\u884c\u4e00\u6bb5\u6551\u6cbb\u811a\u672c\uff0c\u6700\u540e\u6551\u6cbb\u8fc7\u7684\u7cfb\u7edf\u76d8\u5c06\u88ab\u6302\u8f7d\u56de\u539f\u5b9e\u4f8b\u3002",
+    "zh-cn": "使用ECS实例时，有些情况可能导致系统盘损伤，比如实例被强制地停止或重启，抑或突然发生了宕机，以及数据盘被卸载后未更新/etc/fstab，甚至于/etc/fstab或initrd文件丢失或损坏。当无法访问实例时，该实例在ECS实例控制台显示的状态可能还是运行中，但实例内的应用不可访问，实例内的网络不可达，更无法通过workbench或者ssh建立连接。如果您在控制台通过vnc能连接上实例，看到的页面大概是系统启动失败的提示信息。此时您可考虑执行该模版对损伤实例进行救治，救治流程主要是损伤的实例的系统盘将被挂载到新创建的临时实例上，接着在临时实例中会执行一段救治脚本，最后救治过的系统盘将被挂载回原实例",
     "name-en": "ACS-ECS-RescueUnreachableInstance-Linux",
-    "name-zh-cn": "\u81ea\u52a9\u6551\u6cbb\u635f\u4f24\u7684ECS\u5b9e\u4f8bLinux\u7cfb\u7edf\u76d8",
+    "name-zh-cn": "自助救治损伤的ECS实例Linux系统盘",
     "categories": [
       "diagnose"
     ]
   },
   "Parameters": {
     "unreachableInstanceId": {
-      "Description": {
-        "en": "ID of your unreachable ECS instance.",
-        "zh-cn": "\u5c06\u81ea\u6551\u7684ECS\u5b9e\u4f8bID\u3002"
+      "Label": {
+        "en": "UnreachableInstanceId",
+        "zh-cn": "将自救的ECS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "{{ ACS::RegionId }}"
+      }
     },
     "credentialType": {
       "Description": {
         "en": "Credential Type for your unreachable ECS instance after being rescued, either KeyPairName or Password type can be chosen.",
-        "zh-cn": "\u5f53\u6267\u884c\u81ea\u6551ECS\u5b9e\u4f8b\u540e\uff0c\u5b9e\u4f8broot\u767b\u5f55\u51ed\u8bc1\u7c7b\u578b\uff0c\u53ef\u9009\u62e9\u5bc6\u94a5\u5bf9\u6216\u81ea\u5b9a\u4e49\u5bc6\u7801\u3002"
+        "zh-cn": "当执行自救ECS实例后，实例root登录凭证类型，可选择密钥对或自定义密码"
+      },
+      "Label": {
+        "en": "CredentialType",
+        "zh-cn": "登录凭证类型"
       },
       "Type": "String",
       "AllowedValues": [
@@ -31,22 +39,26 @@
     "credentialValue": {
       "Description": {
         "en": "Credential value for your unreachable ECS instance after being rescued, the value of KeyPairName or Password.",
-        "zh-cn": "\u5f53\u6267\u884c\u81ea\u6551ECS\u5b9e\u4f8b\u540e\uff0c\u5b9e\u4f8broot\u767b\u5f55\u51ed\u8bc1\u503c\uff0c\u5982\u679c\u51ed\u8bc1\u7c7b\u578b\u9009\u62e9\u5bc6\u94a5\u5bf9\uff0c\u5219\u6b64\u5904\u586b\u5199\u5bc6\u94a5\u5bf9\u540d\u79f0\uff1b\u5982\u679c\u51ed\u8bc1\u7c7b\u578b\u9009\u62e9\u4e86\u81ea\u5b9a\u4e49\u5bc6\u7801\uff0c\u5219\u6b64\u5904\u586b\u5199\u5c06\u8bbe\u7f6e\u7684\u5bc6\u7801\u3002"
+        "zh-cn": "当执行自救ECS实例后，实例root登录凭证值，如果凭证类型选择密钥对，则此处填写密钥对名称；如果凭证类型选择了自定义密码，则此处填写将设置的密码"
       },
-      "Type": "String"
+      "Type": "String",
+      "Label": {
+        "en": "Credential",
+        "zh-cn": "登录凭证"
+      }
     },
     "imagePrefix": {
-      "Description": {
-        "en": "The prefix for backup image name.",
-        "zh-cn": "\u7528\u6765\u5907\u4efdECS\u5b9e\u4f8b\u7684\u955c\u50cf\u540d\u79f0\u7684\u524d\u7f00\u3002"
+      "Label": {
+        "en": "ImagePrefix",
+        "zh-cn": "用来备份ECS实例的镜像名称的前缀"
       },
       "Type": "String",
       "Default": "OOSRescueBackup-"
     },
     "helperInstanceTypes": {
-      "Description": {
-        "en": "The instance types for the helper instance are being selected from to check the available one in current zone by task.",
-        "zh-cn": "\u81ea\u6551\u6267\u884c\u8fc7\u7a0b\u4e2d\uff0c\u88ab\u521b\u5efa\u7684\u4e34\u65f6\u5b9e\u4f8b\u89c4\u683c\u7684\u9009\u62e9\u8303\u56f4\u3002"
+      "Label": {
+        "en": "HelperInstanceTypes",
+        "zh-cn": "自救执行过程中，被创建的临时实例规格的选择范围"
       },
       "Type": "List",
       "Default": [
@@ -67,9 +79,9 @@
       ]
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -81,8 +93,8 @@
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
       "Description": {
-        "en": "Checks ECS instance is linux os.",
-        "zh-cn": "\u786e\u8ba4\u5c06\u6551\u6cbbECS\u5b9e\u4f8b\u4e3aLinux\u7cfb\u7edf\u7684\u3002"
+        "en": "Checks ECS instance is linux os",
+        "zh-cn": "确认将救治ECS实例为Linux系统的"
       },
       "OnError": "ACS::END",
       "Properties": {
@@ -129,8 +141,8 @@
       "Name": "querySystemDisks",
       "Action": "ACS::CheckFor",
       "Description": {
-        "en": "Checks system disk of the ECS instance.",
-        "zh-cn": "\u68c0\u67e5\u5c06\u6551\u6cbb\u7684\u7cfb\u7edf\u76d8\u60c5\u51b5\u3002"
+        "en": "Checks system disk of the ECS instance",
+        "zh-cn": "检查将救治的系统盘情况"
       },
       "OnError": "ACS::END",
       "Properties": {
@@ -164,8 +176,8 @@
       "Name": "whetherStopInstance",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by Instance status.",
-        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u72b6\u6001\u9009\u62e9\u8981\u6267\u884c\u7684\u4efb\u52a1\u3002"
+        "en": "Choose next task by Instance status",
+        "zh-cn": "根据实例状态选择要执行的任务"
       },
       "Properties": {
         "DefaultTask": "stopInstance",
@@ -186,8 +198,8 @@
       "Name": "stopInstance",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Stops the ECS instances.",
-        "zh-cn": "\u505c\u6b62\u5b9e\u4f8b\u3002"
+        "en": "Stops the ECS instances",
+        "zh-cn": "停止实例"
       },
       "Properties": {
         "Service": "ECS",
@@ -200,8 +212,8 @@
     {
       "Name": "Sleep3Minutes",
       "Description": {
-        "en": "Wait instance Stopped.",
-        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u505c\u6b62\u6210\u529f\u3002"
+        "en": "Wait instance Stopped",
+        "zh-cn": "等待实例停止成功"
       },
       "Action": "ACS::Sleep",
       "Properties": {
@@ -212,8 +224,8 @@
       "Name": "queryUnreachableInstanceStatus",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Query status of unreachable instance.",
-        "zh-cn": "\u67e5\u8be2\u635f\u4f24\u7cfb\u7edf\u76d8\u7684\u5b9e\u4f8b\u72b6\u6001\u3002"
+        "en": "Query status of unreachable instance",
+        "zh-cn": "查询损伤系统盘的实例状态"
       },
       "Properties": {
         "Service": "ECS",
@@ -235,8 +247,8 @@
       "Name": "whetherForceStopInstance",
       "Action": "ACS::Choice",
       "Description": {
-        "en": "Choose next task by Instance status.",
-        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u72b6\u6001\u9009\u62e9\u8981\u6267\u884c\u7684\u4efb\u52a1\u3002"
+        "en": "Choose next task by Instance status",
+        "zh-cn": "根据实例状态选择要执行的任务"
       },
       "Properties": {
         "DefaultTask": "forceStopInstance",
@@ -257,8 +269,8 @@
       "Name": "forceStopInstance",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Stops the ECS instances forcibly.",
-        "zh-cn": "\u5f3a\u5236\u505c\u6b62\u5b9e\u4f8b\u3002"
+        "en": "Stops the ECS instances forcibly",
+        "zh-cn": "强制停止实例"
       },
       "Properties": {
         "Service": "ECS",
@@ -273,8 +285,8 @@
       "Name": "untilStopUnreachableInstanceSuccess",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Waits for the ECS instance to enter stoped status.",
-        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u505c\u6b62\u3002"
+        "en": "Waits for the ECS instance to enter stoped status",
+        "zh-cn": "等待实例停止"
       },
       "Properties": {
         "Service": "ECS",
@@ -295,8 +307,8 @@
       "Action": "ACS::Template",
       "OnError": "ACS::END",
       "Description": {
-        "en": "Query current available instance type for creating helper instance in the zone of the unreachable.",
-        "zh-cn": "\u67e5\u8be2\u5c06\u521b\u5efa\u7684\u76ee\u6807\u4e34\u65f6\u5b9e\u4f8b\u89c4\u683c\u662f\u5426\u6709\u5e93\u5b58\u3002"
+        "en": "Query current available instance type for creating helper instance in the zone of the unreachable",
+        "zh-cn": "查询将创建的目标临时实例规格是否有库存"
       },
       "Properties": {
         "TemplateName": "ACS::ECS::CheckAvailableInstanceTypes",
@@ -316,8 +328,8 @@
       "Name": "createImage",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Creates a custom image.",
-        "zh-cn": "\u521b\u5efa\u4e00\u4e2a\u81ea\u5b9a\u4e49\u955c\u50cf\u3002"
+        "en": "Creates a custom image",
+        "zh-cn": "创建一个自定义镜像"
       },
       "Properties": {
         "Service": "ECS",
@@ -348,8 +360,8 @@
       "Name": "createStack",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Create a Ros resource stack.",
-        "zh-cn": "\u521b\u5efaRos\u8d44\u6e90\u6808\u3002"
+        "en": "Create a Ros resource stack",
+        "zh-cn": "创建Ros资源栈"
       },
       "Properties": {
         "Service": "ROS",
@@ -398,8 +410,8 @@
       "Name": "untilImageReady",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Wait for the image to be available.",
-        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u521b\u5efa\u6210\u529f\u3002"
+        "en": "Wait for the image to be available",
+        "zh-cn": "等待镜像创建成功"
       },
       "OnError": "deleteStack",
       "Properties": {
@@ -424,7 +436,7 @@
       "OnSuccess": "putRTToHelperInstance",
       "Description": {
         "en": "Wait for the stack status CREATE_COMPLETE.",
-        "zh-cn": "\u7b49\u5f85\u8d44\u6e90\u6808\u521b\u5efa\u6210\u529f\u3002"
+        "zh-cn": "等待资源栈创建成功。"
       },
       "Properties": {
         "Service": "ROS",
@@ -462,7 +474,7 @@
       "OnSuccess": "deleteStack",
       "Description": {
         "en": "Query the reson of failed created stack.",
-        "zh-cn": "\u67e5\u8be2\u8d44\u6e90\u6808\u672a\u521b\u5efa\u6210\u529f\u7684\u539f\u56e0\u3002"
+        "zh-cn": "查询资源栈未创建成功的原因。"
       },
       "Properties": {
         "Service": "ROS",
@@ -483,8 +495,8 @@
       "Action": "ACS::ECS::RunCommand",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Run cloud assistant command on ECS instance to download rt.",
-        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u4e0b\u8f7d\u4fee\u590d\u811a\u672c\u3002"
+        "en": "Run cloud assistant command on ECS instance to download rt",
+        "zh-cn": "在实例中运行云助手命令下载修复脚本"
       },
       "Properties": {
         "commandContent": "cd /tmp ; wget https://oos-debug.oss-cn-hangzhou.aliyuncs.com/guestos-scripts-0.0.1.tar.gz; tar -zxvf guestos-scripts-0.0.1.tar.gz",
@@ -497,8 +509,8 @@
       "Action": "ACS::ExecuteAPI",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Add Tags of system disk to instance to rescue.",
-        "zh-cn": "\u7ed9\u8981\u6551\u6cbb\u7684\u5b9e\u4f8b\u6dfb\u52a0\u4e0a\u5176\u7cfb\u7edf\u76d8\u4fe1\u606f\u7684\u6807\u7b7e\u3002"
+        "en": "Add Tags of system disk to instance to rescue",
+        "zh-cn": "给要救治的实例添加上其系统盘信息的标签"
       },
       "Properties": {
         "Service": "ECS",
@@ -520,8 +532,8 @@
       "Action": "ACS::ECS::DetachDisk",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Detaches the system disk from unreachable instance.",
-        "zh-cn": "\u5378\u8f7d\u6709\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u3002"
+        "en": "Detaches the system disk from unreachable instance",
+        "zh-cn": "卸载有损伤的系统盘"
       },
       "Properties": {
         "instanceId": "{{ unreachableInstanceId }}",
@@ -533,8 +545,8 @@
       "Action": "ACS::ECS::AttachDisk",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Attaches the system disk to the helper instance as a data disk.",
-        "zh-cn": "\u5c06\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u4f5c\u4e3a\u6570\u636e\u76d8\u6302\u8f7d\u5230\u4e34\u65f6\u5b9e\u4f8b\u4e0a\u3002"
+        "en": "Attaches the system disk to the helper instance as a data disk",
+        "zh-cn": "将损伤的系统盘作为数据盘挂载到临时实例上"
       },
       "Properties": {
         "instanceId": "{{ untilStackReady.helperInstanceId }}",
@@ -546,8 +558,8 @@
       "Action": "ACS::ECS::RunCommand",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Run a cloud assistant command of rescuing disk on ECS instance.",
-        "zh-cn": "\u5728\u5b9e\u4f8b\u4e2d\u901a\u8fc7\u4e91\u52a9\u624b\u8fd0\u884c\u6551\u6cbb\u635f\u4f24\u76d8\u7684\u811a\u672c\u3002"
+        "en": "Run a cloud assistant command of rescuing disk on ECS instance",
+        "zh-cn": "在实例中通过云助手运行救治损伤盘的脚本"
       },
       "Properties": {
         "commandContent": "cd /tmp/guestos-scripts-0.0.1;./rescue_system_disk.sh",
@@ -566,8 +578,8 @@
       "Action": "ACS::ExecuteAPI",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Stops the helper instance forcibly.",
-        "zh-cn": "\u5f3a\u5236\u505c\u6b62\u5b9e\u4f8b\u3002"
+        "en": "Stops the helper instance forcibly",
+        "zh-cn": "强制停止实例"
       },
       "Properties": {
         "Service": "ECS",
@@ -583,8 +595,8 @@
       "Action": "ACS::WaitFor",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Waits for the helper instance to enter stoped status.",
-        "zh-cn": "\u7b49\u5f85\u4e34\u65f6\u5b9e\u4f8b\u505c\u6b62\u3002"
+        "en": "Waits for the helper instance to enter stoped status",
+        "zh-cn": "等待临时实例停止"
       },
       "Properties": {
         "Service": "ECS",
@@ -605,8 +617,8 @@
       "Action": "ACS::ECS::DetachDisk",
       "OnError": "deleteStack",
       "Description": {
-        "en": "Detaches data disk from the helper instance.",
-        "zh-cn": "\u5378\u8f7d\u4e34\u65f6\u5b9e\u4f8b\u7684\u6570\u636e\u76d8\u3002"
+        "en": "Detaches data disk from the helper instance",
+        "zh-cn": "卸载临时实例的数据盘"
       },
       "Properties": {
         "instanceId": "{{ untilStackReady.helperInstanceId }}",
@@ -618,8 +630,8 @@
       "Action": "ACS::WaitFor",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Waits for the disk to be detached.",
-        "zh-cn": "\u7b49\u5f85\u78c1\u76d8\u5378\u8f7d\u6210\u529f\u3002"
+        "en": "Waits for the disk to be detached",
+        "zh-cn": "等待磁盘卸载成功"
       },
       "Properties": {
         "Service": "ECS",
@@ -640,8 +652,8 @@
       "Action": "ACS::ExecuteApi",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Delete the ros resource stack.",
-        "zh-cn": "\u5220\u9664Ros\u8d44\u6e90\u6808\u3002"
+        "en": "Delete the ros resource stack",
+        "zh-cn": "删除Ros资源栈"
       },
       "Properties": {
         "Service": "ROS",
@@ -656,8 +668,8 @@
       "Action": "ACS::WaitFor",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Wait for the ros stack status DELETE_COMPLETE.",
-        "zh-cn": "\u7b49\u5f85Ros\u8d44\u6e90\u6808\u81f3\u5220\u9664\u6210\u529f\u3002"
+        "en": "Wait for the ros stack status DELETE_COMPLETE",
+        "zh-cn": "等待Ros资源栈至删除成功"
       },
       "Properties": {
         "Service": "ROS",
@@ -680,8 +692,8 @@
       "Action": "ACS::CheckFor",
       "OnError": "ACS::END",
       "Description": {
-        "en": "Check for the disk to be detached.",
-        "zh-cn": "\u68c0\u67e5\u635f\u4f24\u7684\u7cfb\u7edf\u76d8\u662f\u5426\u53ef\u6302\u8f7d\u3002"
+        "en": "Check for the disk to be detached",
+        "zh-cn": "检查损伤的系统盘是否可挂载"
       },
       "Properties": {
         "Service": "ECS",
@@ -702,8 +714,8 @@
       "Action": "ACS::Choice",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Choose next task by credential type input.",
-        "zh-cn": "\u6839\u636e\u8f93\u5165\u7684\u767b\u5f55\u51ed\u8bc1\u7c7b\u578b\u786e\u5b9a\u540e\u7eed\u4efb\u52a1\u3002"
+        "en": "Choose next task by credential type input",
+        "zh-cn": "根据输入的登录凭证类型确定后续任务"
       },
       "Properties": {
         "DefaultTask": "attachAsSysDiskWithKeyPairName",
@@ -726,8 +738,8 @@
       "OnSuccess": "untilDiskAttached",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Attaches the source system disk to unreachable instance and set PairName credential type for root.",
-        "zh-cn": "\u5c06\u6551\u6cbb\u8fc7\u7684\u635f\u4f24\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\uff0c\u5e76\u4e14\u4e3aroot\u8bbe\u7f6e\u5bc6\u94a5\u5bf9\u5f62\u5f0f\u7684\u767b\u5f55\u51ed\u8bc1\u3002"
+        "en": "Attaches the source system disk to unreachable instance and set PairName credential type for root",
+        "zh-cn": "将救治过的损伤系统盘挂回原实例，并且为root设置密钥对形式的登录凭证"
       },
       "Properties": {
         "Service": "ECS",
@@ -745,8 +757,8 @@
       "Action": "ACS::ExecuteAPI",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Attaches the source system disk to unreachable instance and set Password credential type for root.",
-        "zh-cn": "\u5c06\u6551\u6cbb\u8fc7\u7684\u635f\u4f24\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\uff0c\u5e76\u4e14\u4e3aroot\u8bbe\u7f6e\u81ea\u5b9a\u4e49\u5bc6\u7801\u5f62\u5f0f\u7684\u767b\u5f55\u51ed\u8bc1\u3002"
+        "en": "Attaches the source system disk to unreachable instance and set Password credential type for root",
+        "zh-cn": "将救治过的损伤系统盘挂回原实例，并且为root设置自定义密码形式的登录凭证"
       },
       "Properties": {
         "Service": "ECS",
@@ -764,8 +776,8 @@
       "Action": "ACS::WaitFor",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Waits for the system disk to be attached.",
-        "zh-cn": "\u7b49\u5f85\u7cfb\u7edf\u76d8\u6302\u56de\u539f\u5b9e\u4f8b\u6210\u529f\u3002"
+        "en": "Waits for the system disk to be attached",
+        "zh-cn": "等待系统盘挂回原实例成功"
       },
       "Retries": 7,
       "Properties": {
@@ -787,8 +799,8 @@
       "Action": "ACS::Choice",
       "OnError": "ACS::NEXT",
       "Description": {
-        "en": "Choose next task by original instance status.",
-        "zh-cn": "\u6839\u636e\u5b9e\u4f8b\u521d\u59cb\u72b6\u6001\u9009\u62e9\u540e\u7eed\u4efb\u52a1\u3002"
+        "en": "Choose next task by original instance status",
+        "zh-cn": "根据实例初始状态选择后续任务"
       },
       "Properties": {
         "DefaultTask": "ACS::END",
@@ -809,8 +821,8 @@
       "Name": "startUnreachableInstance",
       "Action": "ACS::ECS::StartInstance",
       "Description": {
-        "en": "Starts the unreachable instance.",
-        "zh-cn": "\u542f\u52a8\u88ab\u6551\u6cbb\u7684\u5b9e\u4f8b\u3002"
+        "en": "Starts the unreachable instance",
+        "zh-cn": "启动被救治的实例"
       },
       "Properties": {
         "instanceId": "{{ unreachableInstanceId}}"
@@ -833,6 +845,48 @@
     "finalHelperInstanceType": {
       "Type": "String",
       "Value": "{{checkAvailableInstanceTypesExist.availableInstanceType}}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "credentialType",
+            "credentialValue",
+            "imagePrefix",
+            "helperInstanceTypes"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "unreachableInstanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select ECS Instance"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

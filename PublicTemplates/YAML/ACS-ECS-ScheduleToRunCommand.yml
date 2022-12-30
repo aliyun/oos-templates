@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Schedule to run command on ECS instances.
-  zh-cn: 定时批量在多台ECS实例上运行云助手命令。
+  en: Schedule to run command on ECS instances
+  zh-cn: 定时批量在多台ECS实例上运行云助手命令
   name-en: ACS-ECS-ScheduleToRunCommand
   name-zh-cn: 定时批量在ECS实例上运行命令
   categories:
@@ -9,43 +9,52 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   triggerCron:
     Description:
-      en: 'The cron expression, refer them here: https://help.aliyun.com/document_detail/169784.html'
-      zh-cn: 'cron表达式，详情参考：https://help.aliyun.com/document_detail/169784.html'
+      en: 'refer them here: https://help.aliyun.com/document_detail/169784.html'
+      zh-cn: '详情参考：https://help.aliyun.com/document_detail/169784.html'
+    Label:
+      en: Cronexpression
+      zh-cn: cron表达式
     Type: String
     AssociationProperty: Cron
     Default: 0 0 12 ? * *
   triggerEndDate:
     Description:
-      en: 'The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.'
-      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddTHH:mm:ssZ'
+      en: 'Format: yyyy-MM-ddTHH:mm:ssZ.'
+      zh-cn: '格式：yyyy-MM-ddTHH:mm:ssZ'
+    Label:
+      en: triggerEndDate
+      zh-cn: 时间触发器结束时间
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
       Format: 'YYYY-MM-DDTHH:mm:ssZ'
   timeZone:
-    Description:
-      en: The time zone.
-      zh-cn: 时区。
+    Label:
+      en: timeZone
+      zh-cn: 时区
     Type: String
     AssociationProperty: TimeZone
     Default: UTC
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   commandType:
-    Description:
-      en: The type of command.
-      zh-cn: 云助手命令类型。
+    Label:
+      en: CommandType
+      zh-cn: 云助手命令类型
     Type: String
     AllowedValues:
       - RunBatScript
@@ -53,16 +62,44 @@ Parameters:
       - RunShellScript
     Default: RunShellScript
   commandContent:
-    Description:
-      en: Command content to run in ECS instance.
-      zh-cn: 在ECS实例中执行的云助手命令。
+    Label:
+      en: CommandContent
+      zh-cn: 云助手命令
     Type: String
+    MaxLength: 16384
     AssociationProperty: Code
     Default: echo hello
-  rateControl:
+  workingDir:
     Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+      en: '<td class="entry colsep-1 rowsep-1">
+            <p class="p">Default value：</p>
+            <ul class="ul">
+            <li class="li"> Linux instances: the home directory of the administrator (the root user), which is<code class="ph codeph">/root</code>.</li>
+            <li class="li"> Windows instances: the directory where the Cloud Assistant client process resides,such as <code class="ph codeph">C:\Windows\System32</code>.</li>
+            </ul>
+          </td>'
+      zh-cn: <td class="entry colsep-1 rowsep-1">
+              <p class="p">默认值：</p>
+              <ul class="ul">
+                <li class="li">Linux系统实例默认在管理员（root用户）的home目录下，即<code class="ph codeph">/root</code>。</li>
+                <li class="li">Windows系统实例默认在云助手客户端进程所在目录，例如<code class="ph codeph">C:\Windows\System32</code>。</li>
+              </ul>
+            </td>
+    Label:
+      en: WorkingDir
+      zh-cn: 命令在ECS实例中的运行目录
+    Type: String
+    Default: ''
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: 超时时间
+    Type: Number
+    Default: 600
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -70,18 +107,18 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: timerTrigger
-    Action: 'ACS::TimerTrigger'
+    Action: ACS::TimerTrigger
     Description:
-      en: Triggers a task as scheduled by specifying Cron expression.
-      zh-cn: 通过指定Cron表达式按计划触发任务。
+      en: Triggers a task as scheduled by specifying type and expression
+      zh-cn: 通过指定触发类型和表达式按计划触发任务
     Properties:
       Type: cron
       Expression: '{{ triggerCron }}'
@@ -89,8 +126,8 @@ Tasks:
       TimeZone: '{{ timeZone }}'
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
@@ -104,13 +141,15 @@ Tasks:
   - Name: runCommand
     Action: 'ACS::ECS::RunCommand'
     Description:
-      en: Execute cloud assistant command.
-      zh-cn: 执行云助手命令。
+      en: Execute cloud assistant command
+      zh-cn: 执行云助手命令
     Properties:
       regionId: '{{ regionId }}'
       commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       commandType: '{{ commandType }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ getInstance.instanceIds }}'
@@ -126,3 +165,37 @@ Outputs:
   commandOutputs:
     Type: List
     Value: '{{ runCommand.commandOutputs }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - timeZone
+          - triggerCron
+          - triggerEndDate
+        Label:
+          default:
+            zh-cn: 定时设置
+            en: Timer Trigger Configure
+      - Parameters:
+          - commandType
+          - commandContent
+          - workingDir
+          - timeout
+        Label:
+          default:
+            zh-cn: 执行命令选型
+            en: run command options
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options
