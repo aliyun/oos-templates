@@ -1,0 +1,420 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Ecs instance related resources (Disk, Image, Snapshot, EIP, ENI) inherit the Tags of the Instance",
+    "zh-cn": "Ecs实例相关资源（Disk、Image、Snapshot、EIP、ENI）继承实例的标签",
+    "name-en": "ACS-TAG-ExtendEcsInstanceTagsByInputParams",
+    "name-zh-cn": "Ecs实例相关资源（Disk、Image、Snapshot、EIP、ENI）继承实例的标签"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "tagKeys": {
+      "Label": {
+        "en": "TagKeys",
+        "zh-cn": "所需继承的标签键列表"
+      },
+      "Type": "List"
+    },
+    "resourceTypes": {
+      "Label": {
+        "en": "ResourceTypes",
+        "zh-cn": "继承标签的资源类型列表"
+      },
+      "Type": "List",
+      "AllowedValues": [
+        "disk",
+        "snapshot",
+        "eni",
+        "eip",
+        "image"
+      ]
+    },
+    "isUpdate": {
+      "Label": {
+        "en": "IsUpdate",
+        "zh-cn": "是否覆盖标签值"
+      },
+      "Description": {
+        "en": "Whether to overwrite the tag value if the tag key is the same",
+        "zh-cn": "如果标签键相同，是否覆盖标签值"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 100,
+        "Concurrency": 50
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstanceTagResources",
+      "Description": {
+        "en": "Query the ECS instances",
+        "zh-cn": "获取ECS实例以及标签信息"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "desData": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[] | {\"Tags\": .Tags.Tag | map(select( .TagKey | test(\"^(?!acs).*\"))) | map(select(.TagKey as $tagKey | {{tagKeys}} | index($tagKey) >=0)) , \"InstanceId\": .InstanceId}?"
+        }
+      }
+    },
+    {
+      "Name": "isTagDisk",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Disk Extend  Tags",
+        "zh-cn": "磁盘是否继承的标签"
+      },
+      "Properties": {
+        "DefaultTask": "isTagSnapshot",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"disk\"])",
+                    "{{resourceTypes}}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "tagDisk"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagDisk",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Update disk tags by ecs instance tags",
+        "zh-cn": "通过云服务器标签同步更新磁盘标签"
+      },
+      "OnSuccess": "isTagSnapshot",
+      "Properties": {
+        "TemplateName": "ACS::ECS::UpdateDiskTagsByEcsInstanceTags",
+        "Parameters": {
+          "regionId": "{{ regionId }}",
+          "instanceId": {
+            "Fn::Jq": [
+              "First",
+              ".InstanceId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "tagKeys": "{{tagKeys}}",
+          "isUpdate": "{{isUpdate}}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{rateControl}}",
+        "Items": "{{getInstanceTagResources.desData}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    },
+    {
+      "Name": "isTagSnapshot",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Snapshot Extend  Tags",
+        "zh-cn": "快照是否继承标签"
+      },
+      "Properties": {
+        "DefaultTask": "isTagENI",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"snapshot\"])",
+                    "{{resourceTypes}}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "tagSnapshot"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagSnapshot",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Update snapshot tags by ecs instance tags",
+        "zh-cn": "通过云服务器标签同步更新快照标签"
+      },
+      "OnSuccess": "isTagENI",
+      "Properties": {
+        "TemplateName": "ACS::ECS::UpdateSnapshotTagsByEcsInstanceTags",
+        "Parameters": {
+          "regionId": "{{regionId}}",
+          "instanceId": {
+            "Fn::Jq": [
+              "First",
+              ".InstanceId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "tagKeys": "{{tagKeys}}",
+          "isUpdate": "{{isUpdate}}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{rateControl}}",
+        "Items": "{{getInstanceTagResources.desData}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    },
+    {
+      "Name": "isTagENI",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "ENI Extend Tags",
+        "zh-cn": "ENI 是否继承标签"
+      },
+      "Properties": {
+        "DefaultTask": "isTagEIP",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"eni\"])",
+                    "{{resourceTypes}}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "tagENI"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagENI",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Update eni tags by ecs instance tags",
+        "zh-cn": "通过云服务器标签同步更新eni标签"
+      },
+      "OnSuccess": "isTagEIP",
+      "Properties": {
+        "TemplateName": "ACS::ECS::UpdateEniTagsByEcsInstanceTags",
+        "Parameters": {
+          "regionId": "{{ regionId }}",
+          "instanceId": {
+            "Fn::Jq": [
+              "First",
+              ".InstanceId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "tagKeys": "{{tagKeys}}",
+          "isUpdate": "{{isUpdate}}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{rateControl}}",
+        "Items": "{{getInstanceTagResources.desData}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    },
+    {
+      "Name": "isTagEIP",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by resource type",
+        "zh-cn": "根据资源类型选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "isTagImage",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"eni\"])",
+                    "{{resourceTypes}}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "tagEIP"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagEIP",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Update eip tags By ecs instance tags",
+        "zh-cn": "通过云服务器标签同步更新EIP标签"
+      },
+      "OnSuccess": "isTagImage",
+      "Properties": {
+        "TemplateName": "ACS::ECS::UpdateEipTagsByEcsInstanceTags",
+        "Parameters": {
+          "regionId": "{{ regionId }}",
+          "instanceId": {
+            "Fn::Jq": [
+              "First",
+              ".InstanceId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "tagKeys": "{{tagKeys}}",
+          "isUpdate": "{{isUpdate}}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{rateControl}}",
+        "Items": "{{getInstanceTagResources.desData}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    },
+    {
+      "Name": "isTagImage",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by resource type",
+        "zh-cn": "根据资源类型选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"image\"])",
+                    "{{resourceTypes}}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "tagImage"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagImage",
+      "Action": "ACS::Template",
+      "Description": {
+        "en": "Update custom image tags By ecs instance tags",
+        "zh-cn": "通过云服务器标签同步更新Image标签(只包括自定义镜像)"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "TemplateName": "ACS::ECS::UpdateCustomImageTagsByEcsInstanceTags",
+        "Parameters": {
+          "regionId": "{{ regionId }}",
+          "instanceId": {
+            "Fn::Jq": [
+              "First",
+              ".InstanceId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "tagKeys": "{{tagKeys}}",
+          "isUpdate": "{{isUpdate}}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{rateControl}}",
+        "Items": "{{getInstanceTagResources.desData}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,20 +1,32 @@
 FormatVersion: OOS-2019-06-01
-Description: Upgrades the database version of an instance.
+Description:
+  name-en: ACS::RDS::UpgradeDbInstanceEngineVersion
+  name-zh-cn: 升级实例的数据库版本
+  en: Upgrades the database version of an instance
+  zh-cn: 升级实例的数据库版本
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   dBInstanceId:
-    Description: The ID of DB instance will handle.
+    Description:
+      en: The ID of DB instance
+      zh-cn: DB实例ID
     Type: String
   engineVersion:
-    Description: The engine version of DB Instance will be upgraded.
+    Description:
+      en: The engine version of DB Instance will be upgraded
+      zh-cn: 升级DB实例的引擎版本
     Type: String
 Tasks:
 - Name: checkForInstanceReady
   Action: ACS::CheckFor
-  Description: Checks whether the RDS instance in running status.
+  Description:
+    en: Checks whether the RDS instance in Running status
+    zh-cn: 检查RDS实例是否处于运行中状态
   Properties:
     Service: RDS
     API: DescribeDBInstanceAttribute
@@ -26,7 +38,9 @@ Tasks:
     PropertySelector: Items.DBInstanceAttribute[].DBInstanceStatus
 - Name: upgradeDBInstanceEngineVersion
   Action: ACS::ExecuteAPI
-  Description: Upgrades the database version of an instance.
+  Description:
+    en: Upgrades the database version of an instance
+    zh-cn: 升级实例的数据库版本
   Properties:
     Service: RDS
     API: UpgradeDBInstanceEngineVersion

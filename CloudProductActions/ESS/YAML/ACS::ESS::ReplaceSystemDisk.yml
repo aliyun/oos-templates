@@ -1,32 +1,48 @@
 FormatVersion: OOS-2019-06-01
-Description: Replaces the system disk of an ECS instance.
+Description:
+  name-en: ACS::ESS::ReplaceSystemDisk
+  name-zh-cn: 伸缩组内ECS实例更换系统盘
+  en: Replaces the system disk of an ECS instance in scaling group
+  zh-cn: 伸缩组内ECS实例更换系统盘
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   rollBack:
-    Description: The ID of region.
+    Description:
+      en: Whether to roll back
+      zh-cn: 是否回滚
     Type: String
     AllowedValues:
       - 'true'
       - 'false'
     Default: 'false'
   imageId:
-    Description: The ID of image.
+    Description:
+      en: The ID of image
+      zh-cn: 镜像ID
     Type: String
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   scalingGroupId:
-    Description: The id of scaling group.
+    Description:
+      en: The ID of scaling group
+      zh-cn: 伸缩组ID
     Type: String
 Tasks:
 - Name: viewInstanceLifecycleState
   Action: ACS::ExecuteApi
-  Description: Views ECS instance lifecycle status.
+  Description:
+    en: Queries ECS instance lifecycle status
+    zh-cn: 获取实例生命周期挂钩的状态
   Properties:
     Service: ESS
     API: DescribeScalingInstances
@@ -36,23 +52,28 @@ Tasks:
   Outputs:
     lifecycleState:
       Type: String
-      ValueSelector: ScalingInstances.ScalingInstance[].LifecycleState
+      ValueSelector: 'ScalingInstances.ScalingInstance[].LifecycleState'
 - Name: whetherLifecycleStateIsStandby
-  Action: 'ACS::Choice'
-  Description: Choose next task by lifecycle status.
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by lifecycle status
+    zh-cn: 根据生命周期挂钩的状态选择下一个任务
   Properties:
     DefaultTask: enterStandby
     Choices:
       - When:
-          Fn::Equals:
-            - 'Standby'
+          'Fn::Equals':
+            - Standby
             - '{{ viewInstanceLifecycleState.lifecycleState }}'
         NextTask: viewInstanceStatus
 - Name: enterStandby
   Action: ACS::WaitFor
-  Description: Enter standby.
-  Retries: 15
+  Description:
+    en: Waits for ECS instance enter to standby status
+    zh-cn: 等待实例进入备用中状态
+  Retries: 30
   Delay: 10
+  DelayType: Constant
   Properties:
     Service: ESS
     API: EnterStandby
@@ -65,10 +86,12 @@ Tasks:
       - CodeNotExists
     StopRetryValues:
       - OtherCodes
-    PropertySelector: '.| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end'
+    PropertySelector: .| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end
 - Name: viewInstanceStatus
   Action: ACS::ExecuteApi
-  Description: Views ECS instance status.
+  Description:
+    en: Queries ECS instance status
+    zh-cn: 获取实例的运行状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -79,21 +102,25 @@ Tasks:
   Outputs:
     instanceStatus:
       Type: String
-      ValueSelector: Instances.Instance[].Status
+      ValueSelector: 'Instances.Instance[].Status'
 - Name: whetherInstanceStatusIsRunning
-  Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by instance status
+    zh-cn: 根据实例状态选择下一个任务
   Properties:
     DefaultTask: stopInstance
     Choices:
       - When:
-          Fn::Equals:
-            - 'Stopped'
+          'Fn::Equals':
+            - Stopped
             - '{{ viewInstanceStatus.instanceStatus }}'
-        NextTask: getKeyPairName
+        NextTask: describeScalingGroups
 - Name: stopInstance
   Action: ACS::ExecuteAPI
-  Description: Stops the ECS instance with the specified instance ID.
+  Description:
+    en: Stops the ECS instance
+    zh-cn: 停止实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -102,20 +129,24 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter stopped status.
+  Description:
+    en: Waits for the ECS instance to enter stopped status
+    zh-cn: 等待实例进入stopped状态
   Properties:
     Service: ECS
     API: DescribeInstances
     Parameters:
       RegionId: '{{ regionId }}'
       InstanceIds:
-      - '{{ instanceId }}'
+        - '{{ instanceId }}'
     DesiredValues:
-    - Stopped
-    PropertySelector: Instances.Instance[].Status
-- Name: getActiveScalingConfigurationId
-  Action: 'ACS::ExecuteAPI'
-  Description: Views scalingConfigurationId.
+      - Stopped
+    PropertySelector: 'Instances.Instance[].Status'
+- Name: describeScalingGroups
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Queries scaling group
+    zh-cn: 获取伸缩组信息
   Properties:
     Service: ESS
     API: DescribeScalingGroups
@@ -125,22 +156,98 @@ Tasks:
     configurationId:
       Type: String
       ValueSelector: 'ScalingGroups.ScalingGroup[].ActiveScalingConfigurationId'
-- Name: getKeyPairName
-  Action: 'ACS::ExecuteAPI'
-  Description: Views keypair.
+    launchTemplateId:
+      Type: String
+      ValueSelector: 'ScalingGroups.ScalingGroup[].LaunchTemplateId'
+    launchTemplateVersion:
+      Type: String
+      ValueSelector: 'ScalingGroups.ScalingGroup[].LaunchTemplateVersion'
+    activeScalingConfigurationId:
+      Type: String
+      ValueSelector: 'ScalingGroups.ScalingGroup[].ActiveScalingConfigurationId'
+- Name: whetherToDescribeLaunchTemplateVersions
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by launch template id
+    zh-cn: 根据启动模板的ID选择下一个任务
+  Properties:
+    DefaultTask: describeLaunchTemplates
+    Choices:
+      - When:
+          'Fn::Equals':
+            - Null
+            - '{{ describeScalingGroups.launchTemplateId }}'
+        NextTask: describeScalingConfigurations
+- Name: describeLaunchTemplates
+  Action: 'ACS::ExecuteApi'
+  Description:
+    en: Queries launtch template version info
+    zh-cn: 获取启动模板版本信息
+  Properties:
+    Service: ECS
+    API: DescribeLaunchTemplates
+    Parameters:
+      RegionId: '{{ regionId }}'
+      LaunchTemplateId:
+        - '{{ describeScalingGroups.launchTemplateId }}'
+  Outputs:
+    defaultVersionNumber:
+      Type: String
+      ValueSelector: 'LaunchTemplateSets.LaunchTemplateSet[].DefaultVersionNumber'
+    latestVersionNumber:
+      Type: String
+      ValueSelector: 'LaunchTemplateSets.LaunchTemplateSet[].LatestVersionNumber'
+    versionInfo:
+      Type: String
+      ValueSelector: 'LaunchTemplateSets.LaunchTemplateSet[]'
+- Name: describeLaunchTemplateVersions
+  Action: ACS::ExecuteApi
+  OnSuccess: replaceSystemDisk
+  Description:
+    en: Queries userdata by launtch template
+    zh-cn: 通过启动模板获取UserData
+  Properties:
+    Service: ECS
+    API: DescribeLaunchTemplateVersions
+    Parameters:
+      RegionId: '{{ regionId }}'
+      LaunchTemplateId: '{{ describeScalingGroups.launchTemplateId }}'
+      LaunchTemplateVersion:
+        - 'Fn::Jq':
+            - First
+            - 'if "{{describeScalingGroups.launchTemplateVersion}}" == "Default" then "{{describeLaunchTemplates.defaultVersionNumber}}" elif "{{describeScalingGroups.launchTemplateVersion}}" == "Latest" then "{{ describeLaunchTemplates.latestVersionNumber }}" else "{{describeScalingGroups.launchTemplateVersion}}" end'
+            - '{{ describeLaunchTemplates.versionInfo }}'
+  Outputs:
+    userData:
+      Type: String
+      ValueSelector: 'LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.UserData'
+    keyPairName:
+      Type: String
+      ValueSelector: 'LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData.KeyPairName'
+- Name: describeScalingConfigurations
+  Action: ACS::ExecuteApi
+  Description:
+    en: Queries scaling configurations
+    zh-cn: 获取伸缩配置信息
   Properties:
     Service: ESS
     API: DescribeScalingConfigurations
     Parameters:
+      RegionId: '{{ regionId }}'
       ScalingGroupId: '{{ scalingGroupId }}'
-      ScalingConfigurationId1: '{{ getActiveScalingConfigurationId.configurationId }}'
+      ScalingConfigurationId1: '{{ describeScalingGroups.activeScalingConfigurationId }}'
   Outputs:
+    userData:
+      Type: String
+      ValueSelector: 'ScalingConfigurations.ScalingConfiguration[].UserData'
     keyPairName:
       Type: String
       ValueSelector: 'ScalingConfigurations.ScalingConfiguration[].KeyPairName'
 - Name: replaceSystemDisk
   Action: ACS::ExecuteAPI
-  Description: Replaces the system disk of an ECS instance.
+  Description:
+    en: Replaces the system disk of ECS instance
+    zh-cn: 更换ECS实例的系统盘
   Properties:
     Service: ECS
     API: ReplaceSystemDisk
@@ -148,27 +255,101 @@ Tasks:
       RegionId: '{{ regionId }}'
       ImageId: '{{ imageId }}'
       InstanceId: '{{ instanceId }}'
-      KeyPairName: '{{ getKeyPairName.keyPairName }}'
+      KeyPairName:
+        'Fn::If':
+          - 'Fn::Equals':
+              - Null
+              - '{{ describeScalingGroups.launchTemplateId }}'
+          - '{{ describeScalingConfigurations.keyPairName }}'
+          - '{{ describeLaunchTemplateVersions.keyPairName }}'
   Outputs:
     diskId:
       Type: String
       ValueSelector: DiskId
 - Name: untilNewDiskReady
   Action: ACS::WaitFor
-  Description: Waits for the disks to be created successfully.
+  Description:
+    en: Waits for the disks to be In_use satus
+    zh-cn: 等待新系统盘进入使用中状态
   Properties:
     Service: ECS
     API: DescribeDisks
     Parameters:
       RegionId: '{{ regionId }}'
       DiskIds:
-      - '{{ replaceSystemDisk.diskId }}'
+        - '{{ replaceSystemDisk.diskId }}'
     DesiredValues:
-    - In_use
-    PropertySelector: Disks.Disk[].Status
+      - In_use
+    PropertySelector: 'Disks.Disk[].Status'
+- Name: whetherToModifyInstanceUserData
+  Action: ACS::Choice
+  Description:
+    en: Whether to modify instance userdata by launch template id
+    zh-cn: 根据启动模板的ID选择是否修改ECS实例的UserData
+  Properties:
+    DefaultTask: whetherToModifyECSInstanceUserDataByLaunchTemplate
+    Choices:
+      - When:
+          'Fn::Equals':
+            - Null
+            - '{{ describeScalingGroups.launchTemplateId }}'
+        NextTask: whetherToModifyECSInstanceUserDataByScalingConfigurations
+- Name: whetherToModifyECSInstanceUserDataByLaunchTemplate
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by LaunchTemplate UserData
+    zh-cn: 根据启动模板的UserDate选择下一个任务
+  Properties:
+    DefaultTask: modifyInstanceUserdataByLaunchTemplate
+    Choices:
+      - When:
+          'Fn::Equals':
+            - Null
+            - '{{ describeLaunchTemplateVersions.userData }}'
+        NextTask: startInstance
+- Name: modifyInstanceUserdataByLaunchTemplate
+  Action: ACS::ExecuteApi
+  OnSuccess: startInstance
+  Description:
+    en: Modifies ECS instance UserData by LaunchTemplate
+    zh-cn: 根据启动模板信息修改ECS实例的UserData
+  Properties:
+    Service: ECS
+    API: ModifyInstanceAttribute
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ instanceId }}'
+      UserData: '{{ describeLaunchTemplateVersions.userData }}'
+- Name: whetherToModifyECSInstanceUserDataByScalingConfigurations
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by ScalingConfigurations UserData
+    zh-cn: 根据伸缩配置中的UserData选择下一个任务
+  Properties:
+    DefaultTask: modifyInstanceUserdataByScalingConfigurations
+    Choices:
+      - When:
+          'Fn::Equals':
+            - Null
+            - '{{ describeScalingConfigurations.userData }}'
+        NextTask: startInstance
+- Name: modifyInstanceUserdataByScalingConfigurations
+  Action: ACS::ExecuteApi
+  Description:
+    en: Modifies ECS instance UserData by ScalingConfigurations
+    zh-cn: 根据伸缩配置信息修改ECS实例的UserData
+  Properties:
+    Service: ECS
+    API: ModifyInstanceAttribute
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ instanceId }}'
+      UserData: '{{ describeScalingConfigurations.userData }}'
 - Name: startInstance
   Action: ACS::ExecuteAPI
-  Description: Starts an ECS instance.
+  Description:
+    en: Starts the ECS instance
+    zh-cn: 启动实例
   Properties:
     Service: ECS
     API: StartInstance
@@ -177,44 +358,53 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceToRunning
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter running status.
+  Description:
+    en: Waits for the ECS instance to enter Running status
+    zh-cn: 等待实例进入运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances
     Parameters:
       RegionId: '{{ regionId }}'
       InstanceIds:
-      - '{{ instanceId }}'
+        - '{{ instanceId }}'
     DesiredValues:
-    - Running
-    PropertySelector: Instances.Instance[].Status
+      - Running
+    PropertySelector: 'Instances.Instance[].Status'
 - Name: whetherToRollbackExitStandBy
-  Action: 'ACS::Choice'
-  Description: Choose next task by rollback status.
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by rollback parameter
+    zh-cn: 根据回滚参数选择下一个任务
   Properties:
     DefaultTask: whetherToExitStandBy
     Choices:
       - When:
-          Fn::Equals:
+          'Fn::Equals':
             - 'true'
             - '{{ rollBack }}'
         NextTask: exitStandBy
 - Name: whetherToExitStandBy
-  Action: 'ACS::Choice'
-  Description: Choose next task by lifecycle status.
+  Action: ACS::Choice
+  Description:
+    en: Choose next task by lifecycle status
+    zh-cn: 根据生命周期挂钩状态选择下一个任务
   Properties:
     DefaultTask: exitStandBy
     Choices:
       - When:
-          Fn::Equals:
-            - 'Standby'
+          'Fn::Equals':
+            - Standby
             - '{{ viewInstanceLifecycleState.lifecycleState }}'
-        NextTask: ACS::END
+        NextTask: 'ACS::END'
 - Name: exitStandBy
   Action: ACS::WaitFor
-  Description: Exit standby.
-  Retries: 15
+  Description:
+    en: Modifies the state of ECS instances in a scaling group from Standby to Running
+    zh-cn: 设置伸缩组内处于备用状态的ECS实例为运行中状态
+  Retries: 30
   Delay: 10
+  DelayType: Constant
   Properties:
     Service: ESS
     API: ExitStandBy
@@ -227,7 +417,7 @@ Tasks:
       - CodeNotExists
     StopRetryValues:
       - OtherCodes
-    PropertySelector: '.| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end'
+    PropertySelector: .| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end
 Outputs:
   newSystemDiskId:
     Type: String

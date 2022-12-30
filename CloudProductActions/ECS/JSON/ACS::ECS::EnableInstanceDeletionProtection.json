@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Modify instance deletionProtection attribute.",
+  "Description": {
+    "name-en": "ACS::ECS::EnableInstanceDeletionProtection",
+    "name-zh-cn": "修改ECS实例释放保护属性",
+    "en": "Modify ECS instance DeletionProtection.",
+    "zh-cn": "修改ECS实例释放保护属性。"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The id of ECS instances.",
+      "Description": {
+        "en": "The ID of ECS instances",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "deletionProtection": {
-      "Description": "The status of deletion protection.",
+      "Description": {
+        "en": "The status of deletion protection",
+        "zh-cn": "删除保护是否开启"
+      },
       "Type": "Boolean"
     }
   },
@@ -20,7 +34,10 @@
     {
       "Name": "getInstanceStatus",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views the ECS instances by instance id.",
+      "Description": {
+        "en": "Queries the ECS instances DeletionProtection",
+        "zh-cn": "获取实例释放保护属性"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -41,7 +58,10 @@
     {
       "Name": "whetherInstanceIsReady",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by instance status.",
+      "Description": {
+        "en": "Choose next task by instance deletion protection status",
+        "zh-cn": "根据实例删除保护状态选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "modifyInstanceAttribute",
         "Choices": [
@@ -60,7 +80,10 @@
     {
       "Name": "modifyInstanceAttribute",
       "Action": "ACS::ExecuteApi",
-      "Description": "Modify the information of an ECS instance.",
+      "Description": {
+        "en": "Modifies the ECS instance DeletionProtection",
+        "zh-cn": "修改ECS实例释放保护属性"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "ModifyInstanceAttribute",

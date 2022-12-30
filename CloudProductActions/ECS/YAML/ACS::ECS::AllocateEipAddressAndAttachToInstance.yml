@@ -1,25 +1,39 @@
 FormatVersion: OOS-2019-06-01
-Description: Create the eip and bind the to instance.
+Description:
+  name-en: ACS::ECS::AllocateEipAddressAndAttachToInstance
+  name-zh-cn: 创建并绑定EIP到ECS实例
+  en: Create the eip and bind it to ECS instance
+  zh-cn: 创建EIP并绑定到ECS实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region.
+      zh-cn: 地域ID
     Type: String
   instanceId:
-    Description: The ecs instance id.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
   internetChargeType:
-    Description: EIP measurement method.
+    Description:
+      en: EIP measurement method
+      zh-cn: EIP的计费方式
     Type: String
     AllowedValues:
       - PayByBandwidth
       - PayByTraffic
     Default: PayByBandwidth
   bandwidth:
-    Description: Peak bandwidth of eip.
+    Description:
+      en: Peak bandwidth of eip
+      zh-cn: EIP的带宽峰值
     Type: Number
     Default: 5
   tags:
-    Description: The tags for EIP(format:[{"Key":"test1","Value":"test1"},{"Key":"test2","Value":"test2"}]).
+    Description:
+      en: The tags for EIP(format:[{"Key":"test1","Value":"test1"},{"Key":"test2","Value":"test2"}])
+      zh-cn: 'EIP的标签，格式: [{"Key":"test1","Value":"test1"},{"Key":"test2","Value":"test2"}]'
     Type: Json
     Default: [{"Key":"oos_generate","Value":"{{ACS::ExecutionId}}"}]
 Tasks:
@@ -28,7 +42,9 @@ Tasks:
     Delay: 15
     Retries: 7
     DelayType: Constant
-    Description: Wait ECS instance is in the running or stopped status.
+    Description:
+      en: Waits for ECS instance enter to the Running or Stopped status
+      zh-cn: 等待ECS实例进入Running或Stopped状态
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -42,7 +58,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: allocateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Apply for eip.
+    Description:
+      en: Allocates an EIP
+      zh-cn: 获取一个弹性公网IP
     Properties:
       Service: ECS
       API: AllocateEipAddress
@@ -56,7 +74,9 @@ Tasks:
         ValueSelector: .AllocationId
   - Name: waitEipAddressReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the EIP enter to Available status
+      zh-cn: 等待EIP进入Available状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -70,9 +90,11 @@ Tasks:
         - Available
       PropertySelector: 'EipAddresses.EipAddress[].Status'
   - Name: tagResources
-    Action: 'ACS::ExecuteAPI'
-    Description: Add tags on EIP.
-    OnError: waitEipAddressAvailable
+    Action: 'ACS::CheckFor'
+    Description:
+      en: Adds tags on EIP
+      zh-cn: 给EIP打标签
+    OnError: associateEipAddress
     Properties:
       Service: VPC
       API: TagResources
@@ -82,9 +104,19 @@ Tasks:
         ResourceId:
           - '{{ allocateEipAddress.allocationId }}'
         Tags: '{{ tags }}'
+      DesiredValues:
+        - true
+        - false
+      PropertySelector: .Code | not
+    Outputs:
+      code:
+        Type: String
+        ValueSelector: .Code | not
   - Name: associateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Bind the eip to instance.
+    Description:
+      en: Binds the EIP to instance
+      zh-cn: 绑定EIP到实例
     OnError: unassociateEipAddress
     Properties:
       Service: ECS
@@ -95,7 +127,9 @@ Tasks:
         InstanceId: '{{ instanceId }}'
   - Name: waitEipAddressInUse
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the eip util In_use
+      zh-cn: 等待EIP到达In_use状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -112,7 +146,9 @@ Tasks:
       PropertySelector: 'EipAddresses.EipAddress[].Status'
   - Name: unassociateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Unasscocatie the eip from network interface.
+    Description:
+      en: Unasscocaties the eip from instance
+      zh-cn: 从实例上解绑EIP
     OnError: waitEipAddressAvailable
     Properties:
       Service: ECS
@@ -123,7 +159,9 @@ Tasks:
         InstanceId: '{{ instanceId }}'
   - Name: waitEipAddressAvailable
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the eip util Available
+      zh-cn: 等待EIP到达Available状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -139,7 +177,9 @@ Tasks:
       PropertySelector: 'EipAddresses.EipAddress[].Status'
   - Action: 'ACS::ExecuteAPI'
     Name: releaseEipAddress
-    Description: Release the eip.
+    Description:
+      en: Releases the EIP
+      zh-cn: 释放EIP
     Properties:
       Service: ECS
       API: ReleaseEipAddress

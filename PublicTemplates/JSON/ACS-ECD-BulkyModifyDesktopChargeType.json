@@ -1,0 +1,173 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky Modify ECD desktop charge type",
+    "zh-cn": "批量修改云桌面的计费方式",
+    "name-en": "ACS-ECD-BulkyModifyDesktopChargeType",
+    "name-zh-cn": "批量修改云桌面的计费方式"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopIds": {
+      "Label": {
+        "en": "DesktopIds",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "List"
+    },
+    "desktopChargeType": {
+      "Description": {
+        "en": "Currently only supports conversion from postpaid to monthly prepaid, and the value is PrePaid",
+        "zh-cn": "目前仅支持由按量付费转换为包年包月，取值为PrePaid"
+      },
+      "Label": {
+        "en": "DesktopChargeType",
+        "zh-cn": "云桌面要转换成的计费方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "PrePaid"
+      ],
+      "Default": "PrePaid"
+    },
+    "periodUnit": {
+      "Label": {
+        "en": "PeriodUnit",
+        "zh-cn": "包年包月计费方式的时长单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month",
+        "Year"
+      ]
+    },
+    "period": {
+      "Description": {
+        "en": "Valid values: Valid values when PeriodUnit is set to Week: 1. Valid values when PeriodUnit is set to Month: 1, 2, 3, and 6. Valid values when PeriodUnit is set to Month: 1, 2, 3, 4, and 5.",
+        "zh-cn": "取值范围： 如果PeriodUnit为Week，该参数的取值范围为{“1”}。 如果PeriodUnit为Month，该参数的取值范围为{“1”, “2”, “3”, “6”}。 如果PeriodUnit为Year，该参数的取值范围为{“1”, “2”, “3”, “4”, “5”}。"
+      },
+      "Label": {
+        "en": "Period",
+        "zh-cn": "购买包年包月资源的时长"
+      },
+      "Type": "Number",
+      "AllowedValues": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "autoPay": {
+      "Description": {
+        "en": "Valid values: true: enables automatic payment. Make sure that you have sufficient balance in your account. Otherwise, abnormal orders are generated. false: generates the order with no payment made. You can log on to the EDS console and complete the payment based on the order number.",
+        "zh-cn": "取值范围： true：自动支付。请确保账户余额充足，否则会产生异常订单。 false：只产生订单，不支付。您可以根据返回的订单号登录控制台进行支付。"
+      },
+      "Label": {
+        "en": "AutoPay",
+        "zh-cn": "是否自动支付"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyDesktopChargeType",
+      "Description": {
+        "en": "Modify desktop charge type",
+        "zh-cn": "修改云桌面计费方式"
+      },
+      "Action": "ACS::ECD::ModifyDesktopChargeType",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ ACS::TaskLoopItem }}",
+        "desktopChargeType": "{{ desktopChargeType }}",
+        "period": "{{ period }}",
+        "periodUnit": "{{ periodUnit }}",
+        "autoPay": "{{ autoPay }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ desktopIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "desktopChargeType",
+            "periodUnit",
+            "period",
+            "autoPay"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "desktopIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择云桌面",
+              "en": "Select ECD Desktops"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

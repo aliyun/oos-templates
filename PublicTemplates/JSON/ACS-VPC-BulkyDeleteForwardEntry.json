@@ -1,0 +1,188 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Del the specified risk ports mapped on dnat table",
+    "zh-cn": "删除NAT网关上DNAT映射的指定风险端口",
+    "name-en": "ACS-VPC-BulkyDeleteForwardEntry",
+    "name-zh-cn": "删除NAT网关上DNAT映射的指定风险端口",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "The id of natgateway instance.",
+        "zh-cn": "NAT网关实例ID"
+      },
+      "Type": "String"
+    },
+    "port": {
+      "Label": {
+        "en": "The risk port",
+        "zh-cn": "风险端口(后端端口)"
+      },
+      "Type": "List"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeNatGateways",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query dnat table id of the natgateway instance",
+        "zh-cn": "查询NAT网关实例的DNAT表ID"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeNatGateways",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "NatGatewayId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "ForwardTableIds": {
+          "Type": "String",
+          "ValueSelector": ".NatGateways.NatGateway[].ForwardTableIds.ForwardTableId[]"
+        }
+      }
+    },
+    {
+      "Name": "describeForwardTableEntries",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the dnat entry id which matches the risk ports",
+        "zh-cn": "查询命中风险端口的DNAT条目的ID"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeForwardTableEntries",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ForwardTableId": "{{ describeNatGateways.ForwardTableIds }}",
+          "InternalPort": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ port }}",
+        "Outputs": {
+          "ForwardEntryId-all": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "ForwardEntryId"
+          }
+        }
+      },
+      "Outputs": {
+        "ForwardEntryId": {
+          "Type": "Json",
+          "ValueSelector": ".ForwardTableEntries.ForwardTableEntry[].ForwardEntryId"
+        }
+      }
+    },
+    {
+      "Name": "deleteForwardEntry",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Del the specified risk ports mapped on dnat table",
+        "zh-cn": "删除NAT网关上DNAT映射的指定风险端口"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "DeleteForwardEntry",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ForwardEntryId": "{{ ACS::TaskLoopItem }}",
+          "ForwardTableId": "{{ describeNatGateways.ForwardTableIds }}"
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            "foreach .[] as $item ([[],[]]; if $item == null then [[],.[0]] else [(.[0] + [$item]),[]] end; if $item == null then .[1] else empty end) | .[]",
+            "{{ describeForwardTableEntries.ForwardEntryId-all }}"
+          ]
+        },
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        }
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "port"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

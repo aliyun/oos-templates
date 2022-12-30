@@ -1,56 +1,56 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Creates one or more ECS instances with approval.
-  zh-cn: 通过审批后创建ECS实例。
+  en: Creates one or more ECS instances with approval
+  zh-cn: 通过审批后创建ECS实例
   name-en: ACS-ECS-RunInstancesWithApproval
   name-zh-cn: 通过审批后创建ECS实例
   categories:
     - cost_manage
 Parameters:
   accessToken:
-    Description:
-      en: Dingtalk access_token to be notified.
-      zh-cn: 钉钉访问令牌。
+    Label:
+      en: AccessToken
+      zh-cn: 钉钉访问令牌
     Type: String
     AllowedPattern: '[A-Za-z0-9]*'
   imageId:
-    Description:
-      en: The image ID for the ECS instances.
-      ah_cn: 镜像ID。
+    Label:
+      en: ImageId
+      zh-cn: 镜像ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
   instanceType:
-    Description:
-      en: The instance type for the ECS instances.
-      zh-cn: 实例类型。
+    Label:
+      en: InstanceType
+      zh-cn: 实例类型
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
     AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
   securityGroupId:
-    Description:
-      en: The security group ID for the ECS instances.
-      zh-cn: 安全组ID。
+    Label:
+      en: SecurityGroupId
+      zh-cn: 安全组ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
   vSwitchId:
-    Description:
-      en: The virtual switch ID for the ECS instances。
-      zh-cn: 交换机ID。
+    Label:
+      en: VSwitchId
+      zh-cn: 交换机ID
     Type: String
     AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
     AssociationPropertyMetadata:
       Filters:
         - SecurityGroupId: securityGroupId
   amount:
-    Description:
-      en: The specified number of instances you want to create.
-      zh-cn: 实例数量。
+    Label:
+      en: Amount
+      zh-cn: 实例数量
     Type: Number
     Default: 1
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -58,8 +58,8 @@ Tasks:
 - Name: approvalForRunInstances
   Action: ACS::Approve
   Description:
-    en: Approval to lunch ECS instances.
-    zh-cn: 钉钉审批。
+    en: Approval to lunch ECS instances
+    zh-cn: 钉钉审批
   Properties:
     NotifyType: WebHook
     WebHook:
@@ -73,8 +73,8 @@ Tasks:
 - Name: runInstances
   Action: ACS::ECS::RunInstances
   Description:
-    en: Creates one or more ECS instances.
-    zh-cn: 创建实例。
+    en: Creates one or more ECS instances
+    zh-cn: 创建实例
   Properties:
     imageId: '{{ imageId }}'
     instanceType: '{{ instanceType }}'
@@ -89,3 +89,28 @@ Outputs:
   instanceId:
     Type: String
     Value: '{{ runInstances.instanceId }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - accessToken
+        Label:
+          default:
+            zh-cn: 钉钉访问令牌
+            en: Dingtalk Access Token
+      - Parameters:
+          - imageId
+          - instanceType
+          - securityGroupId
+          - vSwitchId
+          - amount
+        Label:
+          default:
+            zh-cn: 创建实例选型
+            en: Run Command Options
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

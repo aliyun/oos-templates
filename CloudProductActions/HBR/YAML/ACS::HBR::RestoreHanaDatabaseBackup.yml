@@ -1,36 +1,61 @@
 FormatVersion: OOS-2019-06-01
-Description: 'Restore a backup of the source instance database to the test instance, and check the recovery status.'
+Description:
+  name-en: ACS::HBR::RestoreHanaDatabaseBackup
+  name-zh-cn: 将源实例数据库的备份恢复到测试实例，并检查恢复状态
+  en: 'Restore a backup of the source instance database to the test instance,
+    and check the recovery status'
+  zh-cn: 将源实例数据库的备份恢复到测试实例，并检查恢复状态
 Parameters:
   vaultId:
-    Description: 'Backup vault ID.'
+    Description:
+      en: Backup vault ID
+      zh-cn: 备份库ID
     Type: String
   sourceClusterId: 
-    Description: 'Source HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
+    Description:
+      en: 'Source HANA instance ID, can be found in the Hybrid Backup Recovery Console
+    - ECS Application Backup - Instance Name/ID'
+      zh-cn: 源HANA实例ID，可以在混合备份恢复控制台中找到- ECS应用程序备份-实例名称/ID
     Type: String
   clusterId:
-    Description: 'Destination HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
+    Description:
+      en: 'Destination HANA instance ID, can be found in the Hybrid Backup Recovery
+    Console - ECS Application Backup - Instance Name/ID'
+      zh-cn: 目标HANA实例ID，可以在混合备份恢复控制台中找到- ECS应用程序备份-实例名称/ID
     Type: String
   masterClientId:
-    Description: 'Destination HANA instance client ID'
+    Description:
+      en: Destination HANA instance client ID
+      zh-cn: 目的HANA实例客户端ID
     Type: String
   databaseName:
-    Description: 'Database name'
+    Description:
+      en: Database name
+      zh-cn: 数据库名称
     Type: String
   HANASID:
-    Type: String
     ConstraintDescription: '3 characters,can including capital letter or number, must starting with capital letter'
-    Description: 'HANA system Id'
+    Description:
+      en: HANA system Id
+      zh-cn: HANA系统Id
+    Type: String
     AllowedPattern: '^[A-Z][A-Z0-9][A-Z0-9]$'
   sourceSystemName:
+    Description:
+      en: 'Please input source name in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". E.g, DB1@SID.'
+      zh-cn: '请输入源名称格式为"<源SAP HANA数据库名称>@<源SAP HANA系统Id>"。例如,DB1@SID。'
     Type: String
-    Description: 'Please input source name in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". E.g, DB1@SID.'
   HANAInstanceServerId:
+    Description:
+      en: Destination HANA instance ECS ID
+      zh-cn: 目标HANAECS实例ID
     Type: String
-    Description: 'Destination HANA instance ECS ID'
 Tasks:
   - Name: updateHanaBackupSetting
     Action: 'ACS::ExecuteAPI'
-    Description: 'Update HANA database backup settings'
+    Description:
+      en: Update HANA database backup settings
+      zh-cn: 更新HANA数据库备份设置
     Properties:
       Service: HBR
       API: UpdateHanaBackupSetting
@@ -47,7 +72,9 @@ Tasks:
         LogBackupTimeout: 900
   - Name: describeHanaBackupSetting
     Action: 'ACS::WaitFor'
-    Description: 'Wait for setting HANA database backup'
+    Description:
+      en: Wait for setting HANA database backup
+      zh-cn: 等待HANA数据库备份
     Properties:
       Service: HBR
       API: DescribeHanaBackupSetting
@@ -63,7 +90,9 @@ Tasks:
     Retries: 5
   - Name: getHanaBackupId
     Action: 'ACS::ExecuteAPI'
-    Description: 'Get ID of the last backup'
+    Description:
+      en: Get ID of the last backup
+      zh-cn: 获取最后一个备份的ID
     Properties:
       Service: HBR
       API: DescribeHanaBackupsAsync
@@ -85,7 +114,9 @@ Tasks:
         ValueSelector: TaskId
   - Name: waitForDescribeHanaBackups
     Action: 'ACS::WaitFor'
-    Description: 'Get ID of the last backup'
+    Description:
+      en: Get ID of the last backup
+      zh-cn: 获取最后一个备份的ID
     DelayType: Constant
     Delay: 5
     Retries: 20
@@ -106,7 +137,9 @@ Tasks:
         ValueSelector: Result
   - Name: startToRestoreBackup
     Action: 'ACS::ExecuteAPI'
-    Description: 'Start to restore backup'
+    Description:
+      en: Start to restore backup
+      zh-cn: 开始恢复备份
     Properties:
       Service: HBR
       API: CreateHanaRestore
@@ -152,7 +185,9 @@ Tasks:
             - '{{ waitForDescribeHanaBackups.Result }}'
   - Name: waitForRestoreBackup
     Action: 'ACS::WaitFor'
-    Description: 'Wait for restoring backup'
+    Description:
+      en: Wait for restoring backup
+      zh-cn: 等待恢复备份
     Retries: 300
     Delay: 120
     DelayType: Constant

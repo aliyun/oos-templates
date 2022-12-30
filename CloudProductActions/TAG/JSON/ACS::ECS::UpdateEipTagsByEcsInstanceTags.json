@@ -1,0 +1,196 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::UpdateEipTagsByEcsInstanceTags",
+    "name-zh-cn": "通过云服务器标签同步更新EIP标签",
+    "en": "Update eip tags By ecs instance tags",
+    "zh-cn": "通过云服务器标签同步更新EIP标签"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      }
+    },
+    "instanceId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of EcsInstance",
+        "zh-cn": "实例ID"
+      }
+    },
+    "tagKeys": {
+      "Type": "List",
+      "Description": {
+        "en": "The list of tag key",
+        "zh-cn": "标签Key的集合"
+      }
+    },
+    "isUpdate": {
+      "Type": "Boolean",
+      "Description": {
+        "en": "If the same key exists, whether to overwrite it",
+        "zh-cn": "如果存在相同Key是否覆盖"
+      },
+      "Default": false
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstanceAndTags",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query ECS instanceId and tags",
+        "zh-cn": "获取ECS实例ID以及标签信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{instanceId}}"
+          ]
+        }
+      },
+      "Outputs": {
+        "ecsTags": {
+          "Type": "Json",
+          "ValueSelector": ".Instances.Instance[] | .Tags.Tag | map(select( .TagKey | test(\"^(?!acs).*\"))) | map(select(.TagKey as $tagKey | {{tagKeys}} | index($tagKey) >=0)) "
+        },
+        "eipAddress": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[].EipAddress.AllocationId"
+        }
+      }
+    },
+    {
+      "Name": "isEipExist",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by EIP status",
+        "zh-cn": "校验是否绑定eip"
+      },
+      "Properties": {
+        "DefaultTask": "getEipTagResources",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "",
+                "{{ getInstanceAndTags.eipAddress }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "getEipTagResources",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query EIP tag info",
+        "zh-cn": "获取EIP的标签信息"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "ListTagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceIds": [
+            "{{getInstanceAndTags.eipAddress}}"
+          ],
+          "ResourceType": "EIP"
+        }
+      },
+      "Outputs": {
+        "eipTags": {
+          "Type": "List",
+          "ValueSelector": ".TagResources.TagResource[] | {\"TagKey\":.TagKey, \"TagValue\":.TagValue}"
+        }
+      }
+    },
+    {
+      "Name": "isTagExist",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by EIP tag",
+        "zh-cn": "获取eip的用户标签"
+      },
+      "Properties": {
+        "DefaultTask": "tagResources",
+        "Choices": [
+          {
+            "When": {
+              "Fn::And": [
+                {
+                  "Fn::Not": "{{isUpdate}}"
+                },
+                {
+                  "Fn::Equals": [
+                    [],
+                    {
+                      "Fn::Jq": [
+                        "All",
+                        ". as $ecsTags |{{getInstanceAndTags.ecsTags}} | map(select(.TagKey as $tagKey | [$ecsTags[].TagKey]|index($tagKey) <0)) |.[] |{\"Key\":.TagKey, \"Value\": .TagValue}",
+                        "{{getEipTagResources.eipTags}}"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "tagResources",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Tag EIP",
+        "zh-cn": "根据输入的条件给eip同步云服务器的标签"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "TagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceIds": [
+            "{{getInstanceAndTags.eipAddress}}"
+          ],
+          "Tags": {
+            "Fn::If": [
+              "{{isUpdate}}",
+              {
+                "Fn::Jq": [
+                  "All",
+                  ".[] |{\"Key\":.TagKey, \"Value\": .TagValue} ",
+                  "{{getInstanceAndTags.ecsTags}}"
+                ]
+              },
+              {
+                "Fn::Jq": [
+                  "All",
+                  ". as $ecsTags |{{getInstanceAndTags.ecsTags}} | map(select(.TagKey as $tagKey | [$ecsTags[].TagKey]|index($tagKey) <0)) |.[] |{\"Key\":.TagKey, \"Value\": .TagValue}",
+                  "{{getEipTagResources.eipTags}}"
+                ]
+              }
+            ]
+          },
+          "ResourceType": "EIP"
+        }
+      },
+      "Outputs": {
+        "reqResult": {
+          "Type": "Json",
+          "ValueSelector": ".RequestId"
+        }
+      }
+    }
+  ]
+}

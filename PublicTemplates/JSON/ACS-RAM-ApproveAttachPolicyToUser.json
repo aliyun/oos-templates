@@ -1,19 +1,23 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Attach policy to user that template executed by after approving.",
-    "zh-cn": "\u5ba1\u6279\u901a\u8fc7\u540e\u6388\u6743\u7ed9\u521b\u5efa\u6267\u884c\u7684\u5b50\u7528\u6237\u3002",
+    "en": "Attach policy to user that template executed by after approving",
+    "zh-cn": "审批通过后授权给创建执行的子用户",
     "name-en": "ACS-RAM-ApproveAttachPolicyToUser",
-    "name-zh-cn": "\u5ba1\u6279\u901a\u8fc7\u540e\u6388\u6743\u7ed9\u521b\u5efa\u6267\u884c\u7684\u5b50\u7528\u6237",
+    "name-zh-cn": "审批通过后授权给创建执行的子用户",
     "categories": [
       "security"
     ]
   },
   "Parameters": {
     "policyType": {
+      "Label": {
+        "en": "TpolicyType",
+        "zh-cn": "权限策略类型"
+      },
       "Description": {
-        "en": "The ploicy type to add,the optioanl is Custom or System.",
-        "zh-cn": "\u5c06\u6388\u4e88\u7684\u6743\u9650\u7b56\u7565\u7c7b\u578b\uff0c\u53ef\u9009\u7c7b\u578b\u4e3a\u7cfb\u7edf\u6743\u9650\u6216\u81ea\u5b9a\u4e49\u6743\u9650\u3002"
+        "en": "The policy type to add, the optioanl is Custom or System",
+        "zh-cn": "将授予的权限策略类型，可选类型为系统权限或自定义权限"
       },
       "Type": "String",
       "AllowedValues": [
@@ -22,54 +26,70 @@
       ]
     },
     "policyName": {
-      "Description": {
-        "en": "The ploicy to add.",
-        "zh-cn": "\u5c06\u6388\u4e88\u7684\u6743\u9650\u7b56\u7565\u540d\u79f0\u3002"
+      "Label": {
+        "en": "PolicyName",
+        "zh-cn": "权限策略名称"
       },
       "Type": "String"
     },
     "webHookUrl": {
+      "Label": {
+        "en": "WebHookUrl",
+        "zh-cn": "钉钉群助手的webhook地址"
+      },
       "Description": {
-        "en": "The webhook url of dingtalk group assistant, e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
-        "zh-cn": "\u9489\u9489\u7fa4\u52a9\u624b\u7684webhook\u5730\u5740\uff0c\u5f62\u5982https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414\uff0c\u5177\u4f53\u9489\u9489WebHook\u83b7\u53d6\u8bf7\u53c2\u8003https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5\u3002"
+        "en": "e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.",
+        "zh-cn": "形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。"
       },
       "Type": "String"
     },
     "atMobiles": {
+      "Label": {
+        "en": "AtMobiles",
+        "zn-cn": "钉钉手机号"
+      },
       "Description": {
-        "en": "The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.",
-        "zh-cn": "\u5ba1\u6279\u901a\u77e5\u4e2d\u88ab@\u7684\u7fa4\u6210\u5458\u7684\u9489\u9489\u624b\u673a\u53f7\uff0c\u6bd4\u5982138ALBB1234\u3002"
+        "en": "The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234",
+        "zh-cn": "审批通知中被@的群成员的钉钉手机号，比如138ALBB1234"
       },
       "Type": "List"
     },
     "atAll": {
+      "Label": {
+        "en": "AtAll",
+        "zh-cn": "是否@所有人"
+      },
       "Description": {
         "en": "Whether assistant @ all members in dingtalk group or not notification comes",
-        "zh-cn": "\u5f53\u7fa4\u52a9\u624b\u5411\u9489\u9489\u7fa4\u4e2d\u53d1\u9001\u5ba1\u6279\u901a\u77e5\u65f6\u662f\u5426@\u6240\u6709\u4eba\u3002"
+        "zh-cn": "当群助手向钉钉群中发送审批通知时是否@所有人"
       },
       "Type": "String",
       "Default": "false"
     },
     "approvers": {
+      "Label": {
+        "en": "Approvers",
+        "zh-cn": "可以审批授权的用户"
+      },
       "Description": {
-        "en": "The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.",
-        "zh-cn": "\u53ef\u4ee5\u5ba1\u6279\u4efb\u52a1\u7684\u7528\u6237\u3002\u7528\u6237\u540d\u662fRAM\u5b50\u7528\u6237\u540d\u79f0\u4e2d@\u524d\u9762\u7684\u90e8\u5206\uff0c\u6bd4\u5982RAM\u5b50\u7528\u6237\u4e3auser001@companyAlias.onaliyun.com,\u90a3\u4e48\u5217\u8868\u4e2d\u586b\u5199user001\u5373\u53ef\u3002"
+        "en": "The name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list",
+        "zh-cn": "用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可"
       },
       "Type": "List",
       "AssociationProperty": "ALIYUN::RAM::User"
     },
     "minRequiredApprovals": {
-      "Description": {
-        "en": "The min required count of approvals.",
-        "zh-cn": "\u6700\u4f4e\u9700\u8981\u901a\u8fc7\u5ba1\u6279\u7684\u6570\u91cf"
+      "Label": {
+        "en": "MinRequiredApprovals",
+        "zh-cn": "最低需要通过审批的数量"
       },
       "Type": "Number",
       "Default": 1
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -81,8 +101,8 @@
       "Name": "approveAttachPolicy",
       "Action": "ACS::Approve",
       "Description": {
-        "en": "Approve task add policy.",
-        "zh-cn": "\u5ba1\u6279\u540e\u6388\u6743\u3002"
+        "en": "Approve task add policy",
+        "zh-cn": "审批后授权"
       },
       "Properties": {
         "Approvers": "{{approvers}}",
@@ -96,7 +116,7 @@
           "Content": {
             "msgtype": "text",
             "text": {
-              "content": "Notice: Please approve the task execution to attach {{policyType}} policy {{policyName}}\nfor target user {{ACS::ExecuteUser}}.\nsent by {{ACS::RegionId}} oos {{ACS::ExecutionId}}.\n"
+              "content": "Notice: Please approve the task execution to attach {{policyType}} policy {{policyName}}\nfor target user {{ACS::ExecuteUser}}\nsent by {{ACS::RegionId}} oos {{ACS::ExecutionId}}\n"
             },
             "at": {
               "atMobiles": "{{atMobiles}}",
@@ -110,8 +130,8 @@
       "Name": "checkPolicyExist",
       "Action": "ACS::CheckFor",
       "Description": {
-        "en": "Check for the existence of policy.",
-        "zh-cn": "\u786e\u8ba4\u6743\u9650\u7b56\u7565\u5df2\u5b58\u5728\u3002"
+        "en": "Check for the existence of policy",
+        "zh-cn": "确认权限策略已存在"
       },
       "Properties": {
         "Service": "RAM",
@@ -136,8 +156,8 @@
       "Name": "createStack",
       "Action": "ACS::Template",
       "Description": {
-        "en": "Attach policy by Ros resource stack.",
-        "zh-cn": "\u901a\u8fc7Ros\u8d44\u6e90\u6808\u4e3a\u89d2\u8272\u6388\u6743\u3002"
+        "en": "Attach policy by Ros resource stack",
+        "zh-cn": "通过Ros资源栈为角色授权"
       },
       "Properties": {
         "TemplateName": "ACS::ROS::CreateStack",
@@ -158,7 +178,7 @@
               "ParameterValue": "{{ policyName }}"
             }
           ],
-          "templateBody": "{\n  \"Parameters\": {\n    \"PolicyType\": {\n      \"Type\": \"String\",\n      \"Description\": \"Authorization policy type. Value: \\\"System\\\" or \\\"Custom\\\".\"\n    },\n    \"UserName\": {\n      \"Type\": \"String\",\n      \"Description\": \"User name.\"\n    },\n    \"PolicyName\": {\n      \"Type\": \"String\",\n      \"Description\": \"Authorization policy name.\"\n    }\n  },\n  \"ROSTemplateFormatVersion\": \"2015-09-01\",\n  \"Outputs\": {},\n  \"Resources\": {\n    \"AttachPolicyToUser\": {\n      \"Type\": \"ALIYUN::RAM::AttachPolicyToUser\",\n      \"Properties\": {\n        \"PolicyType\": {\n          \"Ref\": \"PolicyType\"\n        },\n        \"UserName\": {\n          \"Ref\": \"UserName\"\n        },\n        \"PolicyName\": {\n          \"Ref\": \"PolicyName\"\n        }\n      }\n    }\n  }\n}\n"
+          "templateBody": "{\n  \"Parameters\": {\n    \"PolicyType\": {\n      \"Type\": \"String\",\n      \"Description\": \"Authorization policy type. Value: \\\"System\\\" or \\\"Custom\\\".\"\n    },\n    \"UserName\": {\n      \"Type\": \"String\",\n      \"Description\": \"User name.\"\n    },\n    \"PolicyName\": {\n      \"Type\": \"String\",\n      \"Description\": \"Authorization policy name.\"\n    }\n  },\n  \"ROSTemplateFormatVersion\": \"2015-09-01\",\n  \"Outputs\": {},\n  \"Resources\": {\n    \"AttachPolicyToUser\": {\n      \"Type\": \"ALIYUN::RAM::AttachPolicyToUser\",\n      \"Properties\": {\n        \"PolicyType\": {\n          \"Ref\": \"PolicyType\"\n        },\n        \"UserName\": {\n          \"Ref\": \"UserName\"\n        },\n        \"PolicyName\": {\n          \"Ref\": \"PolicyName\"\n        }\n      }\n    }\n  },\n  \"Metadata\": {\n    \"ALIYUN::ROS::Interface\": {\n      \"TemplateTags\": [\n        \"acs:integrate:oos:ram_approve_attach_policy_to_user\"\n      ]\n    }\n  }\n}\n"
         }
       },
       "Outputs": {

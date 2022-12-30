@@ -1,0 +1,180 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Modify API to private
+  zh-cn: 修改API为私有类型
+  name-en: ACS-ApiGateway-BulkyModifyApi
+  name-zh-cn: 修改API为私有类型
+  categories:
+    - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: InstanceId
+      zh-cn: API网关实例ID
+    Type: String
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeApi
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query parameters
+      zh-cn: 查询API参数信息
+    Properties:
+      Service: CLOUDAPI
+      API: DescribeApi
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ApiId: '{{ instanceId }}'
+    Outputs:
+      ApiName:
+        Type: String
+        ValueSelector: .ApiName
+      RequestConfig:
+        Type: String
+        ValueSelector: .RequestConfig
+      ServiceConfig:
+        Type: String
+        ValueSelector: .ServiceConfig
+      GroupId:
+        Type: String
+        ValueSelector: .GroupId
+      Description:
+        Type: String
+        ValueSelector: .Description
+      AuthType:
+        Type: String
+        ValueSelector: .AuthType
+      ForceNonceCheck:
+        Type: Boolean
+        ValueSelector: .ForceNonceCheck
+      RequestParameters:
+        Type: String
+        ValueSelector: .RequestParameters.RequestParameter
+      ServiceParameters:
+        Type: String
+        ValueSelector: .ServiceParameters.ServiceParameter
+      ServiceParametersMap:
+        Type: String
+        ValueSelector: .ServiceParametersMap.ServiceParameterMap
+      ResultType:
+        Type: String
+        ValueSelector: .ResultType
+      ResultSample:
+        Type: String
+        ValueSelector: .ResultSample
+      FailResultSample:
+        Type: String
+        ValueSelector: .FailResultSample
+      ErrorCodeSamples:
+        Type: String
+        ValueSelector: .ErrorCodeSamples.ErrorCodeSample
+      AllowSignatureMethod:
+        Type: String
+        ValueSelector: .AllowSignatureMethod
+      WebSocketApiType:
+        Type: String
+        ValueSelector: .WebSocketApiType
+      DisableInternet:
+        Type: Boolean
+        ValueSelector: .DisableInternet
+      AppCodeAuthType:
+        Type: String
+        ValueSelector: .AppCodeAuthType
+      SystemParameters:
+        Type: String
+        ValueSelector: .SystemParameters.SystemParameter
+      ConstantParameters:
+        Type: String
+        ValueSelector: .ConstantParameters.ConstantParameter
+      ResultDescriptions:
+        Type: String
+        ValueSelector: .ResultDescriptions.ResultDescription
+      OpenIdConnectConfig:
+        Type: String
+        ValueSelector: .OpenIdConnectConfig
+      ResultBodyModel:
+        Type: String
+        ValueSelector: .ResultBodyModel
+      BackendId:
+        Type: String
+        ValueSelector: .BackendConfig.BackendId
+      BackendEnable:
+        Type: Boolean
+        ValueSelector: .BackendEnable
+  - Name: modifyApi
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify API to private
+      zh-cn: 修改API为私有类型
+    Properties:
+      Service: CLOUDAPI
+      API: ModifyApi
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ApiId: '{{ instanceId }}'
+        ApiName: '{{ describeApi.ApiName }}'
+        RequestConfig: '{{ describeApi.RequestConfig }}'
+        ServiceConfig: '{{ describeApi.ServiceConfig }}'
+        Visibility: PRIVATE
+        GroupId: '{{ describeApi.GroupId }}'
+        Description: '{{ describeApi.Description }}'
+        AuthType: '{{ describeApi.AuthType }}'
+        RequestParameters: '{{ describeApi.RequestParameters }}'
+        ServiceParameters: '{{ describeApi.ServiceParameters }}'
+        ServiceParametersMap: '{{ describeApi.ServiceParametersMap }}'
+        ResultType: '{{ describeApi.ResultType }}'
+        ResultSample: '{{ describeApi.ResultSample }}'
+        FailResultSample: '{{ describeApi.FailResultSample }}'
+        ErrorCodeSamples: '{{ describeApi.ErrorCodeSamples }}'
+        AllowSignatureMethod: '{{ describeApi.AllowSignatureMethod }}'
+        WebSocketApiType: '{{ describeApi.WebSocketApiType }}'
+        ForceNonceCheck: '{{ describeApi.ForceNonceCheck }}'
+        DisableInternet: '{{ describeApi.DisableInternet }}'
+        AppCodeAuthType: '{{ describeApi.AppCodeAuthType }}'
+        SystemParameters: '{{ describeApi.SystemParameters }}'
+        ConstantParameters: '{{ describeApi.ConstantParameters }}'
+        ResultDescriptions: '{{ describeApi.ResultDescriptions }}'
+        OpenIdConnectConfig: '{{ describeApi.OpenIdConnectConfig }}'
+        ResultBodyModel: '{{ describeApi.ResultBodyModel }}'
+        BackendId: '{{ describeApi.BackendId }}'
+        BackendEnable: '{{ describeApi.BackendEnable }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select instance
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -1,24 +1,36 @@
 FormatVersion: OOS-2019-06-01
-Description: Alarm notification when spot instance discount or spot price exceeds threshold in the single scaling group existing instances.
+Description:
+  name-en: ACS::ECS::AlarmSpotPriceOrDiscountBySingleScalingGroup
+  name-zh-cn: 监控单个伸缩组内实例的现价或折扣的阈值
+  en: Alarm notification when spot instance discount or spot price exceeds threshold in the single scaling group existing instances
+  zh-cn: 监控弹性伸缩组弹出的预付费实例的最新价格与折扣，超出阈值时发出报警通知
 Parameters:
   regionId:
-    Description: The region id.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
   threshold:
-    Description: 'The discount threshold(example:10 is 1% off, 50 is 50% off).'
+    Description:
+      en: 'The discount threshold(example:10 is 1% off, 50 is 50% off)'
+      zh-cn: 折扣阈值（例：输入10是1折，50为5折）
     Type: Number
   taskType:
-    Description: Monitoring threshold task type.
+    Description:
+      en: Monitoring threshold task type
+      zh-cn: 监控阈值的任务类型
     Type: String
   scalingGroupId:
+    Description:
+      en: The ID of scaling group
+      zh-cn: 弹性伸缩组ID
     Type: String
-    Description: The scaling group id.
 Tasks:
   - Name: describeScalingInstances
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Describe the scaling instances.
-      zh-cn: 查询伸缩组内的实例。
+      en: Queries the scaling ECS instance IDs
+      zh-cn: 获取伸缩组内ECS实例的ID
     Properties:
       Service: ESS
       API: DescribeScalingInstances
@@ -32,8 +44,8 @@ Tasks:
   - Name: wetherExistInstance
     Action: 'ACS::Choice'
     Description:
-      en: Detect if an alarm notification is required.
-      zh-cn: 检测是否需要发报警通知。
+      en: Check wether an alarm notification is required
+      zh-cn: 检测是否需要发报警通知
     Properties:
       DefaultTask: describeInstances
       Choices:
@@ -45,8 +57,8 @@ Tasks:
   - Name: describeInstances
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Describe the instances.
-      zh-cn: 查询实例。
+      en: Queries instance type and zone of the ECS instance
+      zh-cn: 获取ECS实例的规格和可用区
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -69,8 +81,8 @@ Tasks:
   - Name: describeScalingGroups
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Describe the scaling groups.
-      zh-cn: 查询弹性伸缩组。
+      en: Queries the name of scaling group
+      zh-cn: 获取伸缩组名称
     Properties:
       Service: ESS
       API: DescribeScalingGroups
@@ -83,7 +95,9 @@ Tasks:
         ValueSelector: '.ScalingGroups.ScalingGroup[].ScalingGroupName'
   - Name: outPutSingleScalingGroupInfo
     Action: 'ACS::ECS::AlarmSpotPriceOrDiscountByScalingGroupInstance'
-    Description:  Monitor discounts or prices of all created spot instance types under a single scaling group.
+    Description:
+      en: Monitor discounts or prices of all created spot instance types under a single scaling group
+      zh-cn: 监控单个伸缩组下所有预付费实例类型的折扣与价格
     Properties:
       regionId: '{{regionId}}'
       threshold: '{{ threshold }}'

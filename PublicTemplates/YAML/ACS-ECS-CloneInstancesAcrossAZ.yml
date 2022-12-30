@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Cross available zone clone and bulky run ECS instance.
-  zh-cn: 跨可用区批量克隆ECS实例。
+  en: Cross available zone clone and bulky run ECS instance
+  zh-cn: 跨可用区批量克隆ECS实例
   name-en: ACS-ECS-CloneInstancesAcrossAZ
   name-zh-cn: 跨可用区批量克隆ECS实例
   categories:
@@ -9,30 +9,32 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description: region id
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   targets:
-    Description:
-      en: instances to clone.
-      zh-cn: 将克隆的实例
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   targetSecurityGroupId:
-    Description:
-      en: 'The security group id for the new ECS instances'
-      zh-cn: '新实例的安全组ID。'
+    Label:
+      en: TargetSecurityGroupId
+      zh-cn: 新实例的安全组ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::SecurityGroup::SecurityGroupId'
     AssociationPropertyMetadata:
       RegionId: regionId
   targetVSwitchId:
-    Description:
-      en: 'The virtual switch id for the new ECS instances,target zone id will be chosen when targetVSwitchId parameter is filled in'
-      zh-cn: 新实例的交换机ID，填写本参数时将会决定目的可用区。
+    Label:
+      en: TargetVSwitchId
+      zh-cn: 新实例的交换机ID，填写本参数时将会决定目的可用区
     Type: String
     AssociationProperty: 'ALIYUN::VPC::VSwitch::VSwitchId'
     AssociationPropertyMetadata:
@@ -40,41 +42,41 @@ Parameters:
       Filters:
         - SecurityGroupId: targetSecurityGroupId
   targetResourceGroupId:
-    Description:
-      en: The target resource group id that the new ECS instance is to add in.
-      zh-cn: 新实例将加入的目的资源组ID。
+    Label:
+      en: TargetResourceGroupId
+      zh-cn: 新实例将加入的目的资源组ID
     Type: String
     Default: ' '
   targetInstanceType:
-    Description:
-      en: 'The instance type for the new ECS instances.'
-      zh-cn: '新实例规格。'
+    Label:
+      en: TargetInstanceType
+      zh-cn: 新实例的规格
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
     AssociationPropertyMetadata:
       RegionId: regionId
     Default: ' '
   targetTags:
-    Description:
-      en: The tags for new ECS instances.
-      zh-cn: 新实例的标签。
+    Label:
+      en: TargetTags
+      zh-cn: 新实例的标签
     Type: Json
     AssociationProperty: Tags
     AssociationPropertyMetadata:
       ShowSystem: false
   targetInstanceChargeType:
-    Description:
-      en: The charge type for new ECS instances,the default is PostPaid.
-      zh-cn: 新实例的付费模式，默认按量付费。
+    Label:
+      en: TargetInstanceChargeType
+      zh-cn: 新实例的付费模式，默认按量付费
     Type: String
     AllowedValues:
       - PrePaid
       - PostPaid
     Default: PostPaid
   targetPeriodUnit:
-    Description:
-      en: Please select the PeriodUnit when charge type of ECS new instances is PrePaid,the default is Month.
-      zh-cn: 当新实例的付费方式选择包年包月时，请在此处选择时长单位，默认单位是月。
+    Label:
+      en: TargetPeriodUnit
+      zh-cn: 当新实例的付费方式选择包年包月时，请在此处选择时长单位，默认单位是月
     Type: String
     AllowedValues:
       - Week
@@ -82,33 +84,33 @@ Parameters:
       - ' '
     Default: ' '
   targetPeriod:
-    Description:
-      en: Please fill in the Period when charge type of ECS new instances is PrePaid,the default is 1.
-      zh-cn: 当新实例的付费方式选择包年包月时，请在此处填写时长数，默认值为1。
+    Label:
+      en: TargetPeriod
+      zh-cn: 当新实例的付费方式选择包年包月时，请在此处填写时长数，默认值为1
     Type: Number
     Default: 1
   targetDeploymentSetId:
-    Description:
-      en: The deploymentset id for the new ECS instances.
-      zh-cn: 新实例的部署集ID。
+    Label:
+      en: TargetDeploymentSetId
+      zh-cn: 新实例的部署集ID
     Type: String
     Default: ' '
   targetInstanceName:
-    Description:
-      en: The instance name for new ECS instances.
-      zh-cn: 新实例的名称。
+    Label:
+      en: TargetInstanceName
+      zh-cn: 新实例的名称
     Type: String
     Default: ' '
   targetHostName:
-    Description:
-      en: The host name for new ECS instances.
-      zh-cn: 新实例的主机名称。
+    Label:
+      en: TargetHostName
+      zh-cn: 新实例的主机名称
     Type: String
     Default: ' '
   rateControl:
-    Description:
-      en: Concurrency rate and MaxErrors of loop task execution.
-      zh-cn: 循环任务执行的并发率及容错数。
+    Label:
+      en: RateControl
+      zh-cn: 循环任务执行的并发率及容错数
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -116,17 +118,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: 'ACS::SelectTargets'
     Properties:
       RegionId: '{{regionId}}'
@@ -141,8 +143,8 @@ Tasks:
   - Name: cloneInstancesAcrossAZ
     Action: 'ACS::Template'
     Description:
-      en: Clone instances.
-      zh-cn: 克隆实例。
+      en: Clone instances
+      zh-cn: 克隆实例
     Properties:
       TemplateName: 'ACS::ECS::CloneInstanceAcrossAZ'
       Parameters:
@@ -176,3 +178,36 @@ Outputs:
   instanceIds:
     Value: '{{ cloneInstancesAcrossAZ.instanceIds }}'
     Type: List
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - targetSecurityGroupId
+          - targetVSwitchId
+          - targetInstanceType
+          - targetTags
+          - targetInstanceChargeType
+          - targetPeriodUnit
+          - targetPeriod
+          - targetResourceGroupId
+          - targetDeploymentSetId
+          - targetInstanceName
+          - targetHostName
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

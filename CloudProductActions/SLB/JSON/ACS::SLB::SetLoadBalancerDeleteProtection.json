@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Modify loadbalancer deletionProtection attribute.",
+  "Description": {
+    "name-en": "ACS::SLB::SetLoadBalancerDeleteProtection",
+    "name-zh-cn": "修改负载均衡实例删除保护属性",
+    "en": "Modify loadbalancer deletionProtection attribute",
+    "zh-cn": "修改负载均衡实例删除保护属性"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "loadBalancerId": {
-      "Description": "The id of loadBalancer.",
+      "Description": {
+        "en": "The ID of loadBalancer",
+        "zh-cn": "负载均衡实例ID"
+      },
       "Type": "String"
     },
     "deleteProtection": {
-      "Description": "The LoadBalancerDeleteProtection status.",
+      "Description": {
+        "en": "The LoadBalancerDeleteProtection status",
+        "zh-cn": "负载均衡删除保护状态"
+      },
       "Type": "String"
     }
   },
@@ -20,7 +34,10 @@
     {
       "Name": "getLoadBalancerAttribute",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views the attribute by loadbalancer id.",
+      "Description": {
+        "en": "Queries the delete protection attribute by loadbalancer id",
+        "zh-cn": "获取负载均衡实例的删除保护属性"
+      },
       "Properties": {
         "Service": "SLB",
         "API": "DescribeLoadBalancerAttribute",
@@ -39,7 +56,10 @@
     {
       "Name": "whetherLoadBalancerIsDeleteProtection",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by LoadBalancer status.",
+      "Description": {
+        "en": "Choose next task by LoadBalancer delete protection attribute",
+        "zh-cn": "根据负载均衡实例删除保护状态选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "enableLoadBalancerIsDeleteProtection",
         "Choices": [
@@ -58,7 +78,10 @@
     {
       "Name": "enableLoadBalancerIsDeleteProtection",
       "Action": "ACS::ExecuteApi",
-      "Description": "Set loadbalancer deleteprotection.",
+      "Description": {
+        "en": "Modifies loadbalancer deleteprotection",
+        "zh-cn": "修改负载均衡实例删除保护"
+      },
       "Properties": {
         "Service": "SLB",
         "API": "SetLoadBalancerDeleteProtection",

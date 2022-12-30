@@ -1,14 +1,25 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Deletes ECS instance by specifying instance ID.",
+  "Description": {
+    "name-en": "ACS::ECS::DeleteInstance",
+    "name-zh-cn": "删除ECS实例",
+    "en": "Deletes ECS instance by specifying instance ID",
+    "zh-cn": "通过指定的实例ID删除ECS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of ECS instance.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
@@ -18,7 +29,10 @@
     {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Checks ECS instance is in the Stopped status.",
+      "Description": {
+        "en": "Checks ECS instance is in the Stopped status",
+        "zh-cn": "检测ECS实例是否为已停止状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -37,7 +51,10 @@
     {
       "Name": "deleteInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Deletes ECS instance with the specified instance ID.",
+      "Description": {
+        "en": "Deletes ECS instance with the specified instance ID",
+        "zh-cn": "通过指定的实例ID删除ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteInstance",

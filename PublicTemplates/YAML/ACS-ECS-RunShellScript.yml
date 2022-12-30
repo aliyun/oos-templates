@@ -9,47 +9,48 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description:
-      en: The ID of ECS Instance.
-      zh-cn: ECS实例ID。
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例
     Type: String
-    MaxLength: 30
-    MinLength: 1
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   commandContent:
-    Description:
-      en: The content of command.
-      zh-cn: 命令。
+    Label:
+      en: CommandContent
+      zh-cn: 云助手命令
     Type: String
     AssociationProperty: Code
   workingDir:
-    Description:
-      en: The directory where the shell script runs on the ECS instances.
-      zh-cn: ECS实例中运行命令的目录。
+    Label:
+      en: WorkingDir
+      zh-cn: ECS实例中运行命令的目录
     Type: String
   timeout:
-    Description:
-      en: The number of the invocation timeout period of a command on ECS instances in seconds.
-      zh-cn: 最大超时时间，时间单位是秒。
+    Label:
+      en: Timeout
+      zh-cn: 最大超时时间，时间单位是秒
     Type: Number
     Default: 600
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: runCommand
   Description:
-    en: Execute cloud assistant command.
-    zh-cn: 执行云助手命令。
+    en: Execute cloud assistant command
+    zh-cn: 执行云助手命令
   Action: ACS::ECS::RunCommand
   Properties:
     regionId: '{{ regionId }}'
@@ -66,3 +67,27 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - commandContent
+          - workingDir
+          - timeout
+        Label:
+          default:
+            zh-cn: 执行命令选型
+            en: run command options
+      - Parameters:
+          - regionId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -1,0 +1,138 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Query ECS instance attributes",
+    "zh-cn": "查询ECS实例属性",
+    "name-en": "ACS::ECS::QueryInstanceAttributes",
+    "name-zh-cn": "查询ECS实例属性"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "queryInstanceInfo",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECS instance Info",
+        "zh-cn": "获取实例信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "instanceInfo": {
+          "Type": "Json",
+          "ValueSelector": ".Instances.Instance[] | {\"ImageId\": .ImageId,\"Cpu\": .Cpu,\"CpuOptions\": .CpuOptions,\"SecurityGroupIds\": .SecurityGroupIds.SecurityGroupId,\"InstanceTypeFamily\": .InstanceTypeFamily,\"EipAddresses\": .EipAddress,\"InstanceName\": .InstanceName,\"HostName\": .HostName,\"InstanceChargeType\": .InstanceChargeType,\"InstanceNetworkType\": .InstanceNetworkType,\"DeletionProtection\": .DeletionProtection,\"ExpiredTime\": .ExpiredTime,\"GPUAmount\": .GPUAmount,\"GPUSpec\": .GPUSpec,\"Memory\": .Memory,\"OSName\": .OSName,\"NetworkInterfaces\": .NetworkInterfaces,\"PublicIpAddress\": .PublicIpAddress,\"InternetChargeType\": .InternetChargeType,\"Status\": .Status,\"StoppedMode\": .StoppedMode,\"ZoneId\": .ZoneId,\"VpcAttributes\": .VpcAttributes,\"AutoReleaseTime\": .AutoReleaseTime,\"CreationTime\": .CreationTime,\"Description\": .Description,\"InnerIpAddress\": .InnerIpAddress,\"InstanceType\": .InstanceType,\"InternetMaxBandwidthIn\": .InternetMaxBandwidthIn,\"InternetMaxBandwidthOut\": .InternetMaxBandwidthOut }"
+        },
+        "privateIpAddresses": {
+          "Type": "String",
+          "ValueSelector": ".| if .Instances.Instance[].NetworkInterfaces==null then \"\" else .Instances.Instance[].NetworkInterfaces.NetworkInterface[].PrivateIpSets.PrivateIpSet[].PrivateIpAddress end"
+        }
+      }
+    },
+    {
+      "Name": "queryInstanceDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the disk info",
+        "zh-cn": "获取磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "dataDisks": {
+          "Type": "Json",
+          "ValueSelector": ".Disks.Disk|map( select(.Type == \"data\" )|{\"DiskId\": .DiskId, \"Category\":(.Category),\"Device\": (.Device),\"Size\":(.Size),\"DiskName\":(.DiskName),\"PerformanceLevel\":(.PerformanceLevel)})"
+        },
+        "systemDisk": {
+          "Type": "Json",
+          "ValueSelector": ".Disks.Disk|map( select(.Type == \"system\" )|{\"DiskId\": .DiskId, \"Category\":(.Category),\"Device\": (.Device),\"Size\":(.Size),\"DiskName\":(.DiskName),\"PerformanceLevel\":(.PerformanceLevel)})[]"
+        }
+      }
+    },
+    {
+      "Name": "queryInstanceSnapshot",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECS instance Snapshot",
+        "zh-cn": "获取实例快照"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSnapshots",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "snapshotInfo": {
+          "Type": "List",
+          "ValueSelector": ".Snapshots.Snapshot[]"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instanceInfo": {
+      "Type": "Json",
+      "Value": {
+        "Fn::MergeMap": [
+          {
+            "InstanceAttr": {
+              "Fn::MergeMap": [
+                "{{ queryInstanceInfo.instanceInfo }}",
+                {
+                  "PrivateIpAddresses": "{{ queryInstanceInfo.privateIpAddresses }}"
+                }
+              ]
+            }
+          },
+          {
+            "DiskInfo": {
+              "Fn::MergeMap": [
+                {
+                  "DataDisk": "{{ queryInstanceDisk.dataDisks }}"
+                },
+                {
+                  "SystemDisk": "{{ queryInstanceDisk.systemDisk }}"
+                }
+              ]
+            }
+          },
+          {
+            "SnapshotInfo": "{{ queryInstanceSnapshot.snapshotInfo }}"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -9,13 +9,16 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   action:
     Type: String
+    Label:
+      en: Action
+      zh-cn: 操作类型
     AllowedValues:
       - install
       - upgrade
@@ -24,19 +27,25 @@ Parameters:
   overwrite:
     Description:
       en: 'If logAgent exists in the instance, choose whether to overwrite LogAgent(Default no).'
-      zh-cn: 如果实例内存在logAgent时，选择是否覆盖LogAgent(默认不覆盖)。
+      zh-cn: 如果实例内存在logAgent时，选择是否覆盖LogAgent(默认不覆盖)
+    Label:
+      en: Overwrite
+      zh-cn: 是否覆盖LogAgent
     Type: Boolean
     Default: false
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -44,15 +53,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
@@ -90,7 +101,7 @@ Tasks:
             }
             wget http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/linux64/logtail.sh -q -O logtail.sh;
             if [ $? != 0 ]; then
-              echo "Failed to dowmload logtail_installer, Please check your network service."
+              echo "Failed to download logtail_installer, Please check your network service."
               exit 1
             fi
             chmod 755 logtail.sh;
@@ -147,7 +158,7 @@ Tasks:
             $client.DownloadFile('http://logtail-release-{{ regionId }}.oss-{{ regionId }}-internal.aliyuncs.com/win/logtail_installer.zip', 'C:\Users\Administrator\OOSPackages\logtail_installer.zip')
             if (! $?)
             {
-              echo "Failed to dowmload logtail_installer, Please check your network service."
+              echo "Failed to download logtail_installer, Please check your network service."
               exit 1
             }
             Expand-Archive -Force -Path C:\Users\Administrator\OOSPackages\logtail_installer.zip -DestinationPath C:\Users\Administrator\OOSPackages
@@ -230,3 +241,27 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutputs }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - action
+          - overwrite
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

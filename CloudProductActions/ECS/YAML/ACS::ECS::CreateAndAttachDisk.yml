@@ -1,32 +1,49 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates a disk and attaches a data disk to an ECS instance.
+Description:
+  name-en: ACS::ECS::CreateAndAttachDisk
+  name-zh-cn: 创建并将数据盘挂载至ECS实例
+  en: Creates a disk and attaches a data disk to an ECS instance.
+  zh-cn: 创建一块云盘，并将数据盘挂载到ECS实例上。
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   diskName:
-    Description: The name of the disk.
+    Description:
+      en: The name of the disk
+      zh-cn: 云盘名称
     Type: String
   zoneId:
-    Description: The zone ID that is available in the specified region.
+    Description:
+      en: The zone ID that is available in the specified region
+      zh-cn: 在指定的区域内的可用区ID
     Type: String
   diskCategory:
-    Description: The category of the data disk.
+    Description:
+      en: The category of the data disk
+      zh-cn: 数据盘的云盘种类
     Type: String
   instanceId:
-    Description: Creates a subscription disk and the system automatically attaches
-      it to a subscription instance with the InstanceId you specified.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   size:
-    Description: The size of the disk.
+    Description:
+      en: The size of the disk
+      zh-cn: 磁盘容量
     Type: String
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
-  Description: Checks whether the ECS instance status is running or stopped.
+  Description:
+    en: Checks whether the ECS instance status is Running or Stopped
+    zh-cn: 检测ECS实例是否为运行中或已停止状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -40,7 +57,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: createDisk
   Action: ACS::ExecuteAPI
-  Description: Creates a data disk.
+  Description:
+    en: Creates a data disk
+    zh-cn: 创建一块数据盘
   Properties:
     Service: ECS
     API: CreateDisk
@@ -56,7 +75,9 @@ Tasks:
       ValueSelector: DiskId
 - Name: checkForCreatedDiskReady
   Action: ACS::CheckFor
-  Description: check the disk status Available.
+  Description:
+    en: Checks the disk status Available
+    zh-cn: 检测云盘的状态是否为可用的
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -69,7 +90,9 @@ Tasks:
     PropertySelector: Disks.Disk[].Status
 - Name: attachDisk
   Action: ACS::ExecuteAPI
-  Description: Attaches a data disk to an ECS instance.
+  Description:
+    en: Attaches a data disk to an ECS instance
+    zh-cn: 将数据盘挂载到ECS实例上
   Properties:
     Service: ECS
     API: AttachDisk

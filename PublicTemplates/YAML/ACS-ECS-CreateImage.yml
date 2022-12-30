@@ -1,42 +1,49 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en:  Creates an ECS image.
-  zh-cn: 创建一个ECS镜像。
-  name-en: ACS-ECS-CreateImage
-  name-zh-cn: 创建ECS镜像
+  en:  Creates an ECS image
+  zh-cn: 创建一个ECS镜像
+  name-en: Create Image
+  name-zh-cn: 创建镜像
   categories:
     - image_manage
+    - application_manage
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description:
-      en: The ID of ECS instance.
-      zh-cn: ECS实例ID。
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   imageName:
-    Description:
-      en: The name of new image.
-      zh-cn: 新镜像的名称。
+    Label:
+      en: ImageName
+      zh-cn: 新镜像的名称
     Type: String
-  tags:
     Description:
-      en: The image tag.
-      zh-cn: 镜像标签。
+      en: <p class="p">Note:</p> <ul class="ul"> <li class="li">Length is 2~128 English or Chinese characters</li> <li class="li"><font color='red'>must start with big or small letters or Chinese, not http:// and https://. </font></li> <li class="li">Can contain numbers, colons (:), underscores (_), or dashes (-). </li> </ul>
+      zh-cn: <p class="p">注意：</p> <ul class="ul"> <li class="li">长度为2~128个英文或中文字符</li> <li class="li"><font color='red'>必须以大小字母或中文开头，不能以http://和https://开头。</font></li> <li class="li">可以包含数字、半角冒号（:）、下划线（_）或者短划线（-）。</li> </ul>
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 镜像标签
     Type: Json
     AssociationProperty: Tags
     AssociationPropertyMetadata:
       ShowSystem: false
     Default: []
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -44,8 +51,8 @@ Tasks:
 - Name: createImage
   Action: ACS::ECS::CreateImage
   Description:
-    en: Create new image with the specified image name and instance ID.
-    zh-cn: 通过指定实例ID和镜像名称创建新的镜像。
+    en: Create new image with the specified image name and instance ID
+    zh-cn: 通过指定实例ID和镜像名称创建新的镜像
   Properties:
     regionId: '{{ regionId }}'
     imageName: '{{ imageName }}__on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}'
@@ -59,3 +66,26 @@ Outputs:
   imageId:
     Type: String
     Value: '{{ createImage.imageId }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - imageName
+          - tags
+        Label:
+          default:
+            zh-cn: 镜像设置
+            en: Image Configure
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

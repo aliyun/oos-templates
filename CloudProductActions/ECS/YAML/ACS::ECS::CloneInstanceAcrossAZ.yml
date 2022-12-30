@@ -1,59 +1,96 @@
 FormatVersion: OOS-2019-06-01
-Description: Cross available zone copy and run ECS instance.
+Description:
+  name-en: ACS::ECS::CloneInstanceAcrossAZ
+  name-zh-cn: 跨可用区域复制并运行ECS实例
+  en: Cross available zone copy and run ECS instance
+  zh-cn: 跨可用区域复制并运行ECS实例
 Parameters:
   instanceId:
-    Description: The source id of the ECS instance.
+    Description:
+      en: The ID of the source ECS instance
+      zh-cn: 源ECS实例的ID
     Type: String
   regionId:
-    Description: The source region id.
+    Description:
+      en: The source region ID
+      zh-cn: 源区域ID
     Type: String
     Default: '{{ACS::RegionId}}'
   imageName:
-    Description: The image name for source instance.
+    Description:
+      en: The image name for source instance
+      zh-cn: 源实例的镜像名称
     Type: String
   targetSecurityGroupId:
-    Description: The security group id for the new ECS instance
+    Description:
+      en: The security group id for the new ECS instance
+      zh-cn: 新ECS实例的安全组ID
     Type: String
   targetVSwitchId:
-    Description: The virtual switch id for the new ECS instance.
+    Description:
+      en: The virtual switch ID for the new ECS instance
+      zh-cn: 新ECS实例的虚拟交换机ID
     Type: String
   targetDeploymentSetId:
-    Description: The deploymentset id for the new ECS instance.
+    Description:
+      en: The deploymentset ID for the new ECS instance
+      zh-cn: 新ECS实例的deploymentsetID
     Type: String
   targetResourceGroupId:
-    Description: The target resource group id that the new ECS instance is to add in.
+    Description:
+      en: The target resource group ID that the new ECS instance is to add in
+      zh-cn: 新ECS实例要添加的目标资源组ID
     Type: String
   targetInstanceType:
-    Description: The instance type for the new ECS instance.
+    Description:
+      en: The instance type for the new ECS instance
+      zh-cn: 新ECS实例的实例类型
     Type: String
   targetInstanceChargeType:
-    Description: The charge type for ECS new instance.
+    Description:
+      en: The charge type for ECS new instance
+      zh-cn: 新ECS实例的收费类型
     Type: String
   targetPeriodUnit:
-    Description: Please select the PeriodUnit when charge type of new instance is PrePaid,the default is Month.
+    Description:
+      en: 'Please select the PeriodUnit when charge type of new instance is PrePaid,the
+    default is Month'
+      zh-cn: 当“新建实例的计费类型”为“预付”时，请选择“周期单位”，默认为“月”
     Type: String
   targetPeriod:
-    Description: Please fill in the Period when charge type of ECS new instance is PrePaid.
+    Description:
+      en: Please fill in the Period when charge type of ECS new PrePaid instance
+      zh-cn: 请填写新ECS实例预付费用类型的期间
     Type: Number
   tags:
-    Description: The tags of new ECS instance to add on.
+    Description:
+      en: The tags of new ECS instance to add on
+      zh-cn: 要添加的新ECS实例的标记
     Type: Json
     AssociationProperty: Tags
   targetInstanceName:
-    Description: The instance name for new ECS instance.
+    Description:
+      en: The instance name for new ECS instance
+      zh-cn: 新ECS实例的实例名
     Type: String
   targetHostName:
-    Description: The host name for new ECS instance.
+    Description:
+      en: The host name for new ECS instance
+      zh-cn: 新ECS实例的主机名
     Type: String
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Description:
+      en: The RAM role to be assumed by OOS
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: queryInstanceInfo
     Action: 'ACS::ExecuteAPI'
-    Description: Views the ECS instance's Info.
+    Description:
+      en: Views the ECS instance's Info
+      zh-cn: 查看ECS实例信息
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -78,9 +115,29 @@ Tasks:
         ValueSelector: 'Instances.Instance[0].ResourceGroupId'
         Type: String
 
+  - Name: queryDisks
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Views disk info of the ECS instance
+      zh-cn: 查看实例的磁盘信息
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+    Outputs:
+      dataDisks:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "data" )|{"Category":(.Category),"Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})'
+      systemDisk:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "system" )|{"Category":(.Category),"Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})[]'
   - Name: queryVSwitchInfo
     Action: 'ACS::ExecuteAPI'
-    Description: Views the VSwitch Info.
+    Description:
+      en: Views the VSwitch info
+      zh-cn: 查看VSwitch信息
     Properties:
       Service: ECS
       API: DescribeVSwitches
@@ -94,19 +151,27 @@ Tasks:
 
   - Name: checkTargetInstanceTypeAvailable
     Action: 'ACS::Template'
-    Description: Check the specified target InstanceType Available.
+    Description:
+      en: Check wether the specified target InstanceType is Available
+      zh-cn: 检查指定的目标实例类型是否可用
     Properties:
       TemplateName: 'ACS::ECS::CheckAvailableInstanceTypes'
       Parameters:
         zoneId: '{{ queryVSwitchInfo.zoneId }}'
         regionId: '{{ regionId }}'
         instanceTypes:
-          - '{{ targetInstanceType }}'
-
+          - Fn::If:
+              - Fn::Equals:
+                  - ' '
+                  - '{{ targetInstanceType }}'
+              - '{{queryInstanceInfo.instanceType}}'
+              - '{{ targetInstanceType }}'
   - Name: createImage
     Action: 'ACS::ExecuteAPI'
     OnError: deleteImage
-    Description: Create image for source instance.
+    Description:
+      en: Creates image for source instance
+      zh-cn: 为源实例创建镜像
     Properties:
       Service: ECS
       API: CreateImage
@@ -122,7 +187,9 @@ Tasks:
   - Name: untilCreateImageReady
     Action: 'ACS::WaitFor'
     OnError: deleteImage
-    Description: Wait for created image available.
+    Description:
+      en: Waits for created image available
+      zh-cn: 等待创建的镜像可用
     Properties:
       Service: ECS
       API: DescribeImages
@@ -132,18 +199,37 @@ Tasks:
       DesiredValues:
         - Available
       PropertySelector: 'Images.Image[].Status'
-    Retries: 17
+    Retries: 57
 
   - Name: runInstances
     Action: 'ACS::ExecuteAPI'
     OnError: deleteImage
-    Description: Run instance in new availbable zone.
+    Description:
+      en: Runs instance in new availbable zone
+      zh-cn: 在新的可用分区中运行instance
     Properties:
       Service: ECS
       API: RunInstances
       Parameters:
         RegionId: '{{ regionId }}'
         ImageId: '{{ createImage.ImageId }}'
+        DataDisks: '{{queryDisks.dataDisks}}'
+        SystemDiskCategory:
+          'Fn::Select':
+              - Category
+              - '{{ queryDisks.systemDisk }}'
+        SystemDiskSize:
+          'Fn::Select':
+            - Size
+            - '{{ queryDisks.systemDisk }}'
+        SystemDiskDiskName:
+          'Fn::Select':
+            - DiskName
+            - '{{ queryDisks.systemDisk }}'
+        SystemDiskPerformanceLevel:
+          'Fn::Select':
+            - PerformanceLevel
+            - '{{ queryDisks.systemDisk }}'
         InstanceType:
           Fn::If:
             -  Fn::Equals:
@@ -210,7 +296,9 @@ Tasks:
   - Name: untilInstanceReady
     Action: 'ACS::WaitFor'
     OnError: deleteImage
-    Description: Wait for new instance running.
+    Description:
+      en: Waits for new instance running
+      zh-cn: 等待新实例运行
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -223,7 +311,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: deleteImage
     Action: 'ACS::ExecuteAPI'
-    Description: Delete the temporary image.
+    Description:
+      en: Deletes the temporary image
+      zh-cn: 删除临时镜像
     Properties:
       Service: ECS
       API: DeleteImage

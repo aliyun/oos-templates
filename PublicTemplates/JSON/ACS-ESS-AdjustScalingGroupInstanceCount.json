@@ -1,0 +1,474 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "<p class=\"p\">Adjust the number of instances in a scaling group by creating and executing scaling group rules. Description:</p> <ul class=\"ul\"> <li class=\"li\">If the scaling group has been configured with the desired number of instances, when the number of instances in the scaling group is not equal to the expected number of instances, the auto scaling service will automatically scale to ensure that the number of instances in the scaling group is always maintained After the execution is complete, please go to the ESS console to view the adjustment results. </li> <li class=\"li\">The number of cluster nodes after scaling down the nodes cannot be less than the minimum node requirements of the component, otherwise the scaling operation may return an error of code:IncorrectCapacity. </li> <li class=\"li\">Please ensure that your account balance is greater than the cost of the newly purchased instance, otherwise an error of code:InvalidAccountStatus.NotEnoughBalance will be returned. </li> <li class=\"li\">If it is multi-zone, please expand the multiple of the number of zones. </li> <li class=\"li\">The payment method for the expanded ECS is pay-as-you-go. If necessary, customers need to Manual subcontracting yearly and monthly. </a></li> <li class=\"li\">The scaling cannot be less than the number initially opened in the scaling group. </li> </ul> <p class=\"p\">Adjust the number of instances in a scaling group by creating and executing scaling group rules. Description:</p> <ul class=\"ul\"> <li class=\"li\">Adjust ACK cluster node pool<a href='https://help.aliyun.com/document_detail/160490.html?spm=5176.2020520152.help.dexternal.253916ddpJbWDl#title-mpp-3jj- oo3'>Expected number of nodes</a>, please read the linked document carefully and authorize the role AliyunOOSLifecycleHook4CSRole. </li> </ul>",
+    "zh-cn": "<p class=\"p\">通过创建并执行伸缩组规则来调整伸缩组的实例数。说明：</p> <ul class=\"ul\"> <li class=\"li\">如果伸缩组已配置期望实例数，当伸缩组内实例数不等于期望实例数时，弹性伸缩服务会自动进行扩缩容，确保伸缩组内始终保持该数量的实例数，执行完毕后请到ESS控制台查看调整结果。</li> <li class=\"li\">缩容节点后的集群节点数量，不能小于组件最低节点要求，否则缩容操作可能会返回 code：IncorrectCapacity 的错误。</li> <li class=\"li\">执行请确保您的账号余额大于新购实例的费用，否则会返回 code：InvalidAccountStatus.NotEnoughBalance 的错误。</li> <li class=\"li\">如果是多可用区请扩容可用区数的倍数。</li> <li class=\"li\">扩容的ECS付费方式为按量付费，如有需要，客户需要手动<a href=\"https://help.aliyun.com/document_detail/49884.html?spm=5176.2020520101.help.dexternal.6ecb4df5sxWQrt\">转包年包月。</a></li> <li class=\"li\">缩容数量不能少于伸缩组内最开始开出来的数量。</li> </ul> <p class=\"p\">调整ACK集群节点池<a href='https://help.aliyun.com/document_detail/160490.html?spm=5176.2020520152.help.dexternal.253916ddpJbWDl#title-mpp-3jj-oo3'>期望节点数</a>。说明：</p> <ul class=\"ul\"> <li class=\"li\">请仔细阅读链接文档并授权角色AliyunOOSLifecycleHook4CSRole。</li> </ul>",
+    "name-en": "Elastic Scaling",
+    "name-zh-cn": "弹性扩缩容",
+    "categories": [
+      "elastic_manage",
+      "application_manage",
+      "computenest"
+    ]
+  },
+  "Parameters": {
+    "resourceType": {
+      "Type": "String",
+      "Label": {
+        "en": "ResourceType",
+        "zh-cn": "将要调整的资源类型"
+      },
+      "AllowedValues": [
+        "ACK",
+        "ESS"
+      ],
+      "Default": "ESS"
+    },
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "将要克隆的ECS实例所在地域"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "scalingGroupId": {
+      "Type": "String",
+      "Label": {
+        "en": "ScalingGroupId",
+        "zh-cn": "伸缩组ID"
+      },
+      "Default": "",
+      "AssociationProperty": "ALIYUN::ESS::AutoScalingGroup::AutoScalingGroupId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ESS"
+            ]
+          }
+        }
+      }
+    },
+    "adjustmentType": {
+      "Type": "String",
+      "Label": {
+        "en": "AdjustmentType",
+        "zh-cn": "伸缩规则的调整方式"
+      },
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "ESSGroupAdjustmentType",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ESS"
+            ]
+          }
+        }
+      },
+      "AllowedValues": [
+        "ScaleOut",
+        "ScaleIn",
+        "TotalCapacity"
+      ],
+      "Default": "ScaleOut"
+    },
+    "adjustmentCount": {
+      "Type": "Number",
+      "Label": {
+        "en": "AdjustmentCount",
+        "zh-cn": "伸缩组ECS实例调整的数量"
+      },
+      "MinValue": 0,
+      "MaxValue": 100,
+      "Default": 0,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ESS"
+            ]
+          }
+        }
+      }
+    },
+    "clusterId": {
+      "Label": {
+        "en": "ClusterId",
+        "zh-cn": "集群ID"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationProperty": "ALIYUN::CS::Cluster::ClusterId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "${regionId}",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ACK"
+            ]
+          }
+        }
+      }
+    },
+    "nodepoolId": {
+      "Label": {
+        "en": "NodepoolId",
+        "zh-cn": "节点池ID"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationProperty": "ALIYUN::CS::Cluster::ClusterNodePool",
+      "AssociationPropertyMetadata": {
+        "RegionId": "${regionId}",
+        "ClusterId": "${clusterId}",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ACK"
+            ]
+          }
+        }
+      }
+    },
+    "desiredSize": {
+      "Label": {
+        "en": "DesiredSize",
+        "zh-cn": "期望节点数"
+      },
+      "Type": "Number",
+      "MinValue": 0,
+      "MaxValue": 100,
+      "Default": 0,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${resourceType}",
+              "ACK"
+            ]
+          }
+        }
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "chooseNextTaskByResourceType",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by resource type",
+        "zh-cn": "根据资源类型选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "createScalingRule",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "ACK",
+                "{{ resourceType }}"
+              ]
+            },
+            "NextTask": "getNodePoolDetail"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "createScalingRule",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create a ScalingRule",
+        "zh-cn": "创建伸缩规则"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CreateScalingRule",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "ScalingRuleName": "{{ ACS::ExecutionId }}",
+          "AdjustmentType": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "TotalCapacity",
+                  "{{ adjustmentType }}"
+                ]
+              },
+              "TotalCapacity",
+              "QuantityChangeInCapacity"
+            ]
+          },
+          "AdjustmentValue": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "ScaleIn",
+                  "{{ adjustmentType }}"
+                ]
+              },
+              "-{{ adjustmentCount }}",
+              "{{ adjustmentCount }}"
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "scalingRuleAri": {
+          "Type": "String",
+          "ValueSelector": "ScalingRuleAri"
+        },
+        "scalingRuleId": {
+          "Type": "String",
+          "ValueSelector": "ScalingRuleId"
+        }
+      }
+    },
+    {
+      "Name": "executeScalingRule",
+      "Description": {
+        "en": "Execute the ScalingRule",
+        "zh-cn": "执行伸缩规则"
+      },
+      "OnError": "deleteScalingRule",
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ESS",
+        "API": "ExecuteScalingRule",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingRuleAri": "{{ createScalingRule.scalingRuleAri }}"
+        }
+      },
+      "Outputs": {
+        "scalingActivityId": {
+          "Type": "String",
+          "ValueSelector": "ScalingActivityId"
+        }
+      }
+    },
+    {
+      "Name": "waitScalingActivityComplete",
+      "Description": {
+        "en": "Poll scaling activity execution until success or failure",
+        "zh-cn": "轮询伸缩活动执行情况直到成功或者失败"
+      },
+      "OnError": "deleteScalingRule",
+      "Retries": 30,
+      "Action": "ACS::WaitFor",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingActivities",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingActivityId1": "{{ executeScalingRule.scalingActivityId }}"
+        },
+        "DesiredValues": [
+          "Successful"
+        ],
+        "StopRetryValues": [
+          "Failed",
+          "Rejected",
+          "Warning"
+        ],
+        "PropertySelector": "ScalingActivities.ScalingActivity[0].StatusCode"
+      }
+    },
+    {
+      "Name": "deleteScalingRule",
+      "Description": {
+        "en": "Delete ScalingRule",
+        "zh-cn": "删除伸缩组规则"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DeleteScalingRule",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingRuleId": "{{ createScalingRule.scalingRuleId }}"
+        }
+      }
+    },
+    {
+      "Name": "describeScalingActivityDetail",
+      "Description": {
+        "en": "Describe scaling activity detail",
+        "zh-cn": "查询一个伸缩活动的详细信息"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingActivityDetail",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingActivityId": "{{ executeScalingRule.scalingActivityId }}"
+        }
+      },
+      "Outputs": {
+        "detail": {
+          "Type": "String",
+          "ValueSelector": ".Detail"
+        }
+      }
+    },
+    {
+      "Name": "getOOSExecutionOutput",
+      "Action": "ACS::ExecuteAPI",
+      "OnSuccess": "ACS::END",
+      "Description": {
+        "en": "Get the lifecycle hook OOS execution output",
+        "zh-cn": "获取生命周期挂钩OOS执行的输出"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListExecutions",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "Tags": {
+            "ESS:ScalingActivityId": "{{ executeScalingRule.scalingActivityId }}"
+          }
+        }
+      },
+      "Outputs": {
+        "lifecycleHookOOSExecutionResult": {
+          "Type": "String",
+          "ValueSelector": "Executions[].Outputs"
+        }
+      }
+    },
+    {
+      "Name": "getNodePoolDetail",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Get cluster node pool info",
+        "zh-cn": "获取集群节点池信息"
+      },
+      "Retries": 20,
+      "Properties": {
+        "Service": "CS",
+        "API": "DescribeClusterNodePoolDetail",
+        "Method": "GET",
+        "URI": "/clusters/{{clusterId}}/nodepools/{{nodepoolId}}",
+        "Parameters": {},
+        "DesiredValues": [
+          "active"
+        ],
+        "PropertySelector": ".status.state"
+      },
+      "Outputs": {
+        "nodePoolInfo": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    },
+    {
+      "Name": "modifyClusterNodePool",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify cluster node pool configuration",
+        "zh-cn": "修改集群节点池配置"
+      },
+      "Properties": {
+        "Service": "CS",
+        "API": "ModifyClusterNodePool",
+        "Method": "PUT",
+        "Headers": {
+          "Content-Type": "application/json"
+        },
+        "URI": "/clusters/{{clusterId}}/nodepools/{{nodepoolId}}",
+        "Body": {
+          "Fn::Jq": [
+            "First",
+            ".+({\"scaling_group\": (.scaling_group + {\"desired_size\": {{desiredSize}}})}) | del(.scaling_group.login_password)",
+            "{{ getNodePoolDetail.nodePoolInfo }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "untilClusterNodePoolReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the cluster node pool configuration to complete",
+        "zh-cn": "等待集群节点池配置修改完成"
+      },
+      "Retries": 20,
+      "Properties": {
+        "Service": "CS",
+        "API": "DescribeClusterNodePoolDetail",
+        "Method": "GET",
+        "Parameters": {},
+        "URI": "/clusters/{{clusterId}}/nodepools/{{nodepoolId}}",
+        "DesiredValues": [
+          "active"
+        ],
+        "PropertySelector": ".status.state"
+      }
+    }
+  ],
+  "Outputs": {
+    "adjustDetail": {
+      "Type": "String",
+      "Value": "{{ describeScalingActivityDetail.detail }}"
+    },
+    "lifecycleHookOOSExecutionResult": {
+      "Type": "String",
+      "Value": "{{ getOOSExecutionOutput.lifecycleHookOOSExecutionResult }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "resourceType",
+            "scalingGroupId",
+            "adjustmentType",
+            "adjustmentCount",
+            "clusterId",
+            "nodepoolId",
+            "desiredSize"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "调整方式设置",
+              "en": "Scaling Rule Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

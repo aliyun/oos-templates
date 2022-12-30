@@ -1,41 +1,45 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Creates an ECS image and updates scaling configuration image ID.",
-    "zh-cn": "\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u5e76\u66f4\u65b0\u4f38\u7f29\u914d\u7f6e\u4e2d\u7684\u955c\u50cfID\u3002",
+    "en": "Creates an ECS image and updates scaling configuration image ID",
+    "zh-cn": "创建一个新ECS镜像并更新伸缩配置中的镜像ID",
     "name-en": "ACS-ESS-CreateImageAndUpdateScalingConfiguration",
-    "name-zh-cn": "\u521b\u5efa\u4e00\u4e2a\u65b0ECS\u955c\u50cf\u5e76\u66f4\u65b0\u5f39\u6027\u4f38\u7f29\u914d\u7f6e",
+    "name-zh-cn": "创建一个新ECS镜像并更新弹性伸缩配置",
     "categories": [
       "elastic_manage"
     ]
   },
   "Parameters": {
-    "targetImageName": {
-      "Description": {
-        "en": "The name of new image.",
-        "zh-cn": "\u65b0\u955c\u50cf\u7684\u540d\u79f0\u3002"
-      },
-      "Type": "String",
-      "MinLength": 1
-    },
     "instanceId": {
-      "Description": {
-        "en": "The id of ECS instance.",
-        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "ECS实例ID"
       },
       "Type": "String"
     },
-    "scalingConfigurationIds": {
+    "targetImageName": {
+      "Label": {
+        "en": "TargetImageName",
+        "zh-cn": "镜像名称"
+      },
       "Description": {
-        "en": "The ID list of the scaling configuration to be modified.",
-        "zh-cn": "\u5f85\u4fee\u6539\u7684\u4f38\u7f29\u914d\u7f6eIDs\u3002"
+        "en": "<p class=\"p\">Note:</p> <ul class=\"ul\"> <li class=\"li\">Length is 2~128 English or Chinese characters</li> <li class=\"li\"><font color='red'>must start with big or small letters or Chinese, not http:// and https://. </font></li> <li class=\"li\">Can contain numbers, colons (:), underscores (_), or dashes (-). </li> </ul>",
+        "zh-cn": "<p class=\"p\">注意：</p> <ul class=\"ul\"> <li class=\"li\">长度为2~128个英文或中文字符</li> <li class=\"li\"><font color='red'>必须以大小字母或中文开头，不能以http://和https://开头。</font></li> <li class=\"li\">可以包含数字、半角冒号（:）、下划线（_）或者短划线（-）。</li> </ul>"
+      },
+      "Type": "String",
+      "Default": "CreateImage_from_{{instanceId}}"
+    },
+    "scalingConfigurationIds": {
+      "Label": {
+        "en": "ScalingConfigurationIds",
+        "zh-cn": "待修改的伸缩配置ID列表"
       },
       "Type": "List"
     },
     "tags": {
-      "Description": {
-        "en": "The image tag.",
-        "zh-cn": "\u955c\u50cf\u6807\u7b7e\u3002"
+      "Label": {
+        "en": "ImageTag",
+        "zh-cn": "镜像标签"
       },
       "Type": "Json",
       "AssociationProperty": "Tags",
@@ -45,9 +49,9 @@
       "Default": []
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -59,8 +63,8 @@
       "Name": "createImage",
       "Action": "ACS::ECS::CreateImage",
       "Description": {
-        "en": "Create new image with the specified image name and instance ID.",
-        "zh-cn": "\u901a\u8fc7\u6307\u5b9a\u5b9e\u4f8bID\u548c\u955c\u50cf\u540d\u79f0\u521b\u5efa\u65b0\u7684\u955c\u50cf\u3002"
+        "en": "Create new image with the specified image name and instance ID",
+        "zh-cn": "通过指定实例ID和镜像名称创建新的镜像"
       },
       "Properties": {
         "imageName": "{{ targetImageName }}_on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}",
@@ -78,8 +82,8 @@
       "Name": "modifyScalingConfiguration",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Modify scaling configuration.",
-        "zh-cn": "\u4fee\u6539\u4f38\u7f29\u914d\u7f6e\u3002"
+        "en": "Modify scaling configuration",
+        "zh-cn": "修改伸缩配置"
       },
       "Properties": {
         "Service": "ESS",

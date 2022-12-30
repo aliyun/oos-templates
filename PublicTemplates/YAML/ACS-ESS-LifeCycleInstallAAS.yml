@@ -1,0 +1,185 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use lifecycleHook to install AAS(Additional application server) in the specified scaling activity instance.
+  zh-cn: 使用生命周期挂钩在实例中安装AAS(Additional application server)
+  name-en: ACS-ESS-LifeCycleInstallAAS
+  name-zh-cn: 使用生命周期挂钩在实例中安装AAS
+  categories:
+    - elastic_manage
+Parameters:
+  PASIP:
+    Label:
+      en: PAS Private IP
+      zh-cn: PAS私网IP地址
+    Description:
+      en: PAS ECS instance private IP address
+      zh-cn: SAP AS ABAP系统PAS所在ECS的私网IP地址
+    Type: String
+  rootPassword:
+    Label:
+      en: Root Password
+      zh-cn: PAS root用户密码
+    Description:
+      en: root password
+      zh-cn: PAS root用户密码
+    Type: String
+  SAPSID:
+    Label:
+      en: SAP AS ABAP System ID
+      zh-cn: SAP AS ABAP系统的SID
+    Description:
+      en: SAP AS ABAP system ID
+      zh-cn: SAP AS ABAP系统的SID
+    Type: String
+  userName:
+    Label:
+      en: SAP AS ABAP System User
+      zh-cn: SAP系统用户名
+    Description:
+      en: SAP AS ABAP system user name use to logon SAP GUI
+      zh-cn: SAP AS ABAP系统SAP GUI的登陆用户名
+    Type: String
+  userPassword:
+    Label:
+      en: SAP AS ABAP System User Password
+      zh-cn: SAP系统用户密码
+    Description:
+      en: SAP AS ABAP system user password use to logon SAP GUI
+      zh-cn: SAP AS ABAP系统SAP GUI的登陆用户密码
+    Type: String
+  clientNumber:
+    Label:
+      en: SAP CLIENT
+      zh-cn: SAP CLIENT
+    Description:
+      en: Client number use to logon SAP GUI
+      zh-cn: SAP GUI的登陆Client，如800、600
+    Type: String
+  className:
+    Label:
+      en: SMLG Logon Group Name
+      zh-cn: SMLG登陆组名
+    Description:
+      en: SMLG logon group name
+      zh-cn: SMLG登录组名。扩展出来的AAS将自动加入到SMLG登陆组中，如果不填写，则会自动加入到默认的'SPACE'组中
+    Type: String
+    Default: SPACE
+  instanceIds:
+    Label:
+      en: instanceIds
+      zh-cn: ECS实例ID列表
+    Description:
+      en: The ID list of the ECS instance
+      zh-cn: ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]
+    Type: List
+    Default:
+      - ${instanceIds}
+  lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
+    Description:
+      en: The ID of the lifecycle hook.
+      zh-cn: 生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}
+    Type: String
+    Default: ${lifecycleHookId}
+  lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
+    Description:
+      en: The token that indicates a specific scaling activity associated with an instance
+      zh-cn: 实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}
+    Type: String
+    Default: ${lifecycleActionToken}
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: UpdateAliyunAssist
+    Action: ACS::ECS::RunCommand
+    OnError: runCommand
+    Description:
+      en: Update cloud assistant
+      zh-cn: 更新云助手
+    Properties:
+      regionId: '{{ ACS::RegionId }}'
+      commandContent: 'rpm -ivh --force "https://aliyun-client-assist-{{ ACS::RegionId }}.oss-{{ ACS::RegionId }}-internal.aliyuncs.com/linux/aliyun_assist_latest.rpm"'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: RunShellScript
+    Loop:
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 10
+      Items: '{{ instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: runCommand
+    Action: ACS::ECS::RunCommand
+    OnError: CompleteLifecycleActionForAbandon
+    OnSuccess: CompleteLifecycleActionForContinue
+    Description:
+      en: Execute install script
+      zh-cn: 执行安装脚本
+    Properties:
+      regionId: '{{ ACS::RegionId }}'
+      commandContent: 'mkdir -p /tmp/sap-auto-scaling && cd /tmp/sap-auto-scaling; wget -q https://sh-test-hangzhou.oss-cn-hangzhou.aliyuncs.com/sap-utilities/sap-auto-scaling/sap_auto_scaling.sh -O /tmp/sap-auto-scaling/sap_auto_scaling.sh && bash sap_auto_scaling.sh --UsrsapDiskName vdb --SwapDiskName vdc --PASIP {{ PASIP }} --RootPassword {{ rootPassword }} --SID {{ SAPSID }} --UserName {{ userName }} --UserPassword {{ userPassword }}  --ClientNumber {{ clientNumber }} --ClassName {{ className }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      commandType: 'RunShellScript'
+      enableParameter: true
+    Loop:
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 10
+      Items: '{{ instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: CompleteLifecycleActionForContinue
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
+    OnSuccess: ACS::END
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ ACS::RegionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
+  - Name: CompleteLifecycleActionForAbandon
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ ACS::RegionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON
+Outputs:
+  commandOutputs:
+    Type: List
+    Value: '{{ runCommand.commandOutputs }}'

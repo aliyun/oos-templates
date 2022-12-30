@@ -1,75 +1,102 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Cross Region copy and run ECS instance by InstanceIds.
-  zh-cn: 跨地域克隆ECS实例。
+  en: Cross Region copy and run ECS instance by InstanceIds
+  zh-cn: 跨地域克隆ECS实例
   title: ACS-ECS-CloneInstancesAcrossRegion
   name-zh-cn: 跨地域克隆ECS实例
   categories:
     - cross_region
 Parameters:
   instanceIds:
-    Description:
-      en: The ID list of the ECS instance.
-      zh-cn: ECS实例ID列表。
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
     Type: List
   regionId:
-    Description:
-      en: The Source Region Id.
-      zh-cn: 源地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 源地域ID
     Type: String
     MinLength: 1
     MaxLength: 30
   targetRegionId:
-    Description:
-      en: The Target Region Id.
-      zh-cn: 目标地域ID。
+    Label:
+      en: TargetRegionId
+      zh-cn: 目标地域ID
     Type: String
     MinLength: 1
     MaxLength: 30
   targetZoneId:
-    Description:
-      en: The Target Zone Id.
-      zh-cn: 目标可用区ID。
+    Label:
+      en: TargetZoneId
+      zh-cn: 目标可用区ID
     Type: String
     MinLength: 1
     MaxLength: 30
   targetInstanceType:
-    Description:
-      en: The instance type for the ECS instances, ecs.g5.large, for example.
-      zh-cn: 实例类型。
+    Label:
+      en: TargetInstanceType
+      zh-cn: 实例类型
     Type: String
     AllowedPattern: 'ecs\.[A-Za-z0-9\.\-]*'
     MinLength: 1
     MaxLength: 30
   targetSecurityGroupId:
-    Description:
-      en: The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.
-      zh-cn: 安全组ID。
+    Label:
+      en: TargetSecurityGroupId
+      zh-cn: 安全组ID
     Type: String
     AllowedPattern: 'sg-[A-Za-z0-9]*'
     MinLength: 1
     MaxLength: 30
   targetVSwitchId:
-    Description:
-      en: The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.
-      zh-cn: 交换机ID。
+    Label:
+      en: TargetVSwitchId
+      zh-cn: 交换机ID
     Type: String
     AllowedPattern: 'vsw-[A-Za-z0-9]*'
     MinLength: 1
     MaxLength: 30
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
+  - Name: queryDisks
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Views disk info of the ECS instance
+      zh-cn: 查看实例的磁盘信息
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      instanceDataDisks:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "data" )|{"Category":(.Category),"Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})'
+      instanceSystemDisk:
+        Type: Json
+        ValueSelector: '.Disks.Disk|map( select(.Type == "system" )|{"Category":(.Category),"Device": (.Device),"Size":(.Size),"DiskName":(.DiskName),"PerformanceLevel":(.PerformanceLevel)})[]'
+    Loop:
+      Items: '{{ instanceIds }}'
+      Outputs:
+        dataDisks:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: instanceDataDisks
+        systemDisks:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: instanceSystemDisk
   - Name: createImage
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Create Image.
-      zh-cn: 创建镜像。
+      en: Create Image
+      zh-cn: 创建镜像
     Properties:
       Service: ECS
       API: CreateImage
@@ -90,8 +117,8 @@ Tasks:
   - Name: untilCreateImageReady
     Action: 'ACS::WaitFor'
     Description:
-      en: Wait For created images available.
-      zh-cn: 等待镜像创建成功。
+      en: Wait For created images available
+      zh-cn: 等待镜像创建成功
     Properties:
       Service: ECS
       API: DescribeImages
@@ -103,12 +130,12 @@ Tasks:
       PropertySelector: 'Images.Image[].Status'
     Loop:
       Items: '{{ createImage.ImageIds }}'
-    Retries: 17
+    Retries: 57
   - Name: copyImage
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Copy image.
-      zh-cn: 复制镜像。
+      en: Copy image
+      zh-cn: 复制镜像
     Properties:
       Service: ECS
       API: CopyImage
@@ -129,8 +156,8 @@ Tasks:
   - Name: untilCopyImageReady
     Action: 'ACS::WaitFor'
     Description:
-      en: Wait for copied images available.
-      zh-cn: 等待镜像复制成功。
+      en: Wait for copied images available
+      zh-cn: 等待镜像复制成功
     Properties:
       Service: ECS
       API: DescribeImages
@@ -145,20 +172,55 @@ Tasks:
   - Name: runInstances
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: run instances.
-      zh-cn: 创建实例。
+      en: run instances
+      zh-cn: 创建实例
     Properties:
       Service: ECS
       API: RunInstances
       Parameters:
         RegionId: '{{ targetRegionId }}'
         ZoneId: '{{ targetZoneId }}'
-        ImageId: '{{ ACS::TaskLoopItem }}'
+        ImageId:
+          'Fn::Select':
+              - '{{ ACS::TaskLoopItem }}'
+              - '{{ copyImage.ImageIds }}'
+        DataDisks:
+          'Fn::Select':
+            - '{{ ACS::TaskLoopItem }}'
+            - '{{queryDisks.dataDisks}}'
+        SystemDiskCategory:
+          'Fn::Select':
+            - Category
+            - 'Fn::Select':
+                - '{{ ACS::TaskLoopItem }}'
+                - '{{ queryDisks.systemDisks }}'
+        SystemDiskSize:
+          'Fn::Select':
+            - Size
+            - 'Fn::Select':
+                - '{{ ACS::TaskLoopItem }}'
+                - '{{ queryDisks.systemDisks }}'
+        SystemDiskDiskName:
+          'Fn::Select':
+            - DiskName
+            - 'Fn::Select':
+                - '{{ ACS::TaskLoopItem }}'
+                - '{{ queryDisks.systemDisks }}'
+        SystemDiskPerformanceLevel:
+          'Fn::Select':
+            - PerformanceLevel
+            - 'Fn::Select':
+                - '{{ ACS::TaskLoopItem }}'
+                - '{{ queryDisks.systemDisks }}'
         InstanceType: '{{ targetInstanceType }}'
         SecurityGroupId: '{{ targetSecurityGroupId }}'
         VSwitchId: '{{ targetVSwitchId }}'
     Loop:
-      Items: '{{ copyImage.ImageIds }}'
+      Items:
+        'Fn::Jq':
+          - All
+          - '.|length|range(.)'
+          - '{{ instanceIds }}'
       Outputs:
         instanceIds:
           AggregateType: 'Fn::ListJoin'
@@ -171,7 +233,7 @@ Tasks:
     Action: 'ACS::WaitFor'
     Description:
       en: Wait for instances running
-      zh-cn: 等待实例创建成功。
+      zh-cn: 等待实例创建成功
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -185,3 +247,29 @@ Outputs:
   instanceIds:
     Value: '{{ runInstances.instanceIds }}'
     Type: List
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - targetRegionId
+          - targetZoneId
+          - targetInstanceType
+          - targetSecurityGroupId
+          - targetVSwitchId
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

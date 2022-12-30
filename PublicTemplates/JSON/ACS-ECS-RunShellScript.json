@@ -2,9 +2,9 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "en": "Run shell script.",
-    "zh-cn": "\u8fd0\u884cshell\u811a\u672c",
+    "zh-cn": "运行shell脚本",
     "title": "ACS-ECS-RunShellScript",
-    "name-zh-cn": "\u8fd0\u884cshell\u811a\u672c",
+    "name-zh-cn": "运行shell脚本",
     "categories": [
       "run_command"
     ]
@@ -12,49 +12,51 @@
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS Instance.",
-        "zh-cn": "ECS\u5b9e\u4f8bID\u3002"
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "ECS实例"
       },
       "Type": "String",
-      "MaxLength": 30,
-      "MinLength": 1
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "commandContent": {
-      "Description": {
-        "en": "The content of command.",
-        "zh-cn": "\u547d\u4ee4\u3002"
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "云助手命令"
       },
       "Type": "String",
       "AssociationProperty": "Code"
     },
     "workingDir": {
-      "Description": {
-        "en": "The directory where the shell script runs on the ECS instances.",
-        "zh-cn": "ECS\u5b9e\u4f8b\u4e2d\u8fd0\u884c\u547d\u4ee4\u7684\u76ee\u5f55\u3002"
+      "Label": {
+        "en": "WorkingDir",
+        "zh-cn": "ECS实例中运行命令的目录"
       },
       "Type": "String"
     },
     "timeout": {
-      "Description": {
-        "en": "The number of the invocation timeout period of a command on ECS instances in seconds.",
-        "zh-cn": "\u6700\u5927\u8d85\u65f6\u65f6\u95f4\uff0c\u65f6\u95f4\u5355\u4f4d\u662f\u79d2\u3002"
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "最大超时时间，时间单位是秒"
       },
       "Type": "Number",
       "Default": 600
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -65,8 +67,8 @@
     {
       "Name": "runCommand",
       "Description": {
-        "en": "Execute cloud assistant command.",
-        "zh-cn": "\u6267\u884c\u4e91\u52a9\u624b\u547d\u4ee4\u3002"
+        "en": "Execute cloud assistant command",
+        "zh-cn": "执行云助手命令"
       },
       "Action": "ACS::ECS::RunCommand",
       "Properties": {
@@ -89,6 +91,48 @@
     "commandOutput": {
       "Type": "String",
       "Value": "{{ runCommand.commandOutput }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "commandContent",
+            "workingDir",
+            "timeout"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "执行命令选型",
+              "en": "run command options"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

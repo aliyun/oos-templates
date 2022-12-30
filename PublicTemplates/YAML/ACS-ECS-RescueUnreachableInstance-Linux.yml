@@ -1,40 +1,49 @@
 FormatVersion: OOS-2019-06-01
 Description:
   en: 'When using ECS instances, some situations can lead to system disk corruption, such as instances being forced to stop or restart, or sudden downtime, failure to update /etc/fstab when the disk is unloaded, or even loss or corruption of /etc/fstab or initrd files. When the instance cannot be accessed, the state of the instance displayed in the ECS instance console may still be Running, but the application in the instance cannot be accessed, the network in the instance cannot be reached, and the connection cannot be established through workbench or SSH. If you can connect to an instance from the console with VNC, you will probably see a page that indicates a system startup failure. At this point, you can consider executing the template to cure the damaged instance. The cure process is that the system disk of the damaged instance will be mounted to the newly created temporary instance, then a cure script will be executed in the temporary instance, and finally the cured system disk will be mounted back to the original instance.'
-  zh-cn: 使用ECS实例时，有些情况可能导致系统盘损伤，比如实例被强制地停止或重启，抑或突然发生了宕机，以及数据盘被卸载后未更新/etc/fstab，甚至于/etc/fstab或initrd文件丢失或损坏。当无法访问实例时，该实例在ECS实例控制台显示的状态可能还是运行中，但实例内的应用不可访问，实例内的网络不可达，更无法通过workbench或者ssh建立连接。如果您在控制台通过vnc能连接上实例，看到的页面大概是系统启动失败的提示信息。此时您可考虑执行该模版对损伤实例进行救治，救治流程主要是损伤的实例的系统盘将被挂载到新创建的临时实例上，接着在临时实例中会执行一段救治脚本，最后救治过的系统盘将被挂载回原实例。
+  zh-cn: 使用ECS实例时，有些情况可能导致系统盘损伤，比如实例被强制地停止或重启，抑或突然发生了宕机，以及数据盘被卸载后未更新/etc/fstab，甚至于/etc/fstab或initrd文件丢失或损坏。当无法访问实例时，该实例在ECS实例控制台显示的状态可能还是运行中，但实例内的应用不可访问，实例内的网络不可达，更无法通过workbench或者ssh建立连接。如果您在控制台通过vnc能连接上实例，看到的页面大概是系统启动失败的提示信息。此时您可考虑执行该模版对损伤实例进行救治，救治流程主要是损伤的实例的系统盘将被挂载到新创建的临时实例上，接着在临时实例中会执行一段救治脚本，最后救治过的系统盘将被挂载回原实例
   name-en: ACS-ECS-RescueUnreachableInstance-Linux
   name-zh-cn: 自助救治损伤的ECS实例Linux系统盘
   categories:
     - diagnose
 Parameters:
   unreachableInstanceId:
-    Description:
-      en:  ID of your unreachable ECS instance.
-      zh-cn: 将自救的ECS实例ID。
+    Label:
+      en: UnreachableInstanceId
+      zh-cn: 将自救的ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: '{{ ACS::RegionId }}'
   credentialType:
     Description:
-      en:  'Credential Type for your unreachable ECS instance after being rescued, either KeyPairName or Password type can be chosen.'
-      zh-cn: 当执行自救ECS实例后，实例root登录凭证类型，可选择密钥对或自定义密码。
+      en: 'Credential Type for your unreachable ECS instance after being rescued, either KeyPairName or Password type can be chosen.'
+      zh-cn: 当执行自救ECS实例后，实例root登录凭证类型，可选择密钥对或自定义密码
+    Label:
+      en: CredentialType
+      zh-cn: 登录凭证类型
     Type: String
     AllowedValues:
       - KeyPairName
       - Password
   credentialValue:
     Description:
-      en:  'Credential value for your unreachable ECS instance after being rescued, the value of KeyPairName or Password.'
-      zh-cn: 当执行自救ECS实例后，实例root登录凭证值，如果凭证类型选择密钥对，则此处填写密钥对名称；如果凭证类型选择了自定义密码，则此处填写将设置的密码。
+      en: 'Credential value for your unreachable ECS instance after being rescued, the value of KeyPairName or Password.'
+      zh-cn: 当执行自救ECS实例后，实例root登录凭证值，如果凭证类型选择密钥对，则此处填写密钥对名称；如果凭证类型选择了自定义密码，则此处填写将设置的密码
     Type: String
+    Label:
+      en: Credential
+      zh-cn: 登录凭证
   imagePrefix:
-    Description:
-      en:   The prefix for backup image name.
-      zh-cn: 用来备份ECS实例的镜像名称的前缀。
+    Label:
+      en: ImagePrefix
+      zh-cn: 用来备份ECS实例的镜像名称的前缀
     Type: String
     Default: OOSRescueBackup-
   helperInstanceTypes:
-    Description:
-      en:   The instance types for the helper instance are being selected from to check the available one in current zone by task.
-      zh-cn: 自救执行过程中，被创建的临时实例规格的选择范围。
+    Label:
+      en: HelperInstanceTypes
+      zh-cn: 自救执行过程中，被创建的临时实例规格的选择范围
     Type: List
     Default:
       - ecs.t6-c4m1.large
@@ -52,9 +61,9 @@ Parameters:
       - ecs.c6.large
       - ecs.sn2ne.large
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -62,8 +71,8 @@ Tasks:
 - Name: checkInstanceReady
   Action: 'ACS::CheckFor'
   Description:
-    en: Checks ECS instance is linux os.
-    zh-cn: 确认将救治ECS实例为Linux系统的。
+    en: Checks ECS instance is linux os
+    zh-cn: 确认将救治ECS实例为Linux系统的
   OnError: ACS::END
   Properties:
     Service: ECS
@@ -96,8 +105,8 @@ Tasks:
 - Name: querySystemDisks
   Action: 'ACS::CheckFor'
   Description:
-    en: Checks system disk of the ECS instance.
-    zh-cn: 检查将救治的系统盘情况。
+    en: Checks system disk of the ECS instance
+    zh-cn: 检查将救治的系统盘情况
   OnError: ACS::END
   Properties:
     Service: ECS
@@ -121,8 +130,8 @@ Tasks:
 - Name: whetherStopInstance
   Action: 'ACS::Choice'
   Description:
-    en: Choose next task by Instance status.
-    zh-cn: 根据实例状态选择要执行的任务。
+    en: Choose next task by Instance status
+    zh-cn: 根据实例状态选择要执行的任务
   Properties:
     DefaultTask: stopInstance
     Choices:
@@ -134,8 +143,8 @@ Tasks:
 - Name: stopInstance
   Action: 'ACS::ExecuteAPI'
   Description:
-    en: Stops the ECS instances.
-    zh-cn: 停止实例。
+    en: Stops the ECS instances
+    zh-cn: 停止实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -143,16 +152,16 @@ Tasks:
       InstanceId: '{{ unreachableInstanceId }}'
 - Name: Sleep3Minutes
   Description:
-    en: Wait instance Stopped.
-    zh-cn: 等待实例停止成功。
+    en: Wait instance Stopped
+    zh-cn: 等待实例停止成功
   Action: 'ACS::Sleep'
   Properties:
     Duration: PT3M
 - Name: queryUnreachableInstanceStatus
   Action: 'ACS::ExecuteAPI'
   Description:
-    en: Query status of unreachable instance.
-    zh-cn: 查询损伤系统盘的实例状态。
+    en: Query status of unreachable instance
+    zh-cn: 查询损伤系统盘的实例状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -166,8 +175,8 @@ Tasks:
 - Name: whetherForceStopInstance
   Action: 'ACS::Choice'
   Description:
-    en: Choose next task by Instance status.
-    zh-cn: 根据实例状态选择要执行的任务。
+    en: Choose next task by Instance status
+    zh-cn: 根据实例状态选择要执行的任务
   Properties:
     DefaultTask: forceStopInstance
     Choices:
@@ -179,8 +188,8 @@ Tasks:
 - Name: forceStopInstance
   Action: 'ACS::ExecuteAPI'
   Description:
-    en: Stops the ECS instances forcibly.
-    zh-cn: 强制停止实例。
+    en: Stops the ECS instances forcibly
+    zh-cn: 强制停止实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -190,8 +199,8 @@ Tasks:
 - Name: untilStopUnreachableInstanceSuccess
   Action: 'ACS::WaitFor'
   Description:
-    en: Waits for the ECS instance to enter stoped status.
-    zh-cn: 等待实例停止。
+    en: Waits for the ECS instance to enter stoped status
+    zh-cn: 等待实例停止
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -205,8 +214,8 @@ Tasks:
   Action: 'ACS::Template'
   OnError: ACS::END
   Description:
-    en: Query current available instance type for creating helper instance in the zone of the unreachable.
-    zh-cn: 查询将创建的目标临时实例规格是否有库存。
+    en: Query current available instance type for creating helper instance in the zone of the unreachable
+    zh-cn: 查询将创建的目标临时实例规格是否有库存
   Properties:
     TemplateName: 'ACS::ECS::CheckAvailableInstanceTypes'
     Parameters:
@@ -219,8 +228,8 @@ Tasks:
 - Name: createImage
   Action: 'ACS::ExecuteAPI'
   Description:
-    en: Creates a custom image.
-    zh-cn: 创建一个自定义镜像。
+    en: Creates a custom image
+    zh-cn: 创建一个自定义镜像
   Properties:
     Service: ECS
     API: CreateImage
@@ -239,8 +248,8 @@ Tasks:
 - Name: createStack
   Action: 'ACS::ExecuteAPI'
   Description:
-    en: Create a Ros resource stack.
-    zh-cn: 创建Ros资源栈。
+    en: Create a Ros resource stack
+    zh-cn: 创建Ros资源栈
   Properties:
     Service: ROS
     API: CreateStack
@@ -269,8 +278,8 @@ Tasks:
 - Name: untilImageReady
   Action: ACS::WaitFor
   Description:
-    en: Wait for the image to be available.
-    zh-cn: 等待镜像创建成功。
+    en: Wait for the image to be available
+    zh-cn: 等待镜像创建成功
   OnError: deleteStack
   Properties:
     Service: ECS
@@ -331,8 +340,8 @@ Tasks:
   Action: 'ACS::ECS::RunCommand'
   OnError: deleteStack
   Description:
-    en: Run cloud assistant command on ECS instance to download rt.
-    zh-cn: 在实例中运行云助手命令下载修复脚本。
+    en: Run cloud assistant command on ECS instance to download rt
+    zh-cn: 在实例中运行云助手命令下载修复脚本
   Properties:
     commandContent: 'cd /tmp ; wget https://oos-debug.oss-cn-hangzhou.aliyuncs.com/guestos-scripts-0.0.1.tar.gz; tar -zxvf guestos-scripts-0.0.1.tar.gz'
     commandType: RunShellScript
@@ -341,8 +350,8 @@ Tasks:
   Action: ACS::ExecuteAPI
   OnError: deleteStack
   Description:
-    en: Add Tags of system disk to instance to rescue.
-    zh-cn: 给要救治的实例添加上其系统盘信息的标签。
+    en: Add Tags of system disk to instance to rescue
+    zh-cn: 给要救治的实例添加上其系统盘信息的标签
   Properties:
     Service: ECS
     API: AddTags
@@ -356,8 +365,8 @@ Tasks:
   Action: 'ACS::ECS::DetachDisk'
   OnError: deleteStack
   Description:
-    en: Detaches the system disk from unreachable instance.
-    zh-cn: 卸载有损伤的系统盘。
+    en: Detaches the system disk from unreachable instance
+    zh-cn: 卸载有损伤的系统盘
   Properties:
     instanceId: '{{ unreachableInstanceId }}'
     diskId: '{{ querySystemDisks.diskId }}'
@@ -365,8 +374,8 @@ Tasks:
   Action: 'ACS::ECS::AttachDisk'
   OnError: deleteStack
   Description:
-    en: Attaches the system disk to the helper instance as a data disk.
-    zh-cn: 将损伤的系统盘作为数据盘挂载到临时实例上。
+    en: Attaches the system disk to the helper instance as a data disk
+    zh-cn: 将损伤的系统盘作为数据盘挂载到临时实例上
   Properties:
     instanceId: '{{ untilStackReady.helperInstanceId }}'
     diskId: '{{ querySystemDisks.diskId }}'
@@ -374,8 +383,8 @@ Tasks:
   Action: 'ACS::ECS::RunCommand'
   OnError: deleteStack
   Description:
-    en: Run a cloud assistant command of rescuing disk on ECS instance.
-    zh-cn: 在实例中通过云助手运行救治损伤盘的脚本。
+    en: Run a cloud assistant command of rescuing disk on ECS instance
+    zh-cn: 在实例中通过云助手运行救治损伤盘的脚本
   Properties:
     commandContent: cd /tmp/guestos-scripts-0.0.1;./rescue_system_disk.sh
     commandType: RunShellScript
@@ -388,8 +397,8 @@ Tasks:
   Action: 'ACS::ExecuteAPI'
   OnError: deleteStack
   Description:
-    en: Stops the helper instance forcibly.
-    zh-cn: 强制停止实例。
+    en: Stops the helper instance forcibly
+    zh-cn: 强制停止实例
   Properties:
     Service: ECS
     API: StopInstance
@@ -400,8 +409,8 @@ Tasks:
   Action: 'ACS::WaitFor'
   OnError: deleteStack
   Description:
-    en: Waits for the helper instance to enter stoped status.
-    zh-cn: 等待临时实例停止。
+    en: Waits for the helper instance to enter stoped status
+    zh-cn: 等待临时实例停止
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -415,8 +424,8 @@ Tasks:
   Action: 'ACS::ECS::DetachDisk'
   OnError: deleteStack
   Description:
-    en: Detaches data disk from the helper instance.
-    zh-cn: 卸载临时实例的数据盘。
+    en: Detaches data disk from the helper instance
+    zh-cn: 卸载临时实例的数据盘
   Properties:
     instanceId: '{{ untilStackReady.helperInstanceId }}'
     diskId: '{{ querySystemDisks.diskId }}'
@@ -424,8 +433,8 @@ Tasks:
   Action: 'ACS::WaitFor'
   OnError: 'ACS::NEXT'
   Description:
-    en: Waits for the disk to be detached.
-    zh-cn: 等待磁盘卸载成功。
+    en: Waits for the disk to be detached
+    zh-cn: 等待磁盘卸载成功
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -439,8 +448,8 @@ Tasks:
   Action: 'ACS::ExecuteApi'
   OnError: 'ACS::NEXT'
   Description:
-    en: Delete the ros resource stack.
-    zh-cn: 删除Ros资源栈。
+    en: Delete the ros resource stack
+    zh-cn: 删除Ros资源栈
   Properties:
     Service: ROS
     API: DeleteStack
@@ -450,8 +459,8 @@ Tasks:
   Action: 'ACS::WaitFor'
   OnError: 'ACS::NEXT'
   Description:
-    en: Wait for the ros stack status DELETE_COMPLETE.
-    zh-cn: 等待Ros资源栈至删除成功。
+    en: Wait for the ros stack status DELETE_COMPLETE
+    zh-cn: 等待Ros资源栈至删除成功
   Properties:
     Service: ROS
     API: GetStack
@@ -467,8 +476,8 @@ Tasks:
   Action: 'ACS::CheckFor'
   OnError: 'ACS::END'
   Description:
-    en: Check for the disk to be detached.
-    zh-cn: 检查损伤的系统盘是否可挂载。
+    en: Check for the disk to be detached
+    zh-cn: 检查损伤的系统盘是否可挂载
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -482,8 +491,8 @@ Tasks:
   Action: 'ACS::Choice'
   OnError: 'ACS::NEXT'
   Description:
-    en: Choose next task by credential type input.
-    zh-cn: 根据输入的登录凭证类型确定后续任务。
+    en: Choose next task by credential type input
+    zh-cn: 根据输入的登录凭证类型确定后续任务
   Properties:
     DefaultTask: attachAsSysDiskWithKeyPairName
     Choices:
@@ -497,8 +506,8 @@ Tasks:
   OnSuccess: untilDiskAttached
   OnError: 'ACS::NEXT'
   Description:
-    en: Attaches the source system disk to unreachable instance and set PairName credential type for root.
-    zh-cn: 将救治过的损伤系统盘挂回原实例，并且为root设置密钥对形式的登录凭证。
+    en: Attaches the source system disk to unreachable instance and set PairName credential type for root
+    zh-cn: 将救治过的损伤系统盘挂回原实例，并且为root设置密钥对形式的登录凭证
   Properties:
     Service: ECS
     API: AttachDisk
@@ -511,8 +520,8 @@ Tasks:
   Action: 'ACS::ExecuteAPI'
   OnError: 'ACS::NEXT'
   Description:
-    en: Attaches the source system disk to unreachable instance and set Password credential type for root.
-    zh-cn: 将救治过的损伤系统盘挂回原实例，并且为root设置自定义密码形式的登录凭证。
+    en: Attaches the source system disk to unreachable instance and set Password credential type for root
+    zh-cn: 将救治过的损伤系统盘挂回原实例，并且为root设置自定义密码形式的登录凭证
   Properties:
     Service: ECS
     API: AttachDisk
@@ -525,8 +534,8 @@ Tasks:
   Action: 'ACS::WaitFor'
   OnError: 'ACS::NEXT'
   Description:
-    en: Waits for the system disk to be attached.
-    zh-cn: 等待系统盘挂回原实例成功。
+    en: Waits for the system disk to be attached
+    zh-cn: 等待系统盘挂回原实例成功
   Retries: 7
   Properties:
     Service: ECS
@@ -541,8 +550,8 @@ Tasks:
   Action: 'ACS::Choice'
   OnError: 'ACS::NEXT'
   Description:
-    en: Choose next task by original instance status.
-    zh-cn: 根据实例初始状态选择后续任务。
+    en: Choose next task by original instance status
+    zh-cn: 根据实例初始状态选择后续任务
   Properties:
     DefaultTask: ACS::END
     Choices:
@@ -554,8 +563,8 @@ Tasks:
 - Name: startUnreachableInstance
   Action: 'ACS::ECS::StartInstance'
   Description:
-    en: Starts the unreachable instance.
-    zh-cn: 启动被救治的实例。
+    en: Starts the unreachable instance
+    zh-cn: 启动被救治的实例
   Properties:
     instanceId: '{{ unreachableInstanceId}}'
 Outputs:
@@ -571,3 +580,27 @@ Outputs:
   finalHelperInstanceType:
     Type: String
     Value: '{{checkAvailableInstanceTypesExist.availableInstanceType}}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - credentialType
+          - credentialValue
+          - imagePrefix
+          - helperInstanceTypes
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - unreachableInstanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instance
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

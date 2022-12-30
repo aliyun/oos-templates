@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Use this template to install package on ECS.",
+  "Description": {
+    "name-en": "ACS::ECS::ConfigureOOSPackage",
+    "name-zh-cn": "在ECS实例中安装OOS自定义软件包",
+    "en": "Configure OOS package on ECS instance",
+    "zh-cn": "在ECS实例中安装OOS自定义软件包"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The id of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The id of instance.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "action": {
-      "Description": "The action to configure package.",
+      "Description": {
+        "en": "The action to configure package",
+        "zh-cn": "设置软件包的方式"
+      },
       "Type": "String",
       "AllowedValues": [
         "install",
@@ -21,11 +35,17 @@
       "Default": "install"
     },
     "packageName": {
-      "Description": "The name of package.",
+      "Description": {
+        "en": "The name of package",
+        "zh-cn": "软件包名称"
+      },
       "Type": "String"
     },
     "packageVersion": {
-      "Description": "The version of package.",
+      "Description": {
+        "en": "The version of package",
+        "zh-cn": "软件包版本"
+      },
       "Type": "String",
       "Default": ""
     }
@@ -34,7 +54,10 @@
     {
       "Name": "queryInstanceOSType",
       "Action": "ACS::ExecuteApi",
-      "Description": "Queries ECS instance OS type.",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "获取操作系统类型"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -54,6 +77,10 @@
     },
     {
       "Name": "configureLinuxPackage",
+      "Description": {
+        "en": "Configures OOS package on Linux instance",
+        "zh-cn": "在Linux类型实例中安装OOS软件包"
+      },
       "When": {
         "Fn::Equals": [
           "{{ queryInstanceOSType.OSType }}",
@@ -65,7 +92,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunShellScript",
-        "commandContent": "if  [ '{{ packageVersion }}' = '' ] ; then\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}}\nelse\n  acs-plugin-manager --exec -P oosutil --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\nfi"
+        "commandContent": "#!/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  if  [ '{{ packageVersion }}' = '' ] ; then\n     acs-plugin-manager --exec -P oosutil --params configure_package,{{action}},{{packageName}}\n  else\n     acs-plugin-manager --exec -P oosutil --params configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\n  fi\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  test -e $path || mkdir -p $path\n  currentPath=`pwd`\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  if  [ '{{ packageVersion }}' = '' ] ; then\n    $path/oosutil_linux configure_package {{action}} {{packageName}}\n  else\n    $path/oosutil_linux configure_package {{action}} {{packageName}} --package-version {{packageVersion}}\n  fi\nfi"
       },
       "Outputs": {
         "commandOutput": {
@@ -76,6 +103,10 @@
     },
     {
       "Name": "configureWindowsPackage",
+      "Description": {
+        "en": "Configures OOS package on Windows instance",
+        "zh-cn": "在Windows类型实例中安装OOS软件包"
+      },
       "When": {
         "Fn::Equals": [
           "{{ queryInstanceOSType.OSType }}",
@@ -87,18 +118,7 @@
         "regionId": "{{ regionId }}",
         "instanceId": "{{ instanceId }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": {
-          "Fn::If": [
-            {
-              "Fn::Equals": [
-                "",
-                "{{ packageVersion }}"
-              ]
-            },
-            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}}",
-            "acs-plugin-manager.exe --exec -P oosutil_win --param configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}"
-          ]
-        }
+        "commandContent": "$current_version=(aliyun_assist_service.exe -v)\n$specified_version=\"1.0.0.134\"\nif ($current_version -gt $specified_version){\n  if ('{{ packageVersion }}'){\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"configure_package,{{action}},{{packageName}},--package-version,{{packageVersion}}\"\n    if ($LASTEXITCODE -ne 0){\n        exit $LASTEXITCODE;\n    }\n  }else{\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"configure_package,{{action}},{{packageName}}\"\n    if ($LASTEXITCODE -ne 0){\n        exit $LASTEXITCODE;\n    }\n  }\n}else{\n  $version=\"{{ACS::OOSUtilVersion}}\"\n  $path = \"C:\\aliyun-oosutil\\$version\"\n  $currentPath=(pwd)\n  $pathExistOrNot = Test-Path -Path \"$path\"\n  if ($pathExistOrNot){\n      cd $path\n  }else{\n      mkdir $path\n      cd $path\n  }\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile(\"https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe\", \"$path/oosutil_windows.exe\")\n  cd $currentPath\n  if ('{{ packageVersion }}'){\n    C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe configure_package {{action}} {{packageName}} --package-version {{ packageVersion }}\n    if ($LASTEXITCODE -ne 0){\n        exit $LASTEXITCODE;\n    }\n  }else{\n    C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe configure_package {{action}} {{packageName}}\n    if ($LASTEXITCODE -ne 0){\n        exit $LASTEXITCODE;\n    }\n  }\n}"
       },
       "Outputs": {
         "commandOutput": {

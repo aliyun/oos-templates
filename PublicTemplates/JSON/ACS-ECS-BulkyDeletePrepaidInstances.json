@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Bulky delete prepaid instances.",
-    "zh-cn": "\u6279\u91cf\u5220\u9664ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b\u3002",
+    "en": "Bulky delete prepaid instances",
+    "zh-cn": "批量删除ECS预付费实例",
     "name-en": "ACS-ECS-BulkyDeletePrepaidInstances",
-    "name-zh-cn": "\u6279\u91cf\u5220\u9664ECS\u9884\u4ed8\u8d39\u5b9e\u4f8b",
+    "name-zh-cn": "批量删除ECS预付费实例",
     "categories": [
       "instance_manage"
     ]
@@ -12,24 +12,29 @@
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "targets": {
       "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance"
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
       }
     },
     "rateControl": {
-      "Description": {
-        "en": "Concurrency ratio of task execution.",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
       },
       "Type": "Json",
       "AssociationProperty": "RateControl",
@@ -40,9 +45,9 @@
       }
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -53,12 +58,13 @@
     {
       "Name": "getInstance",
       "Description": {
-        "en": "Views the ECS instances.",
-        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
       },
       "Action": "ACS::SelectTargets",
       "Properties": {
         "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
         ]
@@ -74,8 +80,8 @@
       "Name": "deletePrepaidInstance",
       "Action": "ACS::ECS::DeletePrepaidInstance",
       "Description": {
-        "en": "Deletes the prepaid ECS instance by instance ID.",
-        "zh-cn": "\u901a\u8fc7\u5b9e\u4f8bID\u5220\u9664\u5305\u5e74\u5305\u6708\u5b9e\u4f8b\u3002"
+        "en": "Deletes the prepaid ECS instance by instance ID",
+        "zh-cn": "通过实例ID删除包年包月实例"
       },
       "Properties": {
         "regionId": "{{ regionId }}",
@@ -86,5 +92,35 @@
         "Items": "{{ getInstance.instanceIds }}"
       }
     }
-  ]
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

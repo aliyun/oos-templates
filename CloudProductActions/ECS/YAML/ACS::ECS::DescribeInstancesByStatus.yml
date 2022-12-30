@@ -1,17 +1,27 @@
 FormatVersion: OOS-2019-06-01
-Description: Views the ECS instances by specifying instance status.
+Description:
+  name-en: ACS::ECS::DescribeInstancesByStatus
+  name-zh-cn: 根据ECS实例状态获取实例ID
+  en: Views the ECS instance IDs by specifying instance status
+  zh-cn: 根据ECS实例状态获取实例ID
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   status:
-    Description: The ECS instances status for query instances.
+    Description:
+      en: The ECS instances status
+      zh-cn: ECS实例状态
     Type: String
 Tasks:
 - Name: describeInstances
   Action: ACS::ExecuteAPI
-  Description: Views the ECS instances by specifying instance status.
+  Description:
+    en: Queries the ECS instance IDs by specifying instance status.
+    zh-cn: 根据ECS实例状态获取实例ID
   Properties:
     Service: ECS
     API: DescribeInstances

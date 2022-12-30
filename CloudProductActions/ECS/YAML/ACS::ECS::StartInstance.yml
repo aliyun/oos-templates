@@ -1,16 +1,26 @@
 FormatVersion: OOS-2019-06-01
-Description: Starts an ECS instance.
+Description:
+  name-en: ACS::ECS::StartInstance
+  name-zh-cn: 启动ECS实例
+  en: Starts an ECS instance
+  zh-cn: 启动一台ECS实例
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
 Tasks:
 - Name: getInstanceStatus
-  Description: Views the ECS instances status.
+  Description:
+    en: Queries the ECS instances status
+    zh-cn: 获取ECS实例的状态
   Action: ACS::ExecuteApi
   Properties:
     Service: ECS
@@ -25,7 +35,9 @@ Tasks:
       ValueSelector: Instances.Instance[].Status
 - Name: whetherInstanceIsRunning
   Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Description:
+    en: Choose next task by instance Running status
+    zh-cn: 根据实例的运行中状态选择下一个任务
   Properties:
     DefaultTask: whetherInstanceIsStarting
     Choices:
@@ -36,7 +48,9 @@ Tasks:
         NextTask: ACS::END
 - Name: whetherInstanceIsStarting
   Action: 'ACS::Choice'
-  Description: Choose next task by instance status.
+  Description:
+    en: Choose next task by instance Starting status
+    zh-cn: 根据实例的启动中状态选择下一个任务
   Properties:
     DefaultTask: startInstance
     Choices:
@@ -47,7 +61,9 @@ Tasks:
         NextTask: untilInstanceReady
 - Name: startInstance
   Action: ACS::ExecuteAPI
-  Description: Starts an ECS instance.
+  Description:
+    en: Starts ECS instance
+    zh-cn: 启动ECS实例
   Properties:
     Service: ECS
     API: StartInstance
@@ -56,7 +72,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for the ECS instance to enter running status.
+  Description:
+    en: Waits for the ECS instance to enter Running status
+    zh-cn: 等待ECS实例至运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances

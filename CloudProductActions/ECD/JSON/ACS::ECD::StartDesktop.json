@@ -1,0 +1,136 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECD::StartDesktop",
+    "name-zh-cn": "启动云桌面",
+    "en": "Starts an ECD desktop",
+    "zh-cn": "启动一台云桌面"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopId": {
+      "Description": {
+        "en": "The ID of ECD desktop",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getDesktopStatus",
+      "Description": {
+        "en": "Queries the ECD Desktops status",
+        "zh-cn": "获取云桌面的状态"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "status": {
+          "Type": "String",
+          "ValueSelector": "Desktops[].DesktopStatus"
+        }
+      }
+    },
+    {
+      "Name": "whetherDesktopIsRunning",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by Desktop Running status",
+        "zh-cn": "根据云桌面的运行中状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "whetherDesktopIsStarting",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Running",
+                "{{ getDesktopStatus.status }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherDesktopIsStarting",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by desktop Starting status",
+        "zh-cn": "根据实例的启动中状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "startDesktop",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Starting",
+                "{{ getDesktopStatus.status }}"
+              ]
+            },
+            "NextTask": "untilDesktopReady"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "startDesktop",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Starts ECD desktop",
+        "zh-cn": "启动云桌面"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "StartDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "untilDesktopReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the desktop to enter Running status",
+        "zh-cn": "等待云桌面至运行中状态"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Desktops[].DesktopStatus"
+      }
+    }
+  ]
+}

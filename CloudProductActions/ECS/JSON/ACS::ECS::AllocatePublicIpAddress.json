@@ -1,14 +1,25 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Assigns a public IP address to an instance.",
+  "Description": {
+    "name-ne": "ACS::ECS::AllocatePublicIpAddress",
+    "name-zh-cn": "为ECS实例分配一个公网IP",
+    "en": "Assigns a public IP address to ECS instance",
+    "zh-cn": "为ECS实例分配一个公网IP地址"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of the instance to be allocated an IP address.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
@@ -18,7 +29,10 @@
     {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Checks whether the ECS instance status is running or stopped.",
+      "Description": {
+        "en": "Check whether the ECS instance status is Running or Stopped",
+        "zh-cn": "检查ECS实例是否处于运行中或已停止状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -38,7 +52,10 @@
     {
       "Name": "allocatePublicIpAddress",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Assigns a public IP address to an instance.",
+      "Description": {
+        "en": "Assigns a public IP address to an instance",
+        "zh-cn": "为一台ECS实例分配一个公网IP地址"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "AllocatePublicIpAddress",
@@ -57,7 +74,10 @@
     {
       "Name": "rebootInstance",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Restarts the ECS instance.",
+      "Description": {
+        "en": "Restarts the ECS instance",
+        "zh-cn": "重启ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "RebootInstance",
@@ -70,7 +90,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the ECS instance to enter the running status.",
+      "Description": {
+        "en": "Waits for the ECS instance to enter the Running status",
+        "zh-cn": "等待ECS实例到达运行中状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

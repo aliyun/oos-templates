@@ -1,0 +1,297 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Rolling update ECI instances in scaling group by update container group
+  zh-cn: 通过更新容器组的方式滚动更新伸缩组内的ECI实例
+  name-en: ACS-ESS-RollingUpdateByUpdateContainerGroup
+  name-zh-cn: 通过更新容器组的方式滚动更新伸缩组内的ECI实例
+  categories:
+    - elastic_manage
+Parameters:
+  invokeType:
+    Label:
+      en: InvokeType
+      zh-cn: 操作类型
+    Type: String
+    AllowedValues:
+      - invoke
+      - rollback
+  scalingGroupId:
+    Label:
+      en: ScalingGroupId
+      zh-cn: 伸缩组ID
+    Type: String
+  enterProcess:
+    Label:
+      en: EnterProcess
+      zh-cn: 执行开始要暂停的伸缩组流程
+    Type: List
+    Default:
+      - ScaleIn
+      - ScaleOut
+      - HealthCheck
+      - AlarmNotification
+      - ScheduledAction
+  exitProcess:
+    Label:
+      en: ExitProcess
+      zh-cn: 执行结束要恢复的伸缩组流程
+    Type: List
+    Default:
+      - ScaleIn
+      - ScaleOut
+      - HealthCheck
+      - AlarmNotification
+      - ScheduledAction
+  containerConfigure:
+    Description:
+      en: ContainerConfigure
+      zh-cn: 用于更新的容器配置
+    Type: Json
+  sourceContainerConfigure:
+    Label:
+      en: SourceContainerConfigure
+      zh-cn: 用于回滚的容器配置
+    Type: Json
+    Default: {}
+  sourceExecutionId:
+    Label:
+      en: SourceExecutionId
+      zh-cn: 用于回滚的OOS执行ID
+    Type: String
+    Default: ''
+  scalingConfigurationId:
+    Label:
+      en: ScalingConfigurationId
+      zh-cn: 伸缩配置ID
+    Type: String
+  batchPauseOption:
+    Label:
+      en: BatchPauseOption
+      zh-cn: 分批模式
+    Type: String
+    AllowedValues:
+      - Automatic
+      - FirstBatchPause
+      - EveryBatchPause
+    Default: Automatic
+  batchNumber:
+    Label:
+      en: BatchNumber
+      zh-cn: 分批执行的批次
+    Type: Number
+    MinValue: 1
+    MaxValue: 100
+    Default: 5
+  maxErrors:
+    Label:
+      en: MaxErrors
+      zh-cn: 分批执行的最大错误次数
+    Type: Number
+    Default: 0
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: choiceNextTask
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by invoke type
+      zh-cn: 根据执行的类型选择执行的任务
+    Properties:
+      DefaultTask: getInstance
+      Choices:
+        - When:
+            Fn::Equals:
+              - rollback
+              - '{{ invokeType }}'
+          NextTask: getExecutionInstanceIds
+  - Name: getInstance
+    Description:
+      en: Get the ECI instances
+      zh-cn: 获取ECI实例
+    Action: ACS::ExecuteApi
+    Properties:
+      Service: ESS
+      API: DescribeScalingInstances
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        LifecycleState: InService
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: ScalingInstances.ScalingInstance[].InstanceId
+  - Name: whetherTheScalingGroupInstanceIsEmpty
+    Action: ACS::Choice
+    Description:
+      en: Check whether the instance in the service in the scaling group is empty
+      zh-cn: 检查伸缩组内服务中的实例是否为空
+    Properties:
+      DefaultTask: whetherToSuspendProcess
+      Choices:
+        - When:
+            Fn::Equals:
+              - []
+              - '{{ getInstance.instanceIds }}'
+          NextTask: ACS::END
+  - Name: whetherToSuspendProcess
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否暂停流程
+    Properties:
+      DefaultTask: suspendProcess
+      Choices:
+        - When:
+            Fn::Equals:
+              - []
+              - '{{ enterProcess }}'
+          NextTask: invokeByUpdateContainerGroup
+  - Name: suspendProcess
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Suspend process
+      zh-cn: 暂停伸缩组流程
+    Properties:
+      Service: ESS
+      API: SuspendProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ enterProcess }}'
+  - Name: modifyScalingConfiguration
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify scaling configuration
+      zh-cn: 修改伸缩配置
+    Properties:
+      Service: ESS
+      API: ModifyEciScalingConfiguration
+      Parameters:
+        ScalingConfigurationId: '{{ scalingConfigurationId }}'
+        Container: '{{ containerConfigure }}'
+  - Name: invokeByUpdateContainerGroup
+    Action: ACS::ESS::UpdateContainerGroup
+    Description:
+      en: Update Container Group
+      zh-cn: 更新容器组
+    Properties:
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      scalingGroupId: '{{ scalingGroupId }}'
+      containerConfigure: '{{ containerConfigure }}'
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      BatchPauseOption: '{{ batchPauseOption }}'
+      Concurrency:
+        Fn::CalculateBatch:
+          - '{{ batchNumber }}'
+          - '{{ getInstance.instanceIds }}'
+  - Name: whetherToResumeProcesses
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否恢复流程
+    Properties:
+      DefaultTask: resumeProcesses
+      Choices:
+        - When:
+            Fn::Equals:
+              - []
+              - '{{ exitProcess }}'
+          NextTask: ACS::END
+  - Name: resumeProcesses
+    Action: ACS::ExecuteAPI
+    OnSuccess: ACS::END
+    Description:
+      en: Resume process
+      zh-cn: 恢复伸缩组流程
+    Properties:
+      Service: ESS
+      API: ResumeProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ exitProcess }}'
+  - Name: getExecutionInstanceIds
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Get the instance id that has been updated
+      zh-cn: 获取已经更新容器的实例ID
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ParentExecutionId: '{{ sourceExecutionId }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: .Executions[].Parameters.instanceId
+  - Name: getRollbackProcess
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Get resource parameters
+      zh-cn: 获取源执行的参数
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ExecutionId: '{{ sourceExecutionId }}'
+    Outputs:
+      enterProcess:
+        Type: List
+        ValueSelector: Executions[].Parameters.enterProcess[]
+      exitProcess:
+        Type: List
+        ValueSelector: Executions[].Parameters.exitProcess[]
+  - Name: suspendProcessWithRollBack
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Suspend process
+      zh-cn: 暂停伸缩组流程
+    Properties:
+      Service: ESS
+      API: SuspendProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ getRollbackProcess.enterProcess }}'
+  - Name: rollbackByUpdateContainerGroup
+    Action: ACS::ESS::UpdateContainerGroup
+    Description:
+      en: Update caontainer group for roll back
+      zh-cn: 回滚更新容器组
+    Properties:
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      scalingGroupId: '{{ scalingGroupId }}'
+      containerConfigure: '{{ sourceContainerConfigure }}'
+    Loop:
+      Items: '{{ getExecutionInstanceIds.instanceIds }}'
+      BatchPauseOption: '{{ batchPauseOption }}'
+      Concurrency:
+        Fn::CalculateBatch:
+          - '{{ batchNumber }}'
+          - '{{ getExecutionInstanceIds.instanceIds }}'
+  - Name: whetherToResumeProcessesWithRollback
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否恢复流程
+    Properties:
+      DefaultTask: resumeProcessesWithRollback
+      Choices:
+        - When:
+            Fn::Equals:
+              - []
+              - '{{ getRollbackProcess.exitProcess }}'
+          NextTask: ACS::END
+  - Name: resumeProcessesWithRollback
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Resume process
+      zh-cn: 恢复伸缩组流程
+    Properties:
+      Service: ESS
+      API: ResumeProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ getRollbackProcess.exitProcess }}'

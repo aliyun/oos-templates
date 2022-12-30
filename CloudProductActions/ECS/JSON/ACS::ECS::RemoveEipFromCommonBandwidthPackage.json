@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Remove EIP from common bandwidth package.",
+  "Description": {
+    "name-en": "ACS::ECS::RemoveEipFromCommonBandwidthPackage",
+    "name-zh-cn": "从共享带宽包中移出EIP",
+    "en": "Remove EIP from common bandwidth package",
+    "zh-cn": "从共享带宽包中移出EIP"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "eipAddress": {
-      "Description": "The list of Eip address.",
+      "Description": {
+        "en": "The EIP address",
+        "zh-cn": "EIP的ip地址"
+      },
       "Type": "String"
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -21,15 +35,22 @@
   "Tasks": [
     {
       "Name": "getEipAttribute",
-      "Action": "ACS::ExecuteApi",
-      "Description": "Views the id of Eip.",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Queries the AllocationId and BandwidthPackageId of EIP",
+        "zh-cn": "获取EIP的实例ID和加入的带宽包ID"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "DescribeEipAddresses",
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "EipAddress": "{{ eipAddress }}"
-        }
+        },
+        "NotDesiredValues": [
+          []
+        ],
+        "PropertySelector": "EipAddresses.EipAddress"
       },
       "Outputs": {
         "allocationId": {
@@ -45,7 +66,10 @@
     {
       "Name": "whetherEipInPackage",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by Eip status.",
+      "Description": {
+        "en": "Choose next task by Eip bandwidthPackageId",
+        "zh-cn": "根据EIP的共享带宽包ID信息选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "removeCommonBandwidthPackageEip",
         "Choices": [
@@ -64,7 +88,10 @@
     {
       "Name": "removeCommonBandwidthPackageEip",
       "Action": "ACS::ExecuteApi",
-      "Description": "Removes Eip from CommonBandwidthPackage.",
+      "Description": {
+        "en": "Removes EIP from CommonBandwidthPackage",
+        "zh-cn": "从共享带宽包中移出EIP"
+      },
       "Properties": {
         "Service": "VPC",
         "API": "RemoveCommonBandwidthPackageIp",

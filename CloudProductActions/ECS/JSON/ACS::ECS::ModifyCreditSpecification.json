@@ -1,20 +1,34 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Modify the column credit specification for the T5 series instance.",
+  "Description": {
+    "name-en": "ACS::ECS::ModifyCreditSpecification",
+    "name-zh-cn": "修改T5系列突发性能实例的运行模式",
+    "en": "Modify the column credit specification for the T5 series instance",
+    "zh-cn": "修改T5系列突发性能实例的运行模式"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The instance ID you will handle.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "creditSpecification": {
-      "Description": "The creditSpecification of instance.",
+      "Description": {
+        "en": "The creditSpecification of ECS instance",
+        "zh-cn": "突发性能实例的运行模式"
+      },
       "Type": "String",
       "AllowedValues": [
         "Standard",
@@ -26,7 +40,10 @@
     {
       "Name": "getInstanceCreditSpecification",
       "Action": "ACS::ExecuteApi",
-      "Description": "Get instance credit specification.",
+      "Description": {
+        "en": "Queries instance credit specification",
+        "zh-cn": "获取突发性能实例的运行模式"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -47,7 +64,10 @@
     {
       "Name": "chooseNextTask",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by ECS instance creditSpecification.",
+      "Description": {
+        "en": "Choose next task by ECS instance creditSpecification",
+        "zh-cn": "通过ECS实例creditSpecification选择下一个任务"
+      },
       "Properties": {
         "DefaultTask": "modifyCreditSpecification",
         "Choices": [
@@ -66,7 +86,10 @@
     {
       "Name": "modifyCreditSpecification",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Changes the type of creditSpecification instance.",
+      "Description": {
+        "en": "Modifies the creditSpecification of ECS instance",
+        "zh-cn": "修改突发性能实例的运行模式"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "ModifyInstanceAttribute",
@@ -80,7 +103,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the ECS instance to enter specified status.",
+      "Description": {
+        "en": "Waits for the ECS instance to enter specified status",
+        "zh-cn": "等待ECS实例进入指定的状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

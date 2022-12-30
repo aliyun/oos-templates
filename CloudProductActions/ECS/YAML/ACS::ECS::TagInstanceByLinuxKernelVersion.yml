@@ -1,27 +1,33 @@
 FormatVersion: OOS-2019-06-01
-Description: Tag an ECS instance using Linux kernel version as tag value.
+Description:
+  name-en: ACS::ECS::TagInstanceByLinuxKernelVersion
+  name-zh-cn: 以ECS实例的Linux内核版本为标签值给实例打标签
+  en: Tag an ECS instance using Linux kernel version as tag value
+  zh-cn: 以ECS实例的Linux内核版本标签值给实例打标签
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
-      en: Instance ID of the ECS to be tagged.
-      zh-cn: ECS实例ID。
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MaxLength: 30
     MinLength: 1
   tagKey:
     Description:
-      en: The tag key.
-      zh-cn: 标签键。
+      en: The tag key
+      zh-cn: 标签键
     Type: String
     Default: kernelVersion
   OOSAssumeRole:
     Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+      en: The RAM role to be assumed by OOS
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -29,8 +35,8 @@ Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
   Description:
-    en: Checks ECS instance is in the running status.
-    zh-cn: 检查ECS实例是否处于Running状态。
+    en: Checks ECS instance is in the Running status
+    zh-cn: 检查ECS实例是否处于运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -44,8 +50,8 @@ Tasks:
 - Name: queryInstanceKernelVersion
   Action: ACS::ECS::RunCommand
   Description:
-    en: Queries kernel version by RunCommand invocation result.
-    zh-cn: 通过运行云助手命令获取实例内核版本。
+    en: Queries kernel version by RunCommand invocation result
+    zh-cn: 通过运行云助手命令获取实例内核版本
   Properties:
     regionId: '{{ regionId }}'
     commandContent: uname -r | awk -F'-' '{print $1}'
@@ -58,8 +64,8 @@ Tasks:
 - Name: tagResources
   Action: ACS::ExecuteApi
   Description:
-   en: Creates and attaches tag to ECS instance.
-   zh-cn: 创建并挂载标签到ECS实例。
+   en: Creates and attaches tag to ECS instance
+   zh-cn: 创建并挂载标签到ECS实例
   Properties:
     Service: ECS
     API: TagResources

@@ -1,49 +1,99 @@
 FormatVersion: OOS-2019-06-01
-Description: Resets a disk to its initial status.The specified ECS instances should be in stopped status.
+Description:
+  name-en: ACS::ECS::ReInitDisk
+  name-zh-cn: 把云盘初始化到初始状态
+  en: Reinitialize a disk to restore it to the status when it was created
+  zh-cn: 重新初始化一块云盘到创建时的初始状态
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
-  diskId:
-    Description: The ID of disk you will re init.
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
-    AllowedPattern: d-[A-Za-z0-9]*
-    MinLength: 1
-    MaxLength: 30
 Tasks:
+- Name: querySystemDisk
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Views system disk of the ECS instance
+    zh-cn: 查看实例的系统盘
+  Properties:
+    Service: ECS
+    API: DescribeDisks
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InstanceId: '{{ instanceId }}'
+      DiskType: system
+  Outputs:
+    diskId:
+      Type: String
+      ValueSelector: Disks.Disk[].DiskId
+- Name: stopInstance
+  Action: ACS::ECS::StopInstance
+  Description:
+    en: Stops the ECS instances
+    zh-cn: 停止ECS实例
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ instanceId }}'
 - Name: checkForDiskReady
   Action: ACS::CheckFor
-  Description: Check the disk is in_use status.
+  Description:
+    en: Checks the disk is In_use status
+    zh-cn: 检测磁盘的状态属否为使用中状态
+  OnError: startInstance
   Properties:
     Service: ECS
     API: DescribeDisks
     Parameters:
       RegionId: '{{ regionId }}'
       DiskIds:
-      - '{{ diskId }}'
+      - '{{ querySystemDisk.diskId }}'
     DesiredValues:
     - In_use
     PropertySelector: Disks.Disk[].Status
 - Name: reInitDisk
   Action: ACS::ExecuteAPI
-  Description: Resets a disk to its initial status.
+  Description:
+    en: Resets a disk to its initial status
+    zh-cn: 重新初始化一块云盘到创建时的初始状态
   Properties:
     Service: ECS
     API: ReInitDisk
     Parameters:
       RegionId: '{{ regionId }}'
-      DiskId: '{{ diskId }}'
+      DiskId: '{{ querySystemDisk.diskId }}'
 - Name: checkDiskStatus
   Action: ACS::WaitFor
-  Description: Waits for the system disk to enter In_use status.
+  Description:
+    en: Waits for the system disk to enter In_use status
+    zh-cn: 等待系统盘的状态至使用中状态
   Properties:
     Service: ECS
     API: DescribeDisks
     Parameters:
       RegionId: '{{ regionId }}'
       DiskIds:
-      - '{{ diskId }}'
+      - '{{ querySystemDisk.diskId }}'
     DesiredValues:
     - In_use
     PropertySelector: Disks.Disk[].Status
+- Name: startInstance
+  Action: ACS::ECS::StartInstance
+  Description:
+    en: Starts the ECS instance
+    zh-cn: 启动ECS实例
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ instanceId }}'
+Outputs:
+  reInitDiskIdAndInstanceId:
+    Type: Json
+    Value:
+      instanceId: '{{ instanceId }}'
+      diskId: '{{ querySystemDisk.diskId }}'

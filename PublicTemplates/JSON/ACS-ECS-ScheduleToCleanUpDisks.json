@@ -1,0 +1,223 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Schedule to clean up disks",
+    "zh-cn": "定时清理磁盘",
+    "name-en": "Cleanup Disks",
+    "name-zh-cn": "清理磁盘",
+    "categories": [
+      "time_trigger",
+      "application_manage",
+      "computenest"
+    ]
+  },
+  "Parameters": {
+    "timerTrigger": {
+      "Type": "Json",
+      "Label": {
+        "en": "TimerTrigger",
+        "zh-cn": "定时类型"
+      },
+      "AssociationProperty": "ALIYUN::OOS::Component::TimerTrigger"
+    },
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "cleanUpInfos": {
+      "Description": {
+        "en": "Format: 3d|/root/log/|*.log,3h|/root/log/|*.access,30m|C:\\Users\\Administrator\\log\\|*.log.",
+        "zh-cn": "格式：3d|/root/log/|*.log,3h|/root/log/|*.access,30m|C:\\Users\\Administrator\\log\\|*.log"
+      },
+      "Label": {
+        "en": "CleanUpRule",
+        "zh-cn": "磁盘清理规则"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OOS::Component::CleanUpInfo"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying type and expression",
+        "zh-cn": "通过指定触发类型和表达式按计划触发任务"
+      },
+      "Properties": {
+        "Type": {
+          "Fn::Select": [
+            "type",
+            "{{timerTrigger}}"
+          ]
+        },
+        "Expression": {
+          "Fn::Select": [
+            "expression",
+            "{{timerTrigger}}"
+          ]
+        },
+        "EndDate": {
+          "Fn::Select": [
+            "endDate",
+            "{{ timerTrigger }}"
+          ]
+        },
+        "TimeZone": {
+          "Fn::Select": [
+            "timeZone",
+            "{{ timerTrigger }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "cleanUpDisk",
+      "Action": "ACS::ECS::CleanUpDisk",
+      "Description": {
+        "en": "Execute cloud assistant command to clean up disk",
+        "zh-cn": "执行云助手命令清理磁盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "cleanUpInfos": "{{ cleanUpInfos }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getInstance.instanceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutputs": {
+      "Type": "List",
+      "Value": "{{ cleanUpDisk.commandOutputs }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "timerTrigger"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "清理时间",
+              "en": "The time of cleanup disk"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "cleanUpInfos"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置规则",
+              "en": "The rule of cleanup disk"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select ECS Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

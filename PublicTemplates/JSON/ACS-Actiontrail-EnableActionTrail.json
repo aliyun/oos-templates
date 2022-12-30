@@ -1,41 +1,76 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Enable action trail.",
-    "zh-cn": "\u5f00\u542f\u8ddf\u8e2a\u3002",
+    "en": "Enable action trail",
+    "zh-cn": "开启跟踪",
     "name-en": "ACS-Actiontrail-EnableActionTrail",
-    "name-zh-cn": "\u5f00\u542f\u64cd\u4f5c\u5ba1\u8ba1\u8ddf\u8e2a",
+    "name-zh-cn": "开启操作审计跟踪",
     "categories": [
       "security"
     ]
   },
   "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
     "trailName": {
-      "Description": {
-        "en": "The name for trail.",
-        "zh-cn": "\u521b\u5efa\u7684\u8ddf\u8e2a\u540d\u79f0\u3002"
+      "Label": {
+        "en": "TrailName",
+        "zh-cn": "创建的跟踪名称"
       },
       "Type": "String"
     },
     "ossBucketName": {
-      "Description": {
-        "en": "The OOS Bucket name for creating trail.",
-        "zh-cn": "\u8ddf\u8e2a\u5199\u5165\u7684 OSS bucket \u540d\u79f0\u3002"
+      "Label": {
+        "en": "OSSBucketName",
+        "zh-cn": "跟踪写入的 OSS bucket 名称"
       },
-      "Type": "String"
+      "Type": "String",
+      "Default": ""
     },
     "roleName": {
-      "Description": {
-        "en": "The name of the ram role that the user allows the actiontrail service to play.",
-        "zh-cn": "\u7528\u6237\u5141\u8bb8 ActionTrail\u670d\u52a1\u626e\u6f14\u7684RAM\u89d2\u8272\u540d\u79f0\u3002"
+      "Label": {
+        "en": "RoleName",
+        "zh-cn": "用户允许ActionTrail服务扮演的RAM角色名称"
       },
       "Type": "String",
       "Default": "aliyunactiontraildefaultrole"
     },
-    "OOSAssumeRole": {
+    "eventRW": {
+      "Label": {
+        "en": "EventRW",
+        "zh-cn": "投递事件的读写类型"
+      },
+      "Type": "String",
+      "Default": "All",
+      "AllowedValues": [
+        "All",
+        "Write",
+        "Read"
+      ]
+    },
+    "trailRegion": {
       "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+        "en": "Example：All、cn-hangzhou",
+        "zh-cn": "例如：All、cn-hangzhou"
+      },
+      "Label": {
+        "en": "TrailRegion",
+        "zh-cn": "跟踪的地域"
+      },
+      "Type": "String",
+      "Default": "All"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -47,18 +82,66 @@
       "Name": "createTrail",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Create trail.",
-        "zh-cn": "\u521b\u5efa\u8ddf\u8e2a\u3002"
+        "en": "Create trail",
+        "zh-cn": "创建跟踪"
       },
       "Properties": {
         "Service": "Actiontrail",
         "API": "CreateTrail",
         "Parameters": {
+          "RegionId": "{{ regionId }}",
           "Name": "{{ trailName }}",
           "OssBucketName": "{{ ossBucketName }}",
-          "RoleName": "{{ roleName }}"
+          "RoleName": "{{ roleName }}",
+          "EventRW": "{{ eventRW }}",
+          "TrailRegion": "{{ trailRegion }}"
+        }
+      },
+      "Outputs": {
+        "trail": {
+          "Type": "Json",
+          "ValueSelector": "."
         }
       }
     }
-  ]
+  ],
+  "Outputs": {
+    "trails": {
+      "Type": "Json",
+      "Value": "{{ createTrail.trail }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "trailName",
+            "ossBucketName",
+            "roleName",
+            "eventRW",
+            "trailRegion",
+            "regionId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

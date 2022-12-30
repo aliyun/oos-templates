@@ -1,0 +1,100 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Delete specified ip from the ip white list array of redis instances",
+    "zh-cn": "从redis实例IP白名单分组里删除指定IP",
+    "name-en": "ACS::Redis::DeleteSecurityIpByInstanceIPArray",
+    "name-zh-cn": "从redis实例IP白名单分组里删除指定IP"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "region id of instances",
+        "zh-cn": "实例所在地域ID"
+      },
+      "Type": "String"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The id of redis instances",
+        "zh-cn": "redis实例ID"
+      },
+      "Type": "String"
+    },
+    "securityIpList": {
+      "Description": {
+        "en": "The security ips",
+        "zh-cn": "要修改的IP白名单"
+      },
+      "Type": "String"
+    },
+    "securityIpGroupName": {
+      "Description": {
+        "en": "The ip array name",
+        "zh-cn": "需要修改的IP白名单分组名称"
+      },
+      "Type": "String"
+    },
+    "securityIp": {
+      "Description": {
+        "en": "The security ip to delete",
+        "zh-cn": "需要删除的IP"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkSecurityIPList",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Check whether the ip list includes specified ip",
+        "zh-cn": "查询ip列表中是否包含指定ip"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    "contains([\"{{ securityIp }}\"])",
+                    {
+                      "Fn::Split": [
+                        ",",
+                        "{{ securityIpList }}"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "NextTask": "modifySecurityIps"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifySecurityIps",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Delete specified ip from the ip white list array of redis instances",
+        "zh-cn": "从redis实例IP白名单分组里删除指定"
+      },
+      "Properties": {
+        "Service": "R-KVSTORE",
+        "API": "ModifySecurityIps",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "SecurityIps": "{{ securityIp }}",
+          "ModifyMode": "Delete",
+          "SecurityIpGroupName": "{{ securityIpGroupName }}"
+        }
+      }
+    }
+  ]
+}

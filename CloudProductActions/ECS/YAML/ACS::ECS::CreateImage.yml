@@ -1,28 +1,40 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates a custom image.
+Description:
+  name-en: ACS::ECS::CreateImage
+  name-zh-cn: 为ECS实例创建镜像
+  en: Creates a custom image from ECS instance
+  zh-cn: 为ECS实例创建一份自定义镜像
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   imageName:
-    Description: The image name.
+    Description:
+      en: The name of image
+      zh-cn: 镜像名称
     Type: String
   instanceId:
-    Description: The ID of the instance.
+    Description:
+      en: The ID of the ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   tags:
     Description:
-      en: The image tag.
-      zh-cn: 镜像标签。
+      en: The image tag
+      zh-cn: 镜像标签
     Type: Json
     Default: []
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
-  Description: Checks whether the ECS instance status is running or stopped.
+  Description:
+    en: Checks whether the ECS instance status is running or stopped
+    zh-cn: 检查实例是否处于running或者stopped状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -34,9 +46,15 @@ Tasks:
     - Running
     - Stopped
     PropertySelector: Instances.Instance[].Status
+  Outputs:
+    resourceGroupId:
+      Type: String
+      ValueSelector: .Instances.Instance[0].ResourceGroupId
 - Name: createImage
   Action: ACS::ExecuteAPI
-  Description: Creates a custom image.
+  Description:
+    en: Creates a custom image
+    zh-cn: 创建一份自定义镜像
   Properties:
     Service: ECS
     API: CreateImage
@@ -45,20 +63,24 @@ Tasks:
       ImageName: '{{ imageName }}'
       InstanceId: '{{ instanceId }}'
       Tags: '{{ tags }}'
+      ResourceGroupId: '{{ checkInstanceReady.resourceGroupId }}'
   Outputs:
     imageId:
       Type: String
       ValueSelector: ImageId
 - Name: untilImageReady
   Action: ACS::WaitFor
-  Description: Waits for the image to be available.
-  Retries: 17
+  Description:
+    en: Waits for the image to be available
+    zh-cn: 等待创建的镜像可用
+  Retries: 57
   Properties:
     Service: ECS
     API: DescribeImages
     Parameters:
       RegionId: '{{ regionId }}'
       ImageId: '{{ createImage.imageId }}'
+      Status: Creating,Waiting,Available,UnAvailable,CreateFailed,Deprecated
     DesiredValues:
     - Available
     PropertySelector: Images.Image[].Status

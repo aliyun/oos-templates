@@ -1,67 +1,113 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Creates one or more ECS instances.",
+  "Description": {
+    "name-en": "ACS::ECS::RunInstances",
+    "name-zh-cn": "创建ECS实例",
+    "en": "Creates one or more ECS instances",
+    "zh-cn": "创建一个或多个ECS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "imageId": {
-      "Description": "The ID of the image resource that you specify when you create the instance.",
+      "Description": {
+        "en": "The ID of the image resource that you specify when you create the instance",
+        "zh-cn": "创建ECS实例时出入的镜像ID"
+      },
       "Type": "String",
       "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
       "MinLength": 1,
       "MaxLength": 100
     },
     "instanceType": {
-      "Description": "The type of the instance.",
+      "Description": {
+        "en": "The type of the ECS instance",
+        "zh-cn": "ECS实例类型"
+      },
       "Type": "String",
       "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
       "MaxLength": 30,
       "MinLength": 1
     },
     "instanceName": {
-      "Description": "The name of new instance.",
+      "Description": {
+        "en": "The name of new instance",
+        "zh-cn": "新实例名称"
+      },
       "Type": "String",
       "Default": ""
     },
     "ramRoleName": {
-      "Description": "The ram role for the ECS instances.",
+      "Description": {
+        "en": "The ram role for the ECS instances",
+        "zh-cn": "ECS实例的RamRole名称"
+      },
       "Type": "String",
       "Default": ""
     },
     "securityGroupId": {
-      "Description": "The ID of the security group to which the instance belongs.",
+      "Description": {
+        "en": "The ID of the security group to which the instance belongs",
+        "zh-cn": "实例的安全组ID"
+      },
       "Type": "String",
       "AllowedPattern": "sg-[A-Za-z0-9]*",
       "MaxLength": 30,
       "MinLength": 1
     },
     "vSwitchId": {
-      "Description": "The ID of the VSwitch.",
+      "Description": {
+        "en": "The ID of the VSwitch",
+        "zh-cn": "交换机ID"
+      },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MaxLength": 30,
       "MinLength": 1
     },
     "amount": {
-      "Description": "The specified number of instances you want to create.",
+      "Description": {
+        "en": "The specified number of instances you want to create",
+        "zh-cn": "需要创建实例的数量"
+      },
       "Type": "Number",
       "Default": 1
     },
     "internetMaxBandwidthIn": {
-      "Description": "The maximum inbound public bandwidth.",
+      "Description": {
+        "en": "The maximum inbound public bandwidth",
+        "zh-cn": "公网入带宽"
+      },
       "Type": "Number",
       "Default": 200
     },
     "internetMaxBandwidthOut": {
-      "Description": "The maximum outbound public bandwidth.",
+      "Description": {
+        "en": "The maximum outbound public bandwidth",
+        "zh-cn": "公网出带宽"
+      },
       "Type": "Number",
       "Default": 0
     },
+    "tags": {
+      "Description": {
+        "en": "The tags of new ECS instance to add on,e.g.[{\"Key\":\"oos\",\"Value\":\"test\"}]",
+        "zh-cn": "ECS实例的标签，例如：[{\"Key\":\"oos\",\"Value\":\"test\"}]"
+      },
+      "Type": "Json",
+      "Default": []
+    },
     "systemDiskCategory": {
-      "Description": "The category of the system disk.",
+      "Description": {
+        "en": "The category of the system disk",
+        "zh-cn": "系统盘的云盘种类"
+      },
       "Type": "String",
       "AllowedValues": [
         "cloud_efficiency",
@@ -70,13 +116,56 @@
         "cloud"
       ],
       "Default": "cloud_efficiency"
+    },
+    "systemDiskSize": {
+      "Description": {
+        "en": "The size of the system disk",
+        "zh-cn": "系统盘大小"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "instanceChargeType": {
+      "Description": {
+        "en": "Instance charge type",
+        "zh-cn": "实例的付费方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "PrePaid",
+        "PostPaid"
+      ],
+      "Default": "PostPaid"
+    },
+    "periodUnit": {
+      "Description": {
+        "en": "The unit of the subscription period",
+        "zh-cn": "包年包月计费方式的时长单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month"
+      ],
+      "Default": "Month"
+    },
+    "period": {
+      "Description": {
+        "en": "The subscription period of the instance",
+        "zh-cn": "购买包年包月资源的时长"
+      },
+      "Type": "Number",
+      "Default": 1
     }
   },
   "Tasks": [
     {
       "Name": "runInstances",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Creates one or more instances.",
+      "Description": {
+        "en": "Creates one or more ECS instances",
+        "zh-cn": "创建一个或多个ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "RunInstances",
@@ -91,7 +180,34 @@
           "VSwitchId": "{{ vSwitchId }}",
           "InternetMaxBandwidthIn": "{{ internetMaxBandwidthIn }}",
           "InternetMaxBandwidthOut": "{{ internetMaxBandwidthOut }}",
-          "SystemDiskCategory": "{{ systemDiskCategory }}"
+          "SystemDiskCategory": "{{ systemDiskCategory }}",
+          "SystemDiskSize": "{{ systemDiskSize }}",
+          "Tags": "{{ tags }}",
+          "InstanceChargeType": "{{ instanceChargeType }}",
+          "PeriodUnit": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "PrePaid",
+                  "{{ instanceChargeType }}"
+                ]
+              },
+              "{{ periodUnit }}",
+              ""
+            ]
+          },
+          "Period": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "PrePaid",
+                  "{{ instanceChargeType }}"
+                ]
+              },
+              "{{ period }}",
+              ""
+            ]
+          }
         }
       },
       "Outputs": {
@@ -104,7 +220,10 @@
     {
       "Name": "untilInstanceReady",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the created instances to be Running.",
+      "Description": {
+        "en": "Waits for the created instances to be Running status",
+        "zh-cn": "等待创建的实例进入运行中状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

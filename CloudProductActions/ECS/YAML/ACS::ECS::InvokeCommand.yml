@@ -1,28 +1,54 @@
 FormatVersion: OOS-2019-06-01
-Description: Triggers an exisiting cloud assistant command on one ECS instance.
+Description:
+  name-en: ACS::ECS::InvokeCommand
+  name-zh-cn: 执行云助手命令
+  en: Triggers an exisiting cloud assistant command on one ECS instance
+  zh-cn: 在ECS实例上执行云助手命令
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   commandId:
-    Description: The ID of the cloud assistant command.
+    Description:
+      en: The ID of the cloud assistant command
+      zh-cn: 云助手命令ID
     Type: String
   instanceId:
-    Description: The ID of ECS instance where the command need to be executed.
+    Description:
+      en: The ID of ECS instance where the command need to be executed
+      zh-cn: 将要执行云助手命令的ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
+  username:
+    Description:
+      en: The username that is used to run the command on the ECS instance
+      zh-cn: 在ECS实例中执行命令的用户名称
+    Type: String
+    Default: ""
+  parameters:
+    Description:
+      en: Specifies the values of the custom parameters when the custom parameter feature is enabled. The values are key-value pairs
+      zh-cn: 启用自定义参数功能时，执行命令时传入的自定义参数的键值对
+    Type: Json
+    Default: {"": ""}
 Tasks:
 - Name: invokeCommand
   Action: ACS::ExecuteAPI
-  Description: Triggers a cloud assistant command on one ECS instance.
+  Description:
+    en: Triggers a cloud assistant command on one ECS instance
+    zh-cn: 在ECS实例上执行云助手命令
   Properties:
     Service: ECS
     API: InvokeCommand
     Parameters:
       RegionId: '{{ regionId }}'
       CommandId: '{{ commandId }}'
+      Parameters: '{{ parameters }}'
+      Username: '{{ username }}'
       InstanceIds:
       - '{{ instanceId }}'
   Outputs:
@@ -31,7 +57,9 @@ Tasks:
       ValueSelector: InvokeId
 - Name: untilInvocationReady
   Action: ACS::WaitFor
-  Description: Waits for the command to be completed.
+  Description:
+    en: Waits for the command to be completed
+    zh-cn: 等待云助手命令执行完成
   Properties:
     Service: ECS
     API: DescribeInvocations
@@ -40,11 +68,14 @@ Tasks:
       InvokeId: '{{ invokeCommand.invokeId }}'
     DesiredValues:
     - Finished
+    StopRetryValues:
+      - Failed
     PropertySelector: Invocations.Invocation[].InvokeStatus
 - Name: describeInvocationResults
   Action: ACS::ExecuteAPI
-  Description: Views the command output of a cloud assistant command in the specified
-    ECS instance.
+  Description:
+    en: Queries the command output of a cloud assistant command in the specified ECS instance
+    zh-cn: 查看在ECS实例上执行云助手命令的返回结果
   Properties:
     Service: ECS
     API: DescribeInvocationResults
@@ -55,6 +86,21 @@ Tasks:
     invocationResult:
       Type: String
       ValueSelector: Invocation.InvocationResults.InvocationResult[].Output
+- Name: checkInvocationResult
+  Action: 'ACS::CheckFor'
+  Description:
+    en: Checks the command exitcode of a cloud assistant command
+    zh-cn: 检测云助手命令的退出码
+  OnError: 'ACS::END'
+  Properties:
+    Service: ECS
+    API: DescribeInvocationResults
+    Parameters:
+      RegionId: '{{ regionId }}'
+      InvokeId: '{{ invokeCommand.invokeId }}'
+    PropertySelector: 'Invocation.InvocationResults.InvocationResult[].ExitCode'
+    DesiredValues:
+      - 0
 Outputs:
   invocationOutput:
     Type: String

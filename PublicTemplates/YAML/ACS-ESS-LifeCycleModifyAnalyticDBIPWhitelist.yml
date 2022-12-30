@@ -1,0 +1,137 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use lifecycleHook to modify the IP whitelist of the AnalyticDB instance
+  zh-cn: 使用生命周期挂钩设置AnalyticDB实例的IP白名单
+  name-en: ACS-ESS-LifeCycleModifyAnalyticDBIPWhitelist
+  name-zh-cn: 使用生命周期挂钩设置AnalyticDB实例的IP白名单
+  categories:
+    - elastic_manage
+Parameters:
+  dbClusterId:
+    Label:
+      en: DBClusterId
+      zh-cn: AnalyticDB集群ID
+    Type: String
+  modifyMode:
+    Label:
+      en: ModifyMode
+      zh-cn: 修改IP白名单的方式
+    Description:
+      en: The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities
+      zh-cn: 修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动
+    Type: String
+    AllowedValues:
+      - Append
+      - Delete
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Description:
+      en: The ID of region
+      zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
+    Type: String
+    Default: '${regionId}'
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
+    Description:
+      en: The ID list of the ECS instance
+      zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
+    Type: List
+    Default:
+      - '${instanceIds}'
+  lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
+    Description:
+      en: The ID of the lifecycle hook
+      zh-cn: '生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
+    Type: String
+    Default: '${lifecycleHookId}'
+  lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
+    Description:
+      en: The token that indicates a specific scaling activity associated with an instance
+      zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
+    Type: String
+    Default: '${lifecycleActionToken}'
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstanceIpAddress
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Gets ECS instance network type and ip address
+      zh-cn: 获取ECS实例的网络类型和Ip地址
+    OnError: CompleteLifecycleActionForAbandon
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds: '{{ instanceIds }}'
+    Outputs:
+      Ips:
+        Type: List
+        ValueSelector: >-
+          .Instances.Instance[]|.VpcAttributes.PrivateIpAddress.IpAddress+.InnerIpAddress.IpAddress|.[]
+  - Name: modifySecurityIps
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modifies the whitelist
+      zh-cn: 修改白名单
+    OnError: CompleteLifecycleActionForAbandon
+    OnSuccess: CompleteLifecycleActionForContinue
+    Properties:
+      Service: ADB
+      API: ModifyDBClusterAccessWhiteList
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ModifyMode: '{{ modifyMode }}'
+        DBClusterId: '{{ dbClusterId }}'
+        SecurityIps:
+          'Fn::Join':
+            - ','
+            - '{{ getInstanceIpAddress.Ips }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
+    OnSuccess: 'ACS::END'
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
+  - Name: CompleteLifecycleActionForAbandon
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON
+Outputs:
+  ipAddresses:
+    Type: List
+    Value: '{{ getInstanceIpAddress.Ips }}'
+

@@ -1,75 +1,80 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Create and verify instance by commands.
-  zh-cn: SMC创建并通过执行命令验证目标实例。
+  en: Create and verify instance by commands
+  zh-cn: SMC创建并通过执行命令验证目标实例
   name-en: ACS-SMC-CreateAndVerifyInstance
   name-zh-cn: SMC创建并验证目标实例
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of target region.
-      zh-cn: 将创建资源的目标地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   zoneId:
+    Label:
+      en: ZoneId
+      zh-cn: 可用区
     Description:
-      en: The target zone id of VSwitch to create..
-      zh-cn: 将创建交换机的目标可用区ID。
+      en: The target zone id of VSwitch to create
+      zh-cn: 将创建交换机的目标可用区
     AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
     Type: String
     AssociationPropertyMetadata:
       RegionId: regionId
   hostName:
-    Description:
-      en: The hostname of ECS instance to create.
-      zh-cn: 将创建实例的主机名。
+    Label:
+      en: HostName
+      zh-cn: 将创建实例的主机名
     Type: String
+    AllowedPattern: '^(?!\.|\-)(?!.*\.\.|.*\-\-)(?!.*_).*(?<!\.|\-)$'
+    MinLength: 2
   imageId:
-    Description:
-      en: The image id of ECS instance to create.
-      zh-cn: 将创建实例的镜像ID。
+    Label:
+      en: ImageId
+      zh-cn: 将创建实例的镜像ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
     AssociationPropertyMetadata:
       RegionId: regionId
   instanceType:
-    Description:
-      en: The instance type of ECS instance to create.
-      zh-cn: 将创建实例的规格。
+    Label:
+      en: InstanceType
+      zh-cn: 将创建实例的规格
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Instance::InstanceType'
   privateIp:
-    Description:
-      en: The private IP of ECS instance to create, (for example:172.16.2.100).
-      zh-cn: 将创建实例的内网IP，（例如：172.16.2.100）。
+    Label:
+      en: PrivateIp
+      zh-cn: 将创建实例的内网IP
     Type: String
   systemDiskSize:
-    Description:
-      en: System disk size(This parameter does not take effect when the default value of 39 is used).
-      zh-cn: 系统盘大小（使用默认值19时此参数不生效）。
+    Label:
+      en: SystemDiskSize
+      zh-cn: 系统盘大小
     Type: Number
     Default: 19
     MinValue: 19
     MaxValue: 500
   instancesCount:
-    Description:
-      en: The count of ECS instance to create.
-      zh-cn: 将创建实例的数量。
+    Label:
+      en: InstancesCount
+      zh-cn: 将创建实例的数量
     Type: Number
     Default: 1
     MinValue: 1
     MaxValue: 999
   isDeleteInstance:
-    Description:
-      en: Whether delete ECS instance after check.
-      zh-cn: 检查实例完成后是否删除实例。
+    Label:
+      en: IsDeleteInstance
+      zh-cn: 检查实例完成后是否删除实例
     Type: Boolean
-    Default: false
+    Default: true
   commandType:
-    Description:
-      en: The type of command.
-      zh-cn: 实例自定义检查云助手命令类型。
+    Label:
+      en: CommandType
+      zh-cn: 实例自定义检查云助手命令类型
     Type: String
     AllowedValues:
       - RunBatScript
@@ -77,28 +82,37 @@ Parameters:
       - RunShellScript
     Default: RunShellScript
   commandContent:
-    Description:
-      en: Custome instance check command content.
-      zh-cn: 实例自定义检查预云助手命令内容。
+    Label:
+      en: CommandContent
+      zh-cn: 实例自定义检查预云助手命令内容
     Type: String
     AssociationProperty: Code
     Default: ''
   timeout:
-    Description:
-      en: Timeout for executing script.
-      zh-cn: 执行脚本的超时时间。
+    Label:
+      en: Timeout
+      zh-cn: 执行脚本的超时时间
     Type: Number
     Default: 600
   workingDir:
-    Description:
-      en: The directory where the created command runs on the ECS instances.
-      zh-cn: 在实例中运行命令的目录。
+    Label:
+      en: WorkingDir
+      zh-cn: 在实例中运行命令的目录
     Type: String
     Default: /root
-  rateControl:
+  passwordInherit:
     Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+      en:  To use the PasswordInherit parameter, the Password parameter must be empty and you must make sure that the selected image has a password configured(default:false)
+      zh-cn: 使用该参数时，Password参数必须为空，同时您需要确保使用的镜像已经设置了密码，默认为false
+    Label:
+      en: IsUsePasswordInherit
+      zh-cn: 是否使用镜像预设的密码
+    Type: Boolean
+    Default: false
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -106,18 +120,33 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
+  - Name: describeImages
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query the image ostype by image id
+      zh-cn: 查询镜像的操作系统
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ imageId }}'
+    Outputs:
+      osType:
+        ValueSelector: 'Images.Image[0].OSType'
+        Type: String
   - Name: converConstant
     Action: 'ACS::ECS::SMCConversionConstantByJqScript'
     Description:
-      en: Automatically convert to available CidrBlock according to PrivateIp.
-      zh-cn: 根据PrivateIp自动转换成可用的CidrBlock。
+      en: Automatically convert to available CidrBlock according to PrivateIp
+      zh-cn: 根据PrivateIp自动转换成可用的CidrBlock
     Properties:
       parameter: '{{ privateIp }}'
       jqScript:
@@ -133,8 +162,8 @@ Tasks:
   - Name: createStack
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Create a resource stack.
-      zh-cn: 创建资源栈。
+      en: Create a resource stack
+      zh-cn: 创建资源栈
     Properties:
       Service: ROS
       API: CreateStack
@@ -162,216 +191,477 @@ Tasks:
             ParameterValue: '{{ instancesCount }}'
           - ParameterKey: systemDiskSize
             ParameterValue: '{{ systemDiskSize }}'
-        TemplateBody: |
-          {
-            "Description": "Create VPC ECS instance",
-            "Parameters": {
-              "imageId": {
-                "Type": "String"
-              },
-              "hostName": {
-                "Type": "String"
-              },
-              "privateIp": {
-                "Type": "String"
-              },
-              "instanceType": {
-                "Type": "String"
-              },
-              "executionId": {
-                "Type": "String"
-              },
-              "instancesCount": {
-                "Type": "String"
-              },
-              "zoneId": {
-                "Type": "String"
-              },
-              "regionId": {
-                "Type": "String"
-              },
-              "systemDiskSize": {
-                "Type": "Number"
-              },
-              "resourcePrefix": {
-                "Type": "String",
-                "Default": "oos-generated"
-              }
-            },
-            "Conditions":{
-                "CreateSystemDiskSize":{
-                    "Fn::Equals":[
-                        19,
-                        {
-                            "Ref":"systemDiskSize"
-                        }
-                    ]
-                }
-            },
-            "ROSTemplateFormatVersion": "2015-09-01",
-            "Outputs": {
-              "ecs_instance_id": {
-                "Value": {
-                  "Fn::GetAtt": [
-                    "ecs",
-                    "InstanceIds"
-                  ]
-                }
-              }
-            },
-            "Resources": {
-              "vswitch": {
-                "Type": "ALIYUN::ECS::VSwitch",
-                "Properties": {
-                  "VpcId": {
-                    "Ref": "vpc"
+          - ParameterKey: passwordInherit
+            ParameterValue: '{{ passwordInherit }}'
+        TemplateBody:
+          'Fn::If':
+            - 'Fn::Equals':
+                - windows
+                - '{{ describeImages.osType }}'
+            - |
+              {
+                "Description": "Create VPC ECS instance",
+                "Parameters": {
+                  "imageId": {
+                    "Type": "String"
                   },
-                  "Description": {
-                    "Fn::Join": [
-                      " ",
-                      [
-                        "OOS execution id is",
+                  "hostName": {
+                    "Type": "String"
+                  },
+                  "privateIp": {
+                    "Type": "String"
+                  },
+                  "instanceType": {
+                    "Type": "String"
+                  },
+                  "executionId": {
+                    "Type": "String"
+                  },
+                  "instancesCount": {
+                    "Type": "String"
+                  },
+                  "zoneId": {
+                    "Type": "String"
+                  },
+                  "regionId": {
+                    "Type": "String"
+                  },
+                  "systemDiskSize": {
+                    "Type": "Number"
+                  },
+                  "passwordInherit": {
+                    "Type": "Boolean"
+                  },
+                  "resourcePrefix": {
+                    "Type": "String",
+                    "Default": "oos-generated"
+                  }
+                },
+                "Conditions":{
+                    "CreateSystemDiskSize":{
+                        "Fn::Equals":[
+                            19,
+                            {
+                                "Ref":"systemDiskSize"
+                            }
+                        ]
+                    }
+                },
+                "ROSTemplateFormatVersion": "2015-09-01",
+                "Outputs": {
+                  "ecs_instance_id": {
+                    "Value": {
+                      "Fn::GetAtt": [
+                        "ecs",
+                        "InstanceIds"
+                      ]
+                    }
+                  }
+                },
+                "Resources": {
+                  "vswitch": {
+                    "Type": "ALIYUN::ECS::VSwitch",
+                    "Properties": {
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "Description": {
+                        "Fn::Join": [
+                          " ",
+                          [
+                            "OOS execution id is",
+                            {
+                              "Ref": "executionId"
+                            }
+                          ]
+                        ]
+                      },
+                      "ZoneId": {
+                        "Ref": "zoneId"
+                      },
+                      "CidrBlock": "{{ converConstant.vswCidrBlock }}"
+                    }
+                  },
+                  "sg": {
+                    "Type": "ALIYUN::ECS::SecurityGroup",
+                    "Properties": {
+                      "Tags": [
                         {
-                          "Ref": "executionId"
+                          "Key": "oos-generated",
+                          "Value": {
+                            "Ref": "executionId"
+                          }
+                        },
+                        {
+                          "Key": "region",
+                          "Value": {
+                            "Ref": "regionId"
+                          }
+                        }
+                      ],
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "SecurityGroupName": {
+                        "Fn::Join": [
+                          "-",
+                          [
+                            {
+                              "Ref": "resourcePrefix"
+                            },
+                            "sg"
+                          ]
+                        ]
+                      },
+                      "SecurityGroupEgress": [
+                        {
+                          "PortRange": "-1/-1",
+                          "Priority": 1,
+                          "IpProtocol": "all",
+                          "DestCidrIp": "0.0.0.0/0",
+                          "NicType": "intranet"
+                        }
+                      ],
+                      "SecurityGroupIngress": [
+                        {
+                          "PortRange": "3389/3389",
+                          "Priority": 1,
+                          "IpProtocol": "tcp",
+                          "SourceCidrIp": "0.0.0.0/0",
+                          "NicType": "intranet"
                         }
                       ]
-                    ]
+                    }
                   },
-                  "ZoneId": {
-                    "Ref": "zoneId"
-                  },
-                  "CidrBlock": "{{ converConstant.vswCidrBlock }}"
-                }
-              },
-              "sg": {
-                "Type": "ALIYUN::ECS::SecurityGroup",
-                "Properties": {
-                  "Tags": [
-                    {
-                      "Key": "oos-generated",
-                      "Value": {
-                        "Ref": "executionId"
-                      }
-                    },
-                    {
-                      "Key": "region",
-                      "Value": {
-                        "Ref": "regionId"
+                  "vpc": {
+                    "Type": "ALIYUN::ECS::VPC",
+                    "Properties": {
+                      "CidrBlock": "{{ converConstant.vpcCidrBlock }}",
+                      "Description": {
+                        "Fn::Join": [
+                          " ",
+                          [
+                            "OOS execution id is",
+                            {
+                              "Ref": "executionId"
+                            }
+                          ]
+                        ]
+                      },
+                      "VpcName": {
+                        "Fn::Join": [
+                          "-",
+                          [
+                            {
+                              "Ref": "resourcePrefix"
+                            },
+                            "vpc"
+                          ]
+                        ]
                       }
                     }
-                  ],
-                  "VpcId": {
-                    "Ref": "vpc"
                   },
-                  "SecurityGroupName": {
-                    "Fn::Join": [
-                      "-",
-                      [
+                  "ecs": {
+                    "Type": "ALIYUN::ECS::InstanceGroup",
+                    "Properties": {
+                      "ImageId": {
+                        "Ref": "imageId"
+                      },
+                      "HostName": {
+                        "Ref": "hostName"
+                      },
+                      "PrivateIpAddress": {
+                        "Ref": "privateIp"
+                      },
+                      "SecurityGroupId": {
+                        "Ref": "sg"
+                      },
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "VSwitchId": {
+                        "Ref": "vswitch"
+                      },
+                      "InstanceType": {
+                        "Ref": "instanceType"
+                      },
+                      "PasswordInherit": {
+                        "Ref": "passwordInherit"
+                      },
+                      "SystemDiskSize": {
+                        "Fn::If": [
+                          "CreateSystemDiskSize",
+                            {
+                              "Ref": "ALIYUN::NoValue"
+                            },
+                            {
+                              "Ref": "systemDiskSize"
+                            }
+                        ]
+                      },
+                      "MinAmount": {
+                        "Ref": "instancesCount"
+                      },
+                      "MaxAmount": {
+                        "Ref": "instancesCount"
+                      },
+                      "Tags": [
                         {
-                          "Ref": "resourcePrefix"
+                          "Key": "oos-generated",
+                          "Value": {
+                            "Ref": "executionId"
+                          }
                         },
-                        "sg"
-                      ]
-                    ]
-                  },
-                  "SecurityGroupEgress": [
-                    {
-                      "PortRange": "-1/-1",
-                      "Priority": 1,
-                      "IpProtocol": "all",
-                      "DestCidrIp": "0.0.0.0/0",
-                      "NicType": "intranet"
-                    }
-                  ]
-                }
-              },
-              "vpc": {
-                "Type": "ALIYUN::ECS::VPC",
-                "Properties": {
-                  "CidrBlock": "{{ converConstant.vpcCidrBlock }}",
-                  "Description": {
-                    "Fn::Join": [
-                      " ",
-                      [
-                        "OOS execution id is",
                         {
-                          "Ref": "executionId"
+                          "Key": "region",
+                          "Value": {
+                            "Ref": "regionId"
+                          }
                         }
                       ]
-                    ]
-                  },
-                  "VpcName": {
-                    "Fn::Join": [
-                      "-",
-                      [
-                        {
-                          "Ref": "resourcePrefix"
-                        },
-                        "vpc"
-                      ]
+                    }
+                  }
+                },
+                "Metadata": {
+                  "ALIYUN::ROS::Interface": {
+                    "TemplateTags": [
+                      "acs:integrate:oos:smc_create_and_verify_instance"
                     ]
                   }
                 }
-              },
-              "ecs": {
-                "Type": "ALIYUN::ECS::InstanceGroup",
-                "Properties": {
-                  "ImageId": {
-                    "Ref": "imageId"
+              }
+            - |
+              {
+                "Description": "Create VPC ECS instance",
+                "Parameters": {
+                  "imageId": {
+                    "Type": "String"
                   },
-                  "HostName": {
-                    "Ref": "hostName"
+                  "hostName": {
+                    "Type": "String"
                   },
-                  "PrivateIpAddress": {
-                    "Ref": "privateIp"
+                  "privateIp": {
+                    "Type": "String"
                   },
-                  "SecurityGroupId": {
-                    "Ref": "sg"
+                  "instanceType": {
+                    "Type": "String"
                   },
-                  "VpcId": {
-                    "Ref": "vpc"
+                  "passwordInherit": {
+                    "Type": "Boolean"
                   },
-                  "VSwitchId": {
-                    "Ref": "vswitch"
+                  "executionId": {
+                    "Type": "String"
                   },
-                  "InstanceType": {
-                    "Ref": "instanceType"
+                  "instancesCount": {
+                    "Type": "String"
                   },
-                  "SystemDiskSize": {
-                    "Fn::If": [
-                      "CreateSystemDiskSize",
+                  "zoneId": {
+                    "Type": "String"
+                  },
+                  "regionId": {
+                    "Type": "String"
+                  },
+                  "systemDiskSize": {
+                    "Type": "Number"
+                  },
+                  "resourcePrefix": {
+                    "Type": "String",
+                    "Default": "oos-generated"
+                  }
+                },
+                "Conditions":{
+                    "CreateSystemDiskSize":{
+                        "Fn::Equals":[
+                            19,
+                            {
+                                "Ref":"systemDiskSize"
+                            }
+                        ]
+                    }
+                },
+                "ROSTemplateFormatVersion": "2015-09-01",
+                "Outputs": {
+                  "ecs_instance_id": {
+                    "Value": {
+                      "Fn::GetAtt": [
+                        "ecs",
+                        "InstanceIds"
+                      ]
+                    }
+                  }
+                },
+                "Resources": {
+                  "vswitch": {
+                    "Type": "ALIYUN::ECS::VSwitch",
+                    "Properties": {
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "Description": {
+                        "Fn::Join": [
+                          " ",
+                          [
+                            "OOS execution id is",
+                            {
+                              "Ref": "executionId"
+                            }
+                          ]
+                        ]
+                      },
+                      "ZoneId": {
+                        "Ref": "zoneId"
+                      },
+                      "CidrBlock": "{{ converConstant.vswCidrBlock }}"
+                    }
+                  },
+                  "sg": {
+                    "Type": "ALIYUN::ECS::SecurityGroup",
+                    "Properties": {
+                      "Tags": [
                         {
-                          "Ref": "ALIYUN::NoValue"
+                          "Key": "oos-generated",
+                          "Value": {
+                            "Ref": "executionId"
+                          }
                         },
                         {
-                          "Ref": "systemDiskSize"
+                          "Key": "region",
+                          "Value": {
+                            "Ref": "regionId"
+                          }
                         }
-                    ]
+                      ],
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "SecurityGroupName": {
+                        "Fn::Join": [
+                          "-",
+                          [
+                            {
+                              "Ref": "resourcePrefix"
+                            },
+                            "sg"
+                          ]
+                        ]
+                      },
+                      "SecurityGroupEgress": [
+                        {
+                          "PortRange": "-1/-1",
+                          "Priority": 1,
+                          "IpProtocol": "all",
+                          "DestCidrIp": "0.0.0.0/0",
+                          "NicType": "intranet"
+                        }
+                      ],
+                      "SecurityGroupIngress": [
+                        {
+                          "PortRange": "22/22",
+                          "Priority": 1,
+                          "IpProtocol": "tcp",
+                          "SourceCidrIp": "0.0.0.0/0",
+                          "NicType": "intranet"
+                        }
+                      ]
+                    }
                   },
-                  "MinAmount": {
-                    "Ref": "instancesCount"
-                  },
-                  "MaxAmount": {
-                    "Ref": "instancesCount"
-                  },
-                  "Tags": [
-                    {
-                      "Key": "oos-generated",
-                      "Value": {
-                        "Ref": "executionId"
-                      }
-                    },
-                    {
-                      "Key": "region",
-                      "Value": {
-                        "Ref": "regionId"
+                  "vpc": {
+                    "Type": "ALIYUN::ECS::VPC",
+                    "Properties": {
+                      "CidrBlock": "{{ converConstant.vpcCidrBlock }}",
+                      "Description": {
+                        "Fn::Join": [
+                          " ",
+                          [
+                            "OOS execution id is",
+                            {
+                              "Ref": "executionId"
+                            }
+                          ]
+                        ]
+                      },
+                      "VpcName": {
+                        "Fn::Join": [
+                          "-",
+                          [
+                            {
+                              "Ref": "resourcePrefix"
+                            },
+                            "vpc"
+                          ]
+                        ]
                       }
                     }
-                  ]
+                  },
+                  "ecs": {
+                    "Type": "ALIYUN::ECS::InstanceGroup",
+                    "Properties": {
+                      "ImageId": {
+                        "Ref": "imageId"
+                      },
+                      "HostName": {
+                        "Ref": "hostName"
+                      },
+                      "PrivateIpAddress": {
+                        "Ref": "privateIp"
+                      },
+                      "SecurityGroupId": {
+                        "Ref": "sg"
+                      },
+                      "VpcId": {
+                        "Ref": "vpc"
+                      },
+                      "VSwitchId": {
+                        "Ref": "vswitch"
+                      },
+                      "InstanceType": {
+                        "Ref": "instanceType"
+                      },
+                      "PasswordInherit": {
+                        "Ref": "passwordInherit"
+                      },
+                      "SystemDiskSize": {
+                        "Fn::If": [
+                          "CreateSystemDiskSize",
+                            {
+                              "Ref": "ALIYUN::NoValue"
+                            },
+                            {
+                              "Ref": "systemDiskSize"
+                            }
+                        ]
+                      },
+                      "MinAmount": {
+                        "Ref": "instancesCount"
+                      },
+                      "MaxAmount": {
+                        "Ref": "instancesCount"
+                      },
+                      "Tags": [
+                        {
+                          "Key": "oos-generated",
+                          "Value": {
+                            "Ref": "executionId"
+                          }
+                        },
+                        {
+                          "Key": "region",
+                          "Value": {
+                            "Ref": "regionId"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "Metadata": {
+                  "ALIYUN::ROS::Interface": {
+                    "TemplateTags": [
+                      "acs:integrate:oos:smc_create_and_verify_instance"
+                    ]
+                  }
                 }
               }
-            }
-          }
     Outputs:
       StackId:
         Type: String
@@ -379,8 +669,8 @@ Tasks:
   - Name: untilStackReady
     Action: 'ACS::WaitFor'
     Description:
-      en: Wait for the stack status CREATE_COMPLETE.
-      zh-cn: 等待资源栈至创建成功状态。
+      en: Wait for the stack status CREATE_COMPLETE
+      zh-cn: 等待资源栈至创建成功状态
     OnSuccess: doInstanceCheck
     OnError: queryStackStatusReason
     Properties:
@@ -402,40 +692,13 @@ Tasks:
       instanceIds:
         Type: String
         ValueSelector: 'Outputs[0].OutputValue'
-  - Name: queryStackStatusReason
-    Action: 'ACS::ExecuteAPI'
-    Description:
-      en: Query the reson of failed created stack.
-      zh-cn: 查询资源栈未创建成功的原因。
-    OnError: deleteStack
-    OnSuccess: deleteStack
-    Properties:
-      Service: ROS
-      API: GetStack
-      Parameters:
-        RegionId: '{{ regionId  }}'
-        StackId: '{{ createStack.StackId }}'
-    Outputs:
-      statusReason:
-        Type: String
-        ValueSelector: StatusReason
-  - Name: deleteStack
-    Description:
-      en: Delete the stack.
-      zh-cn: 删除资源栈。
-    OnSuccess: 'ACS::END'
-    Action: 'ACS::ExecuteApi'
-    Properties:
-      Service: ROS
-      API: DeleteStack
-      Parameters:
-        RegionId: '{{ regionId }}'
-        StackId: '{{createStack.StackId}}'
   - Name: doInstanceCheck
     Action: 'ACS::ECS::SMCVerifyInstanceByRunCommand'
+    OnSuccess: 'ACS::END'
+    OnError: deleteStack
     Description:
-      en: Execute cloud assistant command to check Instance.
-      zh-cn: 执行云助手命令检查实例。
+      en: Execute cloud assistant command to check Instance
+      zh-cn: 执行云助手命令检查实例
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
@@ -455,7 +718,37 @@ Tasks:
         commandOutputs:
           AggregateType: 'Fn::ListJoin'
           AggregateField: commandOutput
+  - Name: queryStackStatusReason
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query the reson of failed created stack
+      zh-cn: 查询资源栈未创建成功的原因
+    OnError: deleteStack
+    OnSuccess: deleteStack
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        RegionId: '{{ regionId  }}'
+        StackId: '{{ createStack.StackId }}'
+    Outputs:
+      statusReason:
+        Type: String
+        ValueSelector: StatusReason
+  - Name: deleteStack
+    Description:
+      en: Delete the stack
+      zh-cn: 删除资源栈
+    OnSuccess: 'ACS::END'
+    Action: 'ACS::ExecuteApi'
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        RegionId: '{{ regionId }}'
+        StackId: '{{createStack.StackId}}'
 Outputs:
   instanceCheckResults:
     Type: List
     Value: '{{ doInstanceCheck.commandOutputs }}'
+

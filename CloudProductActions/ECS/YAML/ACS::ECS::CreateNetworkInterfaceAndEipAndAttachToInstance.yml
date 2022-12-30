@@ -1,28 +1,42 @@
 FormatVersion: OOS-2019-06-01
-Description: Create the NetworkInterface and eip and bind the to instance.
+Description:
+  name-en: ACS::ECS::CreateNetworkInterfaceAndEipAndAttachToInstance
+  name-zh-cn: 创建弹性网卡与弹性IP并将其绑定到ECS实例上
+  en: Create the NetworkInterface and eip and bind the to instance
+  zh-cn: 创建弹性网卡和EIP并绑定到ECS实例上
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ecs instance id.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
   internetChargeType:
-    Description: EIP measurement method.
+    Description:
+      en: EIP measurement method
+      zh-cn: EIP的计费方式
     Type: String
     AllowedValues:
       - PayByBandwidth
       - PayByTraffic
     Default: PayByBandwidth
   bandwidth:
-    Description: Peak bandwidth of eip.
+    Description:
+      en: Peak bandwidth of EIP
+      zh-cn: EIP带宽峰值
     Type: Number
     Default: 5
 Tasks:
   - Name: checkInstanceReady
     Action: 'ACS::CheckFor'
-    Description: Checks ECS instance is in the running status.
+    Description:
+      en: Checks ECS instance is in the Running status
+      zh-cn: 检查实例是否处于运行中状态
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -42,7 +56,9 @@ Tasks:
         ValueSelector: 'Instances.Instance[].SecurityGroupIds.SecurityGroupId[]'
   - Action: 'ACS::ExecuteAPI'
     Name: createNetworkInterface
-    Description: Create the network interface.
+    Description:
+      en: Creates network interface
+      zh-cn: 创建弹性网卡
     Properties:
       Service: ECS
       API: CreateNetworkInterface
@@ -56,7 +72,9 @@ Tasks:
         ValueSelector: .NetworkInterfaceId
   - Name: waitNetworkInterfaceReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the NetworkInterface util Available.
+    Description:
+      en: Waits for the NetworkInterface util Available
+      zh-cn: 等待弹性网卡创建到达Available状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -73,7 +91,9 @@ Tasks:
       PropertySelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].Status'
   - Action: 'ACS::ExecuteAPI'
     Name: attachNetworkInterface
-    Description: Attach the NetworkInterface to instance.
+    Description:
+      en: Attach the NetworkInterface to ECS instance
+      zh-cn: 挂载弹性网卡到ECS实例
     OnError: deleteNetworkInterface
     Properties:
       Service: ECS
@@ -88,7 +108,9 @@ Tasks:
         ValueSelector: .NetworkInterfaceId
   - Name: waitNetworkInterfaceInUse
     Action: 'ACS::WaitFor'
-    Description: Waits for the NetworkInterface util InUse.
+    Description:
+      en: Waits for the NetworkInterface util In_use
+      zh-cn: 等待弹性网卡到达In_use状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -105,7 +127,9 @@ Tasks:
       PropertySelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].Status'
   - Name: allocateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Apply for eip.
+    Description:
+      en: Apply for EIP
+      zh-cn: 申请弹性公网IP
     OnError: detachNetworkInterface
     Properties:
       Service: ECS
@@ -120,7 +144,9 @@ Tasks:
         ValueSelector: .AllocationId
   - Name: waitEipAddressReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the eip util Available.
+    Description:
+      en: Waits for the EIP util Available
+      zh-cn: 等待EIP到达Available状态
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -134,7 +160,9 @@ Tasks:
       PropertySelector: 'EipAddresses.EipAddress[].Status'
   - Name: associateEipAddress
     Action: 'ACS::ExecuteAPI'
-    Description: Bind the eip to instance.
+    Description:
+      en: Binds the eip to instance
+      zh-cn: 绑定EIP到实例
     OnError: detachNetworkInterface
     Properties:
       Service: ECS
@@ -146,6 +174,9 @@ Tasks:
         InstanceType: NetworkInterface
   - Name: runCommand
     Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Run command
+      zh-cn: 执行命令
     OnError: detachNetworkInterface
     OnSuccess: 'ACS::END'
     Properties:
@@ -169,7 +200,9 @@ Tasks:
         ValueSelector: invocationOutput
   - Action: 'ACS::ExecuteAPI'
     Name: detachNetworkInterface
-    Description: Detach the network interface.
+    Description:
+      en: Detaches the network interface
+      zh-cn: 解绑弹性网卡
     OnError: releaseEipAddress
     Properties:
       Service: ECS
@@ -180,7 +213,9 @@ Tasks:
         NetworkInterfaceId: '{{ createNetworkInterface.networkInterfaceId }}'
   - Name: waitNetworkInterfaceAvailable
     Action: 'ACS::WaitFor'
-    Description: Waits for the NetworkInterface util Available.
+    Description:
+      en: Waits for the NetworkInterface util Available
+      zh-cn: 等待弹性网卡解绑成功
     Delay: 15
     Retries: 7
     DelayType: Constant
@@ -196,7 +231,9 @@ Tasks:
       PropertySelector: 'NetworkInterfaceSets.NetworkInterfaceSet[].Status'
   - Action: 'ACS::ExecuteAPI'
     Name: deleteNetworkInterface
-    Description: Delete the network interface.
+    Description:
+      en: Deletes the network interface
+      zh-cn: 删除弹性网卡
     Properties:
       Service: ECS
       API: DeleteNetworkInterface
@@ -205,7 +242,9 @@ Tasks:
         NetworkInterfaceId: '{{ createNetworkInterface.networkInterfaceId }}'
   - Action: 'ACS::ExecuteAPI'
     Name: releaseEipAddress
-    Description: Release the eip.
+    Description:
+      en: Releases the EIP
+      zh-cn: 释放EIP。
     OnError: 'ACS::END'
     Properties:
       Service: ECS

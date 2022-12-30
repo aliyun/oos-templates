@@ -1,0 +1,158 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky modify ECD desktop auto renew attribute",
+    "zh-cn": "批量修改云桌面的自动续费属性",
+    "name-en": "ACS-ECD-BulkyModifyDesktopAutoRenewAttribute",
+    "name-zh-cn": "批量修改云桌面的自动续费属性"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopIds": {
+      "Label": {
+        "en": "DesktopIds",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "List"
+    },
+    "renewalPeriodUnit": {
+      "Label": {
+        "en": "RenewalPeriodUnit",
+        "zh-cn": "实例续费时长的时间单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "M",
+        "Y"
+      ]
+    },
+    "renewalPeriod": {
+      "Description": {
+        "en": "Valid values: 1, 2, 3, 6, 12",
+        "zh-cn": "取值范围为：{\"1\", \"2\", \"3\", \"6\", \"12\"}"
+      },
+      "Label": {
+        "en": "RenewalPeriod",
+        "zh-cn": "实例续费时长"
+      },
+      "Type": "Number",
+      "AllowedValues": [
+        1,
+        2,
+        3,
+        6,
+        12
+      ]
+    },
+    "renewalStatus": {
+      "Description": {
+        "en": "Valid values: AutoRenewal: Auto-renewal is enabled for the instance. Normal: Auto-renewal is disabled for the instance. NotRenewal: The instance will not be renewed upon expiration.",
+        "zh-cn": "取值范围： AutoRenewal：设置为自动续费。 Normal：取消自动续费。 NotRenewal：不再续费。"
+      },
+      "Label": {
+        "en": "RenewalStatus",
+        "zh-cn": "云桌面自动续费状态"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "AutoRenewal",
+        "Normal",
+        "NotRenewal"
+      ]
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyDesktopAutoRenewAttribute",
+      "Action": "ACS::ECD::SetRenewal",
+      "Description": {
+        "en": "Modifies desktop auto renew attr",
+        "zh-cn": "修改云桌面自动续费属性"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ ACS::TaskLoopItem }}",
+        "renewalPeriod": "{{ renewalPeriod }}",
+        "renewalPeriodUnit": "{{ renewalPeriodUnit }}",
+        "renewalStatus": "{{ renewalStatus }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ desktopIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "renewalPeriodUnit",
+            "renewalPeriod",
+            "renewalStatus"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "desktopIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择云桌面",
+              "en": "Select ECD Desktops"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

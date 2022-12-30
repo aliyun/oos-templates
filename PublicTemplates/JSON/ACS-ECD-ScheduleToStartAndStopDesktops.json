@@ -1,0 +1,264 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Schedule to start and stop desktops",
+    "zh-cn": "定时开启和停止云桌面",
+    "name-en": "ACS-ECD-ScheduleToStartAndStopDesktops",
+    "name-zh-cn": "定时开启和停止云桌面",
+    "categories": [
+      "time_trigger"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopIds": {
+      "Label": {
+        "en": "DesktopIds",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "List",
+      "Default": []
+    },
+    "dailyStartTime": {
+      "Label": {
+        "en": "DailyStartTime",
+        "zh-cn": "每天开启实例的时间"
+      },
+      "Type": "String",
+      "AssociationProperty": "DateTime",
+      "AssociationPropertyMetadata": {
+        "Format": "HH:mm:ssZ"
+      }
+    },
+    "dailyStopTime": {
+      "Label": {
+        "en": "DailyStopTime",
+        "zh-cn": "每天停止实例的时间"
+      },
+      "Type": "String",
+      "AssociationProperty": "DateTime",
+      "AssociationPropertyMetadata": {
+        "Format": "HH:mm:ssZ"
+      }
+    },
+    "weekdays": {
+      "Description": {
+        "en": "* indicates daily, MON indicates Monday only, MON-FRI indicates Monday to Friday，refer them here: https://help.aliyun.com/document_detail/169784.html",
+        "zh-cn": "*表示每天，MON表示仅周一，MON-FRI表示周一到周五。详情参考：https://help.aliyun.com/document_detail/169784.html"
+      },
+      "Label": {
+        "en": "Weekdays",
+        "zh-cn": "任务执行的周期"
+      },
+      "Type": "String",
+      "Default": "MON-FRI"
+    },
+    "triggerEndDate": {
+      "Label": {
+        "en": "TriggerEndDate",
+        "zh-cn": "时间触发器结束时间"
+      },
+      "Description": {
+        "en": "Format: yyyy-MM-ddTHH:mm:ssZ.",
+        "zh-cn": "格式：yyyy-MM-ddTHH:mm:ssZ"
+      },
+      "Type": "String",
+      "AssociationProperty": "DateTime",
+      "AssociationPropertyMetadata": {
+        "Format": "YYYY-MM-DDTHH:mm:ssZ"
+      },
+      "Default": "2099-12-01T00:00:00Z"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": "100%",
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying Cron expression",
+        "zh-cn": "通过指定Cron表达式按计划触发任务"
+      },
+      "Properties": {
+        "Type": "cron",
+        "EndDate": "{{ triggerEndDate }}",
+        "Expression": {
+          "Fn::Join": [
+            " ",
+            [
+              "0",
+              {
+                "Fn::Select": [
+                  1,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      "{{ dailyStartTime }}"
+                    ]
+                  }
+                ]
+              },
+              {
+                "Fn::Select": [
+                  0,
+                  {
+                    "Fn::Split": [
+                      ":",
+                      "{{ dailyStartTime }}"
+                    ]
+                  }
+                ]
+              },
+              "?",
+              "*",
+              "{{ weekdays }}"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "Name": "getDesktop",
+      "Description": {
+        "en": "Query the ECD desktops",
+        "zh-cn": "获取云桌面"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": "{{ desktopIds }}"
+        }
+      },
+      "Outputs": {
+        "desktopIds": {
+          "Type": "List",
+          "ValueSelector": "Desktops[].DesktopId"
+        }
+      }
+    },
+    {
+      "Name": "startDesktops",
+      "Action": "ACS::ECD::StartDesktop",
+      "Description": {
+        "en": "Start the desktops",
+        "zh-cn": "开启云桌面"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getDesktop.desktopIds }}"
+      }
+    },
+    {
+      "Name": "sleepToSpecifiedTime",
+      "Description": {
+        "en": "Sleep to desktop stop time",
+        "zh-cn": "睡眠到实例停止时间"
+      },
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": {
+          "Fn::DurationBetween": [
+            "{{ dailyStartTime }}",
+            "{{ dailyStopTime }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "stopDesktop",
+      "Action": "ACS::ECD::StopDesktop",
+      "Description": {
+        "en": "Stop the desktops",
+        "zh-cn": "停止云桌面"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ getDesktop.desktopIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "dailyStartTime",
+            "dailyStopTime",
+            "weekdays",
+            "triggerEndDate"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "desktopIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择云桌面",
+              "en": "Select ECD Desktops"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

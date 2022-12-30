@@ -1,0 +1,89 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify desktop auto renew attribute",
+    "zh-cn": "修改云桌面的自动续费属性",
+    "name-en": "ACS::ECD::SetRenewal",
+    "name-zh-cn": "修改云桌面的自动续费属性"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopId": {
+      "Description": {
+        "en": "The id of desktop",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "String"
+    },
+    "renewalPeriodUnit": {
+      "Description": {
+        "en": "The auto-renewal period",
+        "zh-cn": "实例续费时长的时间单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "M",
+        "Y"
+      ]
+    },
+    "renewalPeriod": {
+      "Description": {
+        "en": "The duration of instance, Valid values: 1, 2, 3, 6, 12",
+        "zh-cn": "实例续费时长，取值范围为：{\"1\", \"2\", \"3\", \"6\", \"12\"}"
+      },
+      "Type": "Number",
+      "AllowedValues": [
+        1,
+        2,
+        3,
+        6,
+        12
+      ]
+    },
+    "renewalStatus": {
+      "Description": {
+        "en": "The auto-renewal status of the instance. Valid values: AutoRenewal: Auto-renewal is enabled for the instance. Normal: Auto-renewal is disabled for the instance.",
+        "zh-cn": "实例的自动续费状态。取值范围： AutoRenewal：设置为自动续费。 Normal：取消自动续费。 NotRenewal：不再续费。"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "AutoRenewal",
+        "Normal",
+        "NotRenewal"
+      ]
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "modifyDesktopRenewAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modify desktop renew attribute",
+        "zh-cn": "修改云桌面自动续费属性"
+      },
+      "Properties": {
+        "Service": "BssOpenApi",
+        "API": "SetRenewal",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIDs": [
+            "{{ desktopId }}"
+          ],
+          "RenewalStatus": "{{ renewalStatus }}",
+          "RenewalPeriod": "{{ renewalPeriod }}",
+          "RenewalPeriodUnit": "{{ renewalPeriodUnit }}",
+          "ProductCode": "gws",
+          "ProductType": "gws_ecdmonthly_public_cn"
+        }
+      }
+    }
+  ]
+}

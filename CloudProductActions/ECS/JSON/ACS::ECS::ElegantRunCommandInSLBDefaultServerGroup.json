@@ -1,34 +1,60 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Run the command in the instance of the SLB default service group.",
+  "Description": {
+    "name-en": "ACS::ECS::ElegantRunCommandInSLBDefaultServerGroup",
+    "name-zh-cn": "在SLB默认服务器组内的实例中执行命令",
+    "en": "Run the command in the instance of the SLB default service group",
+    "zh-cn": "在SLB默认服务器组内的实例中执行命令"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "loadBalancerId": {
-      "Description": "The ID of the SLB instance.",
+      "Description": {
+        "en": "The ID of the SLB instance",
+        "zh-cn": "SLB实例ID"
+      },
       "Type": "String"
     },
     "serverId": {
-      "Description": "The ID of ECS instance.",
+      "Description": {
+        "en": "The ID of server",
+        "zh-cn": "后端服务器ID"
+      },
       "Type": "String"
     },
     "weight": {
-      "Description": "The weight of server.",
+      "Description": {
+        "en": "The weight of server",
+        "zh-cn": "后端服务器权重"
+      },
       "Type": "Number"
     },
     "type": {
-      "Description": "The type of server.",
+      "Description": {
+        "en": "The type of server",
+        "zh-cn": "后端服务器类型"
+      },
       "Type": "String"
     },
     "port": {
-      "Description": "The port of server.",
+      "Description": {
+        "en": "The port of server",
+        "zh-cn": "后端服务器端口"
+      },
       "Type": "Number"
     },
     "commandType": {
-      "Description": "The type of command.",
+      "Description": {
+        "en": "The type of command",
+        "zh-cn": "云助手命令类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "RunBatScript",
@@ -38,7 +64,10 @@
       "Default": "RunShellScript"
     },
     "commandContent": {
-      "Description": "Command content to run in ECS instance.",
+      "Description": {
+        "en": "Command content to run in ECS instance",
+        "zh-cn": "后端服务器中执行的命令"
+      },
       "Type": "String"
     }
   },
@@ -46,7 +75,10 @@
     {
       "Name": "setServerWeightToZero",
       "Action": "ACS::ExecuteApi",
-      "Description": "Sets server weight to zero.",
+      "Description": {
+        "en": "Sets server weight to zero",
+        "zh-cn": "把后端服务器权重设置为0"
+      },
       "OnError": "recoverServerWeight",
       "Properties": {
         "Service": "SLB",
@@ -84,7 +116,10 @@
     {
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
-      "Description": "Execute cloud assistant command.",
+      "Description": {
+        "en": "Runs cloud assistant command",
+        "zh-cn": "执行云助手命令"
+      },
       "OnError": "recoverServerWeight",
       "Properties": {
         "regionId": "{{ regionId }}",
@@ -102,7 +137,10 @@
     {
       "Name": "recoverServerWeight",
       "Action": "ACS::ExecuteApi",
-      "Description": "Set the server weight to the original value.",
+      "Description": {
+        "en": "Sets the server weight to the original value",
+        "zh-cn": "将服务器权重设置为原始值"
+      },
       "Properties": {
         "Service": "SLB",
         "API": "SetBackendServers",

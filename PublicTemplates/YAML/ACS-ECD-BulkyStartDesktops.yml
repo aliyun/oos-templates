@@ -1,0 +1,66 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky start ECD desktops
+  zh-cn: 批量启动云桌面
+  name-en: ACS-ECD-BulkyStartDesktops
+  name-zh-cn: 批量启动云桌面
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  desktopIds:
+    Label:
+      en: DesktopIds
+      zh-cn: 云桌面ID
+    Type: List
+    Default: []
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: startDesktop
+    Action: ACS::ECD::StartDesktop
+    Description:
+      en: Start desktops
+      zh-cn: 启动云桌面
+    Properties:
+      regionId: '{{ regionId }}'
+      desktopId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ desktopIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - desktopIds
+        Label:
+          default:
+            zh-cn: 选择云桌面
+            en: Select ECD Desktops
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

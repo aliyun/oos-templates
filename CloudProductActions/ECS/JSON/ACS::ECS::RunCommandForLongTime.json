@@ -1,0 +1,230 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::RunCommandForLongTime",
+    "name-zh-cn": "长时间在ECS实例上执行命令",
+    "en": "Run command on an ECS instance for a long time",
+    "zh-cn": "长时间在ECS实例上执行命令"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of  region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "commandContent": {
+      "Description": {
+        "en": "The content of command",
+        "zh-cn": "云助手命令内容"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "MinLength": 1,
+      "MaxLength": 30
+    },
+    "commandType": {
+      "Description": {
+        "en": "The type of command",
+        "zh-cn": "云助手命令类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunBatScript",
+        "RunPowerShellScript",
+        "RunShellScript",
+        "RunPythonScript",
+        "RunPerlScript"
+      ]
+    },
+    "workingDir": {
+      "Description": {
+        "en": "The directory where the created command runs on the ECS instances",
+        "zh-cn": "脚本在ECS实例中的运行目录"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "timeout": {
+      "Description": {
+        "en": "The value of the invocation timeout period of a command on ECS instances",
+        "zh-cn": "执行脚本的超时时间"
+      },
+      "Type": "Number",
+      "Default": 86400
+    },
+    "enableParameter": {
+      "Description": {
+        "en": "Whether to include secret parameters or custom parameters in the command",
+        "zh-cn": "命令中是否包含加密参数或自定义参数"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "parameters": {
+      "Description": {
+        "en": "The parameters of the command",
+        "zh-cn": "命令参数"
+      },
+      "Type": "Json",
+      "Default": {}
+    },
+    "username": {
+      "Description": {
+        "en": "The username that is used to run the command on the ECS instance",
+        "zh-cn": "在ECS实例中执行命令的用户名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "windowsPasswordName": {
+      "Description": {
+        "en": "The name of the password used to run the command on a Windows instance",
+        "zh-cn": "在Windows实例中执行命令的用户的密码名称"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Executes a cloud assistant command",
+        "zh-cn": "执行云助手命令"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "RunCommand",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "CommandContent": "{{ commandContent }}",
+          "InstanceIds": [
+            "{{instanceId}}"
+          ],
+          "Name": "{{ ACS::ExecutionId }}",
+          "Type": {
+            "Fn::If": [
+              {
+                "Fn::Or": [
+                  {
+                    "Fn::Equals": [
+                      "{{ commandType }}",
+                      "RunPythonScript"
+                    ]
+                  },
+                  {
+                    "Fn::Equals": [
+                      "{{ commandType }}",
+                      "RunPerlScript"
+                    ]
+                  }
+                ]
+              },
+              "RunShellScript",
+              "{{ commandType }}"
+            ]
+          },
+          "WorkingDir": "{{ workingDir }}",
+          "Timeout": "{{ timeout }}",
+          "EnableParameter": "{{ enableParameter }}",
+          "Parameters": "{{ parameters }}",
+          "Username": "{{ username }}",
+          "WindowsPasswordName": "{{ windowsPasswordName }}"
+        }
+      },
+      "Outputs": {
+        "invokeId": {
+          "Type": "String",
+          "ValueSelector": "InvokeId"
+        }
+      }
+    },
+    {
+      "Name": "untilInvocationReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the command to be completed",
+        "zh-cn": "等待云助手命令执行完成"
+      },
+      "OnError": "ACS::END",
+      "Retries": 57,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocations",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.invokeId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "StopRetryValues": [
+          "Failed"
+        ],
+        "PropertySelector": "Invocations.Invocation[].InvokeStatus"
+      }
+    },
+    {
+      "Name": "describeInvocationResults",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries the command output of a cloud assistant command in the specified ECS instance",
+        "zh-cn": "查看在ECS实例上执行云助手命令的返回结果"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.invokeId }}"
+        }
+      },
+      "Outputs": {
+        "invocationResult": {
+          "Type": "String",
+          "ValueSelector": "Invocation.InvocationResults.InvocationResult[].Output"
+        }
+      }
+    },
+    {
+      "Name": "checkInvocationResult",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks the command exitcode of a cloud assistant command",
+        "zh-cn": "检测云助手命令的退出码"
+      },
+      "OnError": "ACS::END",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInvocationResults",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InvokeId": "{{ runCommand.InvokeId }}"
+        },
+        "PropertySelector": "Invocation.InvocationResults.InvocationResult[].ExitCode",
+        "DesiredValues": [
+          0
+        ]
+      }
+    }
+  ],
+  "Outputs": {
+    "invocationOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::Base64Decode": "{{ describeInvocationResults.invocationResult }}"
+      }
+    }
+  }
+}

@@ -1,17 +1,27 @@
 FormatVersion: OOS-2019-06-01
-Description: Views the ECS instances by specifying instance name.
+Description:
+  name-en: ACS::ECS::DescribeInstancesByName
+  name-zh-cn: 根据ECS实例名称获取实例ID
+  en: Views the ECS instance ids by specifying instance name
+  zh-cn: 根据ECS实例名称获取实例ID
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceName:
-    Description: The name for query ECS instances.
+    Description:
+      en: The name of ECS instance
+      zh-cn: 实例名称
     Type: String
 Tasks:
 - Name: describeInstances
   Action: ACS::ExecuteAPI
-  Description: Views the ECS instances by specifying instance name.
+  Description:
+    en: Queries the ECS instance id by specifying instance name
+    zh-cn: 根据实例名称获取实例ID
   Properties:
     Service: ECS
     API: DescribeInstances

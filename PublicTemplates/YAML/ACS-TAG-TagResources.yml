@@ -1,0 +1,392 @@
+FormatVersion: OOS-2019-06-01
+Description:
+    en: Tag the resources it manages through resource management
+    zh-cn: 通过资源管理给其管理的资源打标签
+    name-en: ACS-TAG-TagResources
+    name-zh-cn: 通过资源管理给资源打标签
+    categories:
+      - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  resourceIds:
+    Label:
+      en: ResourceIds
+      zh-cn: 资源ID
+    Type: List
+  resourceType:
+    Label:
+      en: ResourceType
+      zh-cn: 资源类型
+    Type: String
+    AllowedValues:
+      - ALIYUN::ECS::INSTANCE
+      - ALIYUN::ECS::DISK
+      - ALIYUN::ECS::SNAPSHOT
+      - ALIYUN::ECS::IMAGE
+      - ALIYUN::ECS::SECURITYGROUP
+      - ALIYUN::ECS::VOLUME
+      - ALIYUN::ECS::ENI
+      - ALIYUN::ECS::DDH
+      - ALIYUN::ECS::KEYPAIR
+      - ALIYUN::ECS::LAUNCHTEMPLATE
+      - ALIYUN::ECS::SNAPSHOTPOLICY
+      - ALIYUN::ECS::DDHCLUSTER
+      - ALIYUN::VPC::VPC
+      - ALIYUN::VPC::VSWITCH
+      - ALIYUN::VPC::ROUTETABLE
+      - ALIYUN::VPC::EIP
+      - ALIYUN::VPC::COMMONBANDWIDTHPACKAGE
+      - ALIYUN::VPC::NATGATEWAY
+      - ALIYUN::VPC::IPV6GATEWAY
+      - ALIYUN::VPC::IPV6INSTANCE
+      - ALIYUN::VPC::VPNGATEWAY
+      - ALIYUN::VPC::IPV6BANDWIDTH
+      - ALIYUN::SLB::INSTANCE
+      - ALIYUN::SLB::ACL
+      - ALIYUN::SLB::CERTIFICATE
+      - ALIYUN::RDS::INSTANCE
+      - ALIYUN::APIGATEWAY::APP
+      - ALIYUN::APIGATEWAY::APIGROUP
+      - ALIYUN::APIGATEWAY::PLUGIN
+      - ALIYUN::APIGATEWAY::INSTANCE
+      - ALIYUN::APIGATEWAY::API
+      - ALIYUN::ALIKAFKA::INSTANCE
+      - ALIYUN::ALIKAFKA::TOPIC
+      - ALIYUN::ALIKAFKA::CONSUMERGROUP
+      - ALIYUN::ROS::STACK
+      - ALIYUN::ROS::TEMPLATE
+      - ALIYUN::ALIDNS::DOMAIN
+      - ALIYUN::ESS::SCALINGGROUP
+      - ALIYUN::SMC::SOURCESERVER
+      - ALIYUN::SMC::REPLICATIONJOB
+      - ALIYUN::POLARDB::CLUSTER
+      - ALIYUN::KVSTORE::INSTANCE
+      - ALIYUN::DDS::INSTANCE
+      - ALIYUN::CAS::INSTANCE
+      - ALIYUN::BASTIONHOST::INSTANCE
+      - ALIYUN::ELASTICSEARCH::INSTANCE
+      - ALIYUN::OSS::BUCKET
+      - ALIYUN::DDOSCOO::INSTANCE
+      - ALIYUN::DDOSBGP::INSTANCE
+      - ALIYUN::DRDS::INSTANCE
+      - ALIYUN::GPDB::INSTANCE
+      - ALIYUN::CEN::CEN
+      - ALIYUN::BAAS::ORGANIZATION
+      - ALIYUN::BAAS::CONSORTIUM
+      - ALIYUN::ADB::CLUSTER
+      - ALIYUN::HCS_SGW::GATEWAY
+      - ALIYUN::IMAGESEARCH::INSTANCE
+      - ALIYUN::CDN::DOMAIN
+      - ALIYUN::DCDN::DOMAIN
+      - ALIYUN::OOS::TEMPLATE
+      - ALIYUN::OOS::EXECUTION
+      - ALIYUN::MULTIMOD::CLUSTER
+      - ALIYUN::DBAUDIT::INSTANCE
+      - ALIYUN::CS::CLUSTER
+      - ALIYUN::NAS::FILESYSTEM
+      - ALIYUN::KMS::KEY
+      - ALIYUN::KMS::SECRET
+      - ALIYUN::ECI::VIRTUALNODE
+      - ALIYUN::SAG::CCN
+      - ALIYUN::BPSTUDIO::APPLICATION
+      - ALIYUN::RDS::BACKUP
+      - ALIYUN::RDS::BACKUPPOLICY
+      - ALIYUN::CMS::MONITORGROUP
+      - ALIYUN::DTS::SYNCHRONIZATIONJOB
+      - ALIYUN::OUTBOUNDBOT::INSTANCE
+      - ALIYUN::CR::REPOSITORY
+      - ALIYUN::EHPC::CLUSTER
+      - ALIYUN::ROCKETMQ::TOPIC
+      - ALIYUN::LICENSEMANAGER::GRANT
+      - ALIYUN::GDS::INSTANCE
+      - ALIYUN::DTS::JOBMONITORRULE
+      - ALIYUN::SAVINGPLAN::INSTANCE
+      - ALIYUN::NLP::WORDPOS
+      - ALIYUN::ECS::COMMAND
+      - ALIYUN::VPC::SSLVPNSERVER
+      - ALIYUN::ECI::IMAGECACHE
+      - ALIYUN::RM::SHAREDRESOURCE
+      - ALIYUN::IACSERVICE::MODULEVERSION
+      - ALIYUN::GWS::INSTANCE
+      - ALIYUN::RDS::BACKUPFILE
+      - ALIYUN::ECS::IMAGEPIPELINE
+      - ALIYUN::VPC::PHYSICALCONNECTION
+      - ALIYUN::DTS::CONSUMERCHANNEL
+      - ALIYUN::RAM::USER
+      - ALIYUN::DATAV::SCREEN
+      - ALIYUN::CBS::BACKUPPLAN
+      - ALIYUN::CLOUDBOX::SKU
+      - ALIYUN::SMARTAG::QOS
+      - ALIYUN::ECS::INVOCATION
+      - ALIYUN::SEARCHENGINE::INSTANCE
+      - ALIYUN::VPC::VPNCONNECTION
+      - ALIYUN::TESTPRODUCT::XXX
+      - ALIYUN::DOMAIN::DOMAIN
+      - ALIYUN::HBR::CLIENT
+      - ALIYUN::POLARDBX::POLARDBXINSTANCE
+      - ALIYUN::VOD::DOMAIN
+      - ALIYUN::SCDN::DOMAIN
+      - ALIYUN::CLOUDBOX::DEMAND
+      - ALIYUN::HBR::HANAINSTANCE
+      - ALIYUN::NLP::ENTITY
+      - ALIYUN::MTS::SNAPSHOT
+      - ALIYUN::RDS::GADINSTANCE
+      - ALIYUN::OPENANALYTICS::INSTANCE
+      - ALIYUN::SPARK::CLUSTER
+      - ALIYUN::VPC::SSLVPNCLIENTCERT
+      - ALIYUN::CDT::CDT
+      - ALIYUN::OOS::OPSITEM
+      - ALIYUN::ECS::SNAPSHOTGROUP
+      - ALIYUN::DATAHUB::TOPIC
+      - ALIYUN::SMARTAG::ACL
+      - ALIYUN::ROCKETMQ::CONSUMERGROUP
+      - ALIYUN::MQ::TOPIC
+      - ALIYUN::HITSDB::INSTANCE
+      - ALIYUN::CBN::TRANSITROUTERVPCATTACHMENT
+      - ALIYUN::OOS::STATECONFIGURATION
+      - ALIYUN::RDS::PARAMETERGROUP
+      - ALIYUN::TESTAMP::INSTANCE
+      - ALIYUN::CEN::BANDWIDTHPACKAGE
+      - ALIYUN::AVDS::INSTANCE
+      - ALIYUN::ARMS::WEB
+      - ALIYUN::MQ::GROUP
+      - ALIYUN::FC::SERVICE
+      - ALIYUN::MTS::TRANSCODE
+      - ALIYUN::DIDE::PROJECT
+      - ALIYUN::SCBLINKONECS::CLUSTER
+      - ALIYUN::NLB::SERVERGROUP
+      - ALIYUN::CBN::TRANSITROUTERVPNATTACHMENT
+      - ALIYUN::CONFIG::RULE
+      - ALIYUN::RDS::ACTIONEVENTPOLICY
+      - ALIYUN::DTS::INSTANCE
+      - ALIYUN::OOS::PARAMETER
+      - ALIYUN::SAE::APPLICATION
+      - ALIYUN::CBN::TRANSITROUTERVBRATTACHMENT
+      - ALIYUN::IACSERVICE::JOB
+      - ALIYUN::HSM::INSTANCE
+      - ALIYUN::EDAS::CLUSTER
+      - ALIYUN::TESTPRODUCT::XXXX
+      - ALIYUN::IACSERVICE::AUTHORIZATION
+      - ALIYUN::OOS::SECRETPARAMETER
+      - ALIYUN::RM::INSTANCE
+      - ALIYUN::CDS::CLUSTER
+      - ALIYUN::CONFIG::AGGREGATOR
+      - ALIYUN::OOS::OPSITEMCONFIGURATION
+      - ALIYUN::OTS::INSTANCE
+      - ALIYUN::DTS::MIGRATIONJOB
+      - ALIYUN::NLP::TEXTSTRUCTURE
+      - ALIYUN::CONFIG::AGGREGATECOMPLIANCEPACK
+      - ALIYUN::SMARTAG::ABWP
+      - ALIYUN::HBR::VAULT
+      - ALIYUN::HOLOGRES::INSTANCE
+      - ALIYUN::SMARTHOSTING::HBM
+      - ALIYUN::WAF::DOMAIN
+      - ALIYUN::PVTZ::ZONE
+      - ALIYUN::CLOUDBOX::SITE
+      - ALIYUN::SMARTAG::SMARTAG_D
+      - ALIYUN::PETADATA::INSTANCE
+      - ALIYUN::EDAS::APPLICATION
+      - ALIYUN::MQ::INSTANCE
+      - ALIYUN::NLP::IE
+      - ALIYUN::COMPUTENEST::SERVICEINSTANCE
+      - ALIYUN::DATAHUB::PROJECT
+      - ALIYUN::ECI::LAUNCHTEMPLATE
+      - ALIYUN::RM::SHAREDTARGET
+      - ALIYUN::DCDNIPA::DOMAIN
+      - ALIYUN::BPSTUDIO::TEMPLATE
+      - ALIYUN::ROS::CHANGESET
+      - ALIYUN::CASSANDRA::CLUSTER
+      - ALIYUN::EMR::CLUSTER
+      - ALIYUN::LICENSEMANAGER::LICENSE
+      - ALIYUN::CR::INSTANCE
+      - ALIYUN::CBN::TRANSITROUTERPEERATTACHMENT
+      - ALIYUN::AVDS::ASSETS
+      - ALIYUN::ALB::ACL
+      - ALIYUN::GWS::USER
+      - ALIYUN::RDS::DEDICATEDHOST
+      - ALIYUN::OOS::APPLICATION
+      - ALIYUN::IOT::PRODUCT
+      - ALIYUN::IACSERVICE::MODULEMARKET
+      - ALIYUN::EBS::PAIR
+      - ALIYUN::CDDC::DEDICATEDHOST
+      - ALIYUN::COMPUTENEST::SERVICE
+      - ALIYUN::FLINKASI::VVPNAMESPACE
+      - ALIYUN::SMARTAG::SMARTAG
+      - ALIYUN::SMARTHOSTING::MANAGEDHOST
+      - ALIYUN::CONFIG::AGGREGATECONFIGRULE
+      - ALIYUN::SMARTAG::SMARTAG_B
+      - ALIYUN::LOG::LOGSTORE
+      - ALIYUN::IOT::RULE
+      - ALIYUN::RDS::DBPROXY
+      - ALIYUN::SMARTAG::SMARTAG_S
+      - ALIYUN::NLP::KWE
+      - ALIYUN::CR::CHARTNAMESPACE
+      - ALIYUN::SMARTAG::CCN
+      - ALIYUN::NLP::REVIEWANALYSIS
+      - ALIYUN::ECI::CONTAINERGROUP
+      - ALIYUN::COMPOSER::FLOW
+      - ALIYUN::HOLOGRAM::INSTANCE
+      - ALIYUN::CONFIG::COMPLIANCEPACK
+      - ALIYUN::ALB::LOADBALANCER
+      - ALIYUN::RM::RESOURCEGROUP
+      - ALIYUN::ECS::SCU
+      - ALIYUN::RDS::DOWNLOADLINKDETAIL
+      - ALIYUN::MTS::MEDIAINFO
+      - ALIYUN::RDS::ACCOUNT
+      - ALIYUN::RM::TOPIC
+      - ALIYUN::ARMS::APPLICATION
+      - ALIYUN::NLB::LOADBALANCER
+      - ALIYUN::VPC::CUSTOMERGATEWAY
+      - ALIYUN::IACSERVICE::MODULE
+      - ALIYUN::ALIDNSGTM::GTMINSTANCE
+      - ALIYUN::ROS::STACKGROUP
+      - ALIYUN::ROCKETMQ::INSTANCE
+      - ALIYUN::NLP::SENTIMENT
+      - ALIYUN::NLB::SECURITYPOLICY
+      - ALIYUN::EMR::FLOWPROJECT
+      - ALIYUN::KVSTORE::AUDITLOGCONFIG
+      - ALIYUN::EBS::DBSC
+      - ALIYUN::OCEANBASE::TENANT
+      - ALIYUN::CDT::CDTCB
+      - ALIYUN::OPENSEARCH::APPGROUP
+      - ALIYUN::SMARTAG::FLOWLOG
+      - ALIYUN::ELASTICSEARCH::LOGSTASH
+      - ALIYUN::VOD::APPINFO
+      - ALIYUN::RM::ACCOUNT
+      - ALIYUN::CR::CHARTREPOSITORY
+      - ALIYUN::ECS::RESERVEDINSTANCE
+      - ALIYUN::OCEANBASE::INSTANCE
+      - ALIYUN::FLINKASI::VVPINSTANCE
+      - ALIYUN::LOG::PROJECT
+      - ALIYUN::CR::NAMESPACE
+      - ALIYUN::EDAS::NAMESPACE
+      - ALIYUN::MSE::CLUSTER
+      - ALIYUN::TESTPRODUCT::TEST2
+      - ALIYUN::ELASTICSEARCH::APM
+      - ALIYUN::DTS::SUBSCRIPTIONJOB
+      - ALIYUN::CDT::CDTINTERNET
+      - ALIYUN::VPC::IPSECSERVER
+      - ALIYUN::ECS::CAPACITYRESERVATION
+      - ALIYUN::TESTPRODUCT::TESTTYPE
+      - ALIYUN::SMARTHOSTING::MPS
+      - ALIYUN::DYSMS::TEMPLATE
+      - ALIYUN::CLOUDPHONE::INSTANCE
+      - ALIYUN::LIVE::DOMAIN
+      - ALIYUN::RDS::DATABASE
+      - ALIYUN::IACSERVICE::TASK
+      - ALIYUN::GA::ACL
+      - ALIYUN::VPC::VPNATTACHMENT
+      - ALIYUN::ECS::ELASTICITYASSURANCE
+      - ALIYUN::ALB::SERVERGROUP
+      - ALIYUN::EMR::INSTANCE
+      - ALIYUN::ALB::SECURITYPOLICY
+      - ALIYUN::OPENSEARCH::INSTANCE
+      - ALIYUN::EBS::GROUP
+      - ALIYUN::ECS::IMAGECOMPONENT
+      - ALIYUN::MSE::GATEWAY
+      - ALIYUN::CLOUDBOX::CLOUDBOX
+      - ALIYUN::DDS::SHARDINGINSTANCE
+      - ALIYUN::RM::RESOURCESHARE
+      - ALIYUN::PRIVATELINK::VPCENDPOINT
+      - ALIYUN::PRIVATELINK::VPCENDPOINTSERVICE
+      - ALIYUN::EXPRESSCONNECT::PHYSICALCONNECTION
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 标签
+    Description:
+      en: The resource tag(example:{"k1":"v1","k2":"v2"})
+      zh-cn: 资源标签（例：{"k1":"v1","k2":"v2"}）
+    Type: Json
+    Default: {"oosGenerate":"oosGenerate"}
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: tagResource
+    Action: ACS::CheckFor
+    Description:
+      en: Tag the resources it manages through resource management
+      zh-cn: 通过资源管理给其管理的资源打标签
+    Properties:
+      Service: TAG
+      API: TagResources
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceARN:
+          - 'Fn::Jq':
+              - First
+              - '.resourceType | ascii_downcase |split("::") | "arn:acs:"+.[1]+":{{ regionId }}:{{ ACS::AccountId }}:"+.[2]+"/{{ ACS::TaskLoopItem }}"'
+              - '{"resourceType":"{{resourceType}}"}'
+        Tags: "{{ tags }}"
+      DesiredValues:
+        - null
+      PropertySelector: .FailedResources.FailedResource[]
+    Loop:
+      Items: '{{ resourceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        errorMessages:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: errorMessage
+    Outputs:
+      errorMessage:
+        Type: String
+        ValueSelector: .FailedResources.FailedResource[]
+  - Name: listTagResources
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Query the resource tags
+      zh-cn: 查询资源标签信息
+    Properties:
+      Service: TAG
+      API: ListTagResources
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceARN:
+          - 'Fn::Jq':
+              - First
+              - '.resourceType | ascii_downcase |split("::") | "arn:acs:"+.[1]+":{{ regionId }}:{{ ACS::AccountId }}:"+.[2]+"/{{ ACS::TaskLoopItem }}"'
+              - '{"resourceType":"{{resourceType}}"}'
+    Outputs:
+      tagAndResourceId:
+        Type: Json
+        ValueSelector: .TagResources
+    Loop:
+      Items: '{{ resourceIds }}'
+      RateControl: '{{ rateControl }}'
+      Outputs:
+        tagAndResourceIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: tagAndResourceId
+Outputs:
+  resourceIdsAndTag:
+    Type: List
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - []
+            - 'Fn::MergeList': '{{ tagResource.errorMessages }}'
+        - '{{ listTagResources.tagAndResourceIds }}'
+        - errcode: '{{ tagResource.errorMessages }}'
+          results: '{{ listTagResources.tagAndResourceIds }}'

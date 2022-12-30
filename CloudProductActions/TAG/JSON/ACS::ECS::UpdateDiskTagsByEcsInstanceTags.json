@@ -1,0 +1,150 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::UpdateDiskTagsByEcsInstanceTags",
+    "name-zh-cn": "通过云服务器标签同步更新磁盘标签",
+    "en": "Update disk tags by ecs instance tags",
+    "zh-cn": "通过云服务器标签同步更新磁盘标签"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      }
+    },
+    "instanceId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of EcsInstance",
+        "zh-cn": "实例ID"
+      }
+    },
+    "tagKeys": {
+      "Type": "List",
+      "Description": {
+        "en": "The list of tag key",
+        "zh-cn": "标签Key的集合"
+      }
+    },
+    "isUpdate": {
+      "Type": "Boolean",
+      "Description": {
+        "en": "If the same key exists, whether to overwrite it",
+        "zh-cn": "如果存在相同Key是否覆盖"
+      },
+      "Default": false
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstanceAndTags",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query ECS instanceId and tags",
+        "zh-cn": "获取ECS实例ID以及标签信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{instanceId}}"
+          ]
+        }
+      },
+      "Outputs": {
+        "ecsTags": {
+          "Type": "Json",
+          "ValueSelector": ".Instances.Instance[] | .Tags.Tag | map(select( .TagKey | test(\"^(?!acs).*\"))) | map(select(.TagKey as $tagKey | {{tagKeys}} | index($tagKey) >=0)) "
+        }
+      }
+    },
+    {
+      "Name": "getDiskIdsAndTags",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query diskId and tags",
+        "zh-cn": "获取磁盘Id以及标签信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{instanceId}}"
+        }
+      },
+      "Outputs": {
+        "updateDiskIdsAndTags": {
+          "Type": "List",
+          "ValueSelector": ".Disks.Disk[] | {\"DiskId\":.DiskId, \"Tags\":.Tags.Tag}"
+        }
+      }
+    },
+    {
+      "Name": "tagResources",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Tag disks of ECS instance",
+        "zh-cn": "根据输入的条件给磁盘同步云服务器的标签"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "TagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceIds": {
+            "Fn::Jq": [
+              "All",
+              ".DiskId",
+              "{{ACS::TaskLoopItem}}"
+            ]
+          },
+          "Tags": {
+            "Fn::If": [
+              "{{isUpdate}}",
+              {
+                "Fn::Jq": [
+                  "All",
+                  ".[] |{\"Key\":.TagKey, \"Value\": .TagValue} ",
+                  "{{getInstanceAndTags.ecsTags}}"
+                ]
+              },
+              {
+                "Fn::Jq": [
+                  "All",
+                  ".Tags as $ecsTags |{{getInstanceAndTags.ecsTags}} | map(select(.TagKey as $tagKey | [$ecsTags[].TagKey]|index($tagKey) <0)) |.[] |{\"Key\":.TagKey, \"Value\": .TagValue}",
+                  "{{ACS::TaskLoopItem}}"
+                ]
+              }
+            ]
+          },
+          "ResourceType": "disk"
+        }
+      },
+      "Outputs": {
+        "reqResult": {
+          "Type": "Json",
+          "ValueSelector": ".RequestId"
+        }
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 100,
+          "Concurrency": 1
+        },
+        "Items": "{{getDiskIdsAndTags.updateDiskIdsAndTags}}",
+        "Outputs": {
+          "tagResult": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "reqResult"
+          }
+        }
+      }
+    }
+  ]
+}

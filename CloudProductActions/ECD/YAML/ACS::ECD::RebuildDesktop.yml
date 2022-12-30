@@ -1,0 +1,39 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECD::RebuildDesktop
+  name-zh-cn: 重建云桌面
+  en: Rebuild ECD desktop
+  zh-cn: 重建云桌面
+Parameters:
+  regionId:
+    Description:
+      en: The id of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  desktopId:
+    Description:
+      en: The id of desktop
+      zh-cn: 云桌面ID
+    Type: String
+Tasks:
+  - Name: stopDesktop
+    Action: ACS::ECD::StopDesktop
+    Description:
+      en: Stop the desktops
+      zh-cn: 停止云桌面
+    Properties:
+      regionId: '{{ regionId }}'
+      desktopId: '{{ desktopId }}'
+  - Name: rebuildDesktop
+    Action: ACS::ExecuteApi
+    Description:
+      en: Rebuild desktops
+      zh-cn: 重建云桌面
+    Properties:
+      Service: ECD
+      API: RebuildDesktops
+      Parameters:
+        RegionId: '{{ regionId }}'
+        DesktopId:
+          - '{{ desktopId }}'

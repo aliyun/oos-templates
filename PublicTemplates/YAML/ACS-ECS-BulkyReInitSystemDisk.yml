@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky resets system disks to its initial state.The ECS instances must be in stopped status.
-  zh-cn: 批量初始化系统盘。磁盘所在实例必须为停止状态。
+  en: Bulky resets system disks to its initial state.The ECS instances must be in stopped status
+  zh-cn: 批量初始化系统盘，磁盘所在实例必须为停止状态
   name-en: ACS-ECS-BulkyReInitSystemDisk
   name-zh-cn: 批量初始化系统盘
   categories:
@@ -9,21 +9,24 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -31,17 +34,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: getInstance
   Description:
-    en: Views the ECS instances.
-    zh-cn: 获取ECS实例。
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
@@ -52,58 +55,43 @@ Tasks:
     instanceIds:
       Type: List
       ValueSelector: Instances.Instance[].InstanceId
-- Name: checkInstanceReady
-  Action: ACS::CheckFor
-  Description:
-    en: Checks ECS instances is in the stopped status.
-    zh-cn: 检查实例是否为停止状态。
-  Properties:
-    Service: ECS
-    API: DescribeInstances
-    Parameters:
-      RegionId: '{{ regionId }}'
-      InstanceIds:
-      - '{{ ACS::TaskLoopItem }}'
-    DesiredValues:
-    - Stopped
-    PropertySelector: Instances.Instance[].Status
-  Loop:
-    RateControl: '{{ rateControl }}'
-    Items: '{{ getInstance.instanceIds }}'
-- Name: querySystemDisks
-  Action: ACS::ExecuteAPI
-  Description:
-    en: Views system disk of the ECS instance.
-    zh-cn: 获取实例系统盘。
-  Properties:
-    Service: ECS
-    API: DescribeDisks
-    Parameters:
-      RegionId: '{{ regionId }}'
-      InstanceId: '{{ ACS::TaskLoopItem }}'
-      DiskType: system
-  Loop:
-    Items: '{{ getInstance.instanceIds }}'
-    Outputs:
-      diskIds:
-        AggregateType: Fn::ListJoin
-        AggregateField: diskId
-  Outputs:
-    diskId:
-      Type: String
-      ValueSelector: Disks.Disk[].DiskId
 - Name: reInitSystemDisk
   Action: ACS::ECS::ReInitDisk
   Description:
-    en: Resets a disk to its initial state.
-    zh-cn: 初始化系统盘。
+    en: Resets a disk to its initial state
+    zh-cn: 初始化系统盘
   Properties:
     regionId: '{{ regionId }}'
-    diskId: '{{ ACS::TaskLoopItem }}'
+    instanceId: '{{ ACS::TaskLoopItem }}'
   Loop:
     RateControl: '{{ rateControl }}'
-    Items: '{{ querySystemDisks.diskIds }}'
+    Items: '{{ getInstance.instanceIds }}'
+    Outputs:
+      diskIdAndInstanceIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: diskIdAndInstanceId
+  Outputs:
+    diskIdAndInstanceId:
+      Type: Json
+      ValueSelector: reInitDiskIdAndInstanceId
 Outputs:
-  diskIds:
+  diskIdAndInstanceIds:
     Type: List
-    Value: '{{ querySystemDisks.diskIds }}'
+    Value: '{{ reInitSystemDisk.diskIdAndInstanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

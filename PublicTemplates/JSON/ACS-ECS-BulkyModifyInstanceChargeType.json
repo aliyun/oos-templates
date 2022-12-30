@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Bulky modify instance charge type.",
-    "zh-cn": "\u6279\u91cf\u4fee\u6539\u5b9e\u4f8b\u7684\u8ba1\u8d39\u65b9\u5f0f\u3002",
+    "en": "Bulky modify instance charge type",
+    "zh-cn": "批量修改实例的计费方式",
     "name-en": "ACS-ECS-BulkyModifyInstanceChargeType",
-    "name-zh-cn": "\u6279\u91cf\u4fee\u6539\u5b9e\u4f8b\u7684\u8ba1\u8d39\u65b9\u5f0f",
+    "name-zh-cn": "批量修改实例的计费方式",
     "categories": [
       "instance_manage"
     ]
@@ -12,15 +12,19 @@
   "Parameters": {
     "regionId": {
       "Type": "String",
-      "Description": {
-        "en": "The id of region.",
-        "zh-cn": "\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "targets": {
       "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
@@ -28,9 +32,9 @@
       }
     },
     "instanceChargeType": {
-      "Description": {
-        "en": "The instance ChargeType.",
-        "zh-cn": "\u5b9e\u4f8b\u9700\u8981\u4fee\u6539\u7684\u76ee\u6807\u8ba1\u8d39\u65b9\u5f0f\u3002"
+      "Label": {
+        "en": "InstanceChargeType",
+        "zh-cn": "实例需要修改的目标计费方式"
       },
       "Type": "String",
       "AllowedValues": [
@@ -39,22 +43,95 @@
       ],
       "Default": "PostPaid"
     },
-    "networkChargeType": {
+    "periodUnit": {
+      "Label": {
+        "en": "PeriodUnit",
+        "zh-cn": "续费时长的时间单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month"
+      ],
+      "Default": "Month",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "${instanceChargeType}",
+                "PostPaid"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "period": {
       "Description": {
-        "en": "The network ChargeType.",
-        "zh-cn": "\u7f51\u7edc\u9700\u8981\u4fee\u6539\u7684\u76ee\u6807\u8ba1\u8d39\u65b9\u5f0f\u3002"
+        "en": "The period of the instance",
+        "zh-cn": "PeriodUnit=Week时，Period取值：1~4，PeriodUnit=Month时，Period取值：1~12,24, 36, 48, 60"
+      },
+      "Label": {
+        "en": "Period",
+        "zh-cn": "续费时长"
+      },
+      "Type": "Number",
+      "Default": 1,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "${instanceChargeType}",
+                "PostPaid"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "includeDataDisks": {
+      "Description": {
+        "en": "Specifies whether to change the billing method of all data disks attached to the instance from pay-as-you-go to subscription",
+        "zh-cn": "是否将实例挂载的所有按量付费数据盘一起转换为包年包月数据盘"
+      },
+      "Label": {
+        "en": "IncludeDataDisks",
+        "zh-cn": "是否转换数据盘"
+      },
+      "Type": "Boolean",
+      "Default": false,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "${instanceChargeType}",
+                "PostPaid"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "networkChargeType": {
+      "Label": {
+        "en": "NetworkChargeType",
+        "zh-cn": "网络需要修改的目标计费方式"
       },
       "Type": "String",
       "AllowedValues": [
         "PayByBandwidth",
-        "PayByTraffic"
+        "PayByTraffic",
+        ""
       ],
       "Default": "PayByTraffic"
     },
     "rateControl": {
-      "Description": {
-        "en": "Concurrency ratio of task execution.",
-        "zh-cn": "\u4efb\u52a1\u6267\u884c\u7684\u5e76\u53d1\u6bd4\u7387\u3002"
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
       },
       "Type": "Json",
       "AssociationProperty": "RateControl",
@@ -65,9 +142,9 @@
       }
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -78,8 +155,8 @@
     {
       "Name": "getInstance",
       "Description": {
-        "en": "Views the ECS instances.",
-        "zh-cn": "\u83b7\u53d6ECS\u5b9e\u4f8b\u3002"
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
       },
       "Action": "ACS::SelectTargets",
       "Properties": {
@@ -99,20 +176,73 @@
     {
       "Name": "modifyInstanceChargeType",
       "Description": {
-        "en": "Modify instance charge type.",
-        "zh-cn": "\u4fee\u6539\u5b9e\u4f8b\u8ba1\u8d39\u65b9\u5f0f\u3002"
+        "en": "Modify instance charge type",
+        "zh-cn": "修改实例计费方式"
       },
       "Action": "ACS::ECS::ModifyInstanceChargeType",
       "Properties": {
         "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "instanceChargeType": "{{ instanceChargeType }}",
-        "networkChargeType": "{{ networkChargeType }}"
+        "networkChargeType": "{{ networkChargeType }}",
+        "period": "{{ period }}",
+        "periodUnit": "{{ periodUnit }}",
+        "includeDataDisks": "{{ includeDataDisks }}"
       },
       "Loop": {
         "RateControl": "{{ rateControl }}",
         "Items": "{{ getInstance.instanceIds }}"
       }
     }
-  ]
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "instanceChargeType",
+            "period",
+            "periodUnit",
+            "includeDataDisks",
+            "networkChargeType"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "计费方式参数选择",
+              "en": "Choose the parameter of instnace charge type"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select ECS Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ],
+      "Hidden": [
+        "period",
+        "periodUnit",
+        "includeDataDisks"
+      ]
+    }
+  }
 }

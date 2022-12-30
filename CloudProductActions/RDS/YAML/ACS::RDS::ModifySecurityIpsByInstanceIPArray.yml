@@ -1,0 +1,137 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Del 0.0.0.0/0 from the ip white list array of rds instances.
+  zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0。
+  name-en: ACS::RDS::ModifySecurityIpsByInstanceIPArray
+  name-zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+Parameters:
+  regionId:
+    Description:
+      en: region id of instances
+      zh-cn: 实例所在地域ID
+    Type: String
+  instanceId:
+    Description:
+      en: The id of rds instances
+      zh-cn: rds实例ID
+    Type: String
+  securityIps:
+    Description:
+      en: The security ips
+      zh-cn: 要修改的IP白名单
+    Type: String
+  whitelistNetworkType:
+    Description:
+      en: White list network type
+      zh-cn: 白名单的网络类型
+    Type: String
+  instanceIPArrayName:
+    Description:
+      en: The ip array name
+      zh-cn: 需要修改的IP白名单分组名称
+    Type: String
+Tasks:
+  - Name: checkSecurityIPList
+    Action: ACS::Choice
+    Description:
+      en: Check whether the ip list includes 0.0.0.0/0 or not
+      zh-cn: 查询ip list 是否包含0.0.0.0/0
+    Properties:
+      DefaultTask: ACS::END
+      Choices:
+        - When:
+            Fn::Equals:
+              - true
+              - Fn::Jq:
+                  - First
+                  - contains(["0.0.0.0/0"])
+                  - Fn::Split:
+                      - ','
+                      - '{{ securityIps }}'
+          NextTask: checkWhitelistNetworkType
+  - Name: checkWhitelistNetworkType
+    Action: ACS::Choice
+    Description:
+      en: Check white list network type
+      zh-cn: 查询白名单的网络类型
+    Properties:
+      DefaultTask: ACS::END
+      Choices:
+        - When:
+            Fn::Equals:
+              - true
+              - Fn::Jq:
+                  - First
+                  - contains(["MIX"])
+                  - Fn::Split:
+                      - ','
+                      - '{{ whitelistNetworkType }}'
+          NextTask: modifySecurityIps
+        - When:
+            Fn::Equals:
+              - true
+              - Fn::Jq:
+                  - First
+                  - contains(["VPC"])
+                  - Fn::Split:
+                      - ','
+                      - '{{ whitelistNetworkType }}'
+          NextTask: modifySecurityIpsForVpc
+        - When:
+            Fn::Equals:
+              - true
+              - Fn::Jq:
+                  - First
+                  - contains(["Classic"])
+                  - Fn::Split:
+                      - ','
+                      - '{{ whitelistNetworkType }}'
+          NextTask: modifySecurityIpsForClassic
+  - Name: modifySecurityIps
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Del 0.0.0.0/0 from the ip white list array of rds instances
+      zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+    Properties:
+      Service: RDS
+      API: ModifySecurityIps
+      Parameters:
+        DBInstanceId: '{{ instanceId }}'
+        SecurityIps: 0.0.0.0/0
+        DBInstanceIPArrayName: '{{ instanceIPArrayName }}'
+        WhitelistNetworkType: MIX
+        ModifyMode: Delete
+    Outputs: {}
+    OnError: ACS::END
+    OnSuccess: ACS::END
+  - Name: modifySecurityIpsForClassic
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Del 0.0.0.0/0 from the ip white list array of rds instances
+      zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+    Properties:
+      Service: RDS
+      API: ModifySecurityIps
+      Parameters:
+        DBInstanceId: '{{ instanceId }}'
+        SecurityIps: 0.0.0.0/0
+        DBInstanceIPArrayName: '{{ instanceIPArrayName }}'
+        WhitelistNetworkType: Classic
+        ModifyMode: Delete
+    Outputs: {}
+    OnError: ACS::END
+    OnSuccess: ACS::END
+  - Name: modifySecurityIpsForVpc
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Del 0.0.0.0/0 from the ip white list array of rds instances
+      zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+    Properties:
+      Service: RDS
+      API: ModifySecurityIps
+      Parameters:
+        DBInstanceId: '{{ instanceId }}'
+        SecurityIps: 0.0.0.0/0
+        DBInstanceIPArrayName: '{{ instanceIPArrayName }}'
+        WhitelistNetworkType: VPC
+        ModifyMode: Delete

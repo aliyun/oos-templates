@@ -1,0 +1,79 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Enables health checks for ECS instances in the scaling group",
+    "zh-cn": "开启ESS伸缩组中的ECS实例的健康检查",
+    "name-en": "ACS-ESS-EnableInstanceHealthCheck",
+    "name-zh-cn": "开启ESS伸缩组中的ECS实例的健康检查",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "scalingGroupId": {
+      "Label": {
+        "en": "ScalingGroupId",
+        "zh-cn": "待修改伸缩组的ID"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "checkForScalingGroupAvalible",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Check weather the Scaling Group is avaliable",
+        "zh-cn": "检查伸缩组状态是否可用"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingGroups",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId1": "{{ scalingGroupId }}"
+        },
+        "DesiredValues": [
+          "Active",
+          "Inactive"
+        ],
+        "PropertySelector": "ScalingGroups.ScalingGroup[].LifecycleState"
+      }
+    },
+    {
+      "Name": "modifyScalingGroup",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify the health check status of the ECS flex group",
+        "zh-cn": "修改ECS伸缩组的健康检查状态"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyScalingGroup",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "HealthCheckType": "ECS"
+        }
+      }
+    }
+  ]
+}

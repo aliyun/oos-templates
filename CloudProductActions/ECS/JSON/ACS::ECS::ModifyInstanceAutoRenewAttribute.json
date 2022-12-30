@@ -1,0 +1,90 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify instance auto renew attribute",
+    "zh-cn": "修改实例的自动续费属性",
+    "name-en": "ACS::ECS::ModifyInstanceAutoRenewAttribute",
+    "name-zh-cn": "修改实例的自动续费属性"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "Instance ID of the ECS",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "periodUnit": {
+      "Description": {
+        "en": "The auto-renewal period",
+        "zh-cn": "实例续费时长的时间单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Month",
+        "Week",
+        "Year"
+      ],
+      "Default": "Month"
+    },
+    "duration": {
+      "Description": {
+        "en": "The duration of instance When PeriodUnit is set to Year, valid values of Duration are 1, 2, and 3 When PeriodUnit is set to Month, valid values of Duration are 1, 2, 3, 6, 12 When PeriodUnit is set to Week, valid values of Duration are 1, 2, 3, 4",
+        "zh-cn": "实例续费时长， PeriodUnit为Year（年）时，Duration的取值范围为：{\"1\", \"2\", \"3\"} PeriodUnit为Month（月）时，Duration的取值范围为：{\"1\", \"2\", \"3\", \"6\", \"12\"} PeriodUnit为Week（周）时，Duration的取值范围为：{\"1\", \"2\", \"3\", \"4\"}"
+      },
+      "Type": "Number"
+    },
+    "autoRenew": {
+      "Description": {
+        "en": "Specifies whether to enable auto-renewal",
+        "zh-cn": "实例到期前是否自动续费"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "renewalStatus": {
+      "Description": {
+        "en": "The auto-renewal status of the instance. Valid values: AutoRenewal: Auto-renewal is enabled for the instance. Normal: Auto-renewal is disabled for the instance. NotRenewal: The instance will not be renewed upon expiration. The system no longer sends an expiration reminder, but sends only a non-renewal reminder three days before the expiration date. You can change the value of this parameter from NotRenewal to Normal for an instance, and then manually renew the instance. Alternatively, you can set the RenewalStatus parameter to AutoRenewal.",
+        "zh-cn": "实例的自动续费状态。取值范围： AutoRenewal：设置为自动续费。 Normal：取消自动续费。 NotRenewal：不再续费。传入该值后，系统不再发送到期提醒，只在到期前第三天发送不续费提醒。不再续费的ECS实例可以更改成待续费（Normal）后，再自行续费或设置为自动续费。"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "AutoRenewal",
+        "Normal",
+        "NotRenewal"
+      ],
+      "Default": "AutoRenewal"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "modifyInstanceRenewAttribute",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modifies instance auto renew attr",
+        "zh-cn": "修改实例自动续费属性"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceAutoRenewAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "PeriodUnit": "{{ periodUnit }}",
+          "Duration": "{{ duration }}",
+          "AutoRenew": "{{ autoRenew }}",
+          "RenewalStatus": "{{ renewalStatus }}"
+        }
+      }
+    }
+  ]
+}

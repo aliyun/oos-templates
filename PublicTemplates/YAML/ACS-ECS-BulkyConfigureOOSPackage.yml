@@ -9,41 +9,50 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   action:
-    Description:
-      en: The action to configure package.
-      zh-cn: 配置的软件包的方式。
+    Label:
+      en: Action
+      zh-cn: 配置的软件包的方式
     Type: String
     AllowedValues:
       - install
       - uninstall
     Default: install
   packageName:
-    Description:
-      en: The name of package to configure.
-      zh-cn: 要配置的软件包名称。
+    Label:
+      en: packageName
+      zh-cn: 要配置的软件包名称
     Type: String
+    AssociationProperty: 'ALIYUN::OOS::Package::PackageName'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   packageVersion:
-    Description:
-      en: The version of package to configure.
-      zh-cn: 要配置的软件包版本。
+    Label:
+      en: packageVersion
+      zh-cn: 要配置的软件包版本
     Type: String
+    AssociationProperty: 'ALIYUN::OOS::Package::PackageVersion'
+    AssociationPropertyMetadata:
+      TemplateName: ${packageName}
     Default: ''
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -51,15 +60,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description: The RAM role to be assumed by OOS.
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: 'ACS::SelectTargets'
     Properties:
       ResourceType: 'ALIYUN::ECS::Instance'
@@ -72,8 +83,8 @@ Tasks:
         ValueSelector: 'Instances.Instance[].InstanceId'
   - Name: configurePackage
     Description:
-      en: Configure Package.
-      zh-cn: 配置软件包。
+      en: Configure Package
+      zh-cn: 配置软件包
     Action: 'ACS::ECS::ConfigureOOSPackage'
     Properties:
       regionId: '{{ regionId }}'
@@ -91,9 +102,33 @@ Tasks:
     Outputs:
       commandOutput:
         Type: String
-        ValueSelector: commandOutput
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "ConfigureResult": .commandOutput}'
 Outputs:
   commandOutput:
-    Type: String
+    Type: List
     Value: '{{ configurePackage.commandOutputs }}'
-
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - packageName
+          - action
+          - packageVersion
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

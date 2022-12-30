@@ -1,136 +1,100 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Changes the type of your subscription instance. The new instance type will take effect for the entire lifecycle of the instance.",
+  "Description": {
+    "name-en": "ACS::ECS::ModifyPrepaySpec",
+    "name-zh-cn": "修改预付费ECS实例的实例规格",
+    "en": "Modify prepaid instance spec",
+    "zh-cn": "修改预付费ECS实例的实例规格"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
-    "autoPay": {
-      "Description": "The pay type you will modify.",
-      "Type": "String"
-    },
     "instanceId": {
-      "Description": "The instance ID you will handle.",
-      "Type": "String",
-      "MinLength": 1,
-      "MaxLength": 30
-    },
-    "instanceType": {
-      "Description": "The Instance type you will modify.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "operatorType": {
-      "Description": "The operation type.",
+      "Description": {
+        "en": "The operation type",
+        "zh-cn": "操作类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "downgrade",
         "upgrade"
       ],
       "Default": "upgrade"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The Instance type of ECS instance",
+        "zh-cn": "ECS实例类型"
+      },
+      "Type": "String"
     }
   },
   "Tasks": [
     {
       "Name": "stopInstance",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Stops instance with specified instance ID.",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stops the ECS instances",
+        "zh-cn": "停止ECS实例"
+      },
       "Properties": {
-        "Service": "ECS",
-        "API": "StopInstance",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceId": "{{ instanceId }}"
-        }
-      }
-    },
-    {
-      "Name": "untilInstanceReady",
-      "Action": "ACS::WaitFor",
-      "Description": "Waits for the ECS instance to enter stopped status.",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
-        },
-        "DesiredValues": [
-          "Stopped"
-        ],
-        "PropertySelector": "Instances.Instance[].Status"
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
       }
     },
     {
       "Name": "modifyPrepayInstanceSpec",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Changes the type of your subscription instance.",
+      "Description": {
+        "en": "Modifies the instance type of a subscription ECS instance",
+        "zh-cn": "修改包年包月ECS实例的实例规格"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "ModifyPrepayInstanceSpec",
         "Parameters": {
           "RegionId": "{{ regionId }}",
-          "AutoPay": "{{ autoPay }}",
           "InstanceId": "{{ instanceId }}",
           "InstanceType": "{{ instanceType }}",
           "OperatorType": "{{ operatorType }}"
-        }
-      },
-      "Outputs": {
-        "orderId": {
-          "Type": "List",
-          "ValueSelector": "OrderId"
         }
       }
     },
     {
       "Name": "waitInstanceReady",
       "Action": "ACS::Sleep",
-      "Description": "Waits the instance recover.",
+      "Description": {
+        "en": "Waits for the instance type modify successfully",
+        "zh-cn": "等待实例规格修改成功"
+      },
       "Properties": {
         "Duration": "PT1M"
       }
     },
     {
       "Name": "startInstance",
-      "Action": "ACS::ExecuteAPI",
-      "Description": "Starts an ECS instance.",
+      "Action": "ACS::ECS::StartInstance",
+      "Description": {
+        "en": "Starts the ECS instances",
+        "zh-cn": "启动ECS实例"
+      },
       "Properties": {
-        "Service": "ECS",
-        "API": "StartInstance",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceId": "{{ instanceId }}"
-        }
-      }
-    },
-    {
-      "Name": "untilStartInstanceReady",
-      "Action": "ACS::WaitFor",
-      "Description": "Waits for the ECS instance to enter running status.",
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
-        },
-        "DesiredValues": [
-          "Running"
-        ],
-        "PropertySelector": "Instances.Instance[].Status"
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
       }
     }
-  ],
-  "Outputs": {
-    "orderId": {
-      "Type": "String",
-      "Value": "{{ modifyPrepayInstanceSpec.orderId }}"
-    }
-  }
+  ]
 }

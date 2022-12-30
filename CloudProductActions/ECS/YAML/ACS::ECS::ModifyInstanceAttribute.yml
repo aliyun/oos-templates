@@ -1,108 +1,56 @@
 FormatVersion: OOS-2019-06-01
-Description: Modify the information of an ECS instance.
+Description:
+  name-en: ACS::ECS::ModifyInstanceAttribute
+  name-zh-cn: 修改ECS实例的属性
+  en: Modify the information of an ECS instance
+  zh-cn: 修改ECS实例的属性
 Parameters:
   instanceAttributes:
-    Description: The infos list of the ECS instance.
+    Description:
+      en: The infos of the ECS instance
+      zh-cn: ECS实例信息
     Type: Json
   instanceId:
-    Description: The id of instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
 Tasks:
 - Name: modifyInstanceAttribute
   Action: ACS::ExecuteApi
-  Description: Modify the information of an ECS instance.
+  Description:
+    en: Modifies the information of an ECS instance
+    zh-cn: 修改ECS实例属性
   Properties:
     Service: ECS
     API: ModifyInstanceAttribute
     Parameters:
       RegionId:
-        'Fn::Select':
-          - regionId
-          - 'Fn::Select':
-             - 0
-             - 'Fn::Jq':
-                  - First
-                  - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                  - '{{ instanceAttributes }}'
-      InstanceId:
-        'Fn::Select':
-          - instanceId
-          - 'Fn::Select':
-             - 0
-             - 'Fn::Jq':
-                  - First
-                  - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                  - '{{ instanceAttributes }}'
+        'Fn::Jq':
+          - First
+          - .[] | select(.instanceId == "{{ instanceId }}") | .regionId
+          - '{{ instanceAttributes }}'
+      InstanceId: '{{ instanceId }}'
       HostName:
-        'Fn::If':
-          - 'Fn::Equals':
-              - ''
-              - 'Fn::Select':
-                  - hostName
-                  - 'Fn::Select':
-                     - 0
-                     - 'Fn::Jq':
-                          - First
-                          - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                          - '{{ instanceAttributes }}'
-          - Null
-          - 'Fn::Select':
-              - hostName
-              - 'Fn::Select':
-                 - 0
-                 - 'Fn::Jq':
-                      - First
-                      - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                      - '{{ instanceAttributes }}'
+        'Fn::Jq':
+          - First
+          - .[] | select(.instanceId == "{{ instanceId }}") | .hostName
+          - '{{ instanceAttributes }}'
       InstanceName:
-        'Fn::If':
-          - 'Fn::Equals':
-              - ''
-              - 'Fn::Select':
-                  - instanceName
-                  - 'Fn::Select':
-                     - 0
-                     - 'Fn::Jq':
-                          - First
-                          - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                          - '{{ instanceAttributes }}'
-          - Null
-          - 'Fn::Select':
-              - instanceName
-              - 'Fn::Select':
-                 - 0
-                 - 'Fn::Jq':
-                      - First
-                      - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                      - '{{ instanceAttributes }}'
+        'Fn::Jq':
+          - First
+          - .[] | select(.instanceId == "{{ instanceId }}") | .instanceName
+          - '{{ instanceAttributes }}'
       Description:
-        'Fn::If':
-          - 'Fn::Equals':
-              - ''
-              - 'Fn::Select':
-                  - description
-                  - 'Fn::Select':
-                     - 0
-                     - 'Fn::Jq':
-                          - First
-                          - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                          - '{{ instanceAttributes }}'
-          - Null
-          - 'Fn::Select':
-              - description
-              - 'Fn::Select':
-                - 0
-                - 'Fn::Jq':
-                     - First
-                     - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-                     - '{{ instanceAttributes }}'
+        'Fn::Jq':
+          - First
+          - .[] | select(.instanceId == "{{ instanceId }}") | .description
+          - '{{ instanceAttributes }}'
 Outputs:
   instanceInfos:
     Type: String
     Value:
-      'Fn::Select':
-         - 0
-         - 'Fn::Jq':
-              - First
-              - '.| map(select(.instanceId = "i") | {"regionId":.regionId, "instanceId":.instanceId,"hostName":.hostName,"instanceName":.instanceName,"description":.description})'
-              - '{{ instanceAttributes }}'
+      'Fn::Jq':
+        - First
+        - .[] | select(.instanceId == "{{ instanceId }}")
+        - '{{ instanceAttributes }}'

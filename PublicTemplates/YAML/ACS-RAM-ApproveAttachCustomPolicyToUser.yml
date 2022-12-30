@@ -1,58 +1,72 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Attach custom policy to user that template executed by after approving.
-  zh-cn: 审批通过后授予自定义权限给创建执行的子用户。
+  en: Attach custom policy to user that template executed by after approving
+  zh-cn: 审批通过后授予自定义权限给创建执行的子用户
   name-en: ACS-RAM-ApproveAttachCustomPolicyToUser
   name-zh-cn: 审批通过后授予自定义权限给创建执行的子用户
   categories:
     - security
 Parameters:
   policyDocument:
+    Label:
+      en: PolicyDocument
+      zh-cn: 将授权的自定义权限策略的json脚本
     Description:
-      en: 'The json document of custom policy to attach. e.g.{ "Version": "1", "Statement": [ { "Action": [ "oos:List*", "oos:Get*" ], "Resource": "*", "Effect": "Allow" } ] }'
-      zh-cn: '将授权的自定义权限策略的json脚本。如{ "Version": "1", "Statement": [ { "Action": [ "oos:List*", "oos:Get*" ], "Resource": "*", "Effect": "Allow" } ] }'
+      en: 'e.g.{ "Version": "1", "Statement": [ { "Action": [ "oos:List*", "oos:Get*" ], "Resource": "*", "Effect": "Allow" } ] }'
+      zh-cn: '如{ "Version": "1", "Statement": [ { "Action": [ "oos:List*", "oos:Get*" ], "Resource": "*", "Effect": "Allow" } ] }'
     Type: String
     AssociationProperty: Code
   policyName:
-    Description:
-      en: The custom ploicy to create and add.
-      zh-cn: 将新建并授予的自定义权限策略名称。
+    Label:
+      en: PolicyName
+      zh-cn: 将新建并授予的自定义权限策略名称
     Type: String
   webHookUrl:
+    Label:
+      en: WebHookUrl
+      zh-cn: 钉钉群助手的webhook地址
     Description:
       en: >-
-        The webhook url of dingtalk group assistant,
         e.g.https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414,acquiring DingTalk webhook please refer to second appendix in https://help.aliyun.com/document_detail/144679.html.
       zh-cn: >-
-        钉钉群助手的webhook地址，形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。
+        形如https://oapi.dingtalk.com/robot/send?access_token=1234zxcvaksdq31414，具体钉钉WebHook获取请参考https://help.aliyun.com/document_detail/144679.html#h2--2-webhook-5。
     Type: String
   atMobiles:
+    Label:
+      en: AtMobiles
+      zn-cn: 钉钉手机号
     Description:
-      en: The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234.
-      zh-cn: 审批通知中被@的群成员的钉钉手机号，比如138ALBB1234。
+      en: The dingtalk phone numbers of who be @ in notification,e.g.138ALBB1234
+      zh-cn: 审批通知中被@的群成员的钉钉手机号，比如138ALBB1234
     Type: List
   atAll:
+    Label:
+      en: AtAll
+      zh-cn: 是否@所有人
     Description:
       en: 'Whether assistant @ all members in dingtalk group or not notification comes'
-      zh-cn: 当群助手向钉钉群中发送审批通知时是否@所有人。
+      zh-cn: 当群助手向钉钉群中发送审批通知时是否@所有人
     Type: String
     Default: 'false'
   approvers:
+    Label:
+      en: Approvers
+      zh-cn: 可以审批授权的用户
     Description:
-      en: The names of users that have the authority to approve task. the name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list.
-      zh-cn: 可以审批授权的用户。用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可。
+      en: The name to fill is the front part of @ in the RAM user name,if  RAM user is user001@companyAlias.onaliyun.com, then fill  user001  in list
+      zh-cn: 用户名是RAM子用户名称中@前面的部分，比如RAM子用户为user001@companyAlias.onaliyun.com,那么列表中填写user001即可
     Type: List
     AssociationProperty: ALIYUN::RAM::User
   minRequiredApprovals:
-    Description:
-      en: The min required count of approvals.
+    Label:
+      en: MinRequiredApprovals
       zh-cn: 最低需要通过审批的数量
     Type: Number
     Default: 1
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -60,8 +74,8 @@ Tasks:
   - Name: approveAttachPolicy
     Action: 'ACS::Approve'
     Description:
-      en: Approve task add policy.
-      zh-cn: 审批后授权。
+      en: Approve task add policy
+      zh-cn: 审批后授权
     Properties:
       Approvers: '{{approvers}}'
       MinRequiredApprovals: '{{minRequiredApprovals}}'
@@ -84,8 +98,8 @@ Tasks:
   - Name: checkPolicyExist
     Action:  ACS::CheckFor
     Description:
-      en: Check for the inexistence of policy.
-      zh-cn: 判断自定义权限策略名称存在性。
+      en: Check for the inexistence of policy
+      zh-cn: 判断自定义权限策略名称存在性
     Properties:
       Service: RAM
       API: GetPolicy
@@ -107,8 +121,8 @@ Tasks:
         - '{{ checkPolicyExist.existed }}'
         - 'false'
     Description:
-      en: Attach policy by Ros resource stack.
-      zh-cn: 通过Ros资源栈为角色授权。
+      en: Attach policy by Ros resource stack
+      zh-cn: 通过Ros资源栈为角色授权
     Properties:
       TemplateName: 'ACS::ROS::CreateStack'
       Parameters:
@@ -167,8 +181,8 @@ Tasks:
         - '{{ checkPolicyExist.existed }}'
         - 'true'
     Description:
-      en: Attach policy by Ros resource stack when policy is not exist.
-      zh-cn: 当policy不存在时，通过Ros资源栈为角色授权。
+      en: Attach policy by Ros resource stack when policy is not exist
+      zh-cn: 当policy不存在时，通过Ros资源栈为角色授权
     Properties:
       TemplateName: 'ACS::ROS::CreateStack'
       Parameters:
@@ -224,6 +238,13 @@ Tasks:
                   ]
                 }
               }
+            },
+            "Metadata": {
+              "ALIYUN::ROS::Interface": {
+                "TemplateTags": [
+                  "acs:integrate:oos:ram_approve_attach_custom_policy_to_user"
+                ]
+              }
             }
           }
     Outputs:
@@ -234,3 +255,4 @@ Outputs:
   stackId:
     Type: String
     Value: '{{createStack.stackId}}'
+

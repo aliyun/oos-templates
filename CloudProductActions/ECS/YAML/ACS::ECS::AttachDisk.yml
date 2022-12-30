@@ -1,29 +1,43 @@
 FormatVersion: OOS-2019-06-01
-Description: Attaches a data disk to an ECS instance.
+Description:
+  name-en: ACS::ECS::AttachDisk
+  name-zh-cn: 为ECS实例挂载云盘
+  en: Attach a pay-as-you-go data disk or a system disk to an ECS instance
+  zh-cn: 为一台ECS实例挂载一块按量付费数据盘，或者挂载一块系统盘
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of the instance.
+    Description:
+      en: The ID of the instance
+      zh-cn: 实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   diskId:
-    Description: The ID of the disk to be attached.
+    Description:
+      en: The ID of the disk to be attached
+      zh-cn: 需要挂载的数据盘ID
     Type: String
     AllowedPattern: d-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
   deleteWithInstance:
-    Description: The disk will be deleted with instance when deleting instance, the defalut is false.
+    Description:
+      en: The disk will be deleted with instance when deleting instance, the defalut is false
+      zh-cn: 删除实例时选择是否删除数据盘，默认为不删除
     Type: Boolean
     Default: false
 Tasks:
 - Name: attachDisk
   Action: ACS::ExecuteAPI
-  Description: Attaches a data disk to an ECS instance.
+  Description:
+    en: Attaches a data disk to an ECS instance
+    zh-cn: 挂载数据盘到ECS实例上
   Properties:
     Service: ECS
     API: AttachDisk
@@ -34,7 +48,9 @@ Tasks:
       DeleteWithInstance: '{{ deleteWithInstance }}'
 - Name: untilDiskAttached
   Action: ACS::WaitFor
-  Description: Waits for the disk to be attached.
+  Description:
+    en: Waits for the disk to be attached
+    zh-cn: 等待数据盘挂载完成
   Properties:
     Service: ECS
     API: DescribeDisks

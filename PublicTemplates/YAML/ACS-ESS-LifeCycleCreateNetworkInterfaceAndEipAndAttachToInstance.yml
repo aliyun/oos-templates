@@ -1,70 +1,74 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Use lifecycleHook to create NetworkInterface and EIP and attach them to the instance, The NetworkInterface currently only needs to be configured on CentOS 7.3 64-bit, CentOS 6.8 64-bit, Window Server 2008 R2 and higher versions, and other images, please refer to the official document for configure NetworkInterFace https://help.aliyun.com/document_detail/56955. html(only supports elastic expansion activities).
-  zh-cn: 使用生命周期挂钩批量创建弹性网卡与弹性IP并将其绑定到实例上，弹性网卡目前仅在CentOS 7.3 64位、CentOS6.8 64位、Window Server 2008 R2及更高版本镜像无需配置，其它镜像请参考官方文档配置弹性网卡https://help.aliyun.com/document_detail/56955.html(仅支持弹性扩张活动)。
+  en: Use lifecycleHook to create NetworkInterface and EIP and attach them to the instance, The NetworkInterface currently only needs to be configured on CentOS 7.3 64-bit, CentOS 6.8 64-bit, Window Server 2008 R2 and higher versions, and other images, please refer to the official document for configure NetworkInterFace https://help.aliyun.com/document_detail/56955. html(only supports elastic expansion activities)
+  zh-cn: 使用生命周期挂钩批量创建弹性网卡与弹性IP并将其绑定到实例上，弹性网卡目前仅在CentOS 7.3 64位、CentOS6.8 64位、Window Server 2008 R2及更高版本镜像无需配置，其它镜像请参考官方文档配置弹性网卡https://help.aliyun.com/document_detail/56955.html(仅支持弹性扩张活动)
   name-en: ACS-ESS-LifeCycleCreateNetworkInterfaceAndEipAndAttachToInstance
   name-zh-cn: 使用生命周期挂钩创建弹性网卡与EIP并绑定到实例上
   categories:
     - elastic_manage
 Parameters:
   internetChargeType:
+    Label:
+      en: InternetChargeType
+      zh-cn: EIP的计量方式
     Description:
-      name-en: internetChargeType
-      name-zh-cn: EIP的计量方式
-      en: EIP measurement method.
-      zh-cn: 'EIP的计量方式（PayByBandwidth：按带宽计费，PayByTraffic：按流量计费）。'
+      en: EIP measurement method
+      zh-cn: EIP的计量方式（PayByBandwidth：按带宽计费，PayByTraffic：按流量计费）
     Type: String
     AllowedValues:
       - PayByBandwidth
       - PayByTraffic
     Default: PayByBandwidth
   bandwidth:
+    Label:
+      en: Bandwidth
+      zh-cn: EIP的带宽峰值
     Description:
-      name-en: bandwidth
-      name-zh-cn: EIP的带宽峰值
-      en: 'Peak bandwidth of eip, unit: Mbps.'
-      zh-cn: 'EIP的带宽峰值（Mbps）。'
+      en: Peak bandwidth of eip, unit： Mbps
+      zh-cn: EIP的带宽峰值（Mbps）
     Type: Number
     Default: 5
   regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     Description:
-      name-en: regionId
-      name-zh-cn: 地域ID
-      en: The ID of region.
+      en: The ID of region
       zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
     Type: String
     Default: '${regionId}'
   instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
     Description:
-      name-en: instanceIds
-      name-zh-cn: ECS实例ID列表
-      en: The ID list of the ECS instance.
+      en: The ID list of the ECS instance
       zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
     Type: List
     Default:
       - '${instanceIds}'
   lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
     Description:
-      name-en: lifecycleHookId
-      name-zh-cn: 生命周期挂钩ID
-      en: The ID of the lifecycle hook.
+      en: The ID of the lifecycle hook
       zh-cn: '生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
     Type: String
     Default: '${lifecycleHookId}'
   lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
     Description:
-      name-en: lifecycleActionToken
-      name-zh-cn: 实例关联的特定伸缩活动的令牌
-      en: The token that indicates a specific scaling activity associated with an instance.
+      en: The token that indicates a specific scaling activity associated with an instance
       zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
     Type: String
     Default: '${lifecycleActionToken}'
   rateControl:
-    Description:
-      name-en: rateControl
-      name-zh-cn: 速率控制
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 速率控制
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -72,11 +76,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 5
   OOSAssumeRole:
-    Description:
-      name-en: OOSAssumeRole
-      name-zh-cn: OOS扮演的RAM角色
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -86,8 +88,8 @@ Tasks:
     OnSuccess: CompleteLifecycleActionForContinue
     OnError: CompleteLifecycleActionForAbandon
     Description:
-      en: Create network interface and eip and attach to instace.
-      zh-cn: 创建弹性网卡与弹性IP并将其绑定到实例上。
+      en: Create network interface and eip and attach to instace
+      zh-cn: 创建弹性网卡与弹性IP并将其绑定到实例上
     Properties:
       regionId: '{{ regionId }}'
       internetChargeType: '{{ internetChargeType }}'
@@ -99,8 +101,8 @@ Tasks:
   - Name: CompleteLifecycleActionForContinue
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Modify lifecycle action for continue.
-      zh-cn: 修改伸缩活动的等待状态为继续完成。
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
     OnSuccess: 'ACS::END'
     Properties:
       Service: ESS
@@ -113,8 +115,8 @@ Tasks:
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Complete lifecycle action for Abandon.
-      zh-cn: 修改伸缩活动的等待状态为弃用。
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
     Properties:
       Service: ESS
       API: CompleteLifecycleAction

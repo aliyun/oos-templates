@@ -1,0 +1,208 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DownloadFileAndRunCommand
+  name-zh-cn: 下载文件到实例并执行命令
+  en: Downloads file to instance and run command
+  zh-cn: 下载文件到实例并执行命令
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instace
+      zh-cn: ECS实例ID
+    Type: String
+  sourceType:
+    Description:
+      en: The type of file storage
+      zh-cn: 文件存储方式
+    Type: String
+    AllowedValues:
+      - oss
+      - https
+      - github
+  sourcePath:
+    Description:
+      en: You must specify a URL where the file is stored
+      zh-cn: 您必须指定一个用于存储文件的URL
+    Type: String
+  tokenInfo:
+    Description:
+      en: Specify a token to download file.It is only required when downloading file from GitHub
+      zh-cn: 指定一个token来下载文件，只有从GitHub下载文件时会用到
+    Type: String
+    Default: ''
+  destinationDir:
+    Description:
+      en: Target directory for file download in instance
+      zh-cn: 文件在实例中的下载目录
+    Type: String
+  commandContent:
+    Description:
+      en: The content of command
+      zh-cn: 云助手命令
+    Type: String
+  workingDir:
+    Description:
+      en: 'The directory where the created command runs on the ECS instances.Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\Windows\System32.'
+      zh-cn: '脚本在ECS实例中的运行目录。Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\Windows\System32。'
+    Type: String
+    Default: ''
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances
+      zh-cn: ECS实例中执行命令的超时时间
+    Type: Number
+    Default: 600
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取ECS实例操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: downloadLinuxFile
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs download file command on linux instance
+      zh-cn: 在linux类型实例上执行下载文件命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #/bin/bash
+        current_version=`aliyun-service -v`
+        specified_version=1.0.2.497
+
+        if [[ $current_version > $specified_version ]]; then
+          acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'"{{sourcePath}}"',\''{{ tokenInfo }}'\','{{destinationDir}}'
+        else
+          version='{{ ACS::OOSUtilVersion }}'
+          path=/usr/local/share/aliyun-oosutil/$version
+          currentPath=`pwd`
+          test -e $path || mkdir -p $path
+          cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
+          chmod +x oosutil_linux
+          cd $currentPath
+          $path/oosutil_linux download_content {{ sourceType }} {{ sourcePath }} \''{{ tokenInfo }}'\' {{destinationDir}}
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: runLinuxCommand
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs command on linux instance
+      zh-cn: 在linux类型实例上执行命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: '{{ commandContent }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: downloadWindowsFile
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs download file command on windows instance
+      zh-cn: 在windows类型实例上执行下载文件命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        $current_version=(aliyun_assist_service.exe -v)
+        $specified_version="1.0.0.134"
+        if ($current_version -gt $specified_version){
+          acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},{{ sourcePath }},'`{{ tokenInfo }}`',{{destinationDir}}"
+        }else{
+          $version="{{ACS::OOSUtilVersion}}"
+          $path = "C:\aliyun-oosutil\$version"
+          $currentPath=(pwd)
+          $pathExistOrNot = Test-Path -Path "$path"
+          if ($pathExistOrNot){
+              cd $path
+          }else{
+              mkdir $path
+              cd $path
+          }
+          $client = new-object System.Net.WebClient
+          $client.DownloadFile("https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe", "$path/oosutil_windows.exe")
+          cd $currentPath
+          C:\aliyun-oosutil\{{ ACS::OOSUtilVersion }}\oosutil_windows.exe download_content {{ sourceType }} {{ sourcePath }} '`{{ tokenInfo }}`' {{destinationDir}}
+        }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: runWindowsCommand
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Runs command on windows instance
+      zh-cn: 在windows类型实例上执行命令
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunPowerShellScript
+      commandContent: '{{ commandContent }}'
+      workingDir: '{{ workingDir }}'
+      timeout: '{{ timeout }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  downloadFileCommandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ downloadLinuxFile.commandOutput }}'
+        - '{{ downloadWindowsFile.commandOutput }}'
+  runCommandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+          - linux
+          - '{{ queryInstanceOSType.OSType }}'
+        - '{{ runLinuxCommand.commandOutput }}'
+        - '{{ runWindowsCommand.commandOutput }}'

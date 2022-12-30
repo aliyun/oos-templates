@@ -1,0 +1,132 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Abolishing a specified API in a specified stage",
+    "zh-cn": "下线指定运行环境的指定API",
+    "name-en": "ACS-ApiGateway-BulkyAbolishApi",
+    "name-zh-cn": "下线指定运行环境的指定API",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "API网关实例ID"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeApi",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query stage and groupid of the apigateway instance",
+        "zh-cn": "查询运行环境和分组信息"
+      },
+      "Properties": {
+        "Service": "CLOUDAPI",
+        "API": "DescribeApi",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ApiId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "stageName": {
+          "Type": "List",
+          "ValueSelector": ".DeployedInfos.DeployedInfo[].StageName"
+        },
+        "groupId": {
+          "Type": "String",
+          "ValueSelector": ".GroupId"
+        }
+      }
+    },
+    {
+      "Name": "abolishApi",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Abolishing a specified API in a specified stage.",
+        "zh-cn": "下线指定运行环境的指定API。"
+      },
+      "Properties": {
+        "Service": "CLOUDAPI",
+        "API": "AbolishApi",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ApiId": "{{ instanceId }}",
+          "GroupId": "{{ describeApi.groupId }}",
+          "StageName": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ describeApi.stageName }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select instance"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

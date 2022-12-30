@@ -1,32 +1,40 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Execute specified template when alarm is raised according to alarm rule. AlarmTrigger will always run until being canceled.
-  zh-cn: 指定告警规则，当告警发生时执行指定的模板。在主动取消前告警触发器会一直运行。
+  en: Execute specified template when alarm is raised according to alarm rule. AlarmTrigger will always run until being canceled
+  zh-cn: 指定告警规则，当告警发生时执行指定的模板。在主动取消前告警触发器会一直运行
   name-en: ACS-OOS-ExecuteTemplateByAlarm
   name-zh-cn: 在告警发生时执行指定的模板
   categories:
     - alarm-trigger
 Parameters:
   alarmTriggerProperties:
-    Description:
-      en: The properties of alarm trigger task.
-      zh-cn: 告警触发任务的属性。
+    Label:
+      en: AlarmTriggerProperties
+      zh-cn: 告警触发任务的属性
     Type: Json
+    AssociationProperty: ALIYUN::OOS::Alarm::AlarmTrigger
   alarmOutputTransformer:
-    Description:
-      en: The transformer from alarm message to template parameters.
-      zh-cn: 告警消息体到调用模板参数的转换器。
+    Label:
+      en: AlarmOutputTransformer
+      zh-cn: 告警消息体到调用模板参数的转换器
     Type: Json
   templateName:
-    Description:
-      en: The name of template to trigger.
-      zh-cn: 触发的模板名称。
+    Label:
+      en: TemplateName
+      zh-cn: 触发的模板名称
     Type: String
     AssociationProperty: TemplateName
+  tags:
+    Type: Json
+    Label:
+      en: InstanceTags
+      zh-cn: 实例的标签
+    AssociationProperty: Tags
+    Default: []
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -34,6 +42,7 @@ Tasks:
   - Name: alarmTrigger
     Action: 'ACS::AlarmTrigger'
     Properties:
+      Tags: '{{ tags }}'
       Namespace:
         'Fn::Select':
           - namespace
@@ -86,8 +95,8 @@ Tasks:
   - Name: executeTemplate
     Action: 'ACS::Template'
     Description:
-      en: Execute template.
-      zh-cn: 执行模板。
+      en: Execute template
+      zh-cn: 执行模板
     Properties:
       TemplateName: '{{ templateName }}'
       Parameters: '{{ alarmTrigger.templateParameters }}'

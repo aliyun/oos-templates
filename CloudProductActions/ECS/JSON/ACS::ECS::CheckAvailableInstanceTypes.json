@@ -1,32 +1,55 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Check the available instance types that exist in the list of instanceTypes parameter.",
+  "Description": {
+    "name-en": "ACS::ECS::CheckAvailableInstanceTypes",
+    "name-zh-cn": "检查instanceTypes参数列表中存在的可用实例类型",
+    "en": "Check the available instance types that exist in the list of instanceTypes parameter",
+    "zh-cn": "检查instanceTypes参数列表中存在的可用实例类型"
+  },
   "Parameters": {
     "instanceTypes": {
-      "Description": "The source instance types to check.",
+      "Description": {
+        "en": "The source instance types to check",
+        "zh-cn": "要检查的源实例类型"
+      },
       "Type": "List"
     },
     "regionId": {
-      "Description": "The source region id.",
+      "Description": {
+        "en": "The source region ID",
+        "zh-cn": "源地域ID"
+      },
       "Type": "String",
       "Default": "{{ACS::RegionId}}"
     },
     "zoneId": {
-      "Description": "The source zone id.",
+      "Description": {
+        "en": "The source zone ID",
+        "zh-cn": "源可用区ID"
+      },
       "Type": "String"
     },
     "instanceChargeType": {
-      "Description": "The source instance charge type.",
+      "Description": {
+        "en": "The source instance charge type",
+        "zh-cn": "源实例的收费类型"
+      },
       "Type": "String",
       "Default": "PostPaid"
     },
     "networkCategory": {
-      "Description": "The resource type.",
+      "Description": {
+        "en": "The resource type",
+        "zh-cn": "资源类型"
+      },
       "Type": "String",
       "Default": "vpc"
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -37,7 +60,10 @@
       "Name": "checkAvailableInstanceTypesExist",
       "Action": "ACS::CheckFor",
       "OnError": "ACS::END",
-      "Description": "Query current available resource in instance types input.",
+      "Description": {
+        "en": "Queries current available resource in instance types input",
+        "zh-cn": "在输入的实例类型中查询当前可用的资源"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeAvailableResource",

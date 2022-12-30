@@ -1,34 +1,60 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Run the command in the instance of the SLB default service group.",
+  "Description": {
+    "name-en": "ACS::ECS::ElegantReplaceSystemDiskInSLBDefaultServerGroup",
+    "name-zh-cn": "更换SLB默认服务器组中实例的系统盘",
+    "en": "Replaces the system disk in the instance of the SLB default service group",
+    "zh-cn": "更换SLB默认服务器组中实例的系统盘"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "imageId": {
-      "Description": "The ID of image.",
+      "Description": {
+        "en": "The ID of image",
+        "zh-cn": "镜像ID"
+      },
       "Type": "String"
     },
     "loadBalancerId": {
-      "Description": "The ID of the SLB instance.",
+      "Description": {
+        "en": "The ID of the SLB instance",
+        "zh-cn": "SLB实例的ID"
+      },
       "Type": "String"
     },
     "serverId": {
-      "Description": "The ID of ECS instance.",
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String"
     },
     "weight": {
-      "Description": "The weight of server.",
+      "Description": {
+        "en": "The weight of server",
+        "zh-cn": "后端服务器的权重"
+      },
       "Type": "Number"
     },
     "type": {
-      "Description": "The type of server.",
+      "Description": {
+        "en": "The type of server",
+        "zh-cn": "后端服务器类型"
+      },
       "Type": "String"
     },
     "port": {
-      "Description": "The port of server.",
+      "Description": {
+        "en": "The port of server",
+        "zh-cn": "后端服务器端口"
+      },
       "Type": "Number"
     }
   },
@@ -36,7 +62,10 @@
     {
       "Name": "setServerWeightToZero",
       "Action": "ACS::ExecuteApi",
-      "Description": "Sets server weight to zero.",
+      "Description": {
+        "en": "Sets server weight to zero",
+        "zh-cn": "设置服务器权重为0"
+      },
       "OnError": "recoverServerWeight",
       "Properties": {
         "Service": "SLB",
@@ -74,7 +103,10 @@
     {
       "Name": "replaceSystemDisk",
       "Action": "ACS::ECS::ReplaceSystemDisk",
-      "Description": "Replaces the system disk of ECS instances.",
+      "Description": {
+        "en": "Replaces the system disk of ECS instances",
+        "zh-cn": "替换ECS实例的系统盘"
+      },
       "Properties": {
         "regionId": "{{ regionId }}",
         "instanceId": "{{ serverId }}",
@@ -90,7 +122,10 @@
     {
       "Name": "recoverServerWeight",
       "Action": "ACS::ExecuteApi",
-      "Description": "Set the server weight to the original value.",
+      "Description": {
+        "en": "Sets the server weight to the original value",
+        "zh-cn": "将服务器权重设置为原始值"
+      },
       "Properties": {
         "Service": "SLB",
         "API": "SetBackendServers",

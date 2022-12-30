@@ -1,0 +1,79 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify SQL collector retention",
+    "zh-cn": "设置RDS实例的SQL洞察日志保存时长为180天",
+    "name-en": "ACS-RDS-BulkyModifySQLCollectorRetention",
+    "name-zh-cn": "设置RDS实例的SQL洞察日志保存时长为180天",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "RDS实例ID列表"
+      },
+      "AssociationProperty": "ALIYUN::RDS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "Type": "List"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifySQLCollectorRetention",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify SQL collector retention",
+        "zh-cn": "设置RDS实例的SQL洞察日志保存时长为180天"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "ModifySQLCollectorRetention",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ ACS::TaskLoopItem }}",
+          "ConfigValue": 180
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    }
+  ]
+}

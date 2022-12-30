@@ -1,17 +1,27 @@
 FormatVersion: OOS-2019-06-01
-Description: Detaches a disk from an ECS instance.
+Description:
+  name-en: ACS::ECS::DetachDisk
+  name-zh-cn: 从ECS实例卸载云盘
+  en: Detach a pay-as-you-go data disk or a system disk from an ECS instance
+  zh-cn: 从一台ECS实例上卸载一块按量付费数据盘，或者卸载一块系统盘
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description: The ID of the ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   diskId:
-    Description: The ECS instance disk ID.
+    Description:
+      en: The ID of disk
+      zh-cn: 云盘ID
     Type: String
     AllowedPattern: d-[A-Za-z0-9]*
     MinLength: 1
@@ -19,7 +29,9 @@ Parameters:
 Tasks:
 - Name: detachDisk
   Action: ACS::ExecuteAPI
-  Description: Detaches a disk from an ECS instance.
+  Description:
+    en: Detaches a disk from ECS instance
+    zh-cn: 从ECS实例上卸载一块云盘
   Properties:
     Service: ECS
     API: DetachDisk
@@ -29,7 +41,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilDiskDetached
   Action: ACS::WaitFor
-  Description: Waits for the disk to detach successfully.
+  Description:
+    en: Waits for the disk to detach successfully
+    zh-cn: 等待云盘卸载完成
   Properties:
     Service: ECS
     API: DescribeDisks

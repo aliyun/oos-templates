@@ -1,0 +1,111 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECD::RunCommand
+  name-zh-cn: 在云桌面中执行命令
+  en: Creates a cloud assistant command and invoke it on desktop
+  zh-cn: 在云桌面中执行命令
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  desktopId:
+    Description:
+      en: The ID of desktop
+      zh-cn: 云桌面ID
+    Type: String
+  commandType:
+    Description:
+      en: The type of command
+      zh-cn: 云助手命令类型
+    Type: String
+    AllowedValues:
+      - RunBatScript
+      - RunPowerShellScript
+  contentEncoding:
+    Description:
+      en: The encoding mode of the command content
+      zh-cn: 脚本内容的编码方式
+    Type: String
+    AllowedValues:
+      - PlainText
+      - Base64
+    Default: PlainText
+  commandContent:
+    Description:
+      en: The content of command
+      zh-cn: 云助手命令内容
+    Type: String
+    AssociationProperty: Code
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command
+      zh-cn: 执行脚本的超时时间
+    Type: Number
+    Default: 600
+Tasks:
+  - Name: runCommand
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Executes cloud assistant command
+      zh-cn: 执行云助手命令
+    Properties:
+      Service: ECD
+      API: RunCommand
+      Parameters:
+        RegionId: '{{ regionId }}'
+        CommandContent: '{{ commandContent }}'
+        DesktopId:
+          - '{{desktopId}}'
+        Type: '{{ commandType }}'
+        ContentEncoding: '{{ contentEncoding }}'
+        Timeout: '{{ timeout }}'
+    Outputs:
+      invokeId:
+        Type: String
+        ValueSelector: InvokeId
+  - Name: untilInvocationReady
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Waits for the command to be completed
+      zh-cn: 等待云助手命令执行完成
+    OnError: 'ACS::END'
+    Retries: 20
+    Properties:
+      Service: ECD
+      API: DescribeInvocations
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InvokeId: '{{ runCommand.invokeId }}'
+        IncludeOutput: true
+      DesiredValues:
+        - Success
+      StopRetryValues:
+        - Failed
+      PropertySelector: '.Invocations[].InvokeDesktops[].InvocationStatus'
+    Outputs:
+      invocationResult:
+        Type: String
+        ValueSelector: '.Invocations[].InvokeDesktops[].Output'
+  - Name: checkInvocationResult
+    Action: 'ACS::CheckFor'
+    Description:
+      en: Checks the command exitcode of a cloud assistant command
+      zh-cn: 检测云助手命令的退出码
+    OnError: 'ACS::END'
+    Properties:
+      Service: ECD
+      API: DescribeInvocations
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InvokeId: '{{ runCommand.InvokeId }}'
+      PropertySelector: '.Invocations[].InvokeDesktops[].ExitCode'
+      DesiredValues:
+        - 0
+Outputs:
+  invocationOutput:
+    Type: String
+    Value:
+      'Fn::Base64Decode': '{{ untilInvocationReady.invocationResult }}'

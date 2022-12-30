@@ -1,0 +1,132 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Run packer template
+  zh-cn: 执行Packer模板
+  name-en: ACS-ECS-RunPacker
+  name-zh-cn: 执行Packer模板
+  categories:
+    - image_manage
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: String
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  sourceType:
+    Type: String
+    Label:
+      en: SourceType
+      zh-cn: 文件存储的类型
+    AllowedValues:
+      - oss
+      - https
+      - github
+  sourcePath:
+    Type: String
+    Label:
+      en: SourcePath
+      zh-cn: 您必须指定用于存储文件的URL
+  tokenInfo:
+    Type: String
+    Description:
+      en: It is only required when downloading file from GitHub
+      zh-cn: 只有从GitHub上下载文件时需要填
+    Label:
+      en: TokenInfo
+      zh-cn: 指定令牌以下载文件
+    Default: ' '
+  templateFile:
+    Label:
+      en: TemplateFile
+      zh-cn: 将要执行的packer模板的名称
+    Type: String
+  mode:
+    Type: String
+    Label:
+      en: Mode
+      zh-cn: 使用模板的方式
+    AllowedValues:
+      - validate
+      - fix
+      - build
+    Default: build
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: runPacker
+    Action: 'ACS::ECS::RunPacker'
+    Description:
+      en: Run packer template
+      zh-cn: 运行packer模板
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getInstance.instanceId }}'
+      sourceType: '{{ sourceType }}'
+      sourcePath: '{{ sourcePath }}'
+      tokenInfo: '{{ tokenInfo }}'
+      templateFile: '{{ templateFile }}'
+      mode: '{{ mode }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: commandOutput
+Outputs:
+  result:
+    Type: String
+    Value: '{{ runPacker.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - sourceType
+          - sourcePath
+          - tokenInfo
+          - templateFile
+          - mode
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Parameters Options
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instance
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

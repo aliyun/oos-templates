@@ -1,0 +1,306 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: <p class="p">Clone ECS instances in batches. Note:</p> <ul class="ul"> <li class="li">Please check for missing drivers before migrating, so as not to cause the new instance to fail to start. </li> <li class="li">Based on mirror snapshot migration, if you need to retain complete data, please select <font color='blue'>Incremental snapshots for downtime</font> as Yes, and then go to the next step; if you do not need to retain For data generated during the migration process, select No and migrate directly according to the guidelines. <font color='red'>It is recommended that you select No to test whether the new instance is normal, and then select Yes to ensure complete data. </font></li> <li class="li">The time required to create a snapshot is in minutes and depends on the size of the cloud disk. The first snapshot of the cloud disk is a full snapshot, which takes a long time and may be at the hour level. Creating a snapshot again takes a relatively short time, but still depends on the amount of data changes since the last snapshot. The bigger the change, the longer it will take. </li> <li class="li"><font color='red'>Because the machine will restart, please make sure that the data disk has been set to be automatically mounted, otherwise the data disk will not be mounted after restarting. </font></li> <li class="li"><font color='red'>The current operation is a high-risk operation. If you select Yes for snapshot migration, please confirm that the business impact of the shutdown is controllable. </font></li> <li class="li"><font color='red'>Public IP and Elastic IP need to be manually re-bound to the new instance. Refer to the documentation： <a href='https://help.aliyun.com/document_detail/156287.html'>Classic network type ECS public IP is converted to elastic public IP</a>, <a href='https://help.aliyun.com/document_detail/67455.html'>Convert the fixed public IP of the VPC ECS instance to EIP</a>, <a href='https://help.aliyun.com/document_detail/27733.html'>Modify private IP address</a></font></li> <li class="li">Take a snapshot of the instance before execution, which will greatly shorten the execution time. </li> <li class="li"><font color='red'>Please make sure that your account balance is greater than the cost of the newly purchased instance. </font></li> </ul>
+  zh-cn: <p class="p">批量克隆ECS实例。注意：</p> <ul class="ul"> <li class="li">您在迁移之前请检查是否缺少驱动，以免造成新的实例无法启动。</li> <li class="li">基于镜像快照迁移，如果需要保留完整数据，请选择<font color='blue'>停机增量快照</font>为是，再执行下一步操作；如果不需要保留迁移过程中产生的数据，则选择否，直接根据指引迁移即可。<font color='red'>建议您先选择否来测试新实例是否业务正常，测试新实例业务正常后再选择是来保证完整数据。</font></li> <li class="li">创建快照的所需时间为分钟级别，并取决于云盘容量大小。云盘的第一份快照为全量快照，耗时较久，有可能在小时级别。再次创建快照，相对耗时较短，但依然取决于和上一份快照之间的数据变化量。变化越大，耗时越久。</li> <li class="li"><font color='red'>因机器会重新启动，请您务必确认数据盘等已设置为自动挂载否则重启后将无法挂载数据盘。</font></li> <li class="li"><font color='red'>当前操作为高风险操作，如果选择停机快照迁移为是，请您确认关机业务影响可控。</font></li> <li class="li"><font color='red'>公网IP和弹性IP需要您手动重新绑定到新实例上，参考文档： <a href='https://help.aliyun.com/document_detail/156287.html'>经典网络类型ECS公网IP转为弹性公网IP</a>、 <a href='https://help.aliyun.com/document_detail/67455.html'>专有网络ECS实例的固定公网IP转换为EIP</a>、 <a href='https://help.aliyun.com/document_detail/27733.html'>修改私有IP地址</a></font></li> <li class="li">执行前先打对实例打一个快照，将极大缩短执行时间。</li> <li class="li"><font color='red'>请确保您的账号余额大于新购实例的费用。</font></li> </ul>
+  name-en: ACS-ECS-BulkyCloneInstances
+  name-zh-cn: 批量克隆ECS实例
+  categories:
+    - cross_region
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 将要克隆的ECS实例所在地域
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: 将要克隆的ECS实例
+    Type: List
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  targetZoneId:
+    Label:
+      en: TargetZoneId
+      zh-cn: 可用区
+    Description:
+      en: For more instance purchase information, please refer to the ECS purchase page
+      zh-cn: 更多实例购买信息请查看ECS购买页：https://ecs-buy.aliyun.com/
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::ZoneId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  targetInstanceChargeType:
+    Label:
+      en: TargetInstanceChargeType
+      zh-cn: 付费方式
+    Type: String
+    AssociationProperty: ChargeType
+  targetPeriodUnit:
+    Label:
+      en: The unit of the subscription period
+      zh-cn: 包年包月计费方式的时长单位
+    Type: String
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          'Fn::Not':
+            'Fn::Equals':
+              - '${targetInstanceChargeType}'
+              - PostPaid
+    AllowedValues:
+      - Week
+      - Month
+    Default: Month
+  targetPeriod:
+    Label:
+      en: TargetPeriod
+      zh-cn: 购买包年包月资源的时长
+    Description:
+      en: "Valid values:
+          Valid values when PeriodUnit is set to Week: 1, 2, 3, and 4.
+          Valid values when PeriodUnit is set to Month: 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 48, and 60."
+      zh-cn: 取值范围：
+             PeriodUnit=Week时，Period取值：{“1”, “2”, “3”, “4”}。
+             PeriodUnit=Month时，Period取值：{“1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”, ”48”, ”60”}。
+    Type: Number
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          'Fn::Not':
+            'Fn::Equals':
+              - '${targetInstanceChargeType}'
+              - PostPaid
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 12
+      - 24
+      - 36
+      - 48
+      - 60
+    Default: 1
+  targetInstanceType:
+    Label:
+      en: TargetInstanceType
+      zh-cn: 资源规格
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceType
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ZoneId: targetZoneId
+      InstanceChargeType: targetInstanceChargeType
+  targetVPCId:
+    Label:
+      en: TargetVPCId
+      zh-cn: 专有网络
+    Type: String
+    AssociationProperty: ALIYUN::ECS::VPC::VPCId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  targetVSwitchId:
+    Label:
+      en: TargetVSwitchId
+      zh-cn: 虚拟交换机
+    Description:
+      en: Please confirm whether the switch is in the selected zone. If not, please reselect or create a new switch
+      zh-cn: 请确认交换机是否在所选可用区内，若不在请重新选择或新建交换机
+    Type: String
+    AssociationProperty: ALIYUN::VPC::VSwitch::VSwitchId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ZoneId: targetZoneId
+      VpcId: targetVPCId
+  targetSecurityGroupIds:
+    Label:
+      en: TargetSecurityGroupIds
+      zh-cn: 安全组
+    Description:
+      en: The vSwitch and the security group must belong to the same VPC
+      zh-cn: 安全组和虚拟交换机必须在同一个专有网络VPC中
+    Type: List
+    AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      VpcId: targetVPCId
+  targetSystemDiskCategory:
+    Label:
+      en: TargetSystemDiskCategory
+      zh-cn: 系统盘的种类
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Disk::SystemDiskCategory
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ZoneId: targetZoneId
+      InstanceType: targetInstanceType
+      InstanceChargeType: targetInstanceChargeType
+  targetDataDiskCategory:
+    Label:
+      en: TargetDataDiskCategory
+      zh-cn: 数据盘的种类
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Disk::DataDiskCategory
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ZoneId: targetZoneId
+      InstanceType: targetInstanceType
+      InstanceChargeType: targetInstanceChargeType
+  targetPassword:
+    Label:
+      en: TargetPassword
+      zh-cn: 实例密码
+    Description:
+      en: "<font color='red'><b>The password must be 8 to 30 characters in length and include at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.</b></font>Special characters include: ()`~!@#$%^&*-_+=|{}[]:;''<>,.?/  Passwords of Windows instances cannot start with a forward slash (/)."
+      zh-cn: <font color='red'><b>长度为8至30个字符，必须同时包含大小写英文字母、数字和特殊符号中的三类字符。</b></font>特殊符号可以是： ()`~!@#$%^&*-_+=|{}[]:;'<>,.?/ ，其中，Windows实例不能以正斜线（/）为密码首字符
+    Type: String
+    AllowedPattern: '[0-9A-Za-z\_\-\&:;''<>,=%`~!@#\(\)\$\^\*\+\|\{\}\[\]\.\?\/]+$'
+    MinLength: 8
+    MaxLength: 30
+    NoEcho: true
+  useIncrementSnapshot:
+    Type: Boolean
+    Description:
+      en: <p class="p">Note:</p> <ul class="ul"> <li class="li">If you select Yes, in order to ensure data consistency to the greatest extent, the system will stop the source instance after the full snapshot (downtime charging mode), create an incremental snapshot, create a destination instance based on the incremental snapshot and start it run. <font color='red'>If the task is successfully executed, the source instance will remain in the down state. You can manually release it as soon as possible after verifying that the business of the destination instance is normal to avoid repeated charges. </font>If the task fails, restart the source instance. </li> <li class="li">If you select No (the default is No), in order to ensure that the source machine is always available, the system will create the destination instance based on the full snapshot and start it after the full snapshot. <font color='red'>But the incremental data after the task is started will not be synchronized to the destination instance, which may cause data inconsistency, please be aware. </font></li></ul>
+      zh-cn: <p class="p">注意：</p><ul class="ul"> <li class="li">如果选是，为了最大程度保证数据一致性，系统将在全量快照后，停止源实例（停机收费模式），创建增量快照，基于增量快照创建目的实例并启动运行。<font color='red'>如任务执行成功，源实例将一直保持停机状态，您可在验证目的实例业务正常后尽快手动释放，避免重复收费。</font>如任务失败，则重新启动源实例。</li> <li class="li">如果选否(默认为否)，为了保证源机器一直可用，系统将在全量快照后，基于全量快照创建目的实例并启动运行。<font color='red'>但任务启动后的增量数据将无法同步到目的实例中，可能会造成数据不一致，请知晓。</font></li></ul>
+    Label:
+      en: IncrementSnapshot
+      zh-cn: 停机增量快照
+    Default: false
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: cloneInstances
+    Action: ACS::ECS::CloneInstance
+    Description:
+      en: Clone ECS instances
+      zh-cn: 克隆ECS实例
+    When:
+      'Fn::Equals':
+        - '{{ useIncrementSnapshot }}'
+        - false
+    Properties:
+      regionId: '{{ regionId }}'
+      imageName: img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      targetVSwitchId: '{{ targetVSwitchId }}'
+      targetInstanceType: '{{ targetInstanceType }}'
+      targetSecurityGroupIds: '{{ targetSecurityGroupIds }}'
+      targetPassword: '{{ targetPassword }}'
+      targetInstanceChargeType: '{{ targetInstanceChargeType }}'
+      targetPeriodUnit: '{{ targetPeriodUnit }}'
+      targetPeriod: '{{ targetPeriod }}'
+      targetSystemDiskCategory: '{{ targetSystemDiskCategory }}'
+      targetDataDiskCategory: '{{ targetDataDiskCategory }}'
+    Loop:
+      Items: '{{ instanceIds }}'
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 10
+      Outputs:
+        instanceIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: instanceId
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: instanceId
+  - Name: cloneInstancesWithIncrementSnapshot
+    Action: ACS::ECS::CloneInstanceWithIncrementSnapshot
+    Description:
+      en: Clone ECS instances with increment snapshot
+      zh-cn: 使用增量快照克隆ECS实例
+    When:
+      'Fn::Equals':
+        - '{{ useIncrementSnapshot }}'
+        - true
+    Properties:
+      regionId: '{{ regionId }}'
+      imageName: img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      targetVSwitchId: '{{ targetVSwitchId }}'
+      targetInstanceType: '{{ targetInstanceType }}'
+      targetSecurityGroupIds: '{{ targetSecurityGroupIds }}'
+      targetPassword: '{{ targetPassword }}'
+      targetInstanceChargeType: '{{ targetInstanceChargeType }}'
+      targetPeriodUnit: '{{ targetPeriodUnit }}'
+      targetPeriod: '{{ targetPeriod }}'
+      targetSystemDiskCategory: '{{ targetSystemDiskCategory }}'
+      targetDataDiskCategory: '{{ targetDataDiskCategory }}'
+    Loop:
+      Items: '{{ instanceIds }}'
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 10
+      Outputs:
+        instanceIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: instanceId
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: instanceId
+Outputs:
+  instanceIds:
+    Type: List
+    Value:
+      Fn::If:
+        - 'Fn::Equals':
+            - '{{ useIncrementSnapshot }}'
+            - true
+        - '{{ cloneInstancesWithIncrementSnapshot.instanceIds }}'
+        - '{{ cloneInstances.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - targetZoneId
+          - targetInstanceChargeType
+          - targetPeriodUnit
+          - targetPeriod
+          - targetInstanceType
+          - targetVPCId
+          - targetVSwitchId
+          - targetSecurityGroupIds
+          - targetSystemDiskCategory
+          - targetDataDiskCategory
+          - targetPassword
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - useIncrementSnapshot
+        Label:
+          default:
+            en: IncrementSnapshot
+            zh-cn: 停机增量快照选项
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

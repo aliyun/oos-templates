@@ -1,0 +1,50 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify action event policy",
+    "zh-cn": "开启RDS历史事件功能",
+    "name-en": "ACS-RDS-BulkyModifyActionEventPolicy",
+    "name-zh-cn": "开启RDS历史事件功能",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyActionEventPolicy",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify action event policy",
+        "zh-cn": "开启RDS历史事件功能"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "ModifyActionEventPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "EnableEventLog": true
+        }
+      }
+    }
+  ]
+}

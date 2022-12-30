@@ -1,0 +1,129 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::CleanUpDisk",
+    "name-zh-cn": "清理磁盘",
+    "en": "Cleanup disk by run command",
+    "zh-cn": "通过执行命令清理磁盘"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "cleanUpInfos": {
+      "Description": {
+        "en": "The information to clean up disk.Format: 3d|/root/log/|*.log,3h|/root/log/|*.access,30m|C:\\Users\\Administrator\\log\\|*.log",
+        "zh-cn": "磁盘清理的规则，格式为: 3d|/root/log/|*.log,3h|/root/log/|*.access,30m|C:\\Users\\Administrator\\log\\|*.log"
+      },
+      "Type": "String",
+      "AllowedPattern": "^[^\"$`'\\s]+$"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "queryInstanceOSType",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "获取实例操作系统类型"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "OSType": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSType"
+        }
+      }
+    },
+    {
+      "Name": "cleanupLinuxInstanceDisk",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Runs cleanup disk command on linux instance",
+        "zh-cn": "在linux类型实例上执行清理磁盘命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "#!/bin/bash\ncleanUpInfos=\"{{cleanUpInfos}}\"\n\nfunction deletefiles() {\n  if [ ! -d $2 ]; then\n    echo \"The specified directory(\"$2\") is not exist.\"\n    return\n  fi\n\n  expiredTimeUnit=${1: -1}\n  expiredTimeValue=${1:0:-1}\n\n  if [ \"$expiredTimeUnit\" = \"d\" ]; then\n    expiredTime=$(($expiredTimeValue * 24 * 60 * 60))\n  elif [ \"$expiredTimeUnit\" = \"h\" ]; then\n    expiredTime=$(($expiredTimeValue * 60 * 60))\n  elif [ \"$expiredTimeUnit\" = \"m\" ]; then\n    expiredTime=$(($expiredTimeValue * 60))\n  else\n    echo \"The unit(\"$expiredTimeUnit\") of file age is not supported.\"\n    return\n  fi\n\n  for file in $(find $2 -type f -name \"${3:1}\"); do\n    local currentDate=$(date +%s)\n    local modifyDate=$(stat -c %Y $file)\n    local existTime=$(($currentDate - $modifyDate))\n\n    if [ $existTime -gt $expiredTime ]; then\n      echo \"File cleanup succeeded,path:\"$file\".\"\n      rm -f $file\n    fi\n  done\n}\n\ncleanUpArray=(${cleanUpInfos//,/ })\nfor cleanUpInfo in ${cleanUpArray[@]}; do\n  delayTime=$(echo $cleanUpInfo | awk -F'|' '{print$1}')\n  filePath=$(echo $cleanUpInfo | awk -F'|' '{print$2}')\n  matchPattern=$(echo $cleanUpInfo | awk -F'|' '{print $3}')\n  deletefiles $delayTime $filePath \"/$matchPattern\"\ndone",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript"
+      },
+      "Outputs": {
+        "result": {
+          "Type": "String",
+          "ValueSelector": ".invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "cleanupWindowsInstanceDisk",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Runs cleanup disk command on windows instance",
+        "zh-cn": "在windowds类型实例上执行清理磁盘命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "$cleanUpInfos=\"{{cleanUpInfos}}\"\n\nfunction deleteFiles($delayTime, $filePath, $matchPattern){\n\n  $pathExistOrNot = Test-Path -Path \"$filePath\"\n\n  if ($pathExistOrNot){\n\n    $expiredTimeUnit=\"$delayTime\"[-1]\n    $expiredTimeValue=$delayTime.Split($expiredTimeUnit)[0]\n\n    foreach($file in Get-Childitem $filePath $matchPattern){\n\n      if (\"$expiredTimeUnit\" -eq \"d\"){\n        if ($file.CreationTime -lt (Get-Date).AddDays(-$expiredTimeValue)){\n          Remove-Item $file.FullName -Force\n          echo \"File cleanup succeeded,path:\" $file.FullName\n        }\n\n      }elseif(\"$expiredTimeUnit\" -eq \"h\"){\n        if ($file.CreationTime -lt (Get-Date).AddHours(-$expiredTimeValue)){\n          Remove-Item $file.FullName -Force\n          echo \"File cleanup succeeded,path:\" $file.FullName\n        }\n\n      }elseif(\"$expiredTimeUnit\" -eq \"m\"){\n        if ($file.CreationTime -lt (Get-Date).AddMinutes(-$expiredTimeValue)){\n          Remove-Item $file.FullName -Force\n          echo \"File cleanup succeeded,path:\" $file.FullName\n        }\n\n      }else{\n        echo \"The unit($expiredTimeUnit) of file age is not supported.\"\n        return\n      }\n    }\n  }else{\n    echo \"The specified directory($filePath) is not exist.\"\n  }\n}\n\nforeach ($cleanUpInfo in $cleanUpInfos.Split(\",\"))\n{\n  $infos=$cleanUpInfo.Split(\"|\")\n  deleteFiles $infos[0] $infos[1] $infos[2]\n}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunPowerShellScript"
+      },
+      "Outputs": {
+        "result": {
+          "Type": "String",
+          "ValueSelector": ".invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "linux",
+              "{{ queryInstanceOSType.OSType }}"
+            ]
+          },
+          "{{ cleanupLinuxInstanceDisk.result }}",
+          "{{ cleanupWindowsInstanceDisk.result }}"
+        ]
+      }
+    }
+  }
+}

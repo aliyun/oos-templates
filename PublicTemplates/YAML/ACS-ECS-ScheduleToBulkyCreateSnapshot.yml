@@ -1,0 +1,91 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedule bulky create snapshot
+  zh-cn: 定时批量给磁盘创建快照
+  name-en: ACS-ECS-ScheduleToBulkyCreateSnapshot
+  name-zh-cn: 定时批量创建快照
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  timerTrigger:
+    Type: Json
+    Label:
+      en: TimerTrigger
+      zh-cn: 定时类型
+    AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+  diskIds:
+    Label:
+      en: DiskIds
+      zh-cn: 云盘ID
+    AssociationProperty: ALIYUN::ECS::Disk::DiskId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: List
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: timerTrigger
+    Action: ACS::TimerTrigger
+    Description:
+      en: Triggers a task as scheduled by specifying type and expression
+      zh-cn: 通过指定触发类型和表达式按计划触发任务
+    Properties:
+      Type:
+        Fn::Select:
+          - type
+          - '{{timerTrigger}}'
+      Expression:
+        Fn::Select:
+          - expression
+          - '{{timerTrigger}}'
+      EndDate:
+        Fn::Select:
+          - endDate
+          - '{{ timerTrigger }}'
+      TimeZone:
+        Fn::Select:
+          - timeZone
+          - '{{ timerTrigger }}'
+  - Name: createSnapshot
+    Action: ACS::ECS::CreateSnapshot
+    Description:
+      en: Create a snapshot for a cloud disk
+      zh-cn: 为一块云盘创建一份快照
+    Properties:
+      regionId: '{{ regionId }}'
+      diskId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      snapshotId:
+        Type: String
+        ValueSelector: .snapshotId
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ diskIds }}'
+      Outputs:
+        snapshotIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: snapshotId
+Outputs:
+  createdSnapshotIds:
+    Type: List
+    Value: '{{ createSnapshot.snapshotIds }}'

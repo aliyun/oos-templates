@@ -1,0 +1,105 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky resize disk
+  zh-cn: 批量扩容磁盘
+  name-en: ACS-ECS-BulkyResizeDisk
+  name-zh-cn: 批量扩容磁盘
+  categories:
+    - instance_manage
+    - computenest
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  diskIds:
+    Label:
+      en: DiskIds
+      zh-cn: 云盘ID
+    AssociationProperty: ALIYUN::ECS::Disk::DiskId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: List
+  newSize:
+    Label:
+      en: NewSize
+      zh-cn: 云盘容量大小
+    Type: Number
+    MinValue: 20
+    MaxValue: 32768
+  type:
+    Label:
+      en: Type
+      zh-cn: 扩容云盘的方式
+    Description:
+      en: < p class = "P" > value range:</p>
+        <ul class="ul">
+        < Li class = "Li" > offline (default):offline capacity expansion. After capacity expansion, you must restart the instance on the console or call the API to make the operation effective</ li>
+        < Li class = "Li" > online:online capacity expansion, which can be completed without restarting the instance. The cloud disk type supports efficient cloud disk, SSD cloud disk and ESSD cloud disk</ li>
+        </ul>
+      zh-cn: <p class="p">取值范围：</p>
+        <ul class="ul">
+        <li class="li">offline（默认）：离线扩容。扩容后，您必须在控制台重启实例或者调用API使操作生效。</li>
+        <li class="li">online：在线扩容，无需重启实例即可完成扩容。云盘类型支持高效云盘、SSD云盘和ESSD云盘。</li>
+        </ul>
+    Type: String
+    AllowedValues:
+      - online
+      - offline
+    Default: offline
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: resizeDisk
+  Action: ACS::ExecuteApi
+  Description:
+    en: Resize disk
+    zh-cn: 扩容磁盘
+  Properties:
+    Service: ECS
+    API: ResizeDisk
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DiskId: '{{ ACS::TaskLoopItem }}'
+      NewSize: '{{ newSize }}'
+      Type: '{{ type }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ diskIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - diskIds
+          - newSize
+          - type
+        Label:
+          default:
+            zh-cn: 参数设置
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

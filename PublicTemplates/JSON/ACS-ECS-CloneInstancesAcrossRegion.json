@@ -1,53 +1,53 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "Cross Region copy and run ECS instance by InstanceIds.",
-    "zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b\u3002",
+    "en": "Cross Region copy and run ECS instance by InstanceIds",
+    "zh-cn": "跨地域克隆ECS实例",
     "title": "ACS-ECS-CloneInstancesAcrossRegion",
-    "name-zh-cn": "\u8de8\u5730\u57df\u514b\u9686ECS\u5b9e\u4f8b",
+    "name-zh-cn": "跨地域克隆ECS实例",
     "categories": [
       "cross_region"
     ]
   },
   "Parameters": {
     "instanceIds": {
-      "Description": {
-        "en": "The ID list of the ECS instance.",
-        "zh-cn": "ECS\u5b9e\u4f8bID\u5217\u8868\u3002"
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "ECS实例ID列表"
       },
       "Type": "List"
     },
     "regionId": {
-      "Description": {
-        "en": "The Source Region Id.",
-        "zh-cn": "\u6e90\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "源地域ID"
       },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetRegionId": {
-      "Description": {
-        "en": "The Target Region Id.",
-        "zh-cn": "\u76ee\u6807\u5730\u57dfID\u3002"
+      "Label": {
+        "en": "TargetRegionId",
+        "zh-cn": "目标地域ID"
       },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetZoneId": {
-      "Description": {
-        "en": "The Target Zone Id.",
-        "zh-cn": "\u76ee\u6807\u53ef\u7528\u533aID\u3002"
+      "Label": {
+        "en": "TargetZoneId",
+        "zh-cn": "目标可用区ID"
       },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "targetInstanceType": {
-      "Description": {
-        "en": "The instance type for the ECS instances, ecs.g5.large, for example.",
-        "zh-cn": "\u5b9e\u4f8b\u7c7b\u578b\u3002"
+      "Label": {
+        "en": "TargetInstanceType",
+        "zh-cn": "实例类型"
       },
       "Type": "String",
       "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
@@ -55,9 +55,9 @@
       "MaxLength": 30
     },
     "targetSecurityGroupId": {
-      "Description": {
-        "en": "The security group ID for the ECS instances, sg-xxxxxxxxxxxxxxxxxxxx, for example.",
-        "zh-cn": "\u5b89\u5168\u7ec4ID\u3002"
+      "Label": {
+        "en": "TargetSecurityGroupId",
+        "zh-cn": "安全组ID"
       },
       "Type": "String",
       "AllowedPattern": "sg-[A-Za-z0-9]*",
@@ -65,9 +65,9 @@
       "MaxLength": 30
     },
     "targetVSwitchId": {
-      "Description": {
-        "en": "The virtual switch ID for the ECS instances, vsw-xxxxxxxxxxxxxxxxxxxx, for example.",
-        "zh-cn": "\u4ea4\u6362\u673aID\u3002"
+      "Label": {
+        "en": "TargetVSwitchId",
+        "zh-cn": "交换机ID"
       },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
@@ -75,9 +75,9 @@
       "MaxLength": 30
     },
     "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS.",
-        "zh-cn": "OOS\u626e\u6f14\u7684RAM\u89d2\u8272\u3002"
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
       "Default": "OOSServiceRole"
@@ -86,11 +86,50 @@
   "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
     {
+      "Name": "queryDisks",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Views disk info of the ECS instance",
+        "zh-cn": "查看实例的磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "instanceDataDisks": {
+          "Type": "Json",
+          "ValueSelector": ".Disks.Disk|map( select(.Type == \"data\" )|{\"Category\":(.Category),\"Device\": (.Device),\"Size\":(.Size),\"DiskName\":(.DiskName),\"PerformanceLevel\":(.PerformanceLevel)})"
+        },
+        "instanceSystemDisk": {
+          "Type": "Json",
+          "ValueSelector": ".Disks.Disk|map( select(.Type == \"system\" )|{\"Category\":(.Category),\"Device\": (.Device),\"Size\":(.Size),\"DiskName\":(.DiskName),\"PerformanceLevel\":(.PerformanceLevel)})[]"
+        }
+      },
+      "Loop": {
+        "Items": "{{ instanceIds }}",
+        "Outputs": {
+          "dataDisks": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "instanceDataDisks"
+          },
+          "systemDisks": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "instanceSystemDisk"
+          }
+        }
+      }
+    },
+    {
       "Name": "createImage",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Create Image.",
-        "zh-cn": "\u521b\u5efa\u955c\u50cf\u3002"
+        "en": "Create Image",
+        "zh-cn": "创建镜像"
       },
       "Properties": {
         "Service": "ECS",
@@ -121,8 +160,8 @@
       "Name": "untilCreateImageReady",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Wait For created images available.",
-        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u521b\u5efa\u6210\u529f\u3002"
+        "en": "Wait For created images available",
+        "zh-cn": "等待镜像创建成功"
       },
       "Properties": {
         "Service": "ECS",
@@ -139,14 +178,14 @@
       "Loop": {
         "Items": "{{ createImage.ImageIds }}"
       },
-      "Retries": 17
+      "Retries": 57
     },
     {
       "Name": "copyImage",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "Copy image.",
-        "zh-cn": "\u590d\u5236\u955c\u50cf\u3002"
+        "en": "Copy image",
+        "zh-cn": "复制镜像"
       },
       "Properties": {
         "Service": "ECS",
@@ -177,8 +216,8 @@
       "Name": "untilCopyImageReady",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Wait for copied images available.",
-        "zh-cn": "\u7b49\u5f85\u955c\u50cf\u590d\u5236\u6210\u529f\u3002"
+        "en": "Wait for copied images available",
+        "zh-cn": "等待镜像复制成功"
       },
       "Properties": {
         "Service": "ECS",
@@ -200,8 +239,8 @@
       "Name": "runInstances",
       "Action": "ACS::ExecuteAPI",
       "Description": {
-        "en": "run instances.",
-        "zh-cn": "\u521b\u5efa\u5b9e\u4f8b\u3002"
+        "en": "run instances",
+        "zh-cn": "创建实例"
       },
       "Properties": {
         "Service": "ECS",
@@ -209,14 +248,75 @@
         "Parameters": {
           "RegionId": "{{ targetRegionId }}",
           "ZoneId": "{{ targetZoneId }}",
-          "ImageId": "{{ ACS::TaskLoopItem }}",
+          "ImageId": {
+            "Fn::Select": [
+              "{{ ACS::TaskLoopItem }}",
+              "{{ copyImage.ImageIds }}"
+            ]
+          },
+          "DataDisks": {
+            "Fn::Select": [
+              "{{ ACS::TaskLoopItem }}",
+              "{{queryDisks.dataDisks}}"
+            ]
+          },
+          "SystemDiskCategory": {
+            "Fn::Select": [
+              "Category",
+              {
+                "Fn::Select": [
+                  "{{ ACS::TaskLoopItem }}",
+                  "{{ queryDisks.systemDisks }}"
+                ]
+              }
+            ]
+          },
+          "SystemDiskSize": {
+            "Fn::Select": [
+              "Size",
+              {
+                "Fn::Select": [
+                  "{{ ACS::TaskLoopItem }}",
+                  "{{ queryDisks.systemDisks }}"
+                ]
+              }
+            ]
+          },
+          "SystemDiskDiskName": {
+            "Fn::Select": [
+              "DiskName",
+              {
+                "Fn::Select": [
+                  "{{ ACS::TaskLoopItem }}",
+                  "{{ queryDisks.systemDisks }}"
+                ]
+              }
+            ]
+          },
+          "SystemDiskPerformanceLevel": {
+            "Fn::Select": [
+              "PerformanceLevel",
+              {
+                "Fn::Select": [
+                  "{{ ACS::TaskLoopItem }}",
+                  "{{ queryDisks.systemDisks }}"
+                ]
+              }
+            ]
+          },
           "InstanceType": "{{ targetInstanceType }}",
           "SecurityGroupId": "{{ targetSecurityGroupId }}",
           "VSwitchId": "{{ targetVSwitchId }}"
         }
       },
       "Loop": {
-        "Items": "{{ copyImage.ImageIds }}",
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            ".|length|range(.)",
+            "{{ instanceIds }}"
+          ]
+        },
         "Outputs": {
           "instanceIds": {
             "AggregateType": "Fn::ListJoin",
@@ -236,7 +336,7 @@
       "Action": "ACS::WaitFor",
       "Description": {
         "en": "Wait for instances running",
-        "zh-cn": "\u7b49\u5f85\u5b9e\u4f8b\u521b\u5efa\u6210\u529f\u3002"
+        "zh-cn": "等待实例创建成功"
       },
       "Properties": {
         "Service": "ECS",
@@ -256,6 +356,50 @@
     "instanceIds": {
       "Value": "{{ runInstances.instanceIds }}",
       "Type": "List"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "targetRegionId",
+            "targetZoneId",
+            "targetInstanceType",
+            "targetSecurityGroupId",
+            "targetVSwitchId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

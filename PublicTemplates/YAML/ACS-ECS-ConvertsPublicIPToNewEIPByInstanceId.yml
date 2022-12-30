@@ -1,21 +1,21 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address.
-  zh-cn: 将一台网络类型为专有网络VPC的ECS实例的公网IP转化为其它弹性公网IP。
+  en: Converts the public IP address of a VPC-connected ECS instance with another Elastic IP (EIP) address
+  zh-cn: 将一台网络类型为专有网络VPC的ECS实例的公网IP转化为其它弹性公网IP
   name-en: ACS-ECS-ConvertsPublicIPToNewEIPByInstanceId
   name-zh-cn: 将一台实例的公网IP转化为其它弹性公网IP
   categories:
     - instance_manage
 Parameters:
   instanceId:
-    Description:
-      en: The ID of ECS instance.
-      zh-cn: ECS实例ID。
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例ID
     Type: String
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -23,8 +23,8 @@ Tasks:
 - Name: modifyInstanceNetworkSpec
   Action: ACS::ExecuteAPI
   Description:
-    en: Modifies the network charge type of the ECS instance with the specified parameters.
-    zh-cn: 转换ECS实例网络付费方式。
+    en: Modifies the network charge type of the ECS instance with the specified parameters
+    zh-cn: 转换ECS实例网络付费方式
   Properties:
     Service: ECS
     API: ModifyInstanceNetworkSpec
@@ -34,8 +34,8 @@ Tasks:
 - Name: convertNatPublicIpToEip
   Action: ACS::ExecuteApi
   Description:
-    en: Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address.
-    zh-cn: 将一台网络类型为专有网络VPC的ECS实例的公网IP转化为弹性公网IP。
+    en: Converts the public IP address of a VPC-connected ECS instance to an Elastic IP (EIP) address
+    zh-cn: 将一台网络类型为专有网络VPC的ECS实例的公网IP转化为弹性公网IP
   Properties:
     Service: ECS
     API: ConvertNatPublicIpToEip
@@ -44,8 +44,8 @@ Tasks:
 - Name: getInstanceEIP
   Action: ACS::ExecuteApi
   Description:
-    en: Gets ECS instance EIP.
-    zh-cn: 获取实例弹性公网IP。
+    en: Gets ECS instance EIP
+    zh-cn: 获取实例弹性公网IP
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -59,8 +59,8 @@ Tasks:
 - Name: unassociateEipAddress
   Action: ACS::ExecuteApi
   Description:
-    en: Elastic public network IP (EIP) is unbound from an ECS instacne.
-    zh-cn: 弹性公网IP（EIP）从绑定的ECS实例上解绑。
+    en: Elastic public network IP (EIP) is unbound from an ECS instacne
+    zh-cn: 弹性公网IP（EIP）从绑定的ECS实例上解绑
   Properties:
     Service: ECS
     API: UnassociateEipAddress
@@ -70,8 +70,8 @@ Tasks:
 - Name: AllocateEipAddress
   Action: ACS::ExecuteAPI
   Description:
-    en: Allocate an Eip address.
-    zh-cn: 申请一个弹性公网IP。
+    en: Allocate an Eip address
+    zh-cn: 申请一个弹性公网IP
   Properties:
     Service: ECS
     API: AllocateEipAddress
@@ -86,8 +86,8 @@ Tasks:
 - Name: DescribeEipAddresses
   Action: ACS::WaitFor
   Description:
-    en: Waits for the Eip to enter Available status.
-    zh-cn: 等待EIP可用。
+    en: Waits for the Eip to enter Available status
+    zh-cn: 等待EIP可用
   Properties:
     Service: VPC
     API: DescribeEipAddresses
@@ -99,8 +99,8 @@ Tasks:
 - Name: AssociateEipAddress
   Action: ACS::ExecuteAPI
   Description:
-    en: Bind the new EIP to the ECS instance in the same region.
-    zh-cn: 绑定新EIP到同地域的ECS实例上。
+    en: Bind the new EIP to the ECS instance in the same region
+    zh-cn: 绑定新EIP到同地域的ECS实例上
   Properties:
     Service: ECS
     API: AssociateEipAddress
@@ -114,3 +114,18 @@ Outputs:
   EipAddress:
     Type: String
     Value: '{{ AllocateEipAddress.EipAddress }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

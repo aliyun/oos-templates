@@ -1,26 +1,43 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Installs SLS agent on ECS instance by running a cloud assistant command.",
+  "Description": {
+    "name-en": "ACS::ECS::InstallLogtail",
+    "name-zh-cn": "在ECS实例中安装日志服务Agent",
+    "en": "Install SLS agent on ECS instance",
+    "zh-cn": "在ECS实例中安装日志服务Agent"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of instance to install ilogtail.",
+      "Description": {
+        "en": "The ID of instance to install ilogtail",
+        "zh-cn": "需要下载SLS客户端的ECS实例ID"
+      },
       "Type": "String",
       "MaxLength": 30,
       "MinLength": 1
     },
     "logTailUserDefinedId": {
-      "Description": "The user defined Id write to /etc/ilogtail/user_defined_id",
+      "Description": {
+        "en": "The user defined Id write to /etc/ilogtail/user_defined_id",
+        "zh-cn": "用户需要写入/etc/ilogtail/user_defined_id的DefinedId"
+      },
       "Type": "String",
       "MaxLength": 30,
       "MinLength": 1
     },
     "OOSAssumeRole": {
-      "Description": "The RAM role to be assumed by OOS.",
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS扮演的RAM角色。"
+      },
       "Type": "String",
       "Default": "OOSServiceRole"
     }
@@ -30,7 +47,10 @@
     {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Check the ECS instance is running status.",
+      "Description": {
+        "en": "Check the ECS instance is running status",
+        "zh-cn": "检测ECS实例为Running状态"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -49,7 +69,10 @@
     {
       "Name": "createCommand",
       "Action": "ACS::ExecuteApi",
-      "Description": "Creates a cloud assistant command to install logtail agent.",
+      "Description": {
+        "en": "Creates a cloud assistant command to install logtail agent",
+        "zh-cn": "创建下载log客户端的云助手命令"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CreateCommand",
@@ -72,7 +95,10 @@
     {
       "Name": "invokeCommand",
       "Action": "ACS::ExecuteApi",
-      "Description": "Triggers a cloud assistant command to install logtail agent.",
+      "Description": {
+        "en": "Triggers a cloud assistant command to install logtail agent",
+        "zh-cn": "执行下载log客户端的云助手命令"
+      },
       "OnError": "deleteCommand",
       "Properties": {
         "Service": "ECS",
@@ -95,7 +121,10 @@
     {
       "Name": "untilInvocationDone",
       "Action": "ACS::WaitFor",
-      "Description": "Waits for the command to be completed.",
+      "Description": {
+        "en": "Waits for the command to be completed",
+        "zh-cn": "等待云助手命令执行完成"
+      },
       "OnError": "deleteCommand",
       "Properties": {
         "Service": "ECS",
@@ -113,7 +142,10 @@
     {
       "Name": "describeInvocationResult",
       "Action": "ACS::ExecuteApi",
-      "Description": "Views the command output of a cloud assistant command in the specified ECS instance.",
+      "Description": {
+        "en": "Queries the command output of a cloud assistant command in the specified ECS instance",
+        "zh-cn": "查看在指定ECS实例的云助手命令输出"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInvocationResults",
@@ -136,7 +168,10 @@
     {
       "Name": "deleteCommand",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Cleans up the install ilogtail command.",
+      "Description": {
+        "en": "Cleans up the install ilogtail command",
+        "zh-cn": "删除下载Log客户端命令"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DeleteCommand",

@@ -1,0 +1,202 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to install ARMS agent on ecs",
+    "zh-cn": "使用这个模板批量的在ECS安装ARMS插件",
+    "name-en": "ACS-ECS-BulkyInstallARMSAgent",
+    "name-zh-cn": "批量安装ARMS插件",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "action": {
+      "Type": "String",
+      "Label": {
+        "en": "Action",
+        "zh-cn": "操作类型"
+      },
+      "AllowedValues": [
+        "install",
+        "upgrade",
+        "uninstall"
+      ],
+      "Default": "install"
+    },
+    "appName": {
+      "Type": "String",
+      "Label": {
+        "en": "AppName",
+        "zh-cn": "要监控的应用名称"
+      }
+    },
+    "licenseKey": {
+      "Type": "String",
+      "Label": {
+        "en": "LicenseKey",
+        "zh-cn": "应用监控功能的License Key"
+      }
+    },
+    "targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        },
+        "instanceInfos": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[] | {\"osType\":.OSType, \"instanceId\":.InstanceId}"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "When": {
+        "Fn::Equals": [
+          {
+            "Fn::Jq": [
+              "First",
+              ".|map(select(.instanceId == \"{{ ACS::TaskLoopItem }}\").osType)[]",
+              "{{ getInstance.instanceInfos }}"
+            ]
+          },
+          "linux"
+        ]
+      },
+      "Description": {
+        "en": "Execute cloud assistant command",
+        "zh-cn": "执行云助手命令"
+      },
+      "Properties": {
+        "commandContent": "#!/usr/bin/env bash\nregionId=\"{{ regionId }}\"\nregion=`echo $regionId|awk -F \"-\" '{print $2}'`\naction=\"{{action}}\"\nlicenseKey=\"{{licenseKey}}\"\nagentBaseDir=\"$HOME/.arms\"\npidFileName=\"supervisor.pid\"\npidFile=\"${agentBaseDir}/${pidFileName}\"\nappName=\"{{appName}}\"\nif [[ \"$regionId\" =~ \"cn-\"  ]];then\n  DOWNLOAD_URL=\"http://arms-apm-${region}.oss-${regionId}.aliyuncs.com/\"\nelif [[ \"$regionId\" =~ \"ap-southeast-1\"  ]];then\n  DOWNLOAD_URL=\"http://arms-apm-ap-southeast.oss-ap-southeast-1-internal.aliyuncs.com/cloud_ap-southeast-1/\"\nelif [[ \"$regionId\" =~ \"ap-northeast-1\"  ]];then\n  DOWNLOAD_URL=\"http://arms-apm-japan.oss-ap-northeast-1-internal.aliyuncs.com/\"\nelif [[ \"$regionId\" =~ \"us-west-1\"  ]];then\n  DOWNLOAD_URL=\"http://arms-apm-usw.oss-us-west-1-internal.aliyuncs.com/\"\nelse\n  echo \"Current ${regionId} is not supported.\"\n  exit 1\nfi\n\nfunction operateJavaAgent() {\nappEnv=\"java\"\nfunction installAgent() {\n  wget -O- \"${DOWNLOAD_URL}/install.sh\" -q|sh\n  currentProcess=`ps -ef |grep java|grep -v \"grep --color\" `\n  if echo $currentProcess|grep \"$appName\" >/dev/null 2>&1; then\n      processIndex=`echo null |${agentBaseDir}/supervisor/cli.sh \"$licenseKey\" $appName |grep \"$appName\"  |awk -F ' ' '{print $1}'`\n      (echo $processIndex |${agentBaseDir}/supervisor/cli.sh \"$licenseKey\" $appName )  && echo \"Automatically input application index $processIndex for attach $appName.\"\n  else\n    echo \"It seems that no running $appName application.\"\n  fi\n}\n\nfunction uninstallAgent() {\nif [ -f $pidFile ];\nthen\n    kill -9 `cat $pidFile` > /dev/null 2>&1\n    echo \"Finished to stop $pidFile.\"\nfi\nrm -rf $agentBaseDir\n}\nif [ $action = \"install\" ]; then\n    if [ -d ${agentBaseDir}/agent ];\n    then\n          uninstallAgent || exit 1\n          installAgent || exit 1\n          echo \"Finished to install $appEnv arms agent.\"\n    else\n      installAgent || exit 1\n      echo \"Finished to install $appEnv arms agent.\"\n    fi\nelif [ $action = \"upgrade\" ]; then\n  installAgent || exit 1\n  echo \"Finished to upgrade $appEnv arms agent.\"\nelse\n  uninstallAgent || exit 1\n  echo \"Finished to uninstall $appEnv arms agent.\"\nfi\n}\noperateJavaAgent",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript"
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "action",
+            "appName",
+            "licenseKey"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

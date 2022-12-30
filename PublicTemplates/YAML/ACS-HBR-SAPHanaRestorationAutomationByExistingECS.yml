@@ -1,37 +1,41 @@
 FormatVersion: OOS-2019-06-01
 Description:
   en: 'This template uses existing SAP HANA instances(source instance and destination instance) to restore the source instance backup data to the destination instance through the HBR service, and check the restored destination instance status.'
-  zh-cn: 在已有的两台SAP HANA实例(源实例和目的实例)，通过HBR服务将源实例备份数据恢复到目的实例，并检查恢复后的目的实例状态。
+  zh-cn: 在已有的两台SAP HANA实例(源实例和目的实例)，通过HBR服务将源实例备份数据恢复到目的实例，并检查恢复后的目的实例状态
   name-en: ACS-HBR-SAPHanaRestorationAutomationByExistingECS
   name-zh-cn: SAP HANA备份可用性验证（恢复到已有实例）
 Parameters:
   vaultId:
+    Label:
+      zh-cn: HBR备份库ID
+      en: Backup Vault ID
     Description:
-      name-zh-cn: HBR备份库ID
-      name-en: Backup Vault ID
-      zh-cn: 备份库的Id。
-      en: Backup vault ID.
+      zh-cn: 备份库的Id
+      en: Backup vault ID
     Type: String
   sourceClusterId:
+    Label:
+      zh-cn: HBR源实例Id
+      en: Source SAP HANA instance ID
     Description:
-      name-zh-cn: HBR源实例Id
-      name-en: Source SAP HANA instance ID
       zh-cn: '源实例Id, 需要恢复的SAP HANA备份实例的Id，请在混合云备份控制台-ECS应用备份-实例名称/Id一栏查看。'
       en: 'Source SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
     Type: String
   destinationClusterId:
+    Label:
+      zh-cn: HBR目的实例Id
+      en: Destination SAP HANA instance ID
     Description:
-      name-zh-cn: HBR目的实例Id
-      name-en: Destination SAP HANA instance ID
       zh-cn: '目的实例Id, 测试的SAP HANA备份的实例Id，请在混合云备份控制台-ECS应用备份-实例名称/Id一栏查看。'
       en: 'Destination SAP HANA instance ID, can be found in the Hybrid Backup Recovery Console - ECS Application Backup - Instance Name/ID.'
     Type: String
   databaseName:
+    Label:
+      zh-cn: 数据库实例列表
+      en: SAP HANA Database List
     Description:
-      name-zh-cn: 数据库实例列表
-      name-en: SAP HANA Database List
-      zh-cn: 需要恢复备份的SAP HANA数据库实例列表，格式：<源数据库名>@&lt;SID&gt;:<目的数据库名>，多个数据库实例请以换行分隔。
-      en: SAP HANA database list in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". Separate multiple SAP HANA database with line breaks.
+      zh-cn: 需要恢复备份的SAP HANA数据库实例列表，格式：<源数据库名>@&lt;SID&gt;:<目的数据库名>，多个数据库实例请以换行分隔
+      en: SAP HANA database list in format of "<Source SAP HANA database name>@<Source SAP HANA system Id>". Separate multiple SAP HANA database with line breaks
     Type: List
     Default:
       - 'SYSTEMDB@<SID>:SYSTEMDB'
@@ -40,38 +44,42 @@ Parameters:
     ConstraintDescription:
       zh-cn: '必须输入3个字符,可包含大写字母或数字，首位必须是大写字母。'
       en: '3 characters,can including capital letter or number, must starting with capital letter.'
+    Label:
+      zh-cn: 目的实例SAP HANA SID
+      en: SAP HANA  SID
     Description:
-      name-zh-cn: 目的实例SAP HANA SID
-      name-en: SAP HANA  SID
-      zh-cn: 目的实例SAP HANA SID。
-      en: Destination instance SAP HANA SID.
+      zh-cn: 目的实例SAP HANA SID
+      en: Destination instance SAP HANA SID
     AllowedPattern: '^[A-Z][A-Z0-9][A-Z0-9]$'
   ECSHostname:
     Type: String
+    Label:
+      zh-cn: 目的实例主机名
+      en: Hostname
     Description:
-      name-zh-cn: 目的实例主机名
-      name-en: Hostname
-      zh-cn: 目的实例主机名。
-      en: SAP HANA ECS hostname.
+      zh-cn: 目的实例主机名
+      en: SAP HANA ECS hostname
     AllowedPattern: '^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-])*([a-zA-Z0-9])$'
     ConstraintDescription:
-      zh-cn: 长度为 2-13 个字符，允许使用大小写字母、数字或连字符(-)，但不能以连字符(-)开头或结尾。
+      zh-cn: 长度为 2-13 个字符，允许使用大小写字母、数字或连字符(-)，但不能以连字符(-)开头或结尾
       en: 'The length is 2-13 characters,can starting with a capital or lowercase letter,and can contain numbers,or -,but can''t starting with - or end with -.'
   HANAInstanceNumber:
     Type: String
+    Label:
+      zh-cn: 目的实例SAP HANA实例编号
+      en: SAP HANA Instance Number
     Description:
-      name-zh-cn: 目的实例SAP HANA实例编号
-      name-en: SAP HANA Instance Number
-      zh-cn: 目的实例SAP HANA实例编号。
-      en: SAP HANA instance number.
+      zh-cn: 目的实例SAP HANA实例编号
+      en: SAP HANA instance number
     ConstraintDescription:
-      zh-cn: 2位数字，00-97。
+      zh-cn: 2位数字，00-97
       en: '2 numbers,00-97.'
     AllowedPattern: '^([0-8][0-9]|9[0-6])$'
   dingTalkWebhook:
+    Label:
+      zh-cn: 钉钉机器人Webhook地址
+      en: DingTalk Robot Webhook
     Description:
-      name-zh-cn: 钉钉机器人Webhook地址
-      name-en: DingTalk Robot Webhook
       zh-cn: '钉钉自定义机器人Webhook地址，用以向钉钉发送测试结果消息和删除云资源审批消息，更多请浏览<a href=''https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq'' target=''_blank''>钉钉自定义机器人</a>。'
       en: 'Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details.'
     Type: String

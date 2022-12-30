@@ -1,0 +1,135 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Release the public address of RDS instance",
+    "zh-cn": "释放RDS实例的外网地址",
+    "name-en": "ACS-RDS-ReleaseInstancePublicConnection",
+    "name-zh-cn": "释放RDS实例的外网地址",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "RDS实例ID"
+      },
+      "AssociationProperty": "ALIYUN::RDS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeDBInstanceNetInfo",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the ip type and address of a RDS instance",
+        "zh-cn": "查询RDS的连接地址和地址类型"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstanceNetInfo",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "connectionString": {
+          "Type": "String",
+          "ValueSelector": ".DBInstanceNetInfos.DBInstanceNetInfo[] | select(.IPType==\"Public\") | .ConnectionString"
+        }
+      }
+    },
+    {
+      "Name": "checkPublicAddress",
+      "Action": "ACS::Choice",
+      "Description": {
+        "En": "Whether to release instance public connection",
+        "Zh-cn": "是否释放RDS实例的外网地址"
+      },
+      "Properties": {
+        "DefaultTask": "releaseInstancePublicConnection",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                null,
+                "{{ describeDBInstanceNetInfo.connectionString }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "releaseInstancePublicConnection",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "En": "Release the public address of RDS instances",
+        "Zh-cn": "释放RDS实例的外网地址"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "ReleaseInstancePublicConnection",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ instanceId }}",
+          "CurrentConnectionString": "{{ describeDBInstanceNetInfo.connectionString }}"
+        }
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

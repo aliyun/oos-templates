@@ -1,16 +1,26 @@
 FormatVersion: OOS-2019-06-01
-Description: Execute jq script to convert string constant.
+Description:
+  name-en: ACS::ECS::SMCConversionConstantByJqScript
+  name-zh-cn: 通过Jq脚本转化常量
+  en: Execute jq script to convert string constant
+  zh-cn: 执行Jq脚本来转化字符串
 Parameters:
   parameter:
-    Description: The constant parameter.
+    Description:
+      en: The constant parameter.
+      zh-cn: 常量参数。
     Type: String
   jqScript:
-    Description: The jq script(The script must begin with .[0] | 'your jq script').
+    Description:
+      en: The jq script(The script must begin with .[0] | 'your jq script')
+      zh-cn: Jq脚本（Jq脚本必须以 ".[0] |" 为起始）
     Type: List
 Tasks:
   - Name: placeHolder
     Action: 'ACS::Choice'
-    Description: PlaceHolder for conver constant.
+    Description:
+      en: PlaceHolder for conver constant
+      zh-cn: 转化参数的占位
     Properties:
       DefaultTask: 'ACS::END'
       Choices:

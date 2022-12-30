@@ -1,0 +1,71 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky enable deletion protection for instances
+  zh-cn: 批量设置实例保护
+  name-en: ACS-VPC-BulkyEnableDeletionProtection
+  name-zh-cn: 批量设置实例保护
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  type:
+    Label:
+      en: Type
+      zh-cn: 要设置删除保护功能的实例类型
+    Type: String
+    AllowedValues:
+      - EIP
+      - CBWP
+      - NATGW
+    Default: NATGW
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: Vpc实例Id
+    Type: List
+  protectionEnable:
+    Label:
+      en: ProtectionEnable
+      zh-cn: 是否开启删除保护功能
+    Type: Boolean
+    Default: true
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: enableDeletionProtection
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Enables deletion protection for an instance
+      zh-cn: 设置实例删除保护功能
+    Properties:
+      Service: VPC
+      API: DeletionProtection
+      Parameters:
+        RegionId: '{{ regionId }}'
+        Type: '{{ type }}'
+        InstanceId: '{{ ACS::TaskLoopItem }}'
+        ProtectionEnable: '{{ protectionEnable }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceIds }}'

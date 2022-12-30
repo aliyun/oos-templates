@@ -1,0 +1,52 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Enable logging for a bucket
+  zh-cn: 为存储空间（Bucket）开启日志转存功能
+  name-en: ACS-OSS-PutBucketLogging
+  name-zh-cn: 为存储空间（Bucket）开启日志转存功能
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  bucketName:
+    Label:
+      en: BucketName
+      zh-cn: OSS bucket 名称
+    Type: String
+  logPrefix:
+    Label:
+      en: LogPrefix
+      zh-cn: 日志文件前缀
+    Description:
+      en: The prefix of the saved log objects. This element can be left empty
+      zh-cn: 指定保存的日志文件前缀，可以为空
+    Type: String
+    Default: 'No'
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: putBucketLogging
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Enable logging for a bucket
+      zh-cn: 为存储空间（Bucket）开启日志转存功能
+    Properties:
+      Service: OSS
+      API: PutBucketLogging
+      Method: PUT
+      URI: '?logging'
+      Parameters:
+        RegionId: '{{ regionId }}'
+        BucketName: '{{ bucketName }}'
+      Body: <?xml version="1.0" encoding="UTF-8"?> <BucketLoggingStatus> <LoggingEnabled> <TargetBucket>{{ bucketName }}</TargetBucket> <TargetPrefix>{{ logPrefix }}</TargetPrefix> </LoggingEnabled> </BucketLoggingStatus>

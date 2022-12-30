@@ -1,0 +1,46 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECD::RebootDesktop
+  name-zh-cn: 重启云桌面
+  en: Restarts the ECD desktop
+  zh-cn: 重启云桌面
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  desktopId:
+    Description:
+      en: The ID of ECD desktop
+      zh-cn: 云桌面ID
+    Type: String
+Tasks:
+- Name: rebootDesktop
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Restarts the desktop
+    zh-cn: 重启云桌面
+  Properties:
+    Service: ECD
+    API: RebootDesktops
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DesktopId:
+        - '{{ desktopId }}'
+- Name: untilDesktopReady
+  Action: 'ACS::WaitFor'
+  Description:
+    en: Waits for the desktop to enter Running status
+    zh-cn: 等待云桌面至运行中状态
+  Properties:
+    Service: ECD
+    API: DescribeDesktops
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DesktopId:
+        - '{{ desktopId }}'
+    DesiredValues:
+      - Running
+    PropertySelector: 'Desktops[].DesktopStatus'

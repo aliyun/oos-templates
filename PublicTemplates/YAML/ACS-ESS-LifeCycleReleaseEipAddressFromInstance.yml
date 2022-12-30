@@ -1,51 +1,53 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Use lifecyclehook to uninstall and release the eip on instances in batches (only supports elastic contraction activities).
-  zh-cn: 使用生命周期挂钩批量释放实例上的弹性公网IP（仅支持弹性收缩活动）。
+  en: Use lifecyclehook to uninstall and release the eip on instances in batches (only supports elastic contraction activities)
+  zh-cn: 使用生命周期挂钩批量释放实例上的弹性公网IP（仅支持弹性收缩活动）
   name-en: ACS-ESS-LifeCycleReleaseEipAddressFromInstance
   name-zh-cn: 使用生命周期挂钩释放实例上的弹性公网IP
   categories:
     - elastic_manage
 Parameters:
   regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     Description:
-      name-en: regionId
-      name-zh-cn: 地域ID
-      en: The ID of region.
+      en: The ID of region
       zh-cn: '地域ID，请使用弹性伸缩系统默认值 ${regionId}'
     Type: String
     Default: '${regionId}'
   instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
     Description:
-      name-en: instanceIds
-      name-zh-cn: ECS实例ID列表
-      en: The ID list of the ECS instance.
+      en: The ID list of the ECS instance
       zh-cn: 'ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]'
     Type: List
     Default:
       - '${instanceIds}'
   lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
     Description:
-      name-en: lifecycleHookId
-      name-zh-cn: 生命周期挂钩ID
-      en: The ID of the lifecycle hook.
+      en: The ID of the lifecycle hook
       zh-cn: '生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}'
     Type: String
     Default: '${lifecycleHookId}'
   lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
     Description:
-      name-en: lifecycleActionToken
-      name-zh-cn: 实例关联的特定伸缩活动的令牌
-      en: The token that indicates a specific scaling activity associated with an instance.
+      en: The token that indicates a specific scaling activity associated with an instance
       zh-cn: '实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}'
     Type: String
     Default: '${lifecycleActionToken}'
   rateControl:
-    Description:
-      name-en: rateControl
-      name-zh-cn: 速率控制
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 速率控制
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -53,11 +55,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 5
   OOSAssumeRole:
-    Description:
-      name-en: OOSAssumeRole
-      name-zh-cn: OOS扮演的RAM角色
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -67,8 +67,8 @@ Tasks:
     OnSuccess: CompleteLifecycleActionForContinue
     OnError: CompleteLifecycleActionForAbandon
     Description:
-      en: Detach and delete the network interface and eip from the instance.
-      zh-cn: 将弹性IP从实例上分离出来并删除。
+      en: Detach and delete the network interface and eip from the instance
+      zh-cn: 将弹性IP从实例上分离出来并删除
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
@@ -78,8 +78,8 @@ Tasks:
   - Name: CompleteLifecycleActionForContinue
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Modify lifecycle action for continue.
-      zh-cn: 修改伸缩活动的等待状态为继续完成。
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
     OnSuccess: 'ACS::END'
     Properties:
       Service: ESS
@@ -92,8 +92,8 @@ Tasks:
   - Name: CompleteLifecycleActionForAbandon
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: Complete lifecycle action for Abandon.
-      zh-cn: 修改伸缩活动的等待状态为弃用。
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
     Properties:
       Service: ESS
       API: CompleteLifecycleAction

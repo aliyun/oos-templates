@@ -1,0 +1,105 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::RunPacker
+  name-zh-cn: 在ECS实例中执行Packer模板
+  en: Run Packer template on ECS instance
+  zh-cn: 在ECS实例中执行Packer模板
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  sourceType:
+    Description:
+      en: The type of file storage
+      zh-cn: 文件存储方式
+    Type: String
+    AllowedValues:
+      - oss
+      - https
+      - github
+  sourcePath:
+    Description:
+      en: You must specify a URL where the file is stored
+      zh-cn: 您必须指定一个用于存储文件的URL
+    Type: String
+  tokenInfo:
+    Description:
+      en: Specify a token to download file.It is only required when downloading file from GitHub
+      zh-cn: 指定一个token来下载文件，只有从GitHub下载文件时会用到
+    Type: String
+    Default: ' '
+  templateFile:
+    Description:
+      en: 'The name of Packer template to run. For example: example.json'
+      zh-cn: 要执行的Packer模板文件
+    Type: String
+  mode:
+    Type: String
+    Description:
+      en: Packer template execution mode
+      zh-cn: Packer模板执行的模式
+    AllowedValues:
+      - validate
+      - fix
+      - build
+    Default: build
+Tasks:
+  - Name: runPackerTemplate
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Executes Packer template
+      zh-cn: 执行Packer模板
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunShellScript
+      timeout: 3600
+      commandContent: |-
+        #/bin/bash
+        current_version=`aliyun-service -v`
+        specified_version=1.0.2.497
+        path=/root/packer_workspace
+
+        if [[ $current_version >  $specified_version ]]; then
+
+          echo "Downloading packer template.";
+          acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'{{sourcePath}}',\''{{ tokenInfo }}'\',$path
+          test -e /usr/bin/unzip || sudo yum -y install unzip
+          test -e $path/packer || acs-plugin-manager --exec -P oosutil --params  download_content,https,'https://oos-public-{{regionId}}.oss-{{regionId}}.aliyuncs.com/x64/packer_1.6.2_linux_amd64.zip',\'''\',$path && unzip -o $path/packer_1.6.2_linux_amd64.zip -d $path/
+
+          echo "Packer run {{ templateFile }}."
+          cd  $path
+          ./packer {{ mode }} ./{{ templateFile }}
+
+        else
+          version='{{ ACS::OOSUtilVersion }}'
+          oosutil_path=/usr/local/share/aliyun-oosutil/$version
+          test -e $oosutil_path || mkdir -p $oosutil_path
+          cd $oosutil_path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
+          chmod +x oosutil_linux
+
+          echo "Downloading packer template.";
+          ./oosutil_linux download_content {{sourceType}} '{{sourcePath}}' \''{{ tokenInfo }}'\' $path
+          test -e /usr/bin/unzip || sudo yum -y install unzip
+          test -e $path/packer || ./oosutil_linux download_content https 'https://oos-public-{{regionId}}.oss-{{regionId}}.aliyuncs.com/x64/packer_1.6.2_linux_amd64.zip' \'''\' $path && unzip -o $path/packer_1.6.2_linux_amd64.zip -d $path/
+
+          echo "Packer run {{ templateFile }}."
+          cd  $path
+          ./packer {{ mode }} ./{{ templateFile }}
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ runPackerTemplate.commandOutput }}'

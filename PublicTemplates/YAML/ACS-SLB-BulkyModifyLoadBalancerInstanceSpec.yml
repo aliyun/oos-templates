@@ -1,0 +1,97 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky modify load balancer instance spec
+  zh-cn: 批量修改负载均衡的实例规格
+  name-en: ACS-SLB-BulkyModifyLoadBalancerInstanceSpec
+  name-zh-cn: 批量修改负载均衡的实例规格
+  categories:
+    - computenest
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  loadBalancerIds:
+    Label:
+      en: LoadBalancerIds
+      zh-cn: 负载均衡实例ID
+    AssociationProperty: ALIYUN::SLB::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: List
+  loadBalancerSpec:
+    Label:
+      en: LoadBalancerSpec
+      zh-cn: 负载均衡实例的规格
+    Type: String
+    AssociationProperty: ALIYUN::SLB::Instance::InstanceType
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    AllowedValues:
+      - slb.s1.small
+      - slb.s2.small
+      - slb.s2.medium
+      - slb.s3.small
+      - slb.s3.medium
+      - slb.s3.large
+  autoPay:
+    Label:
+      en: AutoPay
+      zh-cn: 自动支付订单
+    Type: Boolean
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: modifyLoadBalancerInstanceSpec
+  Action: ACS::ExecuteApi
+  Description:
+    en: Modify load balancer instance spec
+    zh-cn: 修改负载均衡的实例规格
+  Properties:
+    Service: SLB
+    API: ModifyLoadBalancerInstanceSpec
+    Parameters:
+      RegionId: '{{ regionId }}'
+      LoadBalancerId: '{{ ACS::TaskLoopItem }}'
+      LoadBalancerSpec: '{{ loadBalancerSpec }}'
+      AutoPay: '{{ autoPay }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ loadBalancerIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - loadBalancerIds
+          - loadBalancerSpec
+          - autoPay
+        Label:
+          default:
+            zh-cn: 参数设置
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -1,0 +1,30 @@
+{
+  "FormatVersion": "OOS-2019-06-01-State",
+  "Description": {
+    "en": "Inventory data collection",
+    "zh-cn": "Inventory数据收集",
+    "name-en": "ACS-ECS-InventoryDataCollection",
+    "name-zh-cn": "收集ECS实例Inventory数据"
+  },
+  "Parameters": {
+    "policy": {
+      "Label": {
+        "en": "PolicyForInventoryDataCollection",
+        "zh-cn": "Inventory数据收集策略"
+      },
+      "Description": {
+        "en": "It is a json like {\"ACS:File\": {\"Collection\": \"Enabled\", \"Filters\":\"[{\\\"Path\\\": \\\"/etc\\\",\\\"Pattern\\\":[\\\"*\\\"],\\\"Recursive\\\":false}]\"} The keys are inventory type names from API GetInventorySchema Collection stands for whether enables data collection for this type, it is required Filters may be optional according to the type name",
+        "zh-cn": "Json格式，类似{\"ACS:File\": {\"Collection\": \"Enabled\", \"Filters\":\"[{\\\"Path\\\": \\\"/etc\\\",\\\"Pattern\\\":[\\\"*\\\"],\\\"Recursive\\\":false}]\"} Json的key是从API GetInventorySchema返回的类型名。 Collection是必填的，代表是否启用此类数据的收集。 Filters按照类型不同是选填的"
+      },
+      "Type": "Json"
+    }
+  },
+  "States": [
+    {
+      "ResourceType": "ACS:Inventory",
+      "Properties": {
+        "Policy": "{{ policy }}"
+      }
+    }
+  ]
+}

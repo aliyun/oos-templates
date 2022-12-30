@@ -1,31 +1,66 @@
 FormatVersion: OOS-2019-06-01
-Description: Modify instance charge type.
+Description:
+  name-en: ACS::ECS::ModifyInstanceChargeType
+  name-zh-cn: 修改实例的计费方式
+  en: Modify instance charge type
+  zh-cn: 修改实例的计费方式
 Parameters:
   regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
-    Description: The id of region.
     Default: '{{ ACS::RegionId }}'
   instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
-    Description: The id of instance.
   instanceChargeType:
-    Description: The instance ChargeType.
+    Description:
+      en: The instance ChargeType
+      zh-cn: 实例的付费方式
     Type: String
     AllowedValues:
       - PostPaid
       - PrePaid
     Default: PostPaid
+  period:
+    Description:
+      en: The period of the instance
+      zh-cn: 续费时长,PeriodUnit=Week时，Period取值：1~4，PeriodUnit=Month时，Period取值：1~12,24, 36, 48, 60
+    Type: Number
+  periodUnit:
+    Description:
+      en: The unit of the renewal period (Period)
+      zh-cn: 续费时长的时间单位，即参数Period的单位
+    Type: String
+    AllowedValues:
+      - Week
+      - Month
+    Default: Month
+  includeDataDisks:
+    Description:
+      en: Specifies whether to change the billing method of all data disks attached to the instance from pay-as-you-go to subscription
+      zh-cn: 是否将实例挂载的所有按量付费数据盘一起转换为包年包月数据盘
+    Type: Boolean
+    Default: false
   networkChargeType:
-    Description: The network ChargeType.
+    Description:
+      en: The network ChargeType
+      zh-cn: 网络计费方式
     Type: String
     AllowedValues:
       - PayByBandwidth
       - PayByTraffic
+      - ""
     Default: PayByTraffic
 Tasks:
   - Name: getInstanceChargeType
     Action: 'ACS::ExecuteApi'
-    Description: Get ECS instance ChargeType.
+    Description:
+      en: Queries ECS instance ChargeType
+      zh-cn: 获取实例的计费方式
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -39,7 +74,9 @@ Tasks:
         ValueSelector: 'Instances.Instance[].InstanceChargeType'
   - Name: checkInstanceChargeType
     Action: 'ACS::Choice'
-    Description: Choose next task by instance ChargeType.
+    Description:
+      en: Choose next task by instance ChargeType
+      zh-cn: 根据实例计费方式选择下一个任务
     Properties:
       DefaultTask: modifyInstanceChargeType
       Choices:
@@ -47,9 +84,11 @@ Tasks:
             'Fn::Equals':
               - '{{ instanceChargeType }}'
               - '{{ getInstanceChargeType.instanceChargeType }}'
-          NextTask: getInternetChargeType
+          NextTask: wetherToModifyInternetChargeType
   - Name: modifyInstanceChargeType
-    Description: Modify instance charge type.
+    Description:
+      en: Modifies instance charge type
+      zh-cn: 修改实例付费类型
     Action: 'ACS::ExecuteApi'
     Properties:
       Service: ECS
@@ -59,21 +98,42 @@ Tasks:
         InstanceIds:
           - '{{ instanceId }}'
         InstanceChargeType: '{{ instanceChargeType }}'
+        Period: '{{ period }}'
+        PeriodUnit: '{{ periodUnit }}'
+        IncludeDataDisks: '{{ includeDataDisks }}'
   - Name: untilInstanceChargeTypeReady
     Action: ACS::WaitFor
-    Description: Waits for the instances ChargeType ready.
+    Description:
+      en: Waits for the instances ChargeType ready
+      zh-cn: 等待实例付费方式修改完成
     Properties:
       Service: ECS
       API: DescribeInstances
       Parameters:
+        RegionId: '{{ regionId }}'
         InstanceIds:
         - '{{ instanceId }}'
       DesiredValues:
       - '{{ instanceChargeType }}'
       PropertySelector: 'Instances.Instance[].InstanceChargeType'
+  - Name: wetherToModifyInternetChargeType
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by instance internet ChargeType
+      zh-cn: 根据实例网络计费方式参数选择是否更改网络计费方式
+    Properties:
+      DefaultTask: getInternetChargeType
+      Choices:
+        - When:
+            'Fn::Equals':
+              - '{{ networkChargeType }}'
+              - ""
+          NextTask: 'ACS::END'
   - Name: getInternetChargeType
     Action: 'ACS::ExecuteApi'
-    Description: Get ECS internet ChargeType.
+    Description:
+      en: Queries ECS internet ChargeType
+      zh-cn: 获取实例网络的计费方式
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -87,18 +147,29 @@ Tasks:
         ValueSelector: 'Instances.Instance[].InternetChargeType'
   - Name: checkInternetChargeType
     Action: 'ACS::Choice'
-    Description: Choose next task by instance internet ChargeType.
+    Description:
+      en: Choose next task by instance internet ChargeType
+      zh-cn: 根据实例网络计费方式选择下一个任务
     Properties:
-      DefaultTask: modifyInternetChargeType
+      DefaultTask: pauseTask
       Choices:
         - When:
             'Fn::Equals':
               - '{{ networkChargeType }}'
               - '{{ getInternetChargeType.internetChargeType }}'
           NextTask: 'ACS::END'
+  - Name: pauseTask
+    Action: 'ACS::Sleep'
+    Description:
+      en: Pause the task
+      zh-cn: 暂停任务
+    Properties:
+      Duration: PT10S
   - Name: modifyInternetChargeType
     Action: 'ACS::ExecuteAPI'
-    Description: Modifiy the billing method for public network usage.
+    Description:
+      en: Modifies the billing method for network usage
+      zh-cn: 修改网络的计费方式
     Properties:
       Service: ECS
       API: ModifyInstanceNetworkSpec

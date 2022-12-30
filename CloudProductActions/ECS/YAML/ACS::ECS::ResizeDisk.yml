@@ -1,28 +1,42 @@
 FormatVersion: OOS-2019-06-01
-Description: Extends the size of a cloud disk.
+Description:
+  name-en: ACS::ECS::ResizeDisk
+  name-zh-cn: 扩容ECS实例上的云盘
+  en: Extends the size of cloud disk on ECS instance
+  zh-cn: 扩容ECS实例上的云盘
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   diskId:
-    Description: The ID of the disk will resize.
+    Description:
+      en: The ID of the disk will resize
+      zh-cn: 云盘ID
     Type: String
     AllowedPattern: d-[A-Za-z0-9]*
     MinLength: 1
     MaxLength: 30
   instanceId:
-    Description: The ID of ECS instance that will handle.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   newSize:
-    Description: The size for the disk to resize.
+    Description:
+      en: The size for the disk to resize
+      zh-cn: 希望扩容到的云盘容量大小
     Type: String
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor
-  Description: Check ECS instance status is running or stopped status.
+  Description:
+    en: Check ECS instance status is running or stopped status
+    zh-cn: 检测ECS实例的状态是否为运行中或已停止状态
   Properties:
     Service: ECS
     API: DescribeInstances
@@ -36,7 +50,9 @@ Tasks:
     PropertySelector: Instances.Instance[].Status
 - Name: resizeDisk
   Action: ACS::ExecuteAPI
-  Description: Extends the size of a cloud disk.
+  Description:
+    en: Extends the size of a cloud disk
+    zh-cn: 扩容一块云盘
   Properties:
     Service: ECS
     API: ResizeDisk
@@ -46,7 +62,9 @@ Tasks:
       NewSize: '{{ newSize }}'
 - Name: untilDiskIdReady
   Action: ACS::WaitFor
-  Description: describe Disk
+  Description:
+    en: Waits for disk enter to In_use status
+    zh-cn: 等待云盘进入使用中状态
   Properties:
     Service: ECS
     API: DescribeDisks
@@ -59,7 +77,9 @@ Tasks:
     PropertySelector: Disks.Disk[].Status
 - Name: rebootInstance
   Action: ACS::ExecuteAPI
-  Description: Restarts the ECS instance with the specified instance ID.
+  Description:
+    en: Restarts the ECS instance
+    zh-cn: 重启ECS实例
   Properties:
     Service: ECS
     API: RebootInstance
@@ -68,7 +88,9 @@ Tasks:
       InstanceId: '{{ instanceId }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
-  Description: Waits for ECS instance to enter running status.
+  Description:
+    en: Waits for ECS instance to enter Running status
+    zh-cn: 等待ECS实例至运行中状态
   Properties:
     Service: ECS
     API: DescribeInstances

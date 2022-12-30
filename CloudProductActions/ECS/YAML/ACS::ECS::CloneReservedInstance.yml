@@ -1,0 +1,114 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::CloneReservedInstance
+  name-zh-cn: 克隆预留实例券
+  en: Clone reserved instance
+  zh-cn: 克隆预留实例券
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Default: '{{ ACS::RegionId }}'
+  reservedInstanceId:
+    Description:
+      en: The ID of reserved instance
+      zh-cn: 预留实例券ID
+    Type: String
+  period:
+    Description:
+      en: The term of the reserved instance
+      zh-cn: 购买预留实例券的时长
+    Type: Number
+  periodUnit:
+    Description:
+      en: The term unit of the reserved instance
+      zh-cn: 购买预留实例券的时长单位
+    Type: String
+  offeringType:
+    Description:
+      en: Payment Types for Reserved Instances
+      zh-cn: 预留实例券的付款类型
+    Type: String
+    AllowedValues:
+      - No Upfront
+      - Partial Upfront
+      - All Upfront
+    Default: All Upfront
+Tasks:
+  - Name: describeReservedInstances
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Queries purchased reserved instances infos
+      zh-cn: 获取已购买预留实例券的信息
+    Properties:
+      Service: ECS
+      API: DescribeReservedInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ReservedInstanceId:
+          - '{{ reservedInstanceId }}'
+    Outputs:
+      instanceType:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].InstanceType'
+      resourceGroupId:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].ResourceGroupId'
+      zoneId:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].ZoneId'
+      scope:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].Scope'
+      instanceAmount:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].InstanceAmount'
+      description:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].Description'
+      platform:
+        Type: String
+        ValueSelector: '.ReservedInstances.ReservedInstance[].Platform'
+      tags:
+        Type: List
+        ValueSelector: '.ReservedInstances.ReservedInstance[].Tags'
+  - Name: purchaseReservedInstance
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Purchases new reserved instances
+      zh-cn: 购买新预留实例券
+    Properties:
+      Service: ECS
+      API: PurchaseReservedInstancesOffering
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceType: '{{ describeReservedInstances.instanceType }}'
+        ResourceGroupId: '{{ describeReservedInstances.ResourceGroupId }}'
+        ZoneId: '{{ describeReservedInstances.zoneId }}'
+        Scope: '{{ describeReservedInstances.scope }}'
+        InstanceAmount: '{{ describeReservedInstances.instanceAmount }}'
+        Description: '{{ describeReservedInstances.description }}'
+        Platform: '{{ describeReservedInstances.platform }}'
+        Period: '{{ period }}'
+        PeriodUnit: '{{ periodUnit }}'
+        OfferingType: '{{ offeringType }}'
+        Tags:
+          'Fn::If':
+            - 'Fn::Equals':
+                - - Null
+                - '{{ describeReservedInstances.tags }}'
+            - Null
+            - 'Fn::Jq':
+                - All
+                - '.[].Tag | .[] | {"Key": .TagKey, "Value": .TagValue}'
+                - '{{describeReservedInstances.tags}}'
+    Outputs:
+      reservedInstanceId:
+        Type: String
+        ValueSelector: 'ReservedInstanceIdSets.ReservedInstanceId[]'
+Outputs:
+  reservedInstanceId:
+    Type: String
+    Value: '{{ purchaseReservedInstance.reservedInstanceId }}'

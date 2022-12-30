@@ -1,0 +1,498 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Determine computeNest service instance‘s upgrade type and perform the upgrade",
+    "zh-cn": "通过Type字段判断服务实例升级类型并执行对应升级操作",
+    "name-en": "ACS::CN::DetermineUpgradeServiceInstanceTypeAndPerformUpgrade",
+    "name-zh-cn": "判断服务实例升级类型并执行对应升级操作"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "Region",
+        "zh-cn": "地域"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "serviceInstanceId": {
+      "Description": {
+        "en": "The ID of the ComputeNest service instance",
+        "zh-cn": "计算巢服务实例ID"
+      },
+      "Type": "String"
+    },
+    "resourceName": {
+      "Description": {
+        "en": "The resource name of ECS instance",
+        "zh-cn": "运行命令的ECS实例资源名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "applicationGroupName": {
+      "Description": {
+        "en": "The applicationGroup name of ECS instance",
+        "zh-cn": "运行命令的ECS实例应用分组名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "artifactsUrl": {
+      "Description": {
+        "en": "软件包地址",
+        "zh-cn": "The URL of file artifacts"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "artifactsDownloadDirectory": {
+      "Description": {
+        "en": "软件包下载目录",
+        "zh-cn": "The artifacts download to directory"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "commandType": {
+      "Label": {
+        "en": "CommandType",
+        "zh-cn": "命令类型"
+      },
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "ECSCommandType"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunShellScript",
+        "RunPythonScript",
+        "RunPerlScript",
+        "RunBatScript",
+        "RunPowerShellScript",
+        ""
+      ],
+      "Default": "RunShellScript"
+    },
+    "commandContent": {
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "命令内容"
+      },
+      "Type": "String",
+      "MaxLength": 16384,
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
+      "AssociationPropertyMetadata": {
+        "CommandType": "${commandType}"
+      }
+    },
+    "workingDir": {
+      "Description": {
+        "en": "Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32",
+        "zh-cn": "Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32"
+      },
+      "Label": {
+        "en": "WorkingDir",
+        "zh-cn": "运行目录"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Value": [
+          {
+            "Condition": {
+              "Fn::Or": [
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunShellScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPythonScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPerlScript"
+                  ]
+                }
+              ]
+            },
+            "Value": "/root"
+          },
+          {
+            "Condition": {
+              "Fn::Or": [
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunBatScript"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "${commandType}",
+                    "RunPowerShellScript"
+                  ]
+                }
+              ]
+            },
+            "Value": "C:\\\\Windows\\\\System32"
+          }
+        ]
+      }
+    },
+    "timeout": {
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "超时时间"
+      },
+      "Type": "Number",
+      "Default": 3600
+    },
+    "enableParameter": {
+      "Label": {
+        "en": "EnableParameter",
+        "zh-cn": "命令中是否包含加密参数或自定义参数"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "parameters": {
+      "Description": {
+        "en": "The parameters of the command",
+        "zh-cn": "命令参数"
+      },
+      "Type": "Json",
+      "Default": {}
+    },
+    "whetherModifyEssLifecycleHook": {
+      "Description": {
+        "en": "The parameters of the command",
+        "zh-cn": "是否更新伸缩租生命周期挂钩"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "imageId": {
+      "Description": {
+        "en": "Image id",
+        "zh-cn": "镜像Id"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "type": {
+      "Description": {
+        "en": "Type",
+        "zh-cn": "升级类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RunCommand",
+        "ReplaceSystemDisk"
+      ]
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getEssInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries scaling group",
+        "zh-cn": "获取伸缩组信息"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ListTagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceType": "scalinggroup",
+          "Tags": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "",
+                  "{{ applicationGroupName }}"
+                ]
+              },
+              [
+                {
+                  "Key": "acs:computenest:serviceInstanceId",
+                  "Value": "{{ serviceInstanceId }}"
+                }
+              ],
+              [
+                {
+                  "Key": "acs:computenest:serviceInstanceId",
+                  "Value": "{{ serviceInstanceId }}"
+                },
+                {
+                  "Key": "acs:computenest:applicationGroup",
+                  "Value": "{{ applicationGroupName }}"
+                }
+              ]
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "resourceIds": {
+          "Type": "List",
+          "ValueSelector": "TagResources.TagResource[].ResourceId"
+        }
+      }
+    },
+    {
+      "Name": "modifyScalingGroupImageConfiguration",
+      "When": {
+        "Fn::And": [
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "{{ imageId }}",
+                ""
+              ]
+            }
+          },
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "{{ getEssInstance.resourceIds }}",
+                []
+              ]
+            }
+          }
+        ]
+      },
+      "Action": "ACS::ESS::ModifyScalingGroupImageConfiguration",
+      "Description": {
+        "en": "Modify scaling group image configuration",
+        "zh-cn": "修改伸缩组的镜像配置"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "imageId": "{{ imageId }}",
+        "scalingGroupId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        },
+        "Items": "{{ getEssInstance.resourceIds }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": ".invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "ModifyScalingGroupLifecycleHook",
+      "When": {
+        "Fn::And": [
+          {
+            "Fn::Equals": [
+              true,
+              "{{ whetherModifyEssLifecycleHook }}"
+            ]
+          },
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "{{ getEssInstance.resourceIds }}",
+                []
+              ]
+            }
+          }
+        ]
+      },
+      "Action": "ACS::ESS::ModifyScalingGroupLifecycleHook",
+      "Description": {
+        "en": "Modify scaling group lifecycle hook",
+        "zh-cn": "修改伸缩组的生命周期挂钩配置"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "scalingGroupId": "{{ ACS::TaskLoopItem }}",
+        "lifecycleHookName": "LifecycleHookByComputeNestArtifact",
+        "lifecycleTransition": "SCALE_OUT",
+        "notificationMetadata": "{\"sourcePath\":\"{{ artifactsUrl }}\",\"destinationDir\":\"{{ artifactsDownloadDirectory }}\",\"commandContent\":\"{{ commandContent }}\"}"
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        },
+        "Items": "{{ getEssInstance.resourceIds }}"
+      }
+    },
+    {
+      "Name": "getEhpcInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries scaling group",
+        "zh-cn": "获取弹性高性能计算集群ID"
+      },
+      "Properties": {
+        "Service": "TAG",
+        "API": "ListTagResources",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceARN": [
+            "arn:acs:ehpc:*:*:cluster/*"
+          ],
+          "Tags": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "",
+                  "{{ applicationGroupName }}"
+                ]
+              },
+              {
+                "acs:computenest:serviceInstanceId": "{{ serviceInstanceId }}"
+              },
+              {
+                "acs:computenest:serviceInstanceId": "{{ serviceInstanceId }}",
+                "acs:computenest:applicationGroup": "{{ applicationGroupName }}"
+              }
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "resourceIds": {
+          "Type": "List",
+          "ValueSelector": "TagResources[].ResourceARN"
+        }
+      }
+    },
+    {
+      "Name": "modifyEhpcImageConfiguration",
+      "When": {
+        "Fn::And": [
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "{{ imageId }}",
+                ""
+              ]
+            }
+          },
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "{{ getEhpcInstance.resourceIds }}",
+                []
+              ]
+            }
+          }
+        ]
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify E-HPC image configuration",
+        "zh-cn": "修改弹性高性能计算的镜像配置"
+      },
+      "Properties": {
+        "Service": "EHPC",
+        "API": "ModifyClusterAttributes",
+        "Parameters": {
+          "ClusterId": {
+            "Fn::Last": {
+              "Fn::Split": [
+                "cluster/",
+                "{{ ACS::TaskLoopItem }}"
+              ]
+            }
+          },
+          "ImageId": "{{ imageId }}",
+          "RegionId": "{{ regionId }}"
+        }
+      },
+      "Loop": {
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        },
+        "Items": "{{ getEhpcInstance.resourceIds }}"
+      }
+    },
+    {
+      "Name": "upgradeServiceInstanceByRunCommand",
+      "When": {
+        "Fn::Equals": [
+          "{{ type }}",
+          "RunCommand"
+        ]
+      },
+      "Description": {
+        "en": "upgrade service instance by oss file",
+        "zh-cn": "通过下载OSS文件与运行命令执行升级"
+      },
+      "Action": "ACS::CN::UpgradeServiceInstanceByRunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "serviceInstanceId": "{{ serviceInstanceId }}",
+        "resourceName": "{{ resourceName }}",
+        "applicationGroupName": "{{ applicationGroupName }}",
+        "artifactsUrl": "{{ artifactsUrl }}",
+        "artifactsDownloadDirectory": "{{ artifactsDownloadDirectory }}",
+        "commandType": "{{ commandType }}",
+        "commandContent": "{{ commandContent }}",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}",
+        "enableParameter": "{{ enableParameter }}",
+        "parameters": "{{ parameters }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    },
+    {
+      "Name": "upgradeServiceInstanceByReplaceSystemDisk",
+      "When": {
+        "Fn::Equals": [
+          "{{ type }}",
+          "ReplaceSystemDisk"
+        ]
+      },
+      "Action": "ACS::CN::UpgradeServiceInstanceByReplaceSystemDisk",
+      "Description": {
+        "en": "Execute command to upgrade service instance",
+        "zh-cn": "通过替换Ecs镜像执行升级"
+      },
+      "Properties": {
+        "serviceInstanceId": "{{ serviceInstanceId }}",
+        "applicationGroupName": "{{ applicationGroupName }}",
+        "regionId": "{{ regionId }}",
+        "imageId": "{{ imageId}}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        }
+      }
+    }
+  ]
+}

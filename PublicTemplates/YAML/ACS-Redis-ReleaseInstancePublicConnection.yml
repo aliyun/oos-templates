@@ -1,0 +1,85 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Release the public address of Redis instance
+  zh-cn: 释放Redis实例的外网地址
+  name-en: ACS-Redis-ReleaseInstancePublicConnection
+  name-zh-cn: 释放Redis实例的外网地址
+  categories:
+    - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: The id of Redis instances
+      zh-cn: Redis实例ID
+    Type: String
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeDBInstanceNetInfo
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query the ip type and address of a Redis instance
+      zh-cn: 查询Redis的连接地址和地址类型
+    Properties:
+      Service: R-KVSTORE
+      API: DescribeDBInstanceNetInfo
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+    Outputs:
+      connectionString:
+        Type: String
+        ValueSelector: '.NetInfoItems.InstanceNetInfo[] | select(.IPType=="Public") | .ConnectionString'
+  - Name: checkPublicAddress
+    Action: 'ACS::Choice'
+    Description:
+      En: Whether to release instance public connection
+      Zh-cn: 是否释放Redis实例的外网地址
+    Properties:
+      DefaultTask: releaseInstancePublicConnection
+      Choices:
+        - When:
+            'Fn::Equals':
+              - Null
+              - '{{ describeDBInstanceNetInfo.connectionString }}'
+          NextTask: 'ACS::END'
+  - Name: releaseInstancePublicConnection
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      En: Release the public address of Redis instances
+      Zh-cn: 释放Redis实例的外网地址
+    Properties:
+      Service: R-KVSTORE
+      API: ReleaseInstancePublicConnection
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+        CurrentConnectionString: '{{ describeDBInstanceNetInfo.connectionString }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

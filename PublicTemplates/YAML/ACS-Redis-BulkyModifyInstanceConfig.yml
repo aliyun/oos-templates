@@ -1,0 +1,82 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Modifies configuration parameters of redis instances
+  zh-cn: 更改Redis实例的参数配置
+  name-en: ACS-Redis-BulkyModifyInstanceConfig
+  name-zh-cn: 更改Redis实例的参数配置
+  categories:
+    - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Label:
+      en: The id of redis instances
+      zh-cn: redis实例ID
+    Type: List
+  config:
+    Label:
+      en: The configuration of the instance in the JSON format
+      zh-cn: 实例的配置参数，格式为JSON
+    Type: String
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ModifyInstanceConfig
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modifies configuration parameters of redis instances
+      zh-cn: 更改redis实例的参数配置
+    Properties:
+      Service: R-KVSTORE
+      API: ModifyInstanceConfig
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ ACS::TaskLoopItem }}'
+        Config: '{{ config }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - config
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

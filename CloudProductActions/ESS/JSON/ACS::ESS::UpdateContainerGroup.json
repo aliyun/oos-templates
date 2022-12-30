@@ -1,0 +1,234 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ESS::UpdateContainerGroup",
+    "name-zh-cn": "更新ESS容器组",
+    "en": "Update ESS contain group",
+    "zh-cn": "更新ESS容器组"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "rollBack": {
+      "Description": {
+        "en": "Whether to rollback",
+        "zh-cn": "是否回滚"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false"
+    },
+    "containerConfigure": {
+      "Description": {
+        "en": "The container configure",
+        "zh-cn": "容器配置"
+      },
+      "Type": "Json"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The id of ECI instance",
+        "zh-cn": "ECI实例ID"
+      },
+      "Type": "String"
+    },
+    "scalingGroupId": {
+      "Description": {
+        "en": "The id of scaling group",
+        "zh-cn": "伸缩组ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstanceLifecycleState",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get ECI instance lifecycle status",
+        "zh-cn": "获取ECI实例生命周期挂钩的状态"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "DescribeScalingInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "lifecycleState": {
+          "Type": "String",
+          "ValueSelector": "ScalingInstances.ScalingInstance[].LifecycleState"
+        }
+      }
+    },
+    {
+      "Name": "whetherLifecycleStateIsStandby",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by lifecycle status",
+        "zh-cn": "根据生命周期挂钩的状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "enterStandby",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Standby",
+                "{{ getInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "updateContainerGroup"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "enterStandby",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for ECI instance enter to standby status",
+        "zh-cn": "等待ECI实例进入备用中状态"
+      },
+      "Retries": 30,
+      "Delay": 10,
+      "DelayType": "Constant",
+      "Properties": {
+        "Service": "ESS",
+        "API": "EnterStandby",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    },
+    {
+      "Name": "updateContainerGroup",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Update container group",
+        "zh-cn": "更新容器组"
+      },
+      "Properties": {
+        "Service": "ECI",
+        "API": "UpdateContainerGroup",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "Container": "{{ containerConfigure }}",
+          "ContainerGroupId": "{{ instanceId }}",
+          "UpdateType": "IncrementalUpdate"
+        }
+      }
+    },
+    {
+      "Name": "getContainerGroups",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Get container groups status",
+        "zh-cn": "获取容器组状态"
+      },
+      "Retries": 20,
+      "Properties": {
+        "Service": "ECI",
+        "API": "DescribeContainerGroups",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ContainerGroupIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "StopRetryValues": [
+          "Failed"
+        ],
+        "PropertySelector": ".ContainerGroups[].Status"
+      }
+    },
+    {
+      "Name": "whetherToExitStandBy",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by lifecycle status",
+        "zh-cn": "根据生命周期挂钩状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "exitStandBy",
+        "Choices": [
+          {
+            "When": {
+              "Fn::And": [
+                {
+                  "Fn::Equals": [
+                    "Standby",
+                    "{{ getInstanceLifecycleState.lifecycleState }}"
+                  ]
+                },
+                {
+                  "Fn::Equals": [
+                    "false",
+                    "{{ rollBack }}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "exitStandBy",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Modifies the state of ECI instances in a scaling group from Standby to Running",
+        "zh-cn": "设置伸缩组内处于备用状态的ECI实例为运行中状态"
+      },
+      "Retries": 30,
+      "Delay": 10,
+      "DelayType": "Constant",
+      "Properties": {
+        "Service": "ESS",
+        "API": "ExitStandBy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceId": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "CodeNotExists"
+        ],
+        "StopRetryValues": [
+          "OtherCodes"
+        ],
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    }
+  ]
+}

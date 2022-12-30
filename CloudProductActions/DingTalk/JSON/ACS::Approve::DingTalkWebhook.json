@@ -1,13 +1,24 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details.",
+  "Description": {
+    "name-en": "ACS::Approve::DingTalkWebhook",
+    "name-zh-cn": "通过webhook向DingTalk发送请求批准的通知",
+    "en": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details",
+    "zh-cn": "通过webhook向DingTalk发送请求批准的通知。执行将保持暂停状态，直到批准或拒绝。 请参阅https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq获取详细信息"
+  },
   "Parameters": {
     "webhook": {
-      "Description": "DingTalk webhook to notify.",
+      "Description": {
+        "en": "DingTalk webhook to notify",
+        "zh-cn": "DingTalk webhook来通知"
+      },
       "Type": "String"
     },
     "msgtype": {
-      "Description": "Message types.",
+      "Description": {
+        "en": "Message types",
+        "zh-cn": "消息类型"
+      },
       "Type": "String",
       "AllowedValues": [
         "text",
@@ -16,22 +27,34 @@
       ]
     },
     "text": {
-      "Description": "Text param. If msgtype is text, this field is needed.",
+      "Description": {
+        "en": "Text param. If msgtype is text, this field is needed",
+        "zh-cn": "文本参数。如果msgtype为text，则需要输入该字段"
+      },
       "Type": "Json",
       "Default": {}
     },
     "link": {
-      "Description": "Link param. If msgtype is link, this field is needed.",
+      "Description": {
+        "en": "Link param. If msgtype is link, this field is needed",
+        "zh-cn": "链接参数。如果“msgtype”为“link”，则需要输入该字段"
+      },
       "Type": "Json",
       "Default": {}
     },
     "markdown": {
-      "Description": "MarkDown param. If msgtype is markdown, this field is needed.",
+      "Description": {
+        "en": "MarkDown param. If msgtype is markdown, this field is needed",
+        "zh-cn": "MarkDown参数。如果msgtype为markdown，则需要此字段"
+      },
       "Type": "Json",
       "Default": {}
     },
     "at": {
-      "Description": "@ people to read the notification.",
+      "Description": {
+        "en": "@ people to read the notification",
+        "zh-cn": "@人们阅读通知"
+      },
       "Type": "Json",
       "Default": {}
     }
@@ -40,7 +63,10 @@
     {
       "Name": "approveDingTaskWebhook",
       "Action": "ACS::Approve",
-      "Description": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details.",
+      "Description": {
+        "en": "Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq for details",
+        "zh-cn": "通过webhook向DingTalk发送请求批准的通知。执行仍暂停直到批准或拒绝。 请参阅https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq获取详细信息"
+      },
       "Properties": {
         "NotifyType": "WebHook",
         "WebHook": {

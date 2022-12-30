@@ -1,27 +1,38 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky delete ECS postpaid instances.
-  zh-cn: 批量删除ECS按量付费实例。
+  en: Bulky delete ECS postpaid instances
+  zh-cn: 批量删除ECS按量付费实例
   name-en: ACS-ECS-BulkyDeleteInstances
   name-zh-cn: 批量删除ECS实例
   categories:
     - instance_manage
 Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
   force:
-    Description:
-      en: Whether to force the release of a running instance.
-      zh-cn: 是否强制释放正在运行的实例。
+    Label:
+      en: Force
+      zh-cn: 是否强制释放正在运行的实例
     Type: Boolean
     Default: false
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -29,20 +40,21 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: getInstance
   Description:
-    en: Views the ECS instances.
-    zh-cn: 获取ECS实例。
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
   Action: ACS::SelectTargets
   Properties:
     ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
     Filters:
       - '{{ targets }}'
   Outputs:
@@ -52,14 +64,38 @@ Tasks:
 - Name: deleteInstance
   Action: ACS::ExecuteAPI
   Description:
-    en: Deletes ECS instance with the specified instance ID.
-    zh-cn: 通过指定实例ID删除实例。
+    en: Deletes ECS instance with the specified instance ID
+    zh-cn: 通过指定实例ID删除实例
   Properties:
     Service: ECS
     API: DeleteInstance
     Parameters:
+      RegionId: '{{ regionId }}'
       InstanceId: '{{ ACS::TaskLoopItem }}'
       Force: '{{ force }}'
   Loop:
     RateControl: '{{ rateControl }}'
     Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - force
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -1,47 +1,69 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates a cloud assistant command and triggers it on one ECS instance.
+Description:
+  name-en: ACS::ESS::RunCommand
+  name-zh-cn: 在伸缩组内的ECS实例中执行云助手命令。
+  en: Creates cloud assistant command and triggers it on one ECS instance in scaling group
+  zh-cn: 在伸缩组内ECS实例上执行云助手命令
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   rollBack:
-    Description: The ID of region.
+    Description:
+      en: Whether to rollback
+      zh-cn: 是否回滚
     Type: String
     AllowedValues:
       - 'true'
       - 'false'
     Default: 'false'
   commandContent:
-    Description: The content of command.
+    Description:
+      en: The content of command
+      zh-cn: 云助手命令
     Type: String
   instanceId:
-    Description: The ID of ECS instance that will invoke command.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
     MinLength: 1
     MaxLength: 30
   commandType:
-    Description: The type of command.
+    Description:
+      en: The type of command
+      zh-cn: 云助手命令类型
     Type: String
     AllowedValues:
     - RunBatScript
     - RunPowerShellScript
     - RunShellScript
   workingDir:
-    Description: The directory where the created command runs on the ECS instances.
+    Description:
+      en: The directory where the created command runs on the ECS instances
+      zh-cn: 云助手命令在实例中执行的目录
     Type: String
     Default: ""
   timeout:
-    Description: The value of the invocation timeout period of a command on ECS instances.
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances
+      zh-cn: 云助手命令执行超时时间
     Type: Number
     Default: 600
   scalingGroupId:
-    Description: The id of scaling group.
+    Description:
+      en: The ID of scaling group
+      zh-cn: 伸缩组ID
     Type: String
 Tasks:
 - Name: viewInstanceLifecycleState
   Action: ACS::ExecuteApi
-  Description: Views ECS instance lifecycle status.
+  Description:
+    en: Queries ECS instance lifecycle status
+    zh-cn: 获取实例生命周期挂钩的状态
   Properties:
     Service: ESS
     API: DescribeScalingInstances
@@ -54,7 +76,9 @@ Tasks:
       ValueSelector: ScalingInstances.ScalingInstance[].LifecycleState
 - Name: whetherLifecycleStateIsStandby
   Action: 'ACS::Choice'
-  Description: Choose next task by lifecycle status.
+  Description:
+    en: Choose next task by lifecycle status
+    zh-cn: 根据实例生命周期挂钩的状态选择下一个任务
   Properties:
     DefaultTask: enterStandby
     Choices:
@@ -65,9 +89,12 @@ Tasks:
         NextTask: runCommand
 - Name: enterStandby
   Action: ACS::WaitFor
-  Description: Enter standby.
-  Retries: 15
+  Description:
+    en: Waits ECS instance to enter standby status
+    zh-cn: 等待实例进入备用中状态
+  Retries: 30
   Delay: 10
+  DelayType: Constant
   Properties:
     Service: ESS
     API: EnterStandby
@@ -83,7 +110,9 @@ Tasks:
     PropertySelector: '.| if .Code==null then "CodeNotExists" else if .Code=="BackendServer.configuring" then "RetryCodeExists" else "OtherCodes" end end'
 - Name: runCommand
   Action: 'ACS::ExecuteAPI'
-  Description: Executes a cloud assistant command.
+  Description:
+    en: Executes cloud assistant command on ECS instance
+    zh-cn: 在ECS实例中执行云助手命令
   Properties:
     Service: ECS
     API: RunCommand
@@ -102,7 +131,9 @@ Tasks:
       ValueSelector: InvokeId
 - Name: untilInvocationReady
   Action: ACS::WaitFor
-  Description: Waits for the command to be completed.
+  Description:
+    en: Waits for the command to be completed
+    zh-cn: 等待云助手命令执行结束
   OnError: ACS::END
   Retries: 20
   Properties:
@@ -118,8 +149,9 @@ Tasks:
     PropertySelector: Invocations.Invocation[].InvokeStatus
 - Name: describeInvocationResults
   Action: ACS::ExecuteAPI
-  Description: Views the command output of a cloud assistant command in the specified ECS
-    instance.
+  Description:
+    en: Queries the command output of a cloud assistant command in the specified ECS instance
+    zh-cn: 获取云助手命令执行结果
   Properties:
     Service: ECS
     API: DescribeInvocationResults
@@ -132,7 +164,9 @@ Tasks:
       ValueSelector: 'Invocation.InvocationResults.InvocationResult[].Output'
 - Name: checkInvocationResult
   Action: 'ACS::CheckFor'
-  Description: Check the command exitcode of a cloud assistant command.
+  Description:
+    en: Check whether the command ExitCode is 0
+    zh-cn: 检查命令执行ExitCode是否为0
   OnError: 'ACS::END'
   Properties:
     Service: ECS
@@ -145,7 +179,9 @@ Tasks:
       - 0
 - Name: whetherToRollbackExitStandBy
   Action: 'ACS::Choice'
-  Description: Choose next task by rollback status.
+  Description:
+    en: Choose next task by rollback parameter
+    zh-cn: 根据回滚参数选择下一个任务
   Properties:
     DefaultTask: whetherToExitStandBy
     Choices:
@@ -156,7 +192,9 @@ Tasks:
         NextTask: exitStandBy
 - Name: whetherToExitStandBy
   Action: 'ACS::Choice'
-  Description: Choose next task by lifecycle status.
+  Description:
+    en: Choose next task by lifecycle status
+    zh-cn: 根据生命周期挂钩状态选择下一个任务
   Properties:
     DefaultTask: exitStandBy
     Choices:
@@ -167,9 +205,12 @@ Tasks:
         NextTask: ACS::END
 - Name: exitStandBy
   Action: ACS::WaitFor
-  Description: Exit standby.
-  Retries: 15
+  Description:
+    en: Modifies the state of ECS instances in a scaling group from Standby to Running
+    zh-cn: 设置伸缩组内处于备用状态的ECS实例为运行中状态
+  Retries: 30
   Delay: 10
+  DelayType: Constant
   Properties:
     Service: ESS
     API: ExitStandBy

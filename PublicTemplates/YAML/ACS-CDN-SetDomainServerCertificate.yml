@@ -1,28 +1,28 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Set domain server certificate.
-  zh-cn: 启用指定域名下证书功能。
+  en: Set domain server certificate
+  zh-cn: 启用指定域名下证书功能
   name-en: ACS-CDN-SetDomainServerCertificate
   name-zh-cn: 启用指定域名下证书功能
   categories:
     - security
 Parameters:
   regionId:
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Type: String
     Default: '{{ ACS::RegionId }}'
   domainName:
-    Description:
-      en: The name of the CDN domain for which the certificate is enabled.
-      zh-cn: 域名。
+    Label:
+      en: DomainName
+      zh-cn: 域名
     Type: String
   serverCertificateStatus:
-    Description:
-      en: Specifies whether to enable the SSL certificate.
-      zh-cn: HTTPS证书是否启用。
+    Label:
+      en: ServerCertificateStatus
+      zh-cn: HTTPS证书是否启用
     Type: String
     AllowedValues:
       - 'on'
@@ -30,40 +30,52 @@ Parameters:
     Default: 'on'
   certType:
     Description:
-      en: The type of cert.
-      zh-cn: 证书类型。当证书类型为cas时，PrivateKey无需传参。
+      en: When the certificate type is cas, PrivateKey does not need to pass parameters
+      zh-cn: 当证书类型为cas时，PrivateKey无需传参
+    Label:
+      en: CertType
+      zh-cn: 证书类型
     Type: String
     AllowedValues:
       - cas
       - free
       - upload
   certName:
-    Description:
-      en: The name of the certificate.
+    Label:
+      en: CertName
       zh-cn: 证书名称
     Type: String
   serverCertificate:
     Description:
-      en: The content of the certificate. Specify the content of the certificate only if you enable the SSL certificate.
-      zh-cn: 安全证书内容，不启用证书则无需输入，配置证书请输入证书内容。
+      en: Specify the content of the certificate only if you enable the SSL certificate
+      zh-cn: 不启用证书则无需输入，配置证书请输入证书内容
+    Label:
+      en: ServerCertificate
+      zh-cn: 安全证书内容
     Type: String
     Default: ''
   privateKey:
     Description:
-      en: The private key. Specify the private key only if you enable the SSL certificate.
-      zh-cn: 私钥内容，不启用证书则无需输入，配置证书请输入私钥内容。
+      en: Specify the private key only if you enable the SSL certificate
+      zh-cn: 不启用证书则无需输入，配置证书请输入私钥内容
+    Label:
+      en: PrivateKey
+      zh-cn: 私钥内容
     Type: String
     Default: ''
   forceSet:
     Description:
-      en: If you set the value to 1, the system does not check the certificate name for duplicates and overwrites the information of the existing certificate with the same name.
-      zh-cn: 设置为1时，忽略证书名称重复的校验，覆盖原有同名证书信息。
+      en: If you set the value to 1, the system does not check the certificate name for duplicates and overwrites the information of the existing certificate with the same name
+      zh-cn: 设置为1时，忽略证书名称重复的校验，覆盖原有同名证书信息
+    Label:
+      en: ForceSet
+      zh-cn: 是否覆盖原有同名证书信息
     Type: String
     Default: 1
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -86,8 +98,8 @@ Tasks:
 - Name: whetherDomainIsReady
   Action: 'ACS::Choice'
   Description:
-    en: Choose next task by server eertificate status.
-    zh-cn: 根据证书的状态选择下一个任务。
+    en: Choose next task by server eertificate status
+    zh-cn: 根据证书的状态选择下一个任务
   Properties:
     DefaultTask: SetDomainServerCertificate
     Choices:
@@ -112,3 +124,25 @@ Tasks:
       ServerCertificate: '{{ serverCertificate }}'
       PrivateKey: '{{ privateKey }}'
       ForceSet: '{{ forceSet }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - domainName
+          - serverCertificateStatus
+          - certType
+          - certName
+          - serverCertificate
+          - privateKey
+          - forceSet
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

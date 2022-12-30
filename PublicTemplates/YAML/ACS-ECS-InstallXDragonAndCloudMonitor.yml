@@ -1,27 +1,47 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky install XDragon hardware detection plug-in, cloud monitor, smartmontools, or uninstall and update XDragon hardware detection plug-in.
-  zh-cn: '批量安装神龙硬件检测插件、云监控、smartmontools,以及卸载与更新神龙硬件检测插件。'
+  en: Bulky install XDragon hardware detection plug-in, cloud monitor, smartmontools, or uninstall and update XDragon hardware detection plug-in
+  zh-cn: 批量安装神龙硬件检测插件、云监控、smartmontools,以及卸载与更新神龙硬件检测插件
   name-en: ACS-ECS-InstallXDragonAndCloudMonitor
   name-zh-cn: 批量安装神龙监控插件
   categories:
     - run_command
 Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
   action:
     Type: String
+    Label:
+      en: Action
+      zh-cn: 操作类型
     AllowedValues:
       - install
       - update
       - remove
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: ECS实例中执行命令的超时时间
+    Type: Number
+    Default: 600
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -29,20 +49,21 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:
-      en: Views the ECS instances.
-      zh-cn: 获取ECS实例。
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
     Action: ACS::SelectTargets
     Properties:
       ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
     Outputs:
@@ -51,8 +72,9 @@ Tasks:
         ValueSelector: Instances.Instance[].InstanceId
   - Name: runCommand
     Action: 'ACS::ECS::RunCommand'
-    Description: Invokes ECS instance command and gets invocation output.
+    Description: Invokes ECS instance command and gets invocation output
     Properties:
+      regionId: '{{ regionId }}'
       commandContent:
         'Fn::Join':
           - |+
@@ -183,6 +205,7 @@ Tasks:
             - ' aliyun_installer -u xdragon_hardware_detect_plugin'
             - fi
       instanceId: '{{ ACS::TaskLoopItem }}'
+      timeout: '{{ timeout }}'
       commandType: RunShellScript
     Loop:
       Items: '{{ getInstance.instanceIds }}'
@@ -199,3 +222,27 @@ Outputs:
   commandOutputs:
     Type: String
     Value: '{{ runCommand.commandOutputs }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - action
+          - timeout
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

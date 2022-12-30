@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Cross Regions copy image.
-  zh-cn: 批量跨地域克隆镜像。
+  en: Cross Regions copy image
+  zh-cn: 批量跨地域克隆镜像
   name-en: ACS-ECS-BulkyCopyImage
   name-zh-cn: 批量跨地域克隆镜像
   categories:
@@ -9,23 +9,23 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   imageId:
-    Description:
-      en: The ID of the image to clone.
-      zh-cn: 源镜像ID。
+    Label:
+      en: ImageId
+      zh-cn: 源镜像ID
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
     AssociationPropertyMetadata:
       RegionId: regionId
   targetRegionIds:
-    Description:
-      en: The Target Region Ids.
-      zh-cn: 目标地域ID。
+    Label:
+      en: TargetRegionIds
+      zh-cn: 目标地域ID
     Type: List
     AllowedValues:
       - all-regions
@@ -38,6 +38,8 @@ Parameters:
       - cn-shenzhen
       - cn-chengdu
       - cn-hongkong
+      - cn-heyuan
+      - cn-wulanchabu
       - ap-northeast-1
       - ap-southeast-1
       - ap-southeast-2
@@ -49,12 +51,19 @@ Parameters:
       - eu-west-1
       - me-east-1
       - eu-central-1
+      - cn-guangzhou
+      - ap-southeast-6
+      - cn-fuzhou
+      - ap-northeast-2
+      - ap-southeast-7
+      - me-central-1
+      - cn-nanjing
     Default:
       - all-regions
   rateControl:
-    Description:
-      en: Concurrency rate of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -62,9 +71,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 5
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -72,8 +81,8 @@ Tasks:
   - Name: queryAllAvailableRegions
     Action: 'ACS::ExecuteAPI'
     Description:
-      en: View all available regions.
-      zh-cn: 查询当前所有可用地域。
+      en: View all available regions
+      zh-cn: 查询当前所有可用地域
     Properties:
       Service: ECS
       API: DescribeRegions
@@ -90,8 +99,8 @@ Tasks:
   - Name: whetherCloneToAllRegions
     Action: 'ACS::Choice'
     Description:
-      en: Choose next task by targetRegionIds Chosen.
-      zh-cn: 根据所选目的地域判断下一步执行。
+      en: Choose next task by targetRegionIds Chosen
+      zh-cn: 根据所选目的地域判断下一步执行
     Properties:
       DefaultTask: copyImage
       Choices:
@@ -105,8 +114,8 @@ Tasks:
     OnSuccess: 'ACS::END'
     OnError: 'ACS::END'
     Description:
-      en: Copy image to regions chosen.
-      zh-cn: 复制镜像到被指定的地域。
+      en: Copy image to regions chosen
+      zh-cn: 复制镜像到被指定的地域
     Properties:
       regionId: '{{ regionId }}'
       imageId: '{{ imageId }}'
@@ -125,8 +134,8 @@ Tasks:
   - Name: copyImageToAllRegions
     Action: 'ACS::ECS::CopyImage'
     Description:
-      en: Copy image to all available regions.
-      zh-cn: 复制镜像到所有可用地域。
+      en: Copy image to all available regions
+      zh-cn: 复制镜像到所有可用地域
     Properties:
       regionId: '{{ regionId }}'
       imageId: '{{ imageId }}'
@@ -152,3 +161,21 @@ Outputs:
             - '{{ queryAllAvailableRegions.allRegionsChosen }}'
         - '{{ copyImageToAllRegions.imageIdsWithRegion }}'
         - '{{ copyImage.imageIdsWithRegion }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - imageId
+          - targetRegionIds
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

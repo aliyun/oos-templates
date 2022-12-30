@@ -1,18 +1,32 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Views the ECS instances by specifying tag.",
+  "Description": {
+    "name-en": "ACS::ECS::DescribeInstancesByTag",
+    "name-zh-cn": "通过指定标签查看ECS实例",
+    "en": "Views the ECS instances by specifying tag",
+    "zh-cn": "通过指定标签查看ECS实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "tagKey": {
-      "Description": "The tag key for query ECS instances.",
+      "Description": {
+        "en": "The tag key for query ECS instances",
+        "zh-cn": "用于查询ECS实例的标记键"
+      },
       "Type": "String"
     },
     "tagValue": {
-      "Description": "The tag key for query ECS instances.",
+      "Description": {
+        "en": "The tag value for query ECS instances",
+        "zh-cn": "用于查询ECS实例的标值"
+      },
       "Type": "String"
     }
   },
@@ -20,7 +34,10 @@
     {
       "Name": "describeInstances",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Views the ECS instances by specifying tag.",
+      "Description": {
+        "en": "Queries the ECS instances by specifying tag",
+        "zh-cn": "通过指定标签查看ECS实例"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",

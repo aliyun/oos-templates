@@ -1,0 +1,73 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Del 0.0.0.0/0 from the ip white list array of rds instances
+  zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+  name-en: ACS-RDS-BulkyModifySecurityIpsByInstanceIPArray
+  name-zh-cn: 从RDS实例IP白名单分组里删除0.0.0.0/0
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: InstanceId
+      zh-cn: RDS实例ID
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: String
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeDBInstanceIPArray
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Query SecurityIPList of a rds instance
+      zh-cn: 查询一个RDS实例包含的SecurityIPList
+    Properties:
+      Service: RDS
+      API: DescribeDBInstanceIPArrayList
+      Parameters:
+        RegionId: '{{ regionId }}'
+        DBInstanceId: '{{ instanceId }}'
+    Outputs:
+      DBInstanceIPArray:
+        Type: List
+        ValueSelector: '.Items.DBInstanceIPArray[] | {"SecurityIPList": .SecurityIPList, "DBInstanceIPArrayName": .DBInstanceIPArrayName, "WhitelistNetworkType": .WhitelistNetworkType}'
+  - Name: modifySecurityByDBInstanceIPArray
+    Action: ACS::RDS::ModifySecurityIpsByInstanceIPArray
+    Description:
+      en: Query SecurityIPList of a rds instance
+      zh-cn: 查询一个RDS实例包含的SecurityIPList
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      securityIps:
+        'Fn::Select':
+          - SecurityIPList
+          - '{{ ACS::TaskLoopItem }}'
+      instanceIPArrayName:
+        'Fn::Select':
+          - DBInstanceIPArrayName
+          - '{{ ACS::TaskLoopItem }}'
+      whitelistNetworkType:
+        'Fn::Select':
+          - WhitelistNetworkType
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ describeDBInstanceIPArray.DBInstanceIPArray }}'
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 1

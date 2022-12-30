@@ -1,0 +1,123 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky modify access control list entry
+  zh-cn: 批量修改访问控制策略组中的IP条目
+  name-en: ACS-SLB-BulkyModifyAccessControlListEntry
+  name-zh-cn: 批量修改负载均衡访问控制策略组中的IP条目
+  categories:
+    - computenest
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  action:
+    Label:
+      en: Action
+      zh-cn: 修改方式
+    Type: String
+    AllowedValues:
+      - Add
+      - Remove
+  aclIds:
+    Label:
+      en: AclIds
+      zh-cn: 访问控制策略组ID
+    AssociationProperty: ALIYUN::SLB::ACL::ACLId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: List
+  aclEntrys:
+    Label:
+      en: AclEntrys
+      zh-cn: 设置访问控制策略组
+    Description:
+      en: <ul class= "UL" >
+        <li class= "li" > format:[{"entry":"10.0.******/24", "comment":"privaterule1" },{ "entry":"192.168.******/16","comment":"privaterule2" } ]</li>
+        <li class= "li" >entry:IP entries to be added in the access control policy group. You can specify IP address segments (CIDR blocks). Multiple IP address segments are separated by commas</ Li>
+        <li class= "li" >comment:notes of access control policy group</ Li>
+        </ul>
+      zh-cn: <ul class="ul">
+        <li class="li">格式：[{"entry":"10.0.**.**/24","comment":"privaterule1"},{"entry":"192.168.**.**/16","comment":"privaterule2"}]</li>
+        <li class="li">entry：访问控制策略组中要添加的IP条目，可以指定IP地址段（CIDR block），多个IP地址段之间用逗号隔开。</li>
+        <li class="li">comment：访问控制策略组备注说明。</li>
+        </ul>
+    Type: String
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: addAccessControlListEntrys
+  When:
+    'Fn::Equals':
+      - '{{ action }}'
+      - Add
+  Action: ACS::ExecuteApi
+  Description:
+    en: Add access control list entry
+    zh-cn: 添加访问控制策略组中的IP条目
+  Properties:
+    Service: SLB
+    API: AddAccessControlListEntry
+    Parameters:
+      RegionId: '{{ regionId }}'
+      AclId: '{{ ACS::TaskLoopItem }}'
+      AclEntrys: '{{ aclEntrys }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ aclIds }}'
+- Name: removeAccessControlListEntry
+  When:
+    'Fn::Equals':
+      - '{{ action }}'
+      - Remove
+  Action: ACS::ExecuteApi
+  Description:
+    en: Remove access control list entry
+    zh-cn: 删除访问控制策略组中的IP条目
+  Properties:
+    Service: SLB
+    API: RemoveAccessControlListEntry
+    Parameters:
+      RegionId: '{{ regionId }}'
+      AclId: '{{ ACS::TaskLoopItem }}'
+      AclEntrys: '{{ aclEntrys }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ aclIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - action
+          - aclIds
+          - aclEntrys
+        Label:
+          default:
+            zh-cn: 参数设置
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

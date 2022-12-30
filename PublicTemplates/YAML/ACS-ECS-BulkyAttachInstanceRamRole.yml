@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Bulky attaches instance ram role.
-  zh-cn: 批量授予实例Ram角色。
+  en: Bulky attaches instance ram role
+  zh-cn: 批量授予实例Ram角色
   name-en: ACS-ECS-BulkyAttachInstanceRamRole
   name-zh-cn: 批量授予实例Ram角色
   categories:
@@ -9,26 +9,29 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   RamRoleName:
-    Description:
-      en: The name of Ramrole.
-      zh-cn: Ram角色名称。
+    Label:
+      en: RamRoleName
+      zh-cn: Ram角色名称
     Type: String
   targets:
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -36,17 +39,17 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: getInstance
   Description:
-    en: Views the ECS instances.
-    zh-cn: 获取ECS实例。
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
   Action: ACS::SelectTargets
   Properties:
     RegionId: '{{ regionId }}'
@@ -60,8 +63,8 @@ Tasks:
 - Name: attachInstanceRamRole
   Action: ACS::ExecuteApi
   Description:
-    en: Attach instance ram role.
-    zh-cn: 授予实例Ram角色。
+    en: Attach instance ram role
+    zh-cn: 授予实例Ram角色
   Properties:
     Service: ECS
     API: AttachInstanceRamRole
@@ -77,3 +80,26 @@ Outputs:
   instanceIds:
     Type: List
     Value: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - RamRoleName
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

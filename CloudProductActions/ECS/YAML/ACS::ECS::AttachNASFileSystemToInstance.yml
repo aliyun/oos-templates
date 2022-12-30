@@ -1,21 +1,35 @@
 FormatVersion: OOS-2019-06-01
-Description: Attach NAS file system to instance (only supports elastic contraction activities).
+Description:
+  name-en: ACS::ECS::AttachNASFileSystemToInstance
+  name-zh-cn: 挂载NAS文件系统到ECS实例
+  en: Attach NAS file system to instance (only supports elastic expansion activities)
+  zh-cn: 将NAS文件系统挂载到ECS实例（仅支持弹性扩张活动）
 Parameters:
   regionId:
-    Description: The ID of region.
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
     Type: String
   instanceId:
-    Description: The ID of the ECS instance.
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
     Type: String
   mountTargetDomain:
-    Description: The MountTargetDomain.
+    Description:
+      en: The MountTargetDomain
+      zh-cn: 挂载点域名
     Type: String
   mountDir:
-    Description: The dir to mount file systen in instance.
+    Description:
+      en: The dir to mount file systen in instance
+      zh-cn: 实例中文件系统的挂载目录
     Type: String
     Default: /mnt
   fileSystemVersion:
-    Description: The version of file system.
+    Description:
+      en: The version of file system
+      zh-cn: 文件系统的版本
     Type: String
     AllowedValues:
       - 0
@@ -24,7 +38,9 @@ Parameters:
 Tasks:
   - Name: untilInstanceReady
     Action: 'ACS::WaitFor'
-    Description: Waits for the ECS instance to enter running status.
+    Description:
+      en: Waits for the ECS instance to enter Running status
+      zh-cn: 等待ECS实例到达运行中状态
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -37,6 +53,9 @@ Tasks:
       PropertySelector: 'Instances.Instance[].Status'
   - Name: attachFileSystemToLinuxInstance
     Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Attaches file system to ECS instance
+      zh-cn: 挂载文件系统到ECS实例
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'

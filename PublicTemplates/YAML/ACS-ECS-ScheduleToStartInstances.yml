@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Schedule to starts the ECS instances.
-  zh-cn: 定时启动ECS实例。
+  en: Schedule to starts the ECS instances
+  zh-cn: 定时启动ECS实例
   name-en: ACS-ECS-ScheduleToStartInstances
   name-zh-cn: 定时启动ECS实例
   categories:
@@ -9,43 +9,52 @@ Description:
 Parameters:
   regionId:
     Type: String
-    Description:
-      en: The id of region.
-      zh-cn: 地域ID。
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
   cron:
     Description:
-      en: 'The cron expression, refer them here: https://help.aliyun.com/document_detail/169784.html'
-      zh-cn: 'cron表达式，详情参考：https://help.aliyun.com/document_detail/169784.html'
+      en: 'refer them here: https://help.aliyun.com/document_detail/169784.html'
+      zh-cn: '详情参考：https://help.aliyun.com/document_detail/169784.html'
+    Label:
+      en: CronExpression
+      zh-cn: cron表达式
     Type: String
     AssociationProperty: Cron
     Default: 0 0 12 ? * *
   endDate:
     Description:
-      en: 'The end date of time trigger. Format: yyyy-MM-ddTHH:mm:ssZ.'
-      zh-cn: '时间触发器结束时间。格式：yyyy-MM-ddTHH:mm:ssZ'
+      en: 'Format: yyyy-MM-ddTHH:mm:ssZ.'
+      zh-cn: '格式：yyyy-MM-ddTHH:mm:ssZ'
+    Label:
+      en: EndDate
+      zh-cn: 时间触发器结束时间
     Type: String
     AssociationProperty: DateTime
     AssociationPropertyMetadata:
       Format: 'YYYY-MM-DDTHH:mm:ssZ'
   timeZone:
-    Description:
-      en: The time zone.
-      zh-cn: 时区。
+    Label:
+      en: TimeZone
+      zh-cn: 时区
     Type: String
     AssociationProperty: TimeZone
     Default: UTC
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
   rateControl:
-    Description:
-      en: Concurrency ratio of task execution.
-      zh-cn: 任务执行的并发比率。
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
     Type: Json
     AssociationProperty: RateControl
     Default:
@@ -53,9 +62,9 @@ Parameters:
       MaxErrors: 0
       Concurrency: 10
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -63,8 +72,8 @@ Tasks:
 - Name: timerTrigger
   Action: ACS::TimerTrigger
   Description:
-    en: Triggers a task as scheduled by specifying Cron expression.
-    zh-cn: 通过指定Cron表达式按计划触发任务。
+    en: Triggers a task as scheduled by specifying type and expression
+    zh-cn: 通过指定触发类型和表达式按计划触发任务
   Properties:
     Type: cron
     Expression: '{{ cron }}'
@@ -99,3 +108,28 @@ Outputs:
   instanceIds:
     Type: List
     Value: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - timeZone
+          - cron
+          - endDate
+        Label:
+          default:
+            zh-cn: 定时设置
+            en: Timer Trigger Configure
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

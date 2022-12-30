@@ -1,0 +1,168 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECD::ModifyDesktopChargeType",
+    "name-zh-cn": "修改桌面的计费方式",
+    "en": "Modify desktop charge type",
+    "zh-cn": "修改桌面的计费方式"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "desktopId": {
+      "Description": {
+        "en": "The id of desktop",
+        "zh-cn": "云桌面ID"
+      },
+      "Type": "String"
+    },
+    "desktopChargeType": {
+      "Description": {
+        "en": "The ECD desktop charge type. Currently only supports conversion from postpaid to monthly prepaid, and the value is PrePaid",
+        "zh-cn": "云桌面要转换成的计费方式。目前仅支持由按量付费转换为包年包月，取值为PrePaid"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "PrePaid"
+      ],
+      "Default": "PrePaid"
+    },
+    "periodUnit": {
+      "Description": {
+        "en": "The unit of the subscription period",
+        "zh-cn": "包年包月计费方式的时长单位"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Week",
+        "Month",
+        "Year"
+      ],
+      "Default": "Month"
+    },
+    "period": {
+      "Description": {
+        "en": "Valid values: Valid values when PeriodUnit is set to Week: 1. Valid values when PeriodUnit is set to Month: 1, 2, 3, and 6. Valid values when PeriodUnit is set to Month: 1, 2, 3, 4, and 5.",
+        "zh-cn": "取值范围： 如果PeriodUnit为Week，该参数的取值范围为{“1”}。 如果PeriodUnit为Month，该参数的取值范围为{“1”, “2”, “3”, “6”}。 如果PeriodUnit为Year，该参数的取值范围为{“1”, “2”, “3”, “4”, “5”}。"
+      },
+      "Type": "Number",
+      "AllowedValues": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "Default": 1
+    },
+    "autoPay": {
+      "Description": {
+        "name-en": "Specifies whether to enable automatic payment",
+        "name-zh-cn": "是否自动支付",
+        "en": "Valid values: true: enables automatic payment. Make sure that you have sufficient balance in your account. Otherwise, abnormal orders are generated. false: generates the order with no payment made. You can log on to the EDS console and complete the payment based on the order number.",
+        "zh-cn": "取值范围： true：自动支付。请确保账户余额充足，否则会产生异常订单。 false：只产生订单，不支付。您可以根据返回的订单号登录控制台进行支付。"
+      },
+      "Type": "Boolean",
+      "Default": true
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getDesktopChargeType",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECD desktop ChargeType",
+        "zh-cn": "获取桌面的计费方式"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "desktopChargeType": {
+          "Type": "String",
+          "ValueSelector": "Desktops[].ChargeType"
+        }
+      }
+    },
+    {
+      "Name": "checkDesktopChargeType",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by Desktop ChargeType",
+        "zh-cn": "根据桌面计费方式选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "modifyDesktopChargeType",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "{{ desktopChargeType }}",
+                "{{ getDesktopChargeType.desktopChargeType }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "modifyDesktopChargeType",
+      "Description": {
+        "en": "Modifies Desktop charge type",
+        "zh-cn": "修改桌面付费类型"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ECD",
+        "API": "ModifyDesktopChargeType",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ],
+          "ChargeType": "{{ desktopChargeType }}",
+          "Period": "{{ period }}",
+          "PeriodUnit": "{{ periodUnit }}"
+        }
+      }
+    },
+    {
+      "Name": "untilDesktopChargeTypeReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the Desktops ChargeType ready",
+        "zh-cn": "等待桌面付费方式修改完成"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        },
+        "DesiredValues": [
+          "{{ desktopChargeType }}"
+        ],
+        "PropertySelector": "Desktops[].ChargeType"
+      }
+    }
+  ]
+}

@@ -1,27 +1,44 @@
 {
   "FormatVersion": "OOS-2019-06-01",
-  "Description": "Creates an elastic network interface (ENI) and attaches to an instance.",
+  "Description": {
+    "name-en": "ACS::ECS::CreateAndAttachNetworkInterface",
+    "name-zh-cn": "创建并将网卡挂载至ECS实例",
+    "en": "Creates an elastic network interface (ENI) and attaches to an instance",
+    "zh-cn": "创建一个弹性网卡并将其挂载到实例"
+  },
   "Parameters": {
     "regionId": {
-      "Description": "The ID of region.",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": "The ID of the ECS instance.",
+      "Description": {
+        "en": "The ID of the ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
       "Type": "String",
       "MinLength": 1,
       "MaxLength": 30
     },
     "securityGroupId": {
-      "Description": "The ID of the security group to which an instance belongs.",
+      "Description": {
+        "en": "The ID of the security group",
+        "zh-cn": "安全组ID"
+      },
       "Type": "String",
       "AllowedPattern": "sg-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
     "vSwitchId": {
-      "Description": "The ID of the VSwitch in the VPC.",
+      "Description": {
+        "en": "The ID of the VSwitch",
+        "zh-cn": "交换机ID"
+      },
       "Type": "String",
       "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MinLength": 1,
@@ -32,7 +49,10 @@
     {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
-      "Description": "Checks whether the ECS instance status is running or stopped.",
+      "Description": {
+        "en": "Checks whether the ECS instance status is running or stopped",
+        "zh-cn": "检测ECS实例的状态为Running或Stopped"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -52,7 +72,10 @@
     {
       "Name": "createNetworkInterface",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Creates an elastic network interface (ENI).",
+      "Description": {
+        "en": "Creates an elastic network interface (ENI)",
+        "zh-cn": "创建弹性网卡"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "CreateNetworkInterface",
@@ -72,7 +95,10 @@
     {
       "Name": "attachNetworkInterface",
       "Action": "ACS::ExecuteAPI",
-      "Description": "Attaches an ENI to a VPC-connected instance.",
+      "Description": {
+        "en": "Attaches an ENI to a VPC-connected instance",
+        "zh-cn": "绑定一个弹性网卡（ENI）到一台专有网络VPC类型ECS实例上"
+      },
       "Properties": {
         "Service": "ECS",
         "API": "AttachNetworkInterface",

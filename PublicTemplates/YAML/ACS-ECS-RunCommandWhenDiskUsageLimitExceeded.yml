@@ -1,51 +1,70 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Run command when disk usage limit is exceeded.
-  zh-cn: 当某磁盘使用率过高时执行某命令。
+  en: Run command when disk usage limit is exceeded
+  zh-cn: 当某磁盘使用率过高时执行某命令
   name-en: ACS-ECS-RunCommandWhenDiskUsageLimitExceeded
-  name-zh-cn: 当某磁盘使用率超过阈值时执行命令。
+  name-zh-cn: 当某磁盘使用率超过阈值时执行命令
   categories:
     - alarm-trigger
 Parameters:
   instanceId:
     Type: String
-    Description:
-      en: The ECS instance ID to be monitored.
-      zh-cn: 将要监控的实例。
+    Label:
+      en: InstanceId
+      zh-cn: 将要监控的实例
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: '{{ ACS::RegionId }}'
   threshold:
     Type: String
     Description:
-      en: The threshold of diskusage_utilization,e.g. 80 means 80%.
-      zh-cn: 磁盘使用率阈值，如80，则意味着80%的磁盘使用率。
+      en: e.g. 80 means 80%
+      zh-cn: 例如80，则意味着80%的磁盘使用率
+    Label:
+      en: Threshold
+      zh-cn: 磁盘使用率阈值
   diskPartition:
     Type: String
     Description:
-      en: disk partition to monitor, e.g."/dev/vda1"or"C:\\".
-      zh-cn: 要监控的磁盘分区名称，如/dev/vda1或者C:\\。
+      en: e.g."/dev/vda1"or"C:\\"
+      zh-cn: 如/dev/vda1或者C:\\
+    Label:
+      en: DiskPartition
+      zh-cn: 要监控的磁盘分区名称
   commandType:
-    Description:
-      en: The type of cloud assistant command.
-      zh-cn: 云助手执行的运维脚本的语言类型。
+    Label:
+      en: CommandType
+      zh-cn: 云助手执行的运维脚本的语言类型
     Type: String
     AllowedValues:
       - RunShellScript
       - RunBatScript
       - RunPowerShellScript
+  tags:
+    Type: Json
+    Label:
+      en: Tags
+      zh-cn: 实例的标签
+    AssociationProperty: Tags
+    Default: []
   commandToRun:
     Type: String
-    Description:
-      en: The command to run when disk usage exceeds threshold.
-      zh-cn: 当磁盘使用量超过阈值时，您打算执行的命令。
+    Label:
+      en: CommandToRun
+      zh-cn: 当磁盘使用量超过阈值时执行的命令
   silenceTime:
     Type: Number
     Description:
-      en: The silence time of alarm (seconds).
-      zh-cn: 告警通道沉默周期（秒），当监控数据持续超过报警规则阈值时，每个沉默周期内只发送1次报警通知。
+      en: When the monitoring data continues to exceed the alarm rule threshold, only one alarm notification will be sent in each silent period
+      zh-cn: 当监控数据持续超过报警规则阈值时，每个沉默周期内只发送1次报警通知
+    Label:
+      en: CilenceTime
+      zh-cn: 告警通道沉默周期（秒）
     Default: 300
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
@@ -53,8 +72,8 @@ Tasks:
   - Name: alarmTrigger
     Action: 'ACS::AlarmTrigger'
     Description:
-      en: Set the diskusage_utilization alarm for specified disk partition.
-      zh-cn: 设置对某磁盘分区的使用率进行监控。
+      en: Set the diskusage_utilization alarm for specified disk partition
+      zh-cn: 设置对某磁盘分区的使用率进行监控
     Properties:
         Namespace: 'acs_ecs_dashboard'
         MetricName: 'diskusage_utilization'
@@ -64,6 +83,7 @@ Tasks:
         Resources: '[{"instanceId":"{{ instanceId }}","device":"{{ diskPartition }}"}]'
         Times: 1
         SilenceTime: '{{silenceTime}}'
+        Tags: '{{ tags }}'
     Outputs:
       instanceId:
         Type: String
@@ -71,8 +91,8 @@ Tasks:
   - Name: runCommand
     Action: ACS::ECS::RunCommand
     Description:
-      en: Run cloud assistant command on ECS instance.
-      zh-cn: 在实例中运行云助手命令。
+      en: Run cloud assistant command on ECS instance
+      zh-cn: 在实例中运行云助手命令
     Properties:
       commandContent: '{{ commandToRun }}'
       commandType: '{{ commandType }}'
@@ -88,3 +108,34 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ runCommand.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - instanceId
+        Label:
+          default:
+            zh-cn: 实例选择
+            en: Select ECS Instance
+      - Parameters:
+          - threshold
+          - diskPartition
+          - silenceTime
+          - tags
+        Label:
+          default:
+            zh-cn: 告警配置
+            en: Alarm Configure
+      - Parameters:
+          - commandType
+          - commandToRun
+        Label:
+          default:
+            zh-cn: 执行命令选型
+            en: Run Command Options
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

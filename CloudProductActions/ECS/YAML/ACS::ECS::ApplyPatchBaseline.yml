@@ -1,0 +1,252 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: 'ACS::ECS::ApplyPatchBaseline'
+  name-zh-cn: 在ECS实例中配置补丁基线
+  en: Apply patch baseline on ECS instance
+  zh-cn: 在ECS实例中配置补丁基线
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  action:
+    Description:
+      en: The action to apply patch baseline
+      zh-cn: 配置补丁基线的方式
+    Type: String
+    AllowedValues:
+      - install
+      - scan
+    Default: install
+  rebootIfNeed:
+    Description:
+      en: Whether to reboot
+      zh-cn: 是否重启
+    Type: Boolean
+    Default: false
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances.
+      zh-cn: ECS实例中执行命令的超时时间。
+    Type: Number
+    Default: 1800
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+      instanceId:
+        Type: Json
+        ValueSelector: .
+  - Name: applyLinuxPatchBaseline
+    Description:
+      en: Apply patch baseline on Linux instance
+      zh-cn: 在Linux类型实例中配置补丁基线
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #/bin/bash
+
+        if  [ '{{ action }}' != 'scan' ] ; then
+            acs-plugin-manager --exec  --plugin=patch_manager   --params --operation,install,--reboot,no
+        else
+            acs-plugin-manager --exec  --plugin=patch_manager  --params --operation,scan
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: applyWindowsPatchBaseline
+    Description:
+      en: Apply patch baseline on Windows instance
+      zh-cn: 在Windows类型实例中配置补丁基线
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        if ('{{ action }}' -eq 'scan'){
+            acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params "-operation",scan
+        }else{acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params "-operation",install,"-reboot",no
+        }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: whetherToRebootInstance
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by instance reboot status
+      zh-cn: 根据实例是否重启状态选择下一个任务
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - '{{ rebootIfNeed }}'
+          NextTask: listInstancePatchStates
+  - Name: listInstancePatchStates
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Gets the instance patch repair status
+      zh-cn: 获取实例补丁修复状态
+    Properties:
+      Service: OOS
+      API: ListInstancePatchStates
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          'Fn::Jq':
+            - First
+            - '[.Instances.Instance[].InstanceId] | tostring'
+            - '{{ queryInstanceOSType.instanceId }}'
+    Outputs:
+      installedPendingRebootCount:
+        Type: Json
+        ValueSelector: .
+  - Name: checkDiscountThreshold
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by instance patch repair status
+      zh-cn: 根据实例补丁修复状态选择下一个任务
+    Properties:
+      DefaultTask: 'ACS::END'
+      Choices:
+        - When:
+            'Fn::Equals':
+              - true
+              - 'Fn::Jq':
+                  - First
+                  - '.InstancePatchStates[0].InstalledPendingRebootCount > 0'
+                  - '{{ listInstancePatchStates.installedPendingRebootCount }}'
+          NextTask: rebootInstance
+  - Name: rebootInstance
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Restarts the ECS instance
+      zh-cn: 重启ECS实例
+    Properties:
+      Service: ECS
+      API: RebootInstance
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+  - Name: untilInstanceReady
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Waits for the ECS instance to enter Running status
+      zh-cn: 等待ECS实例至运行中状态
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+    Outputs:
+      startTime:
+        Type: String
+        ValueSelector: 'Instances.Instance[].StartTime'
+  - Name: describeCloudAssistantStatus
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Gets the instance cloud assistant status
+      zh-cn: 获取实例云助手状态
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - true
+      PropertySelector: '.InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].LastHeartbeatTime > "{{untilInstanceReady.startTime}}"'
+  - Name: scanLinuxPatch
+    Description:
+      en: Scan patch on Linux instance
+      zh-cn: 在Linux类型实例中扫描补丁
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #/bin/bash
+        acs-plugin-manager --exec  --plugin=patch_manager  --params --operation,scan
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: scanWindowsPatch
+    Description:
+      en: Scan patch on Windows instance
+      zh-cn: 在Windows类型实例中扫描补丁
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params "-operation",scan
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ applyLinuxPatchBaseline.commandOutput }}'
+        - '{{ applyWindowsPatchBaseline.commandOutput }}'
