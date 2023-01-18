@@ -159,9 +159,7 @@
               "Fn::Equals": [
                 [],
                 {
-                  "Fn::MergeList": [
-                    "{{ alarmThresholdInfo.allThresholdInfos }}"
-                  ]
+                  "Fn::MergeList": "{{ alarmThresholdInfo.allThresholdInfos }}"
                 }
               ]
             },

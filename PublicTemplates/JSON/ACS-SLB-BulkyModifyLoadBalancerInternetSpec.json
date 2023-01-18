@@ -76,7 +76,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "LoadBalancerId": "{{ ACS::TaskLoopItem }}",
-          "Bandwidth": "{{ bandwidth }}"
+          "Bandwidth": "{{ bandwidth }}",
+          "AutoPay": true
         }
       },
       "Loop": {

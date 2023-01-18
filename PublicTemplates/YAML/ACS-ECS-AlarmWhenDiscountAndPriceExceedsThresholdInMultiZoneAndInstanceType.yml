@@ -117,8 +117,7 @@ Tasks:
         - When:
             'Fn::Equals':
               - []
-              - 'Fn::MergeList':
-                  - '{{ alarmThresholdInfo.allThresholdInfos }}'
+              - 'Fn::MergeList': '{{ alarmThresholdInfo.allThresholdInfos }}'
           NextTask: 'ACS::END'
   - Name: alarmNotify
     Action: 'ACS::Notify'
