@@ -59,6 +59,7 @@ Tasks:
       RegionId: '{{ regionId }}'
       LoadBalancerId: '{{ ACS::TaskLoopItem }}'
       Bandwidth: '{{ bandwidth }}'
+      AutoPay: true
   Loop:
     RateControl: '{{ rateControl }}'
     Items: '{{ loadBalancerIds }}'
