@@ -57,7 +57,7 @@
       ]
     },
     "containerConfigure": {
-      "Description": {
+      "Label": {
         "en": "ContainerConfigure",
         "zh-cn": "用于更新的容器配置"
       },
@@ -70,6 +70,22 @@
       },
       "Type": "Json",
       "Default": {}
+    },
+    "updateType": {
+      "Label": {
+        "en": "ContainersUpdateType",
+        "zh-cn": "Containers参数更新方式"
+      },
+      "Description": {
+        "en": "<ul class=\"ul\">\n  <li class=\"li\">RenewUpdate: Full update, all related parameters need to be filled in when updating. If the parameter is a List, it does not support updating an item individually, and if the parameter is a structure, it does not support updating an internal member individually. </li>\n  <li class=\"li\">IncrementalUpdate: Incremental update, when updating, you can only fill in a parameter that needs to be updated, and other related parameters remain unchanged. </li>\n</ul>",
+        "zh-cn": "<ul class=\"ul\">          \n   <li class=\"li\">RenewUpdate：全量更新，更新时需填写相关的所有参数。如果参数是一个List，不支持单独更新某个item，如果参数是一个结构体，不支持单独更新某个内部成员。</li>\n   <li class=\"li\">IncrementalUpdate：增量更新，更新时可以只填某一需要更新的参数，其它相关参数保持原有不变。</li>\n</ul>"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "RenewUpdate",
+        "IncrementalUpdate"
+      ],
+      "Default": "IncrementalUpdate"
     },
     "sourceExecutionId": {
       "Label": {
@@ -189,7 +205,7 @@
                 "{{ getInstance.instanceIds }}"
               ]
             },
-            "NextTask": "ACS::END"
+            "NextTask": "modifyScalingConfigurationForInvoke"
           }
         ]
       }
@@ -233,22 +249,6 @@
       }
     },
     {
-      "Name": "modifyScalingConfiguration",
-      "Action": "ACS::ExecuteAPI",
-      "Description": {
-        "en": "Modify scaling configuration",
-        "zh-cn": "修改伸缩配置"
-      },
-      "Properties": {
-        "Service": "ESS",
-        "API": "ModifyEciScalingConfiguration",
-        "Parameters": {
-          "ScalingConfigurationId": "{{ scalingConfigurationId }}",
-          "Container": "{{ containerConfigure }}"
-        }
-      }
-    },
-    {
       "Name": "invokeByUpdateContainerGroup",
       "Action": "ACS::ESS::UpdateContainerGroup",
       "Description": {
@@ -258,7 +258,8 @@
       "Properties": {
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "scalingGroupId": "{{ scalingGroupId }}",
-        "containerConfigure": "{{ containerConfigure }}"
+        "containerConfigure": "{{ containerConfigure }}",
+        "updateType": "{{ updateType }}"
       },
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",
@@ -269,6 +270,45 @@
             "{{ getInstance.instanceIds }}"
           ]
         }
+      }
+    },
+    {
+      "Name": "modifyScalingConfigurationForInvoke",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify scaling configuration for invoke",
+        "zh-cn": "更新操作修改伸缩配置"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyEciScalingConfiguration",
+        "Parameters": {
+          "ScalingConfigurationId": "{{ scalingConfigurationId }}",
+          "Container": "{{ containerConfigure }}",
+          "ContainersUpdateType": "{{ updateType }}"
+        }
+      }
+    },
+    {
+      "Name": "whetherToResumeProcessesByGroupInstances",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Check whether the instance in the service in the scaling group is empty",
+        "zh-cn": "检查伸缩组内服务中的实例是否为空"
+      },
+      "Properties": {
+        "DefaultTask": "whetherToResumeProcesses",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ getInstance.instanceIds }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
       }
     },
     {
@@ -376,13 +416,14 @@
       "Name": "rollbackByUpdateContainerGroup",
       "Action": "ACS::ESS::UpdateContainerGroup",
       "Description": {
-        "en": "Update caontainer group for roll back",
+        "en": "Update container group for rollback",
         "zh-cn": "回滚更新容器组"
       },
       "Properties": {
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "scalingGroupId": "{{ scalingGroupId }}",
-        "containerConfigure": "{{ sourceContainerConfigure }}"
+        "containerConfigure": "{{ sourceContainerConfigure }}",
+        "updateType": "{{ updateType }}"
       },
       "Loop": {
         "Items": "{{ getExecutionInstanceIds.instanceIds }}",
@@ -392,6 +433,23 @@
             "{{ batchNumber }}",
             "{{ getExecutionInstanceIds.instanceIds }}"
           ]
+        }
+      }
+    },
+    {
+      "Name": "modifyScalingConfigurationForRollback",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify scaling configuration for rollback",
+        "zh-cn": "回滚操作修改伸缩配置"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "ModifyEciScalingConfiguration",
+        "Parameters": {
+          "ScalingConfigurationId": "{{ scalingConfigurationId }}",
+          "Container": "{{ sourceContainerConfigure }}",
+          "ContainersUpdateType": "{{ updateType }}"
         }
       }
     },

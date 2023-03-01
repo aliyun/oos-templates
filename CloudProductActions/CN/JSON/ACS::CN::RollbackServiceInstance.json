@@ -1,0 +1,65 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to rollback CN service instance",
+    "zh-cn": "使用这个模板在计算巢商家侧回滚服务实例",
+    "name-en": "ACS::CN::RollbackServiceInstance",
+    "name-zh-cn": "计算巢商家侧回滚服务实例"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "ServiceInstanceId": {
+      "Type": "String",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "RollbackServiceInstance",
+      "Description": {
+        "en": "Rollback service instance",
+        "zh-cn": "回滚服务实例"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ComputeNestSupplier",
+        "API": "RollbackServiceInstance",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ServiceInstanceId": "{{ ServiceInstanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "UntilServiceInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the service instance to enter Deployed status",
+        "zh-cn": "等待服务实例至已部署状态"
+      },
+      "Properties": {
+        "Service": "ComputeNestSupplier",
+        "API": "GetServiceInstance",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ServiceInstanceId": "{{ ServiceInstanceId }}"
+        },
+        "DesiredValues": [
+          "Deployed"
+        ],
+        "PropertySelector": ".Status"
+      }
+    }
+  ]
+}

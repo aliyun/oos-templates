@@ -45,8 +45,21 @@ Tasks:
         - '{{ launchTemplateName }}'
   Outputs:
     defaultVersionNumber:
-      Type: String
+      Type: List
       ValueSelector: '.LaunchTemplateSets.LaunchTemplateSet[].DefaultVersionNumber'
+- Name: checkWhetherLaunchTemplateExist
+  Action: ACS::Choice
+  Description:
+    en: Checks whether the launch template exists
+    zh-cn: 检查启动模板是否存在
+  Properties:
+    DefaultTask: describeLaunchTemplateVersions
+    Choices:
+      - When:
+          Fn::Equals:
+            - []
+            - '{{ describeLaunchTemplates.defaultVersionNumber }}'
+        NextTask: ACS::END
 - Name: describeLaunchTemplateVersions
   Action: ACS::ExecuteAPI
   Description:
@@ -58,8 +71,7 @@ Tasks:
     Parameters:
       RegionId: '{{ regionId }}'
       LaunchTemplateName: '{{ launchTemplateName }}'
-      LaunchTemplateVersion:
-        - '{{describeLaunchTemplates.defaultVersionNumber}}'
+      LaunchTemplateVersion: '{{describeLaunchTemplates.defaultVersionNumber}}'
   Outputs:
     imageOwnerAlias:
       Type: String
@@ -270,8 +282,7 @@ Tasks:
     Parameters:
       RegionId: '{{ regionId }}'
       LaunchTemplateName: '{{ launchTemplateName }}'
-      DeleteVersion:
-        - '{{describeLaunchTemplates.defaultVersionNumber}}'
+      DeleteVersion: '{{describeLaunchTemplates.defaultVersionNumber}}'
 Outputs:
   defaultVersionNumber:
     Type: String

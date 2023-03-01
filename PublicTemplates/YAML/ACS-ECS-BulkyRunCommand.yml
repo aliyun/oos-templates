@@ -25,6 +25,7 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
+      Status: Running
   commandType:
     Label:
       en: CommandType

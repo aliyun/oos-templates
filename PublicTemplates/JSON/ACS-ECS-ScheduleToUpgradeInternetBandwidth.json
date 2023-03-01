@@ -24,7 +24,8 @@
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "InternetChargeType": "PayByBandwidth"
       }
     },
     "triggerCron": {

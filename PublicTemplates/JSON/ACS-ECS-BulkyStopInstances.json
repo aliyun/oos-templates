@@ -43,14 +43,8 @@
         "zh-cn": "停止模式"
       },
       "Type": "String",
-      "AllowedValues": [
-        "StopCharging",
-        "KeepCharging"
-      ],
       "Default": "KeepCharging",
-      "AssociationPropertyMetadata": {
-        "LocaleKey": "ECSStoppedMode"
-      }
+      "AssociationProperty": "ALIYUN::ECS::Instance::StopMode"
     },
     "rateControl": {
       "Label": {

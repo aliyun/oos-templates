@@ -15,6 +15,8 @@ Parameters:
       en: TimerTrigger
       zh-cn: 定时类型
     AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
   regionId:
     Type: String
     Label:
@@ -31,6 +33,7 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
+      Status: Running
   cleanUpInfos:
     Description:
       en: 'Format: 3d|/root/log/|*.log,3h|/root/log/|*.access,30m|C:\Users\Administrator\log\|*.log.'

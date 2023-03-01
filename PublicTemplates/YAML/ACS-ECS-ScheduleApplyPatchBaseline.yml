@@ -21,12 +21,15 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
+      Status: Running
   timerTrigger:
     Type: Json
     Label:
       en: TimerTrigger
       zh-cn: 定时类型
     AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
   action:
     Label:
       en: Action

@@ -37,7 +37,7 @@
       "Type": "String",
       "Description": {
         "en": "Local uploaded files cannot exceed 500M",
-        "zh-cn": "本地上传文件不能超过500M"
+        "zh-cn": "本地上传文件不能超过5GB"
       },
       "Label": {
         "en": "SourceType",

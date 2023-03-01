@@ -1,42 +1,59 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Use lifecycleHook to run command in the specified scaling activity instance
-  zh-cn: 使用生命周期挂钩到实例中执行命令
-  name-en: ACS-ESS-LifeCycleRunCommand
-  name-zh-cn: 使用生命周期挂钩到实例中执行命令
+  en: Use lifecycleHook to download OSS file and run command in the specified scaling activity ECS instance
+  zh-cn: 使用生命周期挂钩下载OSS文件到ECS实例并执行命令
+  name-en: ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+  name-zh-cn: 使用生命周期挂钩下载OSS文件到ECS实例并执行命令
   categories:
     - elastic_manage
 Parameters:
-  commandType:
+  bucketName:
     Label:
-      en: CommandType
-      zh-cn: 云助手命令类型
+      en: BucketName
+      zh-cn: OSS bucket名称
     Type: String
-    AllowedValues:
-      - RunBatScript
-      - RunPowerShellScript
-      - RunShellScript
-    Default: RunShellScript
+  objectName:
+    Label:
+      en: ObjectName
+      zh-cn: OSS对象名称
+    Type: String
+  URLExpirationTime:
+    Description:
+      en: Expiration time of OSS file download url
+      zh-cn: OSS文件下载链接的过期时间
+    Type: Number
+    Default: 6000
+  OSSRegion:
+    Label:
+      en: OSSRegion
+      zh-cn: OSS所在地域
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  destinationDir:
+    Label:
+      en: DestinationDir
+      zh-cn: 实例中文件复制的目标目录
+    Type: String
+  whetherSaveToFile:
+    Label:
+      en: whetherSaveToFile
+      zh-cn: 是否将内容下载到特定文件
+    Type: Boolean
+    Default: true
   commandContent:
     Label:
       en: CommandContent
-      zh-cn: 云助手命令
+      zh-cn: 在ECS实例中执行的云助手命令
     Type: String
     AssociationProperty: Code
     Default: echo hello
-  lifecycleActionResult:
+  timeout:
     Label:
-      en: LifecycleActionResult
-      zh-cn: 生命周期挂钩等待状态结束后的下一步动作
-    Description:
-      en: After the command execution fails, the lifecycle hook waits for the next action after the state ends
-      zh-cn: 命令执行失败后，生命周期挂钩等待状态结束后的下一步动作
-    Type: String
-    AllowedValues:
-      - ABANDON
-      - ROLLBACK
-      - CONTINUE
-    Default: ABANDON
+      en: Timeout
+      zh-cn: ECS实例中执行命令的超时时间
+    Type: Number
+    Default: 600
   regionId:
     Label:
       en: RegionId
@@ -92,29 +109,27 @@ Parameters:
     Default: OOSServiceRole
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
-  - Name: runCommand
-    Action: ACS::ECS::RunCommand
+  - Name: downloadFileAndRunCommand
     OnError: CompleteLifecycleActionForAbandon
     OnSuccess: CompleteLifecycleActionForContinue
+    Action: ACS::ESS::DownloadOSSFileAndRunCommand
     Description:
-      en: Execute cloud assistant command
-      zh-cn: 执行云助手命令
+      en: Downloads file to the ECS instances adn run command
+      zh-cn: 下载文件到实例并执行命令
     Properties:
       regionId: '{{ regionId }}'
-      commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
-      commandType: '{{ commandType }}'
+      bucketName: '{{ bucketName }}'
+      objectName: '{{ objectName }}'
+      URLExpirationTime: '{{ URLExpirationTime }}'
+      OSSRegion: '{{ OSSRegion }}'
+      destinationDir: '{{ destinationDir }}'
+      whetherSaveToFile: '{{ whetherSaveToFile }}'
+      commandContent: '{{ commandContent }}'
+      timeout: '{{ timeout }}'
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ instanceIds }}'
-      Outputs:
-        commandOutputs:
-          AggregateType: Fn::ListJoin
-          AggregateField: commandOutput
-    Outputs:
-      commandOutput:
-        Type: String
-        ValueSelector: invocationOutput
   - Name: CompleteLifecycleActionForContinue
     Action: 'ACS::ExecuteAPI'
     Description:
@@ -141,9 +156,4 @@ Tasks:
         RegionId: '{{ regionId }}'
         LifecycleHookId: '{{ lifecycleHookId }}'
         LifecycleActionToken: '{{ lifecycleActionToken }}'
-        LifecycleActionResult: '{{ lifecycleActionResult }}'
-Outputs:
-  commandOutputs:
-    Type: List
-    Value: '{{ runCommand.commandOutputs }}'
-
+        LifecycleActionResult: ABANDON

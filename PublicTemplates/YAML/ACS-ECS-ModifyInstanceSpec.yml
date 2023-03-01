@@ -43,8 +43,8 @@ Tasks:
   - Name: getInstanceType
     Action: 'ACS::ExecuteAPI'
     Description:
-      zh-cn: Query instnace type
-      en: 获取实例规格信息
+      en: Query instance type
+      zh-cn: 获取实例规格信息
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -55,19 +55,35 @@ Tasks:
     Outputs:
       instanceType:
         Type: String
-        ValueSelector: 'Instances.Instance[].InstanceType'
-  - Name: checkForInstanceTypeAvalible
-    Action: 'ACS::CheckFor'
+        ValueSelector: Instances.Instance[].InstanceType
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: checkForWhetherResourceExist
+    Action: ACS::Choice
     Description:
-      en: Check weather the instance type is avaliable
+      en: Check whether the resource exist
+      zh-cn: 检查资源是否存在
+    Properties:
+      DefaultTask: checkForInstanceTypeAvailable
+      Choices:
+        - When:
+            Fn::Equals:
+              - []
+              - '{{ getInstanceType.instanceIds }}'
+          NextTask: ACS::END
+  - Name: checkForInstanceTypeAvailable
+    Action: ACS::CheckFor
+    Description:
+      en: Check weather the instance type is available
       zh-cn: 检查实例规格是否可用
     Properties:
       Service: ECS
       API: DescribeInstanceTypes
       Parameters:
         RegionId: '{{ regionId }}'
-        InstanceTypess:
-          - 'Fn::Select':
+        InstanceTypes:
+          - Fn::Select:
               - '{{ getInstanceType.instanceType }}'
               - '{{ modifyInstanceSpecInfo }}'
       NotDesiredValues:
@@ -88,8 +104,8 @@ Tasks:
   - Name: describeInstances
     Action: 'ACS::ExecuteAPI'
     Description:
-      zh-cn: Query ECS instnaces
-      en: 获取ECS实例信息
+      en: Query ECS instances info
+      zh-cn: 获取ECS实例信息
     Properties:
       Service: ECS
       API: DescribeInstances

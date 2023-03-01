@@ -45,7 +45,7 @@ Tasks:
           - '{{ diskId }}'
     Outputs:
       instanceIds:
-        Type: String
+        Type: List
         ValueSelector: 'Disks.Disk[].InstanceId'
   - Name: whetherDiskAttachedToInstance
     Action: 'ACS::Choice'
@@ -57,9 +57,14 @@ Tasks:
       Choices:
         - When:
             'Fn::Equals':
-              - ''
+              - - ''
               - '{{ describeDisks.instanceIds }}'
           NextTask: createSnapshot
+        - When:
+            'Fn::Equals':
+              - []
+              - '{{ describeDisks.instanceIds }}'
+          NextTask: ACS::END
   - Name: waitUtilInstanceRunningOrStopped
     Action: 'ACS::WaitFor'
     Description:
@@ -73,8 +78,7 @@ Tasks:
       API: DescribeInstances
       Parameters:
         RegionId: '{{ regionId }}'
-        InstanceIds:
-          - '{{ describeDisks.instanceIds }}'
+        InstanceIds: '{{ describeDisks.instanceIds }}'
       PropertySelector: 'Instances.Instance[].Status'
       DesiredValues:
         - Running

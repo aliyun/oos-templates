@@ -20,6 +20,7 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
+      InternetChargeType: PayByBandwidth
   triggerCron:
     Label:
       en: 'The schedule of bandwidth upgrade task'
