@@ -4,6 +4,9 @@ Description:
   zh-cn: 删除安全组规则
   name-en: ACS-ECS-RevokeSecurityGroupRules
   name-zh-cn: 删除安全组规则
+  categories:
+    - instance_manage
+    - computenest
 Parameters:
   regionId:
     Label:

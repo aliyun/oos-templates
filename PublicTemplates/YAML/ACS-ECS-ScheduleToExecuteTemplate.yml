@@ -13,6 +13,8 @@ Parameters:
       en: TimerTrigger
       zh-cn: 定时类型
     AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
   templateName:
     Type: String
     Label:

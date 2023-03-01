@@ -165,7 +165,3 @@ Metadata:
           default:
             zh-cn: 高级选项
             en: Control Options
-    Hidden:
-      - period
-      - periodUnit
-      - includeDataDisks

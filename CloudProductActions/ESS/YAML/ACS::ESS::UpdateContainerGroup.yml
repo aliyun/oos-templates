@@ -35,6 +35,12 @@ Parameters:
       en: The id of scaling group
       zh-cn: 伸缩组ID
     Type: String
+  updateType:
+    Description:
+      en: The update type of containers
+      zh-cn: Containers参数更新方式
+    Type: String
+    Default: IncrementalUpdate
 Tasks:
   - Name: getInstanceLifecycleState
     Action: ACS::ExecuteApi
@@ -98,7 +104,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         Container: '{{ containerConfigure }}'
         ContainerGroupId: '{{ instanceId }}'
-        UpdateType: IncrementalUpdate
+        UpdateType: '{{ updateType }}'
   - Name: getContainerGroups
     Action: ACS::WaitFor
     Description:

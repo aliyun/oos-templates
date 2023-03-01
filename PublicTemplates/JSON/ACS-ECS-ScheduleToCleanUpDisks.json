@@ -18,7 +18,10 @@
         "en": "TimerTrigger",
         "zh-cn": "定时类型"
       },
-      "AssociationProperty": "ALIYUN::OOS::Component::TimerTrigger"
+      "AssociationProperty": "ALIYUN::OOS::Component::TimerTrigger",
+      "AssociationPropertyMetadata": {
+        "MinuteInterval": 30
+      }
     },
     "regionId": {
       "Type": "String",
@@ -38,7 +41,8 @@
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "Status": "Running"
       }
     },
     "cleanUpInfos": {

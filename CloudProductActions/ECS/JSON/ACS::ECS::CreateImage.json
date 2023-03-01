@@ -42,6 +42,52 @@
   },
   "Tasks": [
     {
+      "Name": "getInstances",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get ECS instance",
+        "zh-cn": "获取ECS实例"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "checkWhetherInstanceExist",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Checks whether the ECS instance exists",
+        "zh-cn": "检查实例是否存在"
+      },
+      "Properties": {
+        "DefaultTask": "checkInstanceReady",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ getInstances.instanceId }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
       "Name": "checkInstanceReady",
       "Action": "ACS::CheckFor",
       "Description": {

@@ -6,6 +6,7 @@ Description:
   name-zh-cn: 批量授权安全组策略
   categories:
     - instance_manage
+    - computenest
 Parameters:
   regionId:
     Type: String
@@ -19,6 +20,7 @@ Parameters:
       en: SecurityGroupIds
       zh-cn: 安全组ID
     Type: List
+    AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId
   ipProtocol:
     Label:
       en: IpProtocol

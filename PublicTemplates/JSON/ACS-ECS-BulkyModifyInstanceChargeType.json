@@ -237,11 +237,6 @@
             }
           }
         }
-      ],
-      "Hidden": [
-        "period",
-        "periodUnit",
-        "includeDataDisks"
       ]
     }
   }

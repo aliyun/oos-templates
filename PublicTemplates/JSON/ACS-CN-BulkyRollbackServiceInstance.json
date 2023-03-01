@@ -1,0 +1,125 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to bulky rollback CN service instance",
+    "zh-cn": "使用这个模板在计算巢商家侧批量回滚服务实例",
+    "name-en": "ACS-CN-BulkyRollbackServiceInstance",
+    "name-zh-cn": "计算巢商家侧批量回滚服务实例",
+    "categories": [
+      "computenest_supplier"
+    ]
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "Targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ComputeNestSupplier::Instance",
+        "RegionId": "RegionId"
+      }
+    },
+    "RateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 1
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "GetServiceInstance",
+      "Description": {
+        "en": "Views the compute nest supplier instances",
+        "zh-cn": "计算巢商家侧获取服务实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ComputeNestSupplier::Instance",
+        "RegionId": "{{ RegionId }}",
+        "Filters": [
+          "{{ Targets }}"
+        ]
+      },
+      "Outputs": {
+        "InstanceIds": {
+          "Type": "List",
+          "ValueSelector": "ServiceInstances[].ServiceInstanceId"
+        }
+      }
+    },
+    {
+      "Name": "RollbackServiceInstance",
+      "Description": {
+        "en": "Rollback service instance",
+        "zh-cn": "计算巢商家侧回滚服务实例"
+      },
+      "Action": "ACS::CN::RollbackServiceInstance",
+      "Properties": {
+        "RegionId": "{{ RegionId }}",
+        "ServiceInstanceId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": "{{ GetServiceInstance.InstanceIds }}",
+        "RateControl": "{{ RateControl }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "RegionId",
+            "Targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "RateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

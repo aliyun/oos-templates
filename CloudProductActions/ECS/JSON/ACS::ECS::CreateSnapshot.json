@@ -61,7 +61,7 @@
       },
       "Outputs": {
         "instanceIds": {
-          "Type": "String",
+          "Type": "List",
           "ValueSelector": "Disks.Disk[].InstanceId"
         }
       }
@@ -79,11 +79,22 @@
           {
             "When": {
               "Fn::Equals": [
-                "",
+                [
+                  ""
+                ],
                 "{{ describeDisks.instanceIds }}"
               ]
             },
             "NextTask": "createSnapshot"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ describeDisks.instanceIds }}"
+              ]
+            },
+            "NextTask": "ACS::END"
           }
         ]
       }
@@ -103,9 +114,7 @@
         "API": "DescribeInstances",
         "Parameters": {
           "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ describeDisks.instanceIds }}"
-          ]
+          "InstanceIds": "{{ describeDisks.instanceIds }}"
         },
         "PropertySelector": "Instances.Instance[].Status",
         "DesiredValues": [

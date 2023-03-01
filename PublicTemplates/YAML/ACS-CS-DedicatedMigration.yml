@@ -187,7 +187,7 @@ Tasks:
             exit 0
         fi
         set -e
-        yum install curl wget -y
+        yum install curl wget jq -y
         if [ ! -f "/tmp/ossutil64" ]; then
             # wget ossutil，保存到/tmp/目录下
             wget -c -t 10 -O /tmp/ossutil64 https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/x64/ossutil64
@@ -227,9 +227,9 @@ Tasks:
         # 获取oss 相关地址，上传
         ROLE=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/)
         ROLERES=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/$ROLE)
-        AccessKeyId=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['AccessKeyId']")
-        AccessKeySecret=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['AccessKeySecret']")
-        SecurityToken=$(echo $ROLERES | python -c "import sys, json; print json.load(sys.stdin)['SecurityToken']")
+        AccessKeyId=$(echo $ROLERES | jq .AccessKeyId|sed 's/\"//g')
+        AccessKeySecret=$(echo $ROLERES | jq .AccessKeySecret|sed 's/\"//g')
+        SecurityToken=$(echo $ROLERES | jq .SecurityToken|sed 's/\"//g')
         # put object to oss
         echo "begin put object to oss"
         /tmp/ossutil64 -t $SecurityToken -i $AccessKeyId -k $AccessKeySecret -e {{OSSEndpoint}} cp /tmp/etcdsnap/$SNAP_NAME oss://{{BucketName}}/$SNAP_NAME

@@ -47,6 +47,14 @@
         "zh-cn": "伸缩组ID"
       },
       "Type": "String"
+    },
+    "updateType": {
+      "Description": {
+        "en": "The update type of containers",
+        "zh-cn": "Containers参数更新方式"
+      },
+      "Type": "String",
+      "Default": "IncrementalUpdate"
     }
   },
   "Tasks": [
@@ -139,7 +147,7 @@
           "RegionId": "{{ regionId }}",
           "Container": "{{ containerConfigure }}",
           "ContainerGroupId": "{{ instanceId }}",
-          "UpdateType": "IncrementalUpdate"
+          "UpdateType": "{{ updateType }}"
         }
       }
     },

@@ -1,0 +1,73 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to upgrade CN service instance",
+    "zh-cn": "使用这个模板在计算巢商家侧升级服务实例",
+    "name-en": "ACS::CN::UpgradeServiceInstance",
+    "name-zh-cn": "计算巢商家侧升级服务实例"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "ServiceInstanceId": {
+      "Type": "String",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      }
+    },
+    "ServiceVersion": {
+      "Type": "String",
+      "Label": {
+        "en": "ServiceVersion",
+        "zh-cn": "服务版本"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "UpgradeServiceInstance",
+      "Description": {
+        "en": "Upgrade service instance",
+        "zh-cn": "升级服务实例"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ComputeNestSupplier",
+        "API": "UpgradeServiceInstance",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ServiceInstanceId": "{{ ServiceInstanceId }}",
+          "ServiceVersion": "{{ ServiceVersion }}"
+        }
+      }
+    },
+    {
+      "Name": "untilServiceInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the service instance to enter Deployed status",
+        "zh-cn": "等待服务实例至已部署状态"
+      },
+      "Properties": {
+        "Service": "ComputeNestSupplier",
+        "API": "GetServiceInstance",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ServiceInstanceId": "{{ ServiceInstanceId }}"
+        },
+        "DesiredValues": [
+          "Deployed"
+        ],
+        "PropertySelector": ".Status"
+      }
+    }
+  ]
+}

@@ -1,0 +1,467 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Rolling update ECS instances that in scaling group by download OOS file and run command
+  zh-cn: 通过下载OSS文件并执行命令的方式滚动更新伸缩组内的ECS实例
+  name-en: ACS-ESS-RollingUpdateByDownloadOSSFileAndRunCommand
+  name-zh-cn: 通过下载OSS文件并执行命令的方式滚动更新伸缩组内的ECS实例
+  categories:
+    - elastic_manage
+Parameters:
+  invokeType:
+    Label:
+      en: InvokeType
+      zh-cn: 操作类型
+    Type: String
+    AllowedValues:
+      - invoke
+      - rollback
+  scalingGroupId:
+    Label:
+      en: ScalingGroupId
+      zh-cn: 伸缩组ID
+    Type: String
+  enterProcess:
+    Label:
+      en: EnterProcess
+      zh-cn: 执行开始要暂停的伸缩组流程
+    Type: List
+    Default:
+      - ScaleIn
+      - ScaleOut
+      - HealthCheck
+      - AlarmNotification
+      - ScheduledAction
+  exitProcess:
+    Label:
+      en: ExitProcess
+      zh-cn: 执行结束要恢复的伸缩组流程
+    Type: List
+    Default:
+      - ScaleIn
+      - ScaleOut
+      - HealthCheck
+      - AlarmNotification
+      - ScheduledAction
+  invokeBucketName:
+    Type: String
+    Label:
+      en: InvokeBucketName
+      zh-cn: 用于升级的Bucket名称
+  invokeObjectName:
+    Label:
+      en: InvokeObjectName
+      zh-cn: 用于升级的Object名称
+    Type: String
+  invokeDestinationDir:
+    Label:
+      en: InvokeDestinationDir
+      zh-cn: 用于升级的文件存储目录
+    Type: String
+  invokeScript:
+    Label:
+      en: InvokeScript
+      zh-cn: 用于升级的脚本
+    Type: String
+    AssociationProperty: Code
+    Default: ''
+  rollbackBucketName:
+    Type: String
+    Label:
+      en: RollbackBucketName
+      zh-cn: 用于回滚的Bucket名称
+  rollbackObjectName:
+    Label:
+      en: RollbackObjectName
+      zh-cn: 用于回滚的Object名称
+    Type: String
+  rollbackDestinationDir:
+    Label:
+      en: InvokeDestinationDir
+      zh-cn: 用于回滚的文件存储目录
+    Type: String
+  rollbackScript:
+    Label:
+      en: RollbackScript
+      zh-cn: 用于回滚的脚本
+    Type: String
+    AssociationProperty: Code
+    Default: ''
+  sourceExecutionId:
+    Label:
+      en: SourceExecutionId
+      zh-cn: 用于回滚的OOS执行ID
+    Type: String
+    Default: ''
+  whetherSaveToFile:
+    Label:
+      en: whetherSaveToFile
+      zh-cn: 是否将内容下载到特定文件
+    Type: Boolean
+    Default: true
+  URLExpirationTime:
+    Label:
+      en: OOSFileDownloadURLExpirationTime
+      zh-cn: OSS文件下载链接的过期时间
+    Type: Number
+    Default: 6000
+  OSSRegion:
+    Label:
+      en: OSSRegion
+      zh-cn: OSS所在地域
+    Description:
+      en: When the region where the OSS is located is different from the current region, the OSS file will be downloaded through the public network, and the ECS in the scaling group must be able to access the public network.
+      zh-cn: OSS所在地域和当前地域不同时会通过公网下载OSS文件，需要伸缩组内的ECS能访问公网。
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  batchPauseOption:
+    Label:
+      en: BatchPauseOption
+      zh-cn: 分批模式
+    Type: String
+    AllowedValues:
+      - Automatic
+      - FirstBatchPause
+      - EveryBatchPause
+    Default: Automatic
+  batchNumber:
+    Label:
+      en: BatchNumber
+      zh-cn: 分批执行的批次
+    Type: Number
+    MinValue: 1
+    MaxValue: 100
+    Default: 5
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getLifecycleHook
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Get lifecycle hook
+      zh-cn: 获取生命周期挂钩
+    Properties:
+      Service: ESS
+      API: DescribeLifecycleHooks
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+    Outputs:
+      totalCount:
+        Type: String
+        ValueSelector: .TotalCount
+  - Name: choiceNextTask
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by invoke type
+      zh-cn: 根据升级类型选择任务
+    Properties:
+      DefaultTask: getInstance
+      Choices:
+        - When:
+            'Fn::Equals':
+              - rollback
+              - '{{ invokeType }}'
+          NextTask: getExecutionInstanceIds
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: 'ACS::ExecuteApi'
+    Properties:
+      Service: ESS
+      API: DescribeScalingInstances
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        LifecycleState: InService
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: 'ScalingInstances.ScalingInstance[].InstanceId'
+  - Name: whetherTheScalingGroupInstanceIsEmpty
+    Action: 'ACS::Choice'
+    Description:
+      en: Check whether the instances in the services in the scaling group are empty
+      zh-cn: 检查伸缩组内服务中的实例是否为空
+    Properties:
+      DefaultTask: whetherToSuspendProcess
+      Choices:
+        - When:
+            'Fn::Equals':
+              - [ ]
+              - '{{ getInstance.instanceIds }}'
+          NextTask: 'ACS::END'
+  - Name: whetherToSuspendProcess
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否暂停流程
+    Properties:
+      DefaultTask: suspendProcess
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - '{{ enterProcess }}'
+          NextTask: invokeByDownloadOSSFileAndRunCommand
+  - Name: suspendProcess
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Suspend process
+      zh-cn: 暂停伸缩组流程
+    Properties:
+      Service: ESS
+      API: SuspendProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ enterProcess }}'
+  - Name: invokeByDownloadOSSFileAndRunCommand
+    Action: ACS::ESS::DownloadOSSFileAndRunCommand
+    Description:
+      en: Upgrade by downloading files to the instance and executing commands
+      zh-cn: 通过下载文件到实例并执行命令的方式进行升级
+    Properties:
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      bucketName: '{{ invokeBucketName }}'
+      objectName: '{{ invokeObjectName }}'
+      URLExpirationTime: '{{ URLExpirationTime }}'
+      OSSRegion: '{{ OSSRegion }}'
+      commandContent: '{{ invokeScript }}'
+      destinationDir: '{{ invokeDestinationDir }}'
+      whetherSaveToFile: '{{ whetherSaveToFile }}'
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      BatchPauseOption: '{{ batchPauseOption }}'
+      Concurrency:
+        'Fn::CalculateBatch':
+          - '{{ batchNumber }}'
+          - '{{ getInstance.instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: runCommandOutput
+  - Name: tagInstance
+    Action: ACS::ExecuteApi
+    Description:
+      en: Creates and attaches tag to ECS instance
+      zh-cn: 创建并挂载标签到ECS实例
+    Properties:
+      Service: ECS
+      API: TagResources
+      Parameters:
+        ResourceIds:
+          - '{{ ACS::TaskLoopItem }}'
+        ResourceType: Instance
+        Tags:
+        - Key: 'ess:rollingupdate'
+          Value: 'oos:{{ ACS::ExecutionId }}'
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  - Name: createLifecycleHookOfUpgrade
+    When:
+      Fn::Equals:
+        - '{{ getLifecycleHook.totalCount }}'
+        - 0
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Create lifecycle hook of upgrade
+      zh-cn: 创建用于升级的生命周期挂钩
+    Properties:
+      Service: ESS
+      API: CreateLifecycleHook
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        NotificationMetadata: '{"bucketName":"{{ invokeBucketName }}","objectName":"{{ invokeObjectName }}","URLExpirationTime":"{{ URLExpirationTime }}","OSSRegion":"{{ OSSRegion }}","destinationDir":"{{ invokeDestinationDir }}","OSSRegion":"{{ OSSRegion }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
+        LifecycleTransition: SCALE_OUT
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+        NotificationArn: acs:oos:{{ ACS::RegionId }}:{{ACS::AccountId}}:template/ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+  - Name: modifyLifecycleHookOfUpgrade
+    When:
+      Fn::Equals:
+        - '{{ getLifecycleHook.totalCount }}'
+        - 1
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle hook of upgrade
+      zh-cn: 修改用于升级的生命周期挂钩
+    Properties:
+      Service: ESS
+      API: ModifyLifecycleHook
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        NotificationMetadata: '{"bucketName":"{{ invokeBucketName }}","objectName":"{{ invokeObjectName }}","URLExpirationTime":"{{ URLExpirationTime }}","OSSRegion":"{{ OSSRegion }}","destinationDir":"{{ invokeDestinationDir }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
+        LifecycleTransition: SCALE_OUT
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+  - Name: whetherToResumeProcesses
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否恢复流程
+    Properties:
+      DefaultTask: resumeProcesses
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - '{{ exitProcess }}'
+          NextTask: 'ACS::END'
+  - Name: resumeProcesses
+    Action: 'ACS::ExecuteAPI'
+    OnSuccess: 'ACS::END'
+    Description:
+      en: Resume process
+      zh-cn: 恢复伸缩组流程
+    Properties:
+      Service: ESS
+      API: ResumeProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ exitProcess }}'
+  - Name: getExecutionInstanceIds
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get the instance that has been executed
+      zh-cn: 获取已经执行过执行脚本的实例
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ParentExecutionId: '{{ sourceExecutionId }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: 'Executions[].Parameters.instanceId'
+  - Name: getExistInstanceIds
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      Filters:
+        - Type: ResourceIds
+          ResourceIds: '{{ getExecutionInstanceIds.instanceIds }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: getRollbackProcess
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Views resource parameters
+      zh-cn: 获取源执行的参数
+    Properties:
+      Service: OOS
+      API: ListExecutions
+      Parameters:
+        ExecutionId: '{{ sourceExecutionId }}'
+    Outputs:
+      enterProcess:
+        Type: List
+        ValueSelector: 'Executions[].Parameters.enterProcess[]'
+      exitProcess:
+        Type: List
+        ValueSelector: 'Executions[].Parameters.exitProcess[]'
+  - Name: suspendProcessWithRollBack
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Suspend process
+      zh-cn: 暂停伸缩组流程
+    Properties:
+      Service: ESS
+      API: SuspendProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ getRollbackProcess.enterProcess }}'
+  - Name: rollbackByDownloadOSSFileAndRunCommand
+    Action: ACS::ESS::DownloadOSSFileAndRunCommand
+    Description:
+      en: Rollback by downloading files to the instance and executing commands
+      zh-cn: 通过下载文件到实例并执行命令的方式进行回滚
+    Properties:
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      bucketName: '{{ rollbackBucketName }}'
+      objectName: '{{ rollbackObjectName }}'
+      URLExpirationTime: '{{ URLExpirationTime }}'
+      OSSRegion: '{{ OSSRegion }}'
+      commandContent: '{{ rollbackScript }}'
+      destinationDir: '{{ rollbackDestinationDir }}'
+      whetherSaveToFile: '{{ whetherSaveToFile }}'
+    Loop:
+      Items: '{{ getExistInstanceIds.instanceIds }}'
+      BatchPauseOption: '{{ batchPauseOption }}'
+      Concurrency:
+        'Fn::CalculateBatch':
+          - '{{ batchNumber }}'
+          - '{{ getExistInstanceIds.instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: runCommandOutput
+  - Name: modifyLifecycleHookOfRollback
+    When:
+      Fn::Equals:
+        - '{{ getLifecycleHook.totalCount }}'
+        - 1
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle hook of rollback
+      zh-cn: 修改用于回滚的生命周期挂钩
+    Properties:
+      Service: ESS
+      API: ModifyLifecycleHook
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        NotificationMetadata: '{"bucketName":"{{ rollbackBucketName }}","objectName":"{{ rollbackObjectName }}","URLExpirationTime":"{{ URLExpirationTime }}","OSSRegion":"{{ OSSRegion }}","destinationDir":"{{ rollbackDestinationDir }}","commandContent":"{{ rollbackScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
+        LifecycleTransition: SCALE_OUT
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadOSSFileAndRunCommand
+  - Name: whetherToResumeProcessesWithRollback
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by process
+      zh-cn: 根据流程值判断是否恢复流程
+    Properties:
+      DefaultTask: resumeProcessesWithRollback
+      Choices:
+        - When:
+            'Fn::Equals':
+              - []
+              - '{{ getRollbackProcess.exitProcess }}'
+          NextTask: 'ACS::END'
+  - Name: resumeProcessesWithRollback
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Resume process
+      zh-cn: 恢复伸缩组流程
+    Properties:
+      Service: ESS
+      API: ResumeProcesses
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        Process: '{{ getRollbackProcess.exitProcess }}'
+Outputs:
+  commandOutputs:
+    Type: List
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - invoke
+            - '{{ invokeType }}'
+        - '{{ invokeByDownloadOSSFileAndRunCommand.commandOutputs }}'
+        - '{{ rollbackByDownloadOSSFileAndRunCommand.commandOutputs }}'

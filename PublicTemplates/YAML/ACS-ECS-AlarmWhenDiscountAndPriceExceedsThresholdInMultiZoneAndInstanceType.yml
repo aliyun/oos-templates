@@ -21,11 +21,11 @@ Parameters:
     Label:
       en: ZoneId
       zh-cn: 可用区
-    AssociationProperty: 'ALIYUN::ECS::Instance::ZoneId'
     Type: List
+    AssociationProperty: ALIYUN::ECS::Instance::ZoneId
     AssociationPropertyMetadata:
-      Multiple: true
       RegionId: region
+      AutoChangeType: false
   instanceType:
     Description:
       en: The instance type

@@ -23,12 +23,15 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
+      InternetChargeType: PayByBandwidth
   timerTrigger:
     Type: Json
     Label:
       en: TimerTrigger
       zh-cn: 定时类型
     AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
   maxBandwidthOut:
     Label:
       en: The maximum public network bandwidth for out-direction

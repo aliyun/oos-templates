@@ -6,7 +6,8 @@
     "name-en": "ACS-ECS-BulkyAuthorizeSecurityGroup",
     "name-zh-cn": "批量授权安全组策略",
     "categories": [
-      "instance_manage"
+      "instance_manage",
+      "computenest"
     ]
   },
   "Parameters": {
@@ -24,7 +25,8 @@
         "en": "SecurityGroupIds",
         "zh-cn": "安全组ID"
       },
-      "Type": "List"
+      "Type": "List",
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId"
     },
     "ipProtocol": {
       "Label": {

@@ -65,7 +65,8 @@
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "Status": "Running"
       }
     },
     "commandType": {

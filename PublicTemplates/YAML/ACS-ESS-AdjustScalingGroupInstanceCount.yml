@@ -7,6 +7,7 @@ Description:
     <li class="li">Please ensure that your account balance is greater than the cost of the newly purchased instance, otherwise an error of code:InvalidAccountStatus.NotEnoughBalance will be returned. </li>
     <li class="li">If it is multi-zone, please expand the multiple of the number of zones. </li>
     <li class="li">The payment method for the expanded ECS is pay-as-you-go. If necessary, customers need to Manual subcontracting yearly and monthly. </a></li>
+    <li class="li"> There are two ways to scale down：scale down the specified number of ECS (<b>the number of ECS instance adjustments in the scaling group</b> is not 0), remove the specified ECS from the scaling group ( <b>The number of ECS instance adjustments in the scaling group</b> is 0 and the ECS to be removed is selected)</li>
     <li class="li">The scaling cannot be less than the number initially opened in the scaling group. </li>
     </ul>
     <p class="p">Adjust the number of instances in a scaling group by creating and executing scaling group rules. Description:</p>
@@ -20,6 +21,7 @@ Description:
     <li class="li">执行请确保您的账号余额大于新购实例的费用，否则会返回 code：InvalidAccountStatus.NotEnoughBalance 的错误。</li>
     <li class="li">如果是多可用区请扩容可用区数的倍数。</li>
     <li class="li">扩容的ECS付费方式为按量付费，如有需要，客户需要手动<a href="https://help.aliyun.com/document_detail/49884.html?spm=5176.2020520101.help.dexternal.6ecb4df5sxWQrt">转包年包月。</a></li>
+    <li class="li">缩容有两种方式：缩容指定数量的ECS（<b>伸缩组ECS实例调整的数量</b>非0）、从伸缩组中移除指定的ECS（<b>伸缩组ECS实例调整的数量</b>为0且选择要移除的ECS）</li>
     <li class="li">缩容数量不能少于伸缩组内最开始开出来的数量。</li>
     </ul>
     <p class="p">调整ACK集群节点池<a href='https://help.aliyun.com/document_detail/160490.html?spm=5176.2020520152.help.dexternal.253916ddpJbWDl#title-mpp-3jj-oo3'>期望节点数</a>。说明：</p>
@@ -94,6 +96,31 @@ Parameters:
           Fn::Equals:
             - '${resourceType}'
             - ESS
+  instancesToBeRemoved:
+    Type: Json
+    Label:
+      en: RemovedInstances
+      zh-cn: 从伸缩组中移除的ECS实例
+    Default:
+      Type: ResourceIds
+      ResourceIds: []
+      RegionId: '{{ ACS::RegionId }}'
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
+      Visible:
+        Condition:
+          Fn::And:
+            - Fn::Equals:
+                - '${resourceType}'
+                - ESS
+            - Fn::Equals:
+                - '${adjustmentType}'
+                - ScaleIn
+            - Fn::Equals:
+                - '${adjustmentCount}'
+                - 0
   clusterId:
     Label:
       en: ClusterId
@@ -151,13 +178,66 @@ Tasks:
       en: Choose next task by resource type
       zh-cn: 根据资源类型选择下一个任务
     Properties:
-      DefaultTask: createScalingRule
+      DefaultTask: whetherToRemoveInstancesFromScalingGroup
       Choices:
         - When:
             Fn::Equals:
               - 'ACK'
               - '{{ resourceType }}'
           NextTask: getNodePoolDetail
+  - Name: whetherToRemoveInstancesFromScalingGroup
+    Action: 'ACS::Choice'
+    Description:
+      en: Choose next task by adjustment type
+      zh-cn: 根据伸缩规则调整方式选择下一个任务
+    Properties:
+      DefaultTask: createScalingRule
+      Choices:
+        - When:
+            Fn::And:
+              - Fn::Equals:
+                  - '{{adjustmentType}}'
+                  - ScaleIn
+              - Fn::Equals:
+                  - '{{adjustmentCount}}'
+                  - 0
+          NextTask: getInstanceToBeRemoved
+  - Name: getInstanceToBeRemoved
+    Description:
+      en: Get the ECS instance to be removed
+      zh-cn: 获取待移除的ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ instancesToBeRemoved }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: removeInstances
+    Action: 'ACS::ExecuteAPI'
+    OnSuccess: waitScalingActivityComplete
+    When:
+      Fn::Not:
+        Fn::Equals:
+          - '{{ getInstanceToBeRemoved.instanceIds }}'
+          - []
+    Description:
+      en: Remove instances from scaling group
+      zh-cn: 从伸缩组中移除ECS实例
+    Properties:
+      Service: ESS
+      API: RemoveInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ScalingGroupId: '{{ scalingGroupId }}'
+        InstanceIds: '{{ getInstanceToBeRemoved.instanceIds }}'
+    Outputs:
+      scalingActivityId:
+        Type: String
+        ValueSelector: .ScalingActivityId
   - Name: createScalingRule
     Action: 'ACS::ExecuteAPI'
     Description:
@@ -219,7 +299,17 @@ Tasks:
       API: DescribeScalingActivities
       Parameters:
         RegionId: '{{ regionId }}'
-        ScalingActivityId1: '{{ executeScalingRule.scalingActivityId }}'
+        ScalingActivityId1:
+          Fn::If:
+            - Fn::And:
+                - Fn::Equals:
+                    - '{{adjustmentType}}'
+                    - ScaleIn
+                - Fn::Equals:
+                    - '{{adjustmentCount}}'
+                    - 0
+            - '{{ removeInstances.scalingActivityId }}'
+            - '{{ executeScalingRule.scalingActivityId }}'
       DesiredValues:
         - Successful
       StopRetryValues:
@@ -228,6 +318,15 @@ Tasks:
         - Warning
       PropertySelector: 'ScalingActivities.ScalingActivity[0].StatusCode'
   - Name: deleteScalingRule
+    When:
+      Fn::Not:
+        Fn::And:
+          - Fn::Equals:
+              - '{{adjustmentType}}'
+              - ScaleIn
+          - Fn::Equals:
+              - '{{adjustmentCount}}'
+              - 0
     Description:
       en: Delete ScalingRule
       zh-cn: 删除伸缩组规则
@@ -248,7 +347,17 @@ Tasks:
       API: DescribeScalingActivityDetail
       Parameters:
         RegionId: '{{ regionId }}'
-        ScalingActivityId: '{{ executeScalingRule.scalingActivityId }}'
+        ScalingActivityId:
+          Fn::If:
+            - Fn::And:
+                - Fn::Equals:
+                    - '{{adjustmentType}}'
+                    - ScaleIn
+                - Fn::Equals:
+                    - '{{adjustmentCount}}'
+                    - 0
+            - '{{ removeInstances.scalingActivityId }}'
+            - '{{ executeScalingRule.scalingActivityId }}'
     Outputs:
       detail:
         Type: String
@@ -265,7 +374,17 @@ Tasks:
       Parameters:
         RegionId: '{{ regionId }}'
         Tags:
-          ESS:ScalingActivityId: '{{ executeScalingRule.scalingActivityId }}'
+          ESS:ScalingActivityId:
+            Fn::If:
+              - Fn::And:
+                  - Fn::Equals:
+                      - '{{adjustmentType}}'
+                      - ScaleIn
+                  - Fn::Equals:
+                      - '{{adjustmentCount}}'
+                      - 0
+              - '{{ removeInstances.scalingActivityId }}'
+              - '{{ executeScalingRule.scalingActivityId }}'
     Outputs:
       lifecycleHookOOSExecutionResult:
         Type: String
@@ -337,6 +456,7 @@ Metadata:
           - scalingGroupId
           - adjustmentType
           - adjustmentCount
+          - instancesToBeRemoved
           - clusterId
           - nodepoolId
           - desiredSize
