@@ -8,22 +8,28 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region.",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance",
+      "Label": {
+        "en": "ECSInstanceId",
         "zh-cn": "ECS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "internetChargeType": {
-      "Description": {
-        "en": "EIP measurement method",
+      "Label": {
+        "en": "EIPInternetChargeType",
         "zh-cn": "EIP的计费方式"
       },
       "Type": "String",
@@ -34,19 +40,27 @@
       "Default": "PayByBandwidth"
     },
     "bandwidth": {
-      "Description": {
-        "en": "Peak bandwidth of eip",
+      "Label": {
+        "en": "EIPBandwidth",
         "zh-cn": "EIP的带宽峰值"
       },
       "Type": "Number",
       "Default": 5
     },
     "tags": {
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "标签"
+      },
       "Description": {
         "en": "The tags for EIP(format:[{\"Key\":\"test1\",\"Value\":\"test1\"},{\"Key\":\"test2\",\"Value\":\"test2\"}])",
         "zh-cn": "EIP的标签，格式: [{\"Key\":\"test1\",\"Value\":\"test1\"},{\"Key\":\"test2\",\"Value\":\"test2\"}]"
       },
       "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
       "Default": [
         {
           "Key": "oos_generate",

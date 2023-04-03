@@ -8,40 +8,58 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instace",
+      "Label": {
+        "en": "ECSInstanceId",
         "zh-cn": "ECS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "sourceType": {
-      "Description": {
-        "en": "The type of file storage",
-        "zh-cn": "文件存储方式"
+      "Label": {
+        "en": "SourceType",
+        "zh-cn": "文件类型"
       },
       "Type": "String",
       "AllowedValues": [
         "oss",
         "https",
         "github"
-      ]
+      ],
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "DownloadFileType",
+        "RegionId": "${regionId}"
+      }
     },
     "sourcePath": {
-      "Description": {
-        "en": "You must specify a URL where the file is stored",
-        "zh-cn": "您必须指定一个用于存储文件的URL"
+      "Label": {
+        "en": "SourcePath",
+        "zh-cn": "选择文件"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OOS::File::FileUrl",
+      "AssociationPropertyMetadata": {
+        "FileType": "${sourceType}",
+        "RegionId": "${regionId}"
+      }
     },
     "tokenInfo": {
+      "Label": {
+        "en": "GitHubToken",
+        "zh-cn": "GitHubToken"
+      },
       "Description": {
         "en": "Specify a token to download file.It is only required when downloading file from GitHub",
         "zh-cn": "指定一个token来下载文件，只有从GitHub下载文件时会用到"
@@ -50,39 +68,49 @@
       "Default": ""
     },
     "destinationDir": {
+      "Label": {
+        "en": "DestinationDir",
+        "zh-cn": "文件保存路径"
+      },
       "Description": {
-        "en": "Target directory for file download in instance",
-        "zh-cn": "文件在实例中的下载目录"
+        "en": "The full path of destination directory",
+        "zh-cn": "文件在目标机器的完整路径"
       },
       "Type": "String"
     },
     "whetherSaveToFile": {
-      "Description": {
-        "en": "Whether to download content to a specific file",
+      "Label": {
+        "en": "WhetherSaveToFile",
         "zh-cn": "是否将内容下载到特定文件"
       },
       "Type": "Boolean",
       "Default": true
     },
     "commandContent": {
-      "Description": {
-        "en": "The content of command",
-        "zh-cn": "云助手命令"
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "命令内容"
       },
-      "Type": "String"
+      "Type": "String",
+      "MaxLength": 16384,
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent"
     },
     "workingDir": {
       "Description": {
-        "en": "The directory where the created command runs on the ECS instances.Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32.",
-        "zh-cn": "脚本在ECS实例中的运行目录。Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32。"
+        "en": "Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32",
+        "zh-cn": "Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32"
+      },
+      "Label": {
+        "en": "WorkingDir",
+        "zh-cn": "运行目录"
       },
       "Type": "String",
       "Default": ""
     },
     "timeout": {
-      "Description": {
-        "en": "The value of the invocation timeout period of a command on ECS instances",
-        "zh-cn": "ECS实例中执行命令的超时时间"
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "超时时间"
       },
       "Type": "Number",
       "Default": 600
@@ -252,6 +280,52 @@
           "{{ runWindowsCommand.commandOutput }}"
         ]
       }
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "sourceType",
+            "sourcePath",
+            "tokenInfo",
+            "destinationDir",
+            "whetherSaveToFile"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "下载文件选项",
+              "en": "Run Command Options"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "commandContent",
+            "workingDir",
+            "timeout"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "执行命令选项",
+              "en": "Run Command Options"
+            }
+          }
+        }
+      ]
     }
   }
 }

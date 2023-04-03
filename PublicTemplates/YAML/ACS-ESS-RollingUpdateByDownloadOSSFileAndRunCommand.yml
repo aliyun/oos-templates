@@ -221,7 +221,7 @@ Tasks:
         ScalingGroupId: '{{ scalingGroupId }}'
         Process: '{{ enterProcess }}'
   - Name: invokeByDownloadOSSFileAndRunCommand
-    Action: ACS::ESS::DownloadOSSFileAndRunCommand
+    Action: ACS::ECS::DownloadOSSFileAndRunCommand
     Description:
       en: Upgrade by downloading files to the instance and executing commands
       zh-cn: 通过下载文件到实例并执行命令的方式进行升级
@@ -386,7 +386,7 @@ Tasks:
         ScalingGroupId: '{{ scalingGroupId }}'
         Process: '{{ getRollbackProcess.enterProcess }}'
   - Name: rollbackByDownloadOSSFileAndRunCommand
-    Action: ACS::ESS::DownloadOSSFileAndRunCommand
+    Action: ACS::ECS::DownloadOSSFileAndRunCommand
     Description:
       en: Rollback by downloading files to the instance and executing commands
       zh-cn: 通过下载文件到实例并执行命令的方式进行回滚

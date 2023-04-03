@@ -8,31 +8,41 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance",
+      "Label": {
+        "en": "ECSInstanceId",
         "zh-cn": "ECS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "stoppedMode": {
+      "Label": {
+        "en": "StoppedMode",
+        "zh-cn": "停止模式"
+      },
       "Description": {
-        "en": "Indicates whether the ECS instance is still charged after it is stopped",
-        "zh-cn": "停止按量付费ECS实例后，是否继续计费"
+        "en": "About StoppedMode details please refer to <a href=\"https://help.aliyun.com/document_detail/25501.html\" target=\"_blank\">document</a>",
+        "zh-cn": "停止按量付费ECS实例后，是否继续计费，有关StoppedMode详情请<a href=\"https://help.aliyun.com/document_detail/25501.html\" target=\"_blank\">参考</a>"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::StopMode",
       "Default": ""
     },
     "hibernate": {
-      "Description": {
-        "en": "Whether to hibernate the instance",
+      "Label": {
+        "en": "WhetherHibernateInstance",
         "zh-cn": "实例是否休眠"
       },
       "Type": "Boolean",

@@ -6,32 +6,39 @@ Description:
   zh-cn: 更换一台ECS实例的系统盘
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   imageId:
-    Description:
-      en: The ID of image
+    Label:
+      en: ImageId
       zh-cn: 镜像ID
     Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   instanceId:
-    Description:
-      en: The ID of ECS instance
+    Label:
+      en: ECSInstanceId
       zh-cn: ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
     MinLength: 1
     MaxLength: 30
   password:
-    Description:
-      en: The password of ECS instance
+    Label:
+      en: ECSInstancePassword
       zh-cn: ECS实例密码
     Type: String
     Default: ''
   keyPairName:
-    Description:
-      en: The keypair name
+    Label:
+      en: KeyPairName
       zh-cn: 密钥对名称
     Type: String
     Default: ''

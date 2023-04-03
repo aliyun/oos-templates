@@ -6,18 +6,20 @@ Description:
   zh-cn: 通过指定的实例ID删除ECS实例
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description:
-      en: The ID of ECS instance
+    Label:
+      en: ECSInstanceId
       zh-cn: ECS实例ID
     Type: String
-    MinLength: 1
-    MaxLength: 30
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor

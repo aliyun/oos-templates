@@ -6,16 +6,20 @@ Description:
   zh-cn: 重新初始化一块云盘到创建时的初始状态
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   instanceId:
-    Description:
-      en: The ID of ECS instance
+    Label:
+      en: ECSInstanceId
       zh-cn: ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
 Tasks:
 - Name: querySystemDisk
   Action: ACS::ExecuteAPI

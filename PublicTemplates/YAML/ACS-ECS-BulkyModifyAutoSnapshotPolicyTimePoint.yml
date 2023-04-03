@@ -1,0 +1,85 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Modifies timepoints of AutoSnapshotPolicy
+  zh-cn: 修改自动快照策略的创建时间点
+  name-en: ACS-ECS-BulkyModifyAutoSnapshotPolicyTimePoint
+  name-zh-cn: 修改自动快照策略的创建时间点
+  categories:
+    - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Label:
+      en: The ids of AutoSnapshotPolicy
+      zh-cn: 目标自动快照策略ID列表
+    Type: List
+  timePoints:
+    Description:
+      en: The time must be in UTC+8. Unit hours. Valid values are 0 to 23, which correspond to the 24 points in time on the hour from 00:00:00 to 23:00:00. For example, a value of 1 indicates 01:00:00.
+      zh-cn: 使用UTC+8时间，单位为小时。取值范围为0~23，代表00:00至23:00共24个时间点，如1表示01:00。
+    Label:
+      en: The maintain time of the instance autosnapshot
+      zh-cn: 自动快照的创建时间点。
+    Type: String
+
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ModifyAutoSnapshotPolicyEx
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modifies timepoints of ecs AutoSnapshotPolicy
+      zh-cn: 修改自动快照的创建时间点
+    Properties:
+      Service: ECS
+      API: ModifyAutoSnapshotPolicyEx
+      Parameters:
+        RegionId: '{{ RegionId }}'
+        autoSnapshotPolicyId: '{{ ACS::TaskLoopItem }}'
+        timePoints: '{{ timePoints }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - timePoints
+        Label:
+          default:
+            zh-cn: 自动快照的创建时间点
+            en: Configure timepoints
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择自动快照策略
+            en: Select policy
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

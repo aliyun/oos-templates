@@ -179,6 +179,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         ImageName: '{{ imageName }}'
         InstanceId: '{{ instanceId }}'
+        DetectionStrategy: Standard
     Outputs:
       ImageId:
         ValueSelector: ImageId

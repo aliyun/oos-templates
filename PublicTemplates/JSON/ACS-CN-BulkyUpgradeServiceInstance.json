@@ -36,7 +36,8 @@
         "en": "ServiceVersion",
         "zh-cn": "服务版本"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ComputeNestSupplier::Service::ServiceVersion"
     },
     "RateControl": {
       "Label": {

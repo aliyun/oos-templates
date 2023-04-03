@@ -323,7 +323,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}",
-          "DiskDeviceMapping": "{{ createIncrementSnapshot.snapshotIds }}"
+          "DiskDeviceMapping": "{{ createIncrementSnapshot.snapshotIds }}",
+          "DetectionStrategy": "Standard"
         }
       },
       "Outputs": {

@@ -6,84 +6,109 @@ Description:
   zh-cn: 创建一个或多个ECS实例
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   imageId:
-    Description:
-      en: The ID of the image resource that you specify when you create the instance
-      zh-cn: 创建ECS实例时出入的镜像ID
+    Label:
+      en: ImageId
+      zh-cn: 镜像ID
     Type: String
     AllowedPattern: '[A-Za-z0-9_\-\.]*'
     MinLength: 1
     MaxLength: 100
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   instanceType:
-    Description:
-      en: The type of the ECS instance
-      zh-cn: ECS实例类型
+    Label:
+      en: InstanceType
+      zh-cn: 实例类型
     Type: String
     AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
     MaxLength: 30
     MinLength: 1
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceType
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      InstanceChargeType: instanceChargeType
   instanceName:
-    Description:
-      en: The name of new instance
-      zh-cn: 新实例名称
+    Label:
+      en: InstanceName
+      zh-cn: 实例名称
     Type: String
     Default: ''
   ramRoleName:
-    Description:
-      en: The ram role for the ECS instances
-      zh-cn: ECS实例的RamRole名称
+    Label:
+      en: RAMRoleName
+      zh-cn: RAM角色名称
     Type: String
     Default: ''
   securityGroupId:
-    Description:
-      en: The ID of the security group to which the instance belongs
-      zh-cn: 实例的安全组ID
+    Label:
+      en: SecurityGroupId
+      zh-cn: 安全组ID
     Type: String
     AllowedPattern: sg-[A-Za-z0-9]*
     MaxLength: 30
     MinLength: 1
+    AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   vSwitchId:
-    Description:
+    Label:
       en: The ID of the VSwitch
       zh-cn: 交换机ID
     Type: String
     AllowedPattern: vsw-[A-Za-z0-9]*
     MaxLength: 30
     MinLength: 1
+    AssociationProperty: ALIYUN::VPC::VSwitch::VSwitchId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   amount:
-    Description:
-      en: The specified number of instances you want to create
-      zh-cn: 需要创建实例的数量
+    Label:
+      en: InstanceAmount
+      zh-cn: 实例数量
     Type: Number
     Default: 1
   internetMaxBandwidthIn:
-    Description:
-      en: The maximum inbound public bandwidth
+    Label:
+      en: InternetMaxBandwidthIn
       zh-cn: 公网入带宽
     Type: Number
     Default: 200
   internetMaxBandwidthOut:
-    Description:
-      en: The maximum outbound public bandwidth
+    Label:
+      en: InternetMaxBandwidthOut
       zh-cn: 公网出带宽
     Type: Number
     Default: 0
   tags:
+    Label:
+      en: Tags
+      zh-cn: 标签
     Description:
       en: 'The tags of new ECS instance to add on,e.g.[{"Key":"oos","Value":"test"}]'
       zh-cn: ECS实例的标签，例如：[{"Key":"oos","Value":"test"}]
     Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
     Default: []
   systemDiskCategory:
-    Description:
-      en: The category of the system disk
+    Label:
+      en: SystemDiskCategory
       zh-cn: 系统盘的云盘种类
     Type: String
+    AssociationProperty: ALIYUN::ECS::Disk::SystemDiskCategory
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      InstanceType: instanceType
+      InstanceChargeType: instanceChargeType
     AllowedValues:
      - cloud_efficiency
      - cloud_ssd
@@ -91,34 +116,71 @@ Parameters:
      - cloud
     Default: cloud_efficiency
   systemDiskSize:
-    Description:
-      en: The size of the system disk
+    Label:
+      en: SystemDiskSize
       zh-cn: 系统盘大小
     Type: String
     Default: ''
   instanceChargeType:
-    Description:
-      en: Instance charge type
+    Label:
+      en: InstanceChargeType
       zh-cn: 实例的付费方式
     Type: String
+    AssociationProperty: ChargeType
     AllowedValues:
       - PrePaid
       - PostPaid
     Default: PostPaid
   periodUnit:
-    Description:
+    Label:
       en: The unit of the subscription period
       zh-cn: 包年包月计费方式的时长单位
     Type: String
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          'Fn::Not':
+            'Fn::Equals':
+              - '${instanceChargeType}'
+              - PostPaid
     AllowedValues:
       - Week
       - Month
     Default: Month
   period:
-    Description:
-      en: The subscription period of the instance
+    Label:
+      en: TargetPeriod
       zh-cn: 购买包年包月资源的时长
+    Description:
+      en: "Valid values:
+          Valid values when PeriodUnit is set to Week: 1, 2, 3, and 4.
+          Valid values when PeriodUnit is set to Month: 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 48, and 60."
+      zh-cn: 取值范围：
+             PeriodUnit=Week时，Period取值：{“1”, “2”, “3”, “4”}。
+             PeriodUnit=Month时，Period取值：{“1”, “2”, “3”, “4”, “5”, “6”, “7”, “8”, “9”, “12”, “24”, “36”, ”48”, ”60”}。
     Type: Number
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          'Fn::Not':
+            'Fn::Equals':
+              - '${instanceChargeType}'
+              - PostPaid
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 12
+      - 24
+      - 36
+      - 48
+      - 60
     Default: 1
 Tasks:
 - Name: runInstances
@@ -185,3 +247,52 @@ Outputs:
   instanceIds:
     Type: List
     Value: '{{ runInstances.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+        Label:
+          default:
+            en: Select Region
+            zh-cn: 选择地域
+      - Parameters:
+          - imageId
+        Label:
+          default:
+            en: Select Image
+            zh-cn: 选择镜像
+      - Parameters:
+          - instanceChargeType
+          - periodUnit
+          - period
+        Label:
+          default:
+            en: Config Charge Type
+            zh-cn: 配置计费方式
+      - Parameters:
+          - instanceType
+          - vSwitchId
+          - securityGroupId
+          - systemDiskCategory
+          - systemDiskSize
+          - internetMaxBandwidthIn
+          - internetMaxBandwidthOut
+          - instanceName
+          - ramRoleName
+        Label:
+          default:
+            en: Configure Parameters
+            zh-cn: 配置参数
+      - Parameters:
+          - amount
+        Label:
+          default:
+            en: Instance Count
+            zh-cn: 实例数量
+      - Parameters:
+          - tags
+        Label:
+          default:
+            en: Instance Tags
+            zh-cn: 实例标签

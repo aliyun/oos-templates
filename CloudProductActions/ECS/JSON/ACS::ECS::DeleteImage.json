@@ -8,19 +8,24 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "imageId": {
-      "Description": {
-        "en": "The ID of ECS image",
+      "Label": {
+        "en": "ImageId",
         "zh-cn": "镜像ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     }
   },
   "Tasks": [

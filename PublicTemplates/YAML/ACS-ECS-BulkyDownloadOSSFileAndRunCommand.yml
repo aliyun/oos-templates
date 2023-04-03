@@ -1,0 +1,158 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky downLoad OSS file to instances and run command
+  zh-cn: 批量下载OSS文件到多个ECS实例并执行云助手命令
+  name-en: ACS-ECS-BulkyDownloadOSSFileAndRunCommand
+  name-zh-cn: 批量下载OSS文件到多个ECS实例并执行云助手命令
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    Type: Json
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  OSSRegion:
+    Label:
+      en: OSSRegion
+      zh-cn: OSS所在地域
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  bucketName:
+    Label:
+      en: BucketName
+      zh-cn: OSS Bucket名称
+    Type: String
+  objectName:
+    Label:
+      en: ObjectName
+      zh-cn: OSS对象名称
+    Type: String
+  URLExpirationTime:
+    Label:
+      en: DownloadURLExpirationTime
+      zh-cn: 下载链接的过期时间
+    Type: Number
+    Default: 6000
+  destinationDir:
+    Label:
+      en: DestinationDir
+      zh-cn: 实例中文件复制的目标目录
+    Type: String
+  whetherSaveToFile:
+    Label:
+      en: whetherSaveToFile
+      zh-cn: 是否将内容下载到特定文件
+    Type: Boolean
+    Default: true
+  commandContent:
+    Label:
+      en: CommandContent
+      zh-cn: 在ECS实例中执行的云助手命令
+    Type: String
+    AssociationProperty: Code
+    Default: echo hello
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: ECS实例中执行命令的超时时间
+    Type: Number
+    Default: 600
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 速率控制
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: 'ACS::SelectTargets'
+    Properties:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: 'Instances.Instance[].InstanceId'
+  - Name: downloadOSSFileAndRunCommand
+    Action: ACS::ECS::DownloadOSSFileAndRunCommand
+    Description:
+      en: Download OSS file to the ECS instances and run command
+      zh-cn: 下载OSS文件到实例并执行命令
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      bucketName: '{{ bucketName }}'
+      objectName: '{{ objectName }}'
+      URLExpirationTime: '{{ URLExpirationTime }}'
+      OSSRegion: '{{ OSSRegion }}'
+      destinationDir: '{{ destinationDir }}'
+      whetherSaveToFile: '{{ whetherSaveToFile }}'
+      commandContent: '{{ commandContent }}'
+      timeout: '{{ timeout }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - OSSRegion
+          - bucketName
+          - objectName
+          - URLExpirationTime
+          - whetherSaveToFile
+          - destinationDir
+        Label:
+          default:
+            zh-cn: 配置下载文件参数
+            en: Configure Download File Parameters
+      - Parameters:
+          - commandContent
+          - timeout
+        Label:
+          default:
+            zh-cn: 配置执行命令参数
+            en: Configure Run Command Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

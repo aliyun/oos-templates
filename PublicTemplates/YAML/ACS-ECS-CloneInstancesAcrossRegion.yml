@@ -104,6 +104,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         ImageName: 'img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}'
         InstanceId: '{{ ACS::TaskLoopItem }}'
+        DetectionStrategy: Standard
     Loop:
       Items: '{{ instanceIds }}'
       Outputs:
