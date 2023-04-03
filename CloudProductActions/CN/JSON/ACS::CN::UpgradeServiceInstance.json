@@ -66,6 +66,9 @@
         "DesiredValues": [
           "Deployed"
         ],
+        "StopRetryValues": [
+          "UpgradeFailed"
+        ],
         "PropertySelector": ".Status"
       }
     }

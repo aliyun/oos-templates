@@ -42,4 +42,6 @@ Tasks:
         ServiceInstanceId: '{{ ServiceInstanceId }}'
       DesiredValues:
         - Deployed
+      StopRetryValues:
+        - UpgradeRollbackFailed
       PropertySelector: .Status

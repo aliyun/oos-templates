@@ -48,4 +48,6 @@ Tasks:
         ServiceInstanceId: '{{ ServiceInstanceId }}'
       DesiredValues:
         - Deployed
+      StopRetryValues:
+        - UpgradeFailed
       PropertySelector: .Status

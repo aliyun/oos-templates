@@ -6,45 +6,50 @@ Description:
   zh-cn: 跨区地域复制镜像
 Parameters:
   imageId:
-    Description:
-      en: The ID of image to clone
-      zh-cn: 要克隆的镜像的ID
+    Label:
+      en: ImageId
+      zh-cn: 镜像ID
     Type: String
+    AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
+    AssociationPropertyMetadata:
+      RegionId: regionId
   regionId:
-    Description:
-      en: The source Region Id
+    Label:
+      en: SourceRegionId
       zh-cn: 源地域ID
+    AssociationProperty: ALIYUN::ECS::RegionId
     Type: String
     MinLength: 1
     MaxLength: 30
   targetRegionId:
-    Description:
-      en: The Target Region ID
+    Label:
+      en: TargetRegionId
       zh-cn: 目标地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     MinLength: 1
     MaxLength: 30
   targetImageName:
-    Description:
-      en: The Target image name
+    Label:
+      en: TargetImageName
       zh-cn: 目标镜像名称
     Type: String
     Default: '{{ imageId }}-{{ACS::ExecutionId}}'
   encrypted:
-    Description:
-      en: Specifies whether to encrypt the image copy
+    Label:
+      en: WhetherEncrypted
       zh-cn: 是否加密复制后的镜像
     Type: Boolean
     Default: false
   KMSKeyId:
-    Description:
-      en: The ID of the key used to encrypt the image copy
+    Label:
+      en: KMSKeyIdOfEncrypted
       zh-cn: 加密镜像使用的密钥ID
     Type: String
     Default: ""
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS
+    Label:
+      en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole

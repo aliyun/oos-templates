@@ -137,7 +137,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageName": "img-{{ ACS::TaskLoopItem }}-{{ACS::ExecutionId}}",
-          "InstanceId": "{{ ACS::TaskLoopItem }}"
+          "InstanceId": "{{ ACS::TaskLoopItem }}",
+          "DetectionStrategy": "Standard"
         }
       },
       "Loop": {

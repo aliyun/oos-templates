@@ -226,6 +226,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         ImageName: '{{ imageName }}'
         DiskDeviceMapping: '{{ createIncrementSnapshot.snapshotIds }}'
+        DetectionStrategy: Standard
     Outputs:
       ImageId:
         ValueSelector: ImageId

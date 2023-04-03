@@ -6,24 +6,25 @@ Description:
   zh-cn: 添加EIP到共享带宽包
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   eipAddress:
-    Description:
-      en: The Eip address
+    Label:
+      en: EIPAddress
       zh-cn: EIP的IP地址
     Type: String
   bandwidthPackageId:
-    Description:
-      en: The ID of the common bandwidth package
+    Label:
+      en: BandwidthPackageId
       zh-cn: 共享带宽包ID
     Type: String
   OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS
+    Label:
+      en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
     Default: OOSServiceRole

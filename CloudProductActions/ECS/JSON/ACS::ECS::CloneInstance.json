@@ -234,7 +234,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}",
-          "InstanceId": "{{ instanceId }}"
+          "InstanceId": "{{ instanceId }}",
+          "DetectionStrategy": "Standard"
         }
       },
       "Outputs": {

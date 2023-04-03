@@ -6,15 +6,16 @@ Description:
   zh-cn: 修改ECS实例的属性
 Parameters:
   instanceAttributes:
-    Description:
-      en: The infos of the ECS instance
+    Label:
+      en: ECSInstanceAttributes
       zh-cn: ECS实例信息
     Type: Json
   instanceId:
-    Description:
-      en: The ID of ECS instance
+    Label:
+      en: ECSInstanceId
       zh-cn: ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
 Tasks:
 - Name: modifyInstanceAttribute
   Action: ACS::ExecuteApi

@@ -337,6 +337,7 @@
         "Parameters": {
           "ImageName": "{{imagePrefix}}{{ ACS::ExecutionId }}",
           "InstanceId": "{{ unreachableInstanceId }}",
+          "DetectionStrategy": "Standard",
           "Tag": [
             {
               "Key": "instance_to_rescue",

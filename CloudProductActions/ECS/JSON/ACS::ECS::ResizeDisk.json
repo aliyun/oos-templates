@@ -8,36 +8,44 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
     "diskId": {
-      "Description": {
-        "en": "The ID of the disk will resize",
+      "Label": {
+        "en": "DiskId",
         "zh-cn": "云盘ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Disk::DiskId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "InstanceId": "instanceId"
+      },
       "AllowedPattern": "d-[A-Za-z0-9]*",
       "MinLength": 1,
       "MaxLength": 30
     },
-    "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance",
-        "zh-cn": "ECS实例ID"
-      },
-      "Type": "String",
-      "MinLength": 1,
-      "MaxLength": 30
-    },
     "newSize": {
-      "Description": {
-        "en": "The size for the disk to resize",
-        "zh-cn": "希望扩容到的云盘容量大小"
+      "Label": {
+        "en": "NewSizeToReset",
+        "zh-cn": "扩容后的云盘容量"
       },
       "Type": "String"
     }

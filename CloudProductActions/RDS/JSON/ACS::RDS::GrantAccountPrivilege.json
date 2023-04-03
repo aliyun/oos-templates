@@ -8,38 +8,47 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The region ID of DB instance",
-        "zh-cn": "DB实例的地域ID"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "dbInstanceId": {
-      "Description": {
-        "en": "The id of DB instance to grant account privilege in",
-        "zh-cn": "要授予帐户特权的DB实例的ID"
+      "Label": {
+        "en": "RDSInstanceId",
+        "zh-cn": "RDS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::RDS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "accountName": {
-      "Description": {
-        "en": "The account name to grant privilege for",
-        "zh-cn": "要授予特权的帐户名"
+      "Label": {
+        "en": "AccountName",
+        "zh-cn": "要授权的帐户名"
       },
       "Type": "String"
     },
     "dbNames": {
+      "Label": {
+        "en": "DBNameList",
+        "zh-cn": "DB名称列表"
+      },
       "Description": {
-        "en": "The DB names to grant account privilege to. tips, the wildcard parameter value [\"all\"] that represents all dbs is only suoported when all dbs count of single instance not greater than 100",
-        "zh-cn": "要授予帐户特权的DB名称。tips，只有当单个实例的所有dbs计数不大于100时，才支持代表所有dbs的通配符参数值[\"all\"]"
+        "en": "The wildcard parameter value [\"all\"] that represents all dbs is only suoported when all dbs count of single instance not greater than 100",
+        "zh-cn": "只有当单个实例的所有dbs计数不大于100时，才支持代表所有dbs的通配符参数值[\"all\"]"
       },
       "Type": "List"
     },
     "accountPrivilege": {
-      "Description": {
-        "en": "The target account privilege to grant, the default is ReadOnly",
-        "zh-cn": "要授予的目标帐户权限，默认为ReadOnly"
+      "Label": {
+        "en": "AccountPrivilege",
+        "zh-cn": "要授予目标帐户的权限"
       },
       "Type": "String",
       "AllowedValues": [

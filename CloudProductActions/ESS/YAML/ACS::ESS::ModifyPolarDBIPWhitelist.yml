@@ -6,16 +6,21 @@ Description:
   name-zh-cn: 修改PolarDB集群的IP白名单
 Parameters:
   regionId:
-    Description:
-      en: The ID of region.
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
   dbClusterId:
-    Description:
-      en: The ID of PolarDB cluster.
+    Label:
+      en: PolarDBClusterId
       zh-cn: PolarDB集群ID
     Type: String
   modifyMode:
+    Label:
+      en: ModifyMode
+      zh-cn: 修改白名单的方式
     Description:
       en: 'The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities.'
       zh-cn: 修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动。
@@ -24,8 +29,8 @@ Parameters:
       - Append
       - Delete
   securityIp:
-    Description:
-      en: The ip address
+    Label:
+      en: SecurityIp
       zh-cn: ip地址
     Type: String
 Tasks:

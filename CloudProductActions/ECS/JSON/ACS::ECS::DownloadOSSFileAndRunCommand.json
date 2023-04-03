@@ -1,0 +1,335 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::DownloadOSSFileAndRunCommand",
+    "name-zh-cn": "下载OSS文件到ECS实例并执行命令",
+    "en": "Download the OSS file to the ECS instance",
+    "zh-cn": "下载OSS文件到ECS实例并执行命令"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "bucketName": {
+      "Description": {
+        "en": "The bucket name of OSS",
+        "zh-cn": "OSS bucket名称"
+      },
+      "Type": "String"
+    },
+    "objectName": {
+      "Description": {
+        "en": "The object name of OSS",
+        "zh-cn": "OSS对象名称"
+      },
+      "Type": "String"
+    },
+    "URLExpirationTime": {
+      "Description": {
+        "en": "Expiration time of OSS file download url",
+        "zh-cn": "OSS文件下载链接的过期时间"
+      },
+      "Type": "Number",
+      "Default": 6000
+    },
+    "OSSRegion": {
+      "Description": {
+        "en": "The region id of OSS",
+        "zh-cn": "OSS所在地域"
+      },
+      "Type": "String"
+    },
+    "tokenInfo": {
+      "Description": {
+        "en": "Specify a token to download file. It is only required when downloading file from GitHub",
+        "zh-cn": "指定一个token来下载文件，只有从GitHub下载文件时会用到"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "destinationDir": {
+      "Description": {
+        "en": "Target directory for file download in ECS instance",
+        "zh-cn": "文件在ECS实例中的下载目录"
+      },
+      "Type": "String"
+    },
+    "whetherSaveToFile": {
+      "Description": {
+        "en": "Whether to download content to a specific file",
+        "zh-cn": "是否将内容下载到特定文件"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "commandContent": {
+      "Description": {
+        "en": "The content of command",
+        "zh-cn": "命令内容"
+      },
+      "Type": "String"
+    },
+    "workingDir": {
+      "Description": {
+        "en": "The working directory of the command on the instance. Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32.",
+        "zh-cn": "脚本在ECS实例中的运行目录。Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32。"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "timeout": {
+      "Description": {
+        "en": "The timeout period for the command execution on ECS instance",
+        "zh-cn": "ECS实例中执行命令的超时时间"
+      },
+      "Type": "Number",
+      "Default": 600
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "generateUrl",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Generate url",
+        "zh-cn": "生成URL"
+      },
+      "Properties": {
+        "Service": "OSS",
+        "API": "GenerateUrl",
+        "Method": "GET",
+        "URI": "{{ objectName }}",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/json"
+        },
+        "Parameters": {
+          "BucketName": "{{ bucketName }}",
+          "RegionId": "{{ OSSRegion }}",
+          "Expires": "{{ URLExpirationTime }}",
+          "Internal": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "{{ OSSRegion }}",
+                  "{{ ACS::RegionId }}"
+                ]
+              },
+              "true",
+              "false"
+            ]
+          }
+        },
+        "Body": ""
+      },
+      "Outputs": {
+        "URL": {
+          "Type": "String",
+          "ValueSelector": ".Url"
+        }
+      }
+    },
+    {
+      "Name": "queryInstanceOSType",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Queries ECS instance OS type",
+        "zh-cn": "获取ECS实例操作系统类型"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "OSType": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSType"
+        },
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "whetherExistInstance",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Check whether ECS instance exists",
+        "zh-cn": "检测ECS实例是否存在"
+      },
+      "Properties": {
+        "DefaultTask": "downloadLinuxFile",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                [],
+                "{{ queryInstanceOSType.instanceIds }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "downloadLinuxFile",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Download file to linux ECS instance",
+        "zh-cn": "下载文件到linux类型ECS实例"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#/bin/bash\nif  [ '{{ whetherSaveToFile }}' = 'true' ] ; then\n   acs-plugin-manager --exec -P oosutil --params  download_content,https,'\"{{generateUrl.URL}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}','-F'\nelse\n   acs-plugin-manager --exec -P oosutil --params  download_content,https,'\"{{generateUrl.URL}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\nfi"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "runLinuxCommand",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run command on linux instance",
+        "zh-cn": "在linux类型实例上执行命令"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "{{ commandContent }}",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "downloadWindowsFile",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Download file to windows instance",
+        "zh-cn": "下载文件命令在windows类型实例"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": "if ({{whetherSaveToFile}} -eq \"true\"){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'\"\n} else {\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "runWindowsCommand",
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run command on windows instance",
+        "zh-cn": "在windows类型实例上执行命令"
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": "{{ commandContent }}",
+        "workingDir": "{{ workingDir }}",
+        "timeout": "{{ timeout }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "downloadFileCommandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "linux",
+              "{{ queryInstanceOSType.OSType }}"
+            ]
+          },
+          "{{ downloadLinuxFile.commandOutput }}",
+          "{{ downloadWindowsFile.commandOutput }}"
+        ]
+      }
+    },
+    "runCommandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "linux",
+              "{{ queryInstanceOSType.OSType }}"
+            ]
+          },
+          "{{ runLinuxCommand.commandOutput }}",
+          "{{ runWindowsCommand.commandOutput }}"
+        ]
+      }
+    }
+  }
+}

@@ -6,28 +6,35 @@ Description:
   zh-cn: 为ECS实例创建一份自定义镜像
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   imageName:
-    Description:
-      en: The name of image
+    Label:
+      en: ImageName
       zh-cn: 镜像名称
     Type: String
   instanceId:
-    Description:
-      en: The ID of the ECS instance
+    Label:
+      en: ECSInstanceId
       zh-cn: ECS实例ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
     MinLength: 1
     MaxLength: 30
   tags:
-    Description:
-      en: The image tag
+    Label:
+      en: ImageTags
       zh-cn: 镜像标签
     Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
     Default: []
 Tasks:
 - Name: getInstances
@@ -93,6 +100,7 @@ Tasks:
       InstanceId: '{{ instanceId }}'
       Tags: '{{ tags }}'
       ResourceGroupId: '{{ checkInstanceReady.resourceGroupId }}'
+      DetectionStrategy: Standard
   Outputs:
     imageId:
       Type: String

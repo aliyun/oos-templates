@@ -6,16 +6,20 @@ Description:
   zh-cn: 删除数据库实例
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   dBInstanceId:
-    Description:
-      en: The ID of DB Instance that will be deleted
-      zh-cn: 要删除的DB实例ID
+    Label:
+      en: RDSInstanceId
+      zh-cn: RDS实例ID
     Type: String
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
 Tasks:
 - Name: checkForInstanceReady
   Action: ACS::CheckFor

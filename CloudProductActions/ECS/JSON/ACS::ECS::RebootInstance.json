@@ -8,26 +8,29 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance",
+      "Label": {
+        "en": "ECSInstanceId",
         "zh-cn": "ECS实例ID"
       },
       "Type": "String",
-      "MinLength": 1,
-      "MaxLength": 30
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "forceStop": {
-      "Description": {
-        "en": "Specifies whether to forcibly stop the instance to restart it",
-        "zh-cn": "重启ECS实例前，是否强制关机"
+      "Label": {
+        "en": "WhetherForceStop",
+        "zh-cn": "是否强制关机"
       },
       "Type": "Boolean",
       "Default": false

@@ -6,46 +6,97 @@ Description:
   zh-cn: 创建一台RDS实例
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
   dBInstanceClass:
-    Description:
-      en: The instance type (specifications)
-      zh-cn: 实例类型(规格)
+    Label:
+      en: RDSInstanceClass
+      zh-cn: RDS实例规格
     Type: String
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceType
   dBInstanceNetType:
-    Description:
-      en: The network type of the instance, Internet or Intranet
-      zh-cn: 实例的网络类型，Internet或Intranet
+    Label:
+      en: RDSInstanceNetType
+      zh-cn: 实例的网络类型
     Type: String
+    AllowedValues:
+      - Internet
+      - Intranet
   dBInstanceStorage:
-    Description:
-      en: The storage capacity of the instance
-      zh-cn: 实例的存储容量
-    Type: String
+    Label:
+      en: RDSInstanceStorage
+      zh-cn: RDS实例的存储容量
+    Type: Number
   engine:
-    Description:
-      en: The engine type of the database
-      zh-cn: 数据库的引擎类型
+    Label:
+      en: Engine
+      zh-cn: 数据库类型
     Type: String
+    AssociationProperty: ALIYUN::RDS::Engine::EngineId
   engineVersion:
-    Description:
-      en: The version of the database
-      zh-cn: 数据库的版本
+    Label:
+      en: EngineVersion
+      zh-cn: 数据库类型版本
     Type: String
+    AssociationProperty: ALIYUN::RDS::Engine::EngineVersion
+    AssociationPropertyMetadata:
+      Engine: engine
   payType:
-    Description:
-      en: The billing method of the instance
-      zh-cn: 实例的计费方法
+    Label:
+      en: RDSInstancePayType
+      zh-cn: RDS实例的计费方式
     Type: String
+    AllowedValues:
+      - Postpaid
+      - Prepaid
+      - Serverless
   securityIPList:
-    Description:
-      en: The IP whitelist of the instance
-      zh-cn: 实例的IP白名单
+    Label:
+      en: IPWhitelistRDSInstance
+      zh-cn: RDS实例的IP白名单
     Type: String
+  instanceNetworkType:
+    Label:
+      en: InstanceNetworkType
+      zh-cn: RDS实例的网络类型
+    Description:
+      en: >-
+        <div>
+        <p>Network type of the instance, value:</p>
+        <ul>
+        <li><strong>VPC</strong>: Private network. </li>
+        <li><strong>Classic</strong>: Classic network (default). </li>
+        </ul>
+        <strong>Description</strong>
+        <ul>
+        <li>MySQL cloud disk instance only supports VPC, this parameter must be configured as <strong>VPC</strong>. </li>
+        <li>PostgreSQL and MariaDB instances only support VPC, this parameter must be configured as <strong>VPC</strong>. </li>
+        <li>SQL Server stand-alone and Web instances support classic networks and VPCs. Other instances only support VPC, and this parameter must be configured as <strong>VPC</strong>. </li>
+        </ul>
+        </div>
+      zh-cn: >-
+        <div>
+        <p>实例的网络类型，取值：</p>
+        <ul>
+        <li><strong>VPC</strong>：专有网络。</li>
+        <li><strong>Classic</strong>：经典网络（默认）。</li>
+        </ul>
+        <strong>说明</strong>
+        <ul>
+        <li>MySQL云盘实例只支持专有网络，此参数必须配置为<strong>VPC</strong>。</li>
+        <li>PostgreSQL和MariaDB实例只支持专有网络，此参数必须配置为<strong>VPC</strong>。</li>
+        <li>SQL Server单机版和Web版实例支持经典网络和专有网络。其余实例只支持专有网络，此参数必须配置为<strong>VPC</strong>。</li>
+        </ul>
+        </div>
+    Type: String
+    AllowedValues:
+      - VPC
+      - Classic
+    Default: VPC
 Tasks:
 - Name: createDBInstance
   Action: ACS::ExecuteAPI
@@ -64,6 +115,7 @@ Tasks:
       EngineVersion: '{{ engineVersion }}'
       PayType: '{{ payType }}'
       SecurityIPList: '{{ securityIPList }}'
+      InstanceNetworkType: '{{ instanceNetworkType }}'
   Outputs:
     dBInstanceId:
       Type: String

@@ -8,14 +8,19 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The source region ID",
-        "zh-cn": "源地域ID"
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
       },
       "Type": "String",
-      "Default": "{{ACS::RegionId}}"
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
     },
     "parameters": {
+      "Label": {
+        "en": "ROSTemplateParameters",
+        "zh-cn": "ROS模板参数"
+      },
       "Description": {
         "en": "The parameters that ROS template need. e.g.[ { \"ParameterValue\": \"System\", \"ParameterKey\": \"PolicyType\" }, { \"ParameterValue\": \"zhangsan\", \"ParameterKey\": \"UserName\" }, { \"ParameterValue\": \"AliyunOSSReadOnlyAccess\", \"ParameterKey\": \"PolicyName\" } ]",
         "zh-cn": "ROS模板需要的参数。例如[{\"ParameterValue\": \"System\"， \"ParameterKey\": \"PolicyType\"}， {\"ParameterValue\": \"zhangsan\"， \"ParameterKey\": \"UserName\"}， {\"ParameterValue\": \"AliyunOSSReadOnlyAccess\"， \"ParameterKey\": \"PolicyName\"}]"
@@ -23,32 +28,32 @@
       "Type": "Json"
     },
     "templateBody": {
-      "Description": {
-        "en": "The ROS template content",
+      "Label": {
+        "en": "ROSTemplateBody",
         "zh-cn": "ROS模板内容"
       },
       "Type": "Json",
       "AssociationProperty": "Code"
     },
     "stackName": {
-      "Description": {
-        "en": "The ROS stack mame",
+      "Label": {
+        "en": "ROSStackName",
         "zh-cn": "ROS资源栈名称"
       },
       "Type": "String",
       "Default": "OOS-{{ACS::ExecutionId}}"
     },
     "timeoutInMinutes": {
-      "Description": {
-        "en": "The ROS timeout in minutes",
+      "Label": {
+        "en": "TimeoutInMinutes",
         "zh-cn": "ROS超时时间(分钟)"
       },
       "Type": "String",
       "Default": 10
     },
     "disableRollback": {
-      "Description": {
-        "en": "The ROS stack disable rollback",
+      "Label": {
+        "en": "DisableRollback",
         "zh-cn": "ROS资源禁用回滚"
       },
       "Type": "String",

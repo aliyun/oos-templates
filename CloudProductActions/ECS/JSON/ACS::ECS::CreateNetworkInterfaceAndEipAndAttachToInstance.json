@@ -8,24 +8,29 @@
   },
   "Parameters": {
     "regionId": {
-      "Description": {
-        "en": "The ID of region",
+      "Label": {
+        "en": "RegionId",
         "zh-cn": "地域ID"
       },
       "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
     "instanceId": {
-      "Description": {
-        "en": "The ID of ECS instance",
+      "Label": {
+        "en": "ECSInstanceId",
         "zh-cn": "ECS实例ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "internetChargeType": {
-      "Description": {
-        "en": "EIP measurement method",
-        "zh-cn": "EIP的计费方式"
+      "Label": {
+        "en": "EIPInternetChargeType",
+        "zh-cn": "EIP的网络计费方式"
       },
       "Type": "String",
       "AllowedValues": [
@@ -35,8 +40,8 @@
       "Default": "PayByBandwidth"
     },
     "bandwidth": {
-      "Description": {
-        "en": "Peak bandwidth of EIP",
+      "Label": {
+        "en": "EIPBandwidth",
         "zh-cn": "EIP带宽峰值"
       },
       "Type": "Number",

@@ -100,7 +100,8 @@ Tasks:
       commandContent: |-
         if ('{{ action }}' -eq 'scan'){
             acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params "-operation",scan
-        }else{acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params "-operation",install,"-reboot",no
+        }else{
+            acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params "-operation,install,-reboot,no"
         }
     Outputs:
       commandOutput:

@@ -125,7 +125,7 @@
         "instanceId": "{{ instanceId }}",
         "timeout": "{{ timeout }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": "if ('{{ action }}' -eq 'scan'){\n    acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params \"-operation\",scan\n}else{acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params \"-operation\",install,\"-reboot\",no\n}"
+        "commandContent": "if ('{{ action }}' -eq 'scan'){\n    acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params \"-operation\",scan\n}else{\n    acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params \"-operation,install,-reboot,no\"\n}"
       },
       "Outputs": {
         "commandOutput": {

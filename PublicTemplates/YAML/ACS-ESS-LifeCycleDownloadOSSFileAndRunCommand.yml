@@ -112,7 +112,7 @@ Tasks:
   - Name: downloadFileAndRunCommand
     OnError: CompleteLifecycleActionForAbandon
     OnSuccess: CompleteLifecycleActionForContinue
-    Action: ACS::ESS::DownloadOSSFileAndRunCommand
+    Action: ACS::ECS::DownloadOSSFileAndRunCommand
     Description:
       en: Downloads file to the ECS instances adn run command
       zh-cn: 下载文件到实例并执行命令

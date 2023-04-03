@@ -1,0 +1,126 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modifies maintain time of polardb clusters",
+    "zh-cn": "修改集群可维护时间段",
+    "name-en": "ACS-PolarDB-BulkyModifyDBClusterMaintainTime",
+    "name-zh-cn": "修改可维护时间段",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "The ids of polardb clusters",
+        "zh-cn": "polardb集群ID列表"
+      },
+      "Type": "List"
+    },
+    "maintainTime": {
+      "Description": {
+        "en": "The format is HH:mmZ-HH:mmZ. For example, 16:00Z-17:00Z means that routine maintenance can be performed from 0:00 to 1:00 (UTC+08:00).",
+        "zh-cn": "格式为HH:mmZ- HH:mmZ。例如16:00Z-17:00Z，表示0点到1点（UTC+08:00）可进行例行维护。"
+      },
+      "Label": {
+        "en": "The maintain time of the cluster",
+        "zh-cn": "集群的可维护时间"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "ModifyInstanceMaintainTime",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modifies maintain time of polardb cluster",
+        "zh-cn": "修改可维护时间段"
+      },
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "ModifyDBClusterMaintainTime",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ ACS::TaskLoopItem }}",
+          "MaintainTime": "{{ maintainTime }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "maintainTime"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置维护时段",
+              "en": "Configure Maintain Time"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择集群",
+              "en": "Select Clusters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

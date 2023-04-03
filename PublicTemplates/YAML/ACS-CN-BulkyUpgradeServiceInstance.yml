@@ -28,6 +28,7 @@ Parameters:
       en: ServiceVersion
       zh-cn: 服务版本
     Type: String
+    AssociationProperty: ALIYUN::ComputeNestSupplier::Service::ServiceVersion
   RateControl:
     Label:
       en: RateControl
