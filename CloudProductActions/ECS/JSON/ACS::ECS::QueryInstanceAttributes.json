@@ -44,11 +44,15 @@
       "Outputs": {
         "instanceInfo": {
           "Type": "Json",
-          "ValueSelector": ".Instances.Instance[] | {\"ImageId\": .ImageId,\"Cpu\": .Cpu,\"CpuOptions\": .CpuOptions,\"SecurityGroupIds\": .SecurityGroupIds.SecurityGroupId,\"InstanceTypeFamily\": .InstanceTypeFamily,\"EipAddresses\": .EipAddress,\"InstanceName\": .InstanceName,\"HostName\": .HostName,\"InstanceChargeType\": .InstanceChargeType,\"InstanceNetworkType\": .InstanceNetworkType,\"DeletionProtection\": .DeletionProtection,\"ExpiredTime\": .ExpiredTime,\"GPUAmount\": .GPUAmount,\"GPUSpec\": .GPUSpec,\"Memory\": .Memory,\"OSName\": .OSName,\"NetworkInterfaces\": .NetworkInterfaces,\"PublicIpAddress\": .PublicIpAddress,\"InternetChargeType\": .InternetChargeType,\"Status\": .Status,\"StoppedMode\": .StoppedMode,\"ZoneId\": .ZoneId,\"VpcAttributes\": .VpcAttributes,\"AutoReleaseTime\": .AutoReleaseTime,\"CreationTime\": .CreationTime,\"Description\": .Description,\"InnerIpAddress\": .InnerIpAddress,\"InstanceType\": .InstanceType,\"InternetMaxBandwidthIn\": .InternetMaxBandwidthIn,\"InternetMaxBandwidthOut\": .InternetMaxBandwidthOut }"
+          "ValueSelector": ".Instances.Instance[] | del(.SecurityGroupIds) "
         },
         "privateIpAddresses": {
           "Type": "String",
           "ValueSelector": ".| if .Instances.Instance[].NetworkInterfaces==null then \"\" else .Instances.Instance[].NetworkInterfaces.NetworkInterface[].PrivateIpSets.PrivateIpSet[].PrivateIpAddress end"
+        },
+        "securityGroupIds": {
+          "Type": "Json",
+          "ValueSelector": ".Instances.Instance[].SecurityGroupIds.SecurityGroupId"
         }
       }
     },
@@ -109,7 +113,14 @@
           {
             "InstanceAttr": {
               "Fn::MergeMap": [
-                "{{ queryInstanceInfo.instanceInfo }}",
+                {
+                  "Fn::MergeMap": [
+                    "{{ queryInstanceInfo.instanceInfo }}",
+                    {
+                      "SecurityGroupIds": "{{ queryInstanceInfo.securityGroupIds }}"
+                    }
+                  ]
+                },
                 {
                   "PrivateIpAddresses": "{{ queryInstanceInfo.privateIpAddresses }}"
                 }

@@ -38,6 +38,7 @@ Parameters:
     AssociationPropertyMetadata:
       Multiple: true
       RegionId: region
+      ZoneIds: '${zoneId}'
   taskType:
     Description:
       en: The monitoring threshold task type（Discount：Monitor discount, Price：monitor price）

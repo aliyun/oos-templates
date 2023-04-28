@@ -39,6 +39,7 @@ Parameters:
       - ACS::EBS::DedicatedBlockStorageCluster
       - ACS::EBS::DiskReplicaGroup
       - ACS::EBS::DiskReplicaPair
+      - ACS::EBS::EnterpriseSnapshotPolicy
       - ACS::ECS::DedicatedHost
       - ACS::ECS::Disk
       - ACS::ECS::Instance

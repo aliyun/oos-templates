@@ -40,6 +40,30 @@
         false,
         true
       ]
+    },
+    "systemDiskSize": {
+      "Description": {
+        "en": "System disk size to update launch template",
+        "zh-cn": "用于更新的启动模板的系统盘大小"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "systemDiskPerformanceLevel": {
+      "Description": {
+        "en": "System disk performance level to update launch template",
+        "zh-cn": "设置系统盘的性能等级"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "systemDiskDeleteWithInstance": {
+      "Description": {
+        "en": "Whether the system disk will be deleted with the instance",
+        "zh-cn": "系统盘是否随实例释放"
+      },
+      "Type": "String",
+      "Default": ""
     }
   },
   "Tasks": [
@@ -137,6 +161,14 @@
         "systemDiskSize": {
           "Type": "Number",
           "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.Size\" ])"
+        },
+        "systemDiskPerformanceLevel": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.PerformanceLevel\" ])"
+        },
+        "systemDiskDeleteWithInstance": {
+          "Type": "String",
+          "ValueSelector": ".LaunchTemplateVersionSets.LaunchTemplateVersionSet[].LaunchTemplateData| getpath([ \"SystemDisk.DeleteWithInstance\" ])"
         },
         "ramRoleName": {
           "Type": "String",
@@ -270,7 +302,42 @@
           "UserData": "{{ describeLaunchTemplateVersions.userData }}",
           "InstanceChargeType": "{{ describeLaunchTemplateVersions.instanceChargeType }}",
           "SpotDuration": "{{ describeLaunchTemplateVersions.spotDuration }}",
-          "SystemDiskSize": "{{ describeLaunchTemplateVersions.systemDiskSize }}",
+          "SystemDiskSize": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "{{ systemDiskSize }}",
+                  ""
+                ]
+              },
+              "{{ describeLaunchTemplateVersions.systemDiskSize }}",
+              "{{ systemDiskSize }}"
+            ]
+          },
+          "SystemDiskPerformanceLevel": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "{{ systemDiskPerformanceLevel }}",
+                  ""
+                ]
+              },
+              "{{ describeLaunchTemplateVersions.systemDiskPerformanceLevel }}",
+              "{{ systemDiskPerformanceLevel }}"
+            ]
+          },
+          "SystemDiskDeleteWithInstance": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "{{ systemDiskDeleteWithInstance }}",
+                  ""
+                ]
+              },
+              "{{ describeLaunchTemplateVersions.systemDiskDeleteWithInstance }}",
+              "{{ systemDiskDeleteWithInstance }}"
+            ]
+          },
           "RamRoleName": "{{ describeLaunchTemplateVersions.ramRoleName }}",
           "NetworkType": "{{ describeLaunchTemplateVersions.networkType }}",
           "NetworkInterfaces": "{{ describeLaunchTemplateVersions.networkInterfaces }}",
@@ -343,7 +410,7 @@
       "Action": "ACS::WaitFor",
       "OnSuccess": "deleteLaunchTemplateVersion",
       "Description": {
-        "en": "Waits for modifying launch template fefault version success",
+        "en": "Waits for modifying launch template default version success",
         "zh-cn": "等待启动模版默认版本更改成功"
       },
       "Retries": 7,

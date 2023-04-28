@@ -1,0 +1,101 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECI::ExecContainerCommand",
+    "name-zh-cn": "到ECI容器中执行命令",
+    "en": "Exec container command",
+    "zh-cn": "到ECI容器中执行命令"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "ContainerGroupId": {
+      "Label": {
+        "en": "ECIContainerGroupId",
+        "zh-cn": "ECI实例ID"
+      },
+      "Type": "String"
+    },
+    "Command": {
+      "Label": {
+        "en": "CommandList",
+        "zh-cn": "命令序列"
+      },
+      "Type": "List"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "GetContainer",
+      "Description": {
+        "en": "Get container",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::ExecuteApi",
+      "Properties": {
+        "Service": "ECI",
+        "API": "DescribeContainerGroups",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ContainerGroupIds": [
+            "{{ ContainerGroupId }}"
+          ],
+          "Status": "Running"
+        }
+      },
+      "Outputs": {
+        "ContainerNames": {
+          "Type": "List",
+          "ValueSelector": ".ContainerGroups[].Containers[] | select(.CurrentState.State == \"Running\") | .Name"
+        }
+      }
+    },
+    {
+      "Name": "ExecContainerCommand",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Execute container command",
+        "zh-cn": "执行容器命令"
+      },
+      "Properties": {
+        "Service": "ECI",
+        "API": "ExecContainerCommand",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "ContainerGroupId": "{{ ContainerGroupId }}",
+          "ContainerName": "{{ ACS::TaskLoopItem }}",
+          "Command": "{{ Command }}",
+          "Sync": true
+        }
+      },
+      "Loop": {
+        "Items": "{{ GetContainer.ContainerNames }}",
+        "Outputs": {
+          "CommandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "SyncResponse"
+          }
+        }
+      },
+      "Outputs": {
+        "SyncResponse": {
+          "Type": "Json",
+          "ValueSelector": ".SyncResponse"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "SyncResponse": {
+      "Type": "List",
+      "Value": "{{ ExecContainerCommand.CommandOutputs }}"
+    }
+  }
+}
