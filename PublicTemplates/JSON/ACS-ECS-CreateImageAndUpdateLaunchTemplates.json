@@ -119,6 +119,36 @@
       }
     },
     {
+      "Name": "describeDisks",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get disk info of the ECS instance",
+        "zh-cn": "查看实例的磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "systemDiskSize": {
+          "Type": "String",
+          "ValueSelector": ".Disks.Disk[] | select(.Type == \"system\" )|.Size"
+        },
+        "systemDiskPerformanceLevel": {
+          "Type": "String",
+          "ValueSelector": ".Disks.Disk[] | select(.Type == \"system\" )|.PerformanceLevel"
+        },
+        "systemDiskDeleteWithInstance": {
+          "Type": "Boolean",
+          "ValueSelector": ".Disks.Disk[] | select(.Type == \"system\" )|.DeleteWithInstance"
+        }
+      }
+    },
+    {
       "Name": "updateLaunchTemplate",
       "Action": "ACS::ECS::UpdateLaunchTemplate",
       "Description": {
@@ -129,7 +159,10 @@
         "regionId": "{{ regionId }}",
         "imageId": "{{ createImage.imageId }}",
         "launchTemplateName": "{{ ACS::TaskLoopItem }}",
-        "deleteSourceTemplateVersion": "{{ deleteSourceTemplateVersion }}"
+        "deleteSourceTemplateVersion": "{{ deleteSourceTemplateVersion }}",
+        "systemDiskSize": "{{ describeDisks.systemDiskSize}}",
+        "systemDiskPerformanceLevel": "{{ describeDisks.systemDiskPerformanceLevel }}",
+        "systemDiskDeleteWithInstance": "{{ describeDisks.systemDiskDeleteWithInstance }}"
       },
       "Loop": {
         "Items": "{{ launchTemplateNames }}"

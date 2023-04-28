@@ -48,7 +48,8 @@
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
       "AssociationPropertyMetadata": {
         "Multiple": true,
-        "RegionId": "region"
+        "RegionId": "region",
+        "ZoneIds": "${zoneId}"
       }
     },
     "taskType": {

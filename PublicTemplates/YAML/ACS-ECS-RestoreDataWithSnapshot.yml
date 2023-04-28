@@ -1,0 +1,292 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use snapshot to create a temporary cloud disk to restore data
+  zh-cn: 使用快照创建临时云盘恢复数据
+  name-en: ACS-ECS-RestoreDataWithSnapshot
+  name-zh-cn: 使用快照恢复数据
+  categories:
+    - instance_manage
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+  snapshotId:
+    Type: String
+    Label:
+      en: SnapshotId
+      zh-cn: 快照ID
+    AssociationProperty: ALIYUN::ECS::Snapshot::SnapshotId
+  instanceId:
+    Type: String
+    Label:
+      en: InstanceId
+      zh-cn: 实例ID
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      Status: Running
+  retainTempDisk:
+    Type: Boolean
+    Label:
+      en: RetainTempDisk
+      zh-cn: 是否保留临时云盘
+    Description:
+      en: 'Whether to retain the temporary cloud disk. If you want to retain the temporary cloud disk, select Yes to use it as a common cloud disk. You can manually unmount and release the cloud disk when it is not needed'
+      zh-cn: 是否保留临时云盘，如果您希望保留临时云盘，可以选择“是”，将其作为普通云盘使用，不需要时您可以手动卸载并释放该云盘
+    Default: false
+  workingDir:
+    Type: String
+    Label:
+      en: WorkingDir
+      zh-cn: 运行目录
+    Description:
+      en: 'Root permission is required to execute this script. Linux instances: under the home directory of the administrator (root user): /root. Windows instances: do not support OOS script execution. Manually create a temporary cloud disk to recover data'
+      zh-cn: 执行该脚本需要root权限。Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例不支持OOS脚本执行，请手动创建临时云盘恢复数据
+    Default: /root
+  OOSAssumeRole:
+    Type: String
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: checkInstanceStatus
+    Action: ACS::CheckFor
+    Description:
+      en: Check instance status
+      zh-cn: 检查实例状态
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      DesiredValues:
+        - Running
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }} '
+      PropertySelector: Instances.Instance[].Status
+    Outputs:
+      zoneId:
+        Type: String
+        ValueSelector: Instances.Instance[].ZoneId
+  - Name: createDiskBySnapshot
+    Action: ACS::ExecuteApi
+    Description:
+      en: Use the snapshot to create a temporary cloud disk
+      zh-cn: 使用快照创建一块临时云盘
+    Properties:
+      Service: ECS
+      API: CreateDisk
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ZoneId: '{{ checkInstanceStatus.zoneId }}'
+        SnapshotId: '{{ snapshotId}}'
+        DiskName: TempDiskFrom-{{ snapshotId }}
+        DiskCategory: cloud_essd
+    Outputs:
+      diskId:
+        Type: String
+        ValueSelector: .DiskId
+  - Name: modifyDiskAttribute
+    Action: ACS::ExecuteApi
+    Description:
+      en: Modify temporary cloud disk attributes and release them with the instance
+      zh-cn: 修改临时云盘属性，随实例释放
+    Properties:
+      Service: ECS
+      API: ModifyDiskAttribute
+      Parameters:
+        DiskId: '{{ createDiskBySnapshot.diskId }}'
+        DeleteWithInstance: true
+  - Name: attachDisk
+    Action: ACS::ExecuteApi
+    Description:
+      en: Mount the temporary cloud disk to the ECS instance
+      zh-cn: 将临时云盘挂载到ECS实例上
+    Properties:
+      Service: ECS
+      API: AttachDisk
+      Parameters:
+        InstanceId: '{{ instanceId }}'
+        DiskId: '{{ createDiskBySnapshot.diskId }}'
+  - Name: waitForDiskStatusInUse
+    Action: ACS::WaitFor
+    Description:
+      en: Wait until the cloud disk status changes to In_use
+      zh-cn: 等待云盘状态变为使用中
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        DiskIds:
+          - '{{ createDiskBySnapshot.diskId }}'
+      PropertySelector: Disks.Disk[].Status
+      DesiredValues:
+        - In_use
+    Retries: 15
+    DelayType: Constant
+    Delay: 1
+  - Name: mountDisk
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Mount the cloud disk in the ECS instance
+      zh-cn: 在ECS实例中挂载云盘
+    Properties:
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandContent: |
+        echo "查看磁盘和分区"
+        fdisk -l
+        file_system_by_oos=`blkid | tail -n 1 | awk -F : '{print $1}'`
+        file_system_type=`blkid | tail -n 1 | awk '{print $4}' | awk -F \" '{print $2}'`
+        echo "文件系统类型：${file_system_type}"
+        if [ ${file_system_type} == "xfs" ]; then 
+            echo "修改xfs文件系统的UUID"
+            xfs_repair -L ${file_system_by_oos}
+            xfs_admin -U generate ${file_system_by_oos}
+        else
+            echo "修改ext2、ext3或ext4文件系统的UUID"
+            e2fsck -y -f ${file_system_by_oos}
+            uuidgen | xargs tune2fs ${file_system_by_oos} -U
+        fi
+        blkid
+        echo "配置/etc/fstab文件并挂载分区"
+        cp /etc/fstab /etc/fstab.bakbyoos -n
+        mkdir -p /mntbyoos
+        echo `blkid ${file_system_by_oos} | awk '{print $2}' | sed 's/\"//g'` /mntbyoos ${file_system_type} defaults 0 0 >> /etc/fstab
+        cat /etc/fstab
+        mount ${file_system_by_oos}
+        echo "查看结果"
+        df -h
+      windowsPasswordName: ''
+      enableParameter: false
+      parameters: {}
+      timeout: 600
+      username: ''
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: whetherRetainTempDisk
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by retainTempDisk Chosen
+      zh-cn: 根据是否保留临时云盘选择下一步任务
+    Properties:
+      DefaultTask: waitForUserRestoreData
+      Choices:
+        - When:
+            Fn::Equals:
+              - true
+              - '{{ retainTempDisk }}'
+          NextTask: ACS::END
+  - Name: waitForUserRestoreData
+    Action: ACS::Pause
+    Description:
+      en: Wait for the user to manually restore the required data
+      zh-cn: 等待用户手动恢复所需数据
+  - Name: unmountDisk
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Unmount the cloud disk in the ECS instance
+      zh-cn: 在ECS实例中卸载云盘
+    Properties:
+      commandType: RunShellScript
+      workingDir: '{{ workingDir }}'
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandContent: |
+        echo "查看分区"
+        df -h
+        echo "卸载临时分区并修改/etc/fstab文件"
+        file_system_by_oos=`df -h | grep /mntbyoos | awk '{print $1}'`
+        umount ${file_system_by_oos}
+        sed -i '/\/mntbyoos/d' /etc/fstab
+        rm -rf /mntbyoos
+        echo "查看结果"
+        cat /etc/fstab
+        df -h
+      windowsPasswordName: ''
+      enableParameter: false
+      parameters: {}
+      timeout: 600
+      username: ''
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: detachDisk
+    Action: ACS::ExecuteApi
+    Description:
+      en: Unmount the temporary cloud disk from the ECS instance
+      zh-cn: 从ECS实例上卸载临时云盘
+    Properties:
+      Service: ECS
+      API: DetachDisk
+      Parameters:
+        InstanceId: '{{ instanceId }}'
+        DiskId: '{{ createDiskBySnapshot.diskId }}'
+  - Name: waitForDiskStatusAvailable
+    Action: ACS::WaitFor
+    Description:
+      en: Wait until the cloud disk status changes to Available
+      zh-cn: 等待云盘状态变为待挂载
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        DiskIds:
+          - '{{ createDiskBySnapshot.diskId }}'
+      PropertySelector: Disks.Disk[].Status
+      DesiredValues:
+        - Available
+    Retries: 15
+    DelayType: Constant
+    Delay: 1
+  - Name: deleteDisk
+    Action: ACS::ExecuteApi
+    Description:
+      en: Release the temporary cloud disk
+      zh-cn: 释放临时云盘
+    Properties:
+      Service: ECS
+      API: DeleteDisk
+      Parameters:
+        DiskId: '{{ createDiskBySnapshot.diskId }}'
+Outputs:
+  mountDiskOutputs:
+    Type: List
+    Value: '{{ mountDisk.commandOutput }}'
+  unmountDiskOutputs:
+    Type: List
+    Value: '{{ unmountDisk.commandOutput }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - snapshotId
+          - instanceId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - retainTempDisk
+          - workingDir
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

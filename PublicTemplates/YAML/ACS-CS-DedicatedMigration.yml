@@ -215,7 +215,7 @@ Tasks:
         TIMESTAMP=$(date "+%Y%m%d%H%M%S")
         mkdir -p /tmp/etcdsnap
         set -x
-        SNAP_NAME=etcd_$TIMESTAMP
+        SNAP_NAME=etcd_{{ClusterID}}_$TIMESTAMP
         echo "开始备份，备份名为/tmp/"$SNAP_NAME
         DestPrefix="/"{{ClusterID}}
         ETCDCTL_API=3 /usr/bin/etcdctl --cacert=/var/lib/etcd/cert/ca.pem --cert=/var/lib/etcd/cert/etcd-server.pem --key=/var/lib/etcd/cert/etcd-server-key.pem --endpoints=$ENDPOINT snapshot save /tmp/etcdsnap/$SNAP_NAME

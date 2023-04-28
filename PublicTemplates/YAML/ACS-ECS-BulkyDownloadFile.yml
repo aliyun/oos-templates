@@ -21,6 +21,9 @@ Parameters:
     Label:
       en: TargetInstance
       zh-cn: 目标实例
+    Description:
+      en: <p class="p">Precautions:</p> <ul class="ul"> <li class="li"><font color='red'>Download via https requires the ECS instance to enable public network access </font></li><li class="li"><font color='red'>Downloading via oss requires an ECS instance to configure a RAM role, <a href='https://www.alibabacloud.com/help/en/operation-orchestration-service/latest/download-multiple-objects-to-an-instance#vOk3w'>Reference Document</a></font></li>
+      zh-cn: <p class="p">注意事项：</p> <ul class="ul"> <li class="li"><font color='red'>通过https方式下载需要ECS实例开启公网访问</font></li><li class="li"><font color='red'>通过oss方式下载需要ECS实例配置RAM角色，<a href='https://help.aliyun.com/document_detail/175396.html?spm=a2c4g.120556.0.0.34c9de53iyt2Z1#vOk3w'>参考文档</a></font></li>
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
@@ -29,7 +32,7 @@ Parameters:
     Type: String
     Description:
       en: Local uploaded files cannot exceed 500M
-      zh-cn: 本地上传文件不能超过5GB
+      zh-cn: 本地上传文件不能超过500M
     Label:
       en: SourceType
       zh-cn: 文件类型

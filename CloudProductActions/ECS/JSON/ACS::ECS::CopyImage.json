@@ -151,7 +151,8 @@
         ],
         "PropertySelector": "Images.Image[].Status"
       },
-      "Retries": 57
+      "Retries": 296,
+      "MaxRetryInterval": 300
     }
   ],
   "Outputs": {

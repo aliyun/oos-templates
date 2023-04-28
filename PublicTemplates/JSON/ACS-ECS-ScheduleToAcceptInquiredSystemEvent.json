@@ -1,0 +1,237 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "<p>Regularly accept and authorize the execution of system event operations. Template process：<ol><li>Stop ECS instance</li><li>Accept inquired system event</li><li>Start ECS instance</li</ol></p>",
+    "zh-cn": "<p>定时接受并授权执行系统事件操作。模板流程：<ol><li>停止ECS实例</li><li>接受并授权执行系统事件操作</li><li>启动ECS实例</li</ol></p>",
+    "name-en": "ACS-ECS-ScheduleToAcceptInquiredSystemEvent",
+    "name-zh-cn": "定时接受并授权执行系统事件操作",
+    "categories": [
+      "time_trigger"
+    ]
+  },
+  "Parameters": {
+    "timerTrigger": {
+      "Type": "Json",
+      "Label": {
+        "en": "TimerTrigger",
+        "zh-cn": "定时类型"
+      },
+      "AssociationProperty": "ALIYUN::OOS::Component::TimerTrigger",
+      "AssociationPropertyMetadata": {
+        "MinuteInterval": 30
+      }
+    },
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "eventId": {
+      "Label": {
+        "en": "EventId",
+        "zh-cn": "系统事件ID"
+      },
+      "Type": "String"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "AliyunServiceRoleForOOSSystemEventOperator"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "timerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying type and expression",
+        "zh-cn": "通过指定触发类型和表达式按计划触发任务"
+      },
+      "Properties": {
+        "Type": {
+          "Fn::Select": [
+            "type",
+            "{{timerTrigger}}"
+          ]
+        },
+        "Expression": {
+          "Fn::Select": [
+            "expression",
+            "{{timerTrigger}}"
+          ]
+        },
+        "EndDate": {
+          "Fn::Select": [
+            "endDate",
+            "{{ timerTrigger }}"
+          ]
+        },
+        "TimeZone": {
+          "Fn::Select": [
+            "timeZone",
+            "{{ timerTrigger }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "getInstance",
+      "Action": "ACS::SelectTargets",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          {
+            "Type": "ResourceIds",
+            "RegionId": "{{ regionId }}",
+            "ResourceIds": [
+              "{{ instanceId }}"
+            ]
+          }
+        ]
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        },
+        "status": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].Status"
+        }
+      }
+    },
+    {
+      "Name": "checkForWhetherResourceExist",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Check whether the resource exist",
+        "zh-cn": "检查资源是否存在"
+      },
+      "Properties": {
+        "DefaultTask": "stopInstance",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                null,
+                "{{ getInstance.instanceId }}"
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "stopInstance",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stops the ECS instances",
+        "zh-cn": "停止实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ getInstance.instanceId }}"
+      }
+    },
+    {
+      "Name": "acceptInquiredSystemEvent",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Accept and authorize system event actions",
+        "zh-cn": "接受并授权执行系统事件操作"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AcceptInquiredSystemEvent",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "EventId": "{{ eventId }}"
+        }
+      }
+    },
+    {
+      "Name": "startInstance",
+      "Action": "ACS::ECS::StartInstance",
+      "When": {
+        "Fn::Equals": [
+          "Running",
+          "{{ getInstance.status }}"
+        ]
+      },
+      "Description": {
+        "en": "Starts the ECS instances",
+        "zh-cn": "开启实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ getInstance.instanceId }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "timerTrigger"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "定时设置",
+              "en": "The Timer Trigger"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId",
+            "eventId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select ECS Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
