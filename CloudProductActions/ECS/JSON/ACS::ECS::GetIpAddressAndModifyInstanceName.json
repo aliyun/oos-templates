@@ -1,0 +1,86 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::GetIpAddressAndModifyInstanceName",
+    "name-zh-cn": "获取私网IP并修改ECS实例的名称",
+    "en": "Get the private network IP and modify the name of the ECS instance",
+    "zh-cn": "获取私网IP并修改ECS实例的名称"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId"
+    },
+    "instanceNameFormat": {
+      "Label": {
+        "en": "InstanceNameFormat",
+        "zh-cn": "ECS实例名称的格式"
+      },
+      "Type": "String",
+      "Default": "Prefix{PrivateIpAddress}Suffix"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "GetInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Gets private ip address of ECS instance",
+        "zh-cn": "获取ECS实例私网Ip地址"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "IpAddress": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[].VpcAttributes.PrivateIpAddress.IpAddress[]"
+        }
+      }
+    },
+    {
+      "Name": "ModifyInstanceName",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modifies the name of ECS instance",
+        "zh-cn": "修改ECS实例名称"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "ModifyInstanceAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "InstanceName": {
+            "Fn::Replace": [
+              {
+                "{PrivateIpAddress}": "{{ GetInstance.IpAddress }}"
+              },
+              "{{ instanceNameFormat }}"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

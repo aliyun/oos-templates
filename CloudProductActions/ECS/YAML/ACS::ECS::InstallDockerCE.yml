@@ -1,0 +1,493 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::InstallDockerCE
+  name-zh-cn: ECS实例安装Docker社区版
+  en: Install docker CE on ECS instance
+  zh-cn: ECS实例安装Docker社区版
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Get ECS instance OS type
+      zh-cn: 获取实例操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: installDockerCEOnLinuxInstance
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Install docker CE on linux instance
+      zh-cn: 在linux类型实例上安装dockerCE
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+
+        function check_distro() {
+          for i in issue os-release issue.net centos-release redhat-release; do
+            if [[ -f /etc/$i ]]; then
+              if grep -q "$1" /etc/$i; then
+                return 0
+              fi
+            fi
+          done
+          return 1
+        }
+
+        function install_docker_CE() {
+          if check_distro 'CentOS'; then
+            yum install -y yum-utils device-mapper-persistent-data lvm2
+            yum-config-manager --add-repo http://mirrors.cloud.aliyuncs.com/docker-ce/linux/centos/docker-ce.repo
+            sed -i 's+https://mirrors.aliyun.com+http://mirrors.cloud.aliyuncs.com+' /etc/yum.repos.d/docker-ce.repo
+            yum -y install docker-ce
+          elif check_distro 'Ubuntu'; then
+            apt-get update
+            apt-get -y install apt-transport-https ca-certificates curl software-properties-common
+            curl -fsSL http://mirrors.cloud.aliyuncs.com/docker-ce/linux/ubuntu/gpg | apt-key add -
+            add-apt-repository -y "deb [arch=amd64] http://mirrors.cloud.aliyuncs.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+            apt-get -y install docker-ce
+          elif check_distro 'Debian'; then
+            apt-get update
+            apt-get -y install apt-transport-https ca-certificates curl software-properties-common
+            curl -fsSL http://mirrors.cloud.aliyuncs.com/docker-ce/linux/debian/gpg | apt-key add -
+            add-apt-repository -y "deb [arch=amd64] http://mirrors.cloud.aliyuncs.com/docker-ce/linux/debian $(lsb_release -cs) stable"
+            apt-get update
+            apt-get -y install docker-ce
+          elif check_distro 'Fedora'; then
+            dnf config-manager --add-repo http://mirrors.cloud.aliyuncs.com/docker-ce/linux/fedora/docker-ce.repo
+            sed -i 's+https://mirrors.aliyun.com+http://mirrors.cloud.aliyuncs.com+' /etc/yum.repos.d/docker-ce.repo
+            dnf -y install docker-ce
+          elif check_distro 'Alibaba Cloud Linux (Aliyun Linux) 2'; then
+            yum install -y yum-utils device-mapper-persistent-data lvm2
+            yum-config-manager --add-repo http://mirrors.cloud.aliyuncs.com/docker-ce/linux/centos/docker-ce.repo
+            sed -i 's+https://mirrors.aliyun.com+http://mirrors.cloud.aliyuncs.com+' /etc/yum.repos.d/docker-ce.repo
+            yum install yum-plugin-releasever-adapter --disablerepo=* --enablerepo=plus
+            yum -y install docker-ce
+          elif check_distro 'Alibaba Cloud Linux 3'; then
+            dnf config-manager --add-repo=http://mirrors.cloud.aliyuncs.com/docker-ce/linux/centos/docker-ce.repo
+            sed -i 's+https://mirrors.aliyun.com+http://mirrors.cloud.aliyuncs.com+' /etc/yum.repos.d/docker-ce.repo
+            dnf -y install dnf-plugin-releasever-adapter --repo alinux3-plus
+            dnf -y install docker-ce
+          else
+            echo 'Linux release version not support.'
+            exit 1;
+          fi
+        }
+
+        install_docker_CE
+        docker -v
+
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: installDockerCEOnWindowsInstance
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Install docker CE on windows instance
+      zh-cn: 在windows类型实例上安装dockerCE
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        [CmdletBinding(DefaultParameterSetName="Standard")]
+        param(
+            [string]
+            [ValidateNotNullOrEmpty()]
+            $DockerPath = "default",
+        
+            [string]
+            [ValidateNotNullOrEmpty()]
+            $DockerDPath = "default",
+        
+            [string]
+            [ValidateNotNullOrEmpty()]
+            $DockerVersion = "latest"
+        )
+        
+        $global:RebootRequired = $false
+        $global:ErrorFile = "$pwd\Install-ContainerHost.err"
+        $global:BootstrapTask = "ContainerBootstrap"
+        $global:HyperVImage = "NanoServer"
+        $global:AdminPriviledges = $false
+        
+        $global:DefaultDockerLocation = "http://mirrors.cloud.aliyuncs.com/docker-ce/win/static/stable/x86_64/"
+        $global:DockerDataPath = "$($env:ProgramData)\docker"
+        $global:DockerServiceName = "docker"
+        
+        function
+        Install-Feature
+        {
+            [CmdletBinding()]
+            param(
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $FeatureName
+            )
+        
+            Write-Output "Querying status of Windows feature: $FeatureName..."
+            if (Get-Command Get-WindowsFeature -ErrorAction SilentlyContinue)
+            {
+                if ((Get-WindowsFeature $FeatureName).Installed)
+                {
+                    Write-Output "Feature $FeatureName is already enabled."
+                }
+                else
+                {
+                    Write-Output "Enabling feature $FeatureName..."
+                }
+        
+                $featureInstall = Add-WindowsFeature $FeatureName
+        
+                if ($featureInstall.RestartNeeded -eq "Yes")
+                {
+                    $global:RebootRequired = $true;
+                }
+            }
+            else
+            {
+                if ((Get-WindowsOptionalFeature -Online -FeatureName $FeatureName).State -eq "Disabled")
+                {
+                    if (Test-Nano)
+                    {
+                        throw "This NanoServer deployment does not include $FeatureName.  Please add the appropriate package"
+                    }
+        
+                    Write-Output "Enabling feature $FeatureName..."
+                    $feature = Enable-WindowsOptionalFeature -Online -FeatureName $FeatureName -All -NoRestart
+        
+                    if ($feature.RestartNeeded -eq "True")
+                    {
+                        $global:RebootRequired = $true;
+                    }
+                }
+                else
+                {
+                    Write-Output "Feature $FeatureName is already enabled."
+        
+                    if (Test-Nano)
+                    {
+                        #
+                        # Get-WindowsEdition is not present on Nano.  On Nano, we assume reboot is not needed
+                        #
+                    }
+                    elseif ((Get-WindowsEdition -Online).RestartNeeded)
+                    {
+                        $global:RebootRequired = $true;
+                    }
+                }
+            }
+        }
+        
+        
+        function
+        Install-ContainerHost
+        {
+            "If this file exists when Install-ContainerHost.ps1 exits, the script failed!" | Out-File -FilePath $global:ErrorFile
+        
+            if (Test-Client)
+            {
+                if (-not $HyperV)
+                {
+                    Write-Output "Enabling Hyper-V containers by default for Client SKU"
+                    $HyperV = $true
+                }
+            }
+            #
+            # Validate required Windows features
+            #
+            Install-Feature -FeatureName Containers
+        
+            if ($HyperV)
+            {
+                Install-Feature -FeatureName Hyper-V
+            }
+        
+            #
+            # Install and register Docker
+            #
+            if (Test-Docker)
+            {
+                Write-Output "Docker is already installed."
+            }
+            else
+            {
+                Install-Docker -DockerPath $DockerPath -DockerDPath $DockerDPath -ContainerBaseImage $ContainerBaseImage
+            }
+        
+            if ($TarPath)
+            {
+                cmd /c "docker load -i `"$TarPath`""
+            }
+        
+            Remove-Item $global:ErrorFile
+            Write-Output "Script complete! Docker is already installed. You must restart the machine to start docker!"
+            docker -v
+        }
+        
+        function
+        Copy-File
+        {
+            [CmdletBinding()]
+            param(
+                [string]
+                $SourcePath,
+        
+                [string]
+                $DestinationPath
+            )
+        
+            if ($SourcePath -eq $DestinationPath)
+            {
+                return
+            }
+        
+            if (Test-Path $SourcePath)
+            {
+                Copy-Item -Path $SourcePath -Destination $DestinationPath
+            }
+            elseif (($SourcePath -as [System.URI]).AbsoluteURI -ne $null)
+            {
+                if (Test-Nano)
+                {
+                    $handler = New-Object System.Net.Http.HttpClientHandler
+                    $client = New-Object System.Net.Http.HttpClient($handler)
+                    $client.Timeout = New-Object System.TimeSpan(0, 30, 0)
+                    $cancelTokenSource = [System.Threading.CancellationTokenSource]::new()
+                    $responseMsg = $client.GetAsync([System.Uri]::new($SourcePath), $cancelTokenSource.Token)
+                    $responseMsg.Wait()
+        
+                    if (!$responseMsg.IsCanceled)
+                    {
+                        $response = $responseMsg.Result
+                        if ($response.IsSuccessStatusCode)
+                        {
+                            $downloadedFileStream = [System.IO.FileStream]::new($DestinationPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+                            $copyStreamOp = $response.Content.CopyToAsync($downloadedFileStream)
+                            $copyStreamOp.Wait()
+                            $downloadedFileStream.Close()
+                            if ($copyStreamOp.Exception -ne $null)
+                            {
+                                throw $copyStreamOp.Exception
+                            }
+                        }
+                    }
+                }
+                elseif ($PSVersionTable.PSVersion.Major -ge 5)
+                {
+                    #
+                    # We disable progress display because it kills performance for large downloads (at least on 64-bit PowerShell)
+                    #
+                    $ProgressPreference = 'SilentlyContinue'
+                    Invoke-WebRequest -Uri $SourcePath -OutFile $DestinationPath -UseBasicParsing
+                    $ProgressPreference = 'Continue'
+                }
+                else
+                {
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.DownloadFile($SourcePath, $DestinationPath)
+                }
+            }
+            else
+            {
+                throw "Cannot copy from $SourcePath"
+            }
+        }
+        
+        
+        
+        function
+        Test-Client()
+        {
+            return (-not ((Get-Command Get-WindowsFeature -ErrorAction SilentlyContinue) -or (Test-Nano)))
+        }
+        
+        
+        function
+        Test-Nano()
+        {
+            $EditionId = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'EditionID').EditionId
+        
+            return (($EditionId -eq "ServerStandardNano") -or
+                    ($EditionId -eq "ServerDataCenterNano") -or
+                    ($EditionId -eq "NanoServer") -or
+                    ($EditionId -eq "ServerTuva"))
+        }
+        
+        
+        function
+        Install-Docker()
+        {
+            [CmdletBinding()]
+            param(
+                [string]
+                [ValidateNotNullOrEmpty()]
+                $DockerPath = "default",
+        
+                [string]
+                [ValidateNotNullOrEmpty()]
+                $DockerDPath = "default",
+        
+                [string]
+                [ValidateNotNullOrEmpty()]
+                $NATSubnet,
+        
+                [switch]
+                $SkipDefaultHost,
+        
+                [string]
+                $ContainerBaseImage
+            )
+        
+            #If one of these are set to default then the whole .zip needs to be downloaded anyways.
+            Write-Output "DOCKER $DockerPath"
+            if ($DockerPath -eq "default" -or $DockerDPath -eq "default") {
+                Write-Output "Checking Docker versions"
+                #Get the list of .zip packages available from docker.
+                $availableVersions = ((Invoke-WebRequest -Uri $DefaultDockerLocation -UseBasicParsing).Links | Where-Object {$_.href -like "docker*"}).href | Sort-Object -Descending
+        
+                #Parse the versions from the file names
+                $availableVersions = ($availableVersions | Select-String -Pattern "docker-(\d+\.\d+\.\d+).+"  -AllMatches | Select-Object -Expand Matches | %{ $_.Groups[1].Value })
+                $version = $availableVersions[0]
+        
+                if($DockerVersion -ne "latest") {
+                    $version = $DockerVersion
+                    if(!($availableVersions | Select-String $DockerVersion)) {
+                        Write-Error "Docker version supplied $DockerVersion was invalid, please choose from the list of available versions: $availableVersions"
+                        throw "Invalid docker version supplied."
+                    }
+                }
+        
+                $zipUrl = $global:DefaultDockerLocation + "docker-$version.zip"
+                $destinationFolder = "$env:UserProfile\DockerDownloads"
+        
+                if(!(Test-Path "$destinationFolder")) {
+                    md -Path $destinationFolder | Out-Null
+                } elseif(Test-Path "$destinationFolder\docker-$version") {
+                    Remove-Item -Recurse -Force "$destinationFolder\docker-$version"
+                }
+        
+                Write-Output "Downloading $zipUrl to $destinationFolder\docker-$version.zip"
+                Copy-File -SourcePath $zipUrl -DestinationPath "$destinationFolder\docker-$version.zip"
+                Expand-Archive -Path "$destinationFolder\docker-$version.zip" -DestinationPath "$destinationFolder\docker-$version"
+        
+                if($DockerPath -eq "default") {
+                    $DockerPath = "$destinationFolder\docker-$version\docker\docker.exe"
+                }
+                if($DockerDPath -eq "default") {
+                    $DockerDPath = "$destinationFolder\docker-$version\docker\dockerd.exe"
+                }
+            }
+        
+            Write-Output "Installing Docker... $DockerPath"
+            Copy-File -SourcePath $DockerPath -DestinationPath $env:windir\System32\docker.exe
+        
+            Write-Output "Installing Docker daemon... $DockerDPath"
+            Copy-File -SourcePath $DockerDPath -DestinationPath $env:windir\System32\dockerd.exe
+        
+            $dockerConfigPath = Join-Path $global:DockerDataPath "config"
+        
+            if (!(Test-Path $dockerConfigPath))
+            {
+                md -Path $dockerConfigPath | Out-Null
+            }
+        
+            #
+            # Register the docker service.
+            # Configuration options should be placed at %programdata%\docker\config\daemon.json
+            #
+            Write-Output "Configuring the docker service..."
+        
+            $daemonSettings = New-Object PSObject
+        
+            $certsPath = Join-Path $global:DockerDataPath "certs.d"
+        
+            if (Test-Path $certsPath)
+            {
+                $daemonSettings | Add-Member NoteProperty hosts @("npipe://", "0.0.0.0:2376")
+                $daemonSettings | Add-Member NoteProperty tlsverify true
+                $daemonSettings | Add-Member NoteProperty tlscacert (Join-Path $certsPath "ca.pem")
+                $daemonSettings | Add-Member NoteProperty tlscert (Join-Path $certsPath "server-cert.pem")
+                $daemonSettings | Add-Member NoteProperty tlskey (Join-Path $certsPath "server-key.pem")
+            }
+            elseif (!$SkipDefaultHost.IsPresent)
+            {
+                # Default local host
+                $daemonSettings | Add-Member NoteProperty hosts @("npipe://")
+            }
+        
+            if ($NATSubnet -ne "")
+            {
+                $daemonSettings | Add-Member NoteProperty fixed-cidr $NATSubnet
+            }
+        
+            $daemonSettingsFile = Join-Path $dockerConfigPath "daemon.json"
+        
+            $daemonSettings | ConvertTo-Json | Out-File -FilePath $daemonSettingsFile -Encoding ASCII
+        
+            & dockerd --register-service --service-name $global:DockerServiceName
+        
+        }
+        
+        
+        function
+        Test-Docker()
+        {
+            $service = Get-Service -Name $global:DockerServiceName -ErrorAction SilentlyContinue
+        
+            return ($service -ne $null)
+        }
+        
+        try
+        {
+            Install-ContainerHost
+        }
+        catch
+        {
+            Write-Error $_
+        }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ installDockerCEOnLinuxInstance.commandOutput }}'
+        - '{{ installDockerCEOnWindowsInstance.commandOutput }}'

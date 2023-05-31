@@ -1,0 +1,70 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky enable deletion protection for instances
+  zh-cn: 批量开启RDS实例保护
+  name-en: ACS-RDS-BulkyModifyDBInstanceDeletionProtection
+  name-zh-cn: 批量开启RDS实例保护
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: RDS实例Id列表
+    Type: List
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: enableDBInstanceDeletionProtection
+    Action: ACS::ExecuteApi
+    Description: '{"en":"Enables deletion protection for rds instance","zh-cn":"开启实例释放保护"}'
+    Properties:
+      Service: RDS
+      API: ModifyDBInstanceDeletionProtection
+      Parameters:
+        DBInstanceId: '{{ ACS::TaskLoopItem }}'
+        DeletionProtection: true
+    Loop:
+      Items: '{{ instanceIds }}'
+      RateControl: '{{ rateControl }}'
+    Outputs: {}
+    OnError: ACS::END
+    OnSuccess: ACS::NEXT
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select RDS Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

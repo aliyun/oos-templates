@@ -26,6 +26,14 @@
       "AssociationPropertyMetadata": {
         "RegionId": "regionId"
       }
+    },
+    "force": {
+      "Label": {
+        "en": "Force",
+        "zh-cn": "是否执行强制删除"
+      },
+      "Type": "Boolean",
+      "Default": false
     }
   },
   "Tasks": [
@@ -103,7 +111,8 @@
         "Risk": "Normal",
         "Parameters": {
           "RegionId": "{{ regionId }}",
-          "ImageId": "{{ imageId }}"
+          "ImageId": "{{ imageId }}",
+          "Force": "{{ force }}"
         }
       }
     }

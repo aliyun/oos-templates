@@ -1,0 +1,54 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Attach EIP to ECS instance
+  zh-cn: 绑定EIP到ECS实例
+  name-en: ACS::ECS::AttachEipToInstance
+  name-zh-cn: 绑定EIP到ECS实例
+Parameters:
+  EipIds:
+    Label:
+      en: EipIds
+      zh-cn: EipId列表
+    Type: List
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+  instanceId:
+    Label:
+      en: InstanceId
+      zh-cn: ECS实例ID
+    Type: String
+Tasks:
+  - Name: getEip
+    Action: ACS::ExecuteApi
+    Description:
+      en: Get the allocation id of EIP
+      zh-cn: 获取EIP实例ID
+    Properties:
+      Service: VPC
+      API: DescribeEipAddresses
+      Parameters:
+        RegionId: '{{ regionId }}'
+        Status: Available
+        AllocationId:
+          Fn::Join:
+            - ','
+            - '{{ EipIds }}'
+    Outputs:
+      allocationId:
+        Type: String
+        ValueSelector: EipAddresses.EipAddress[].AllocationId
+  - Name: associateEipAddress
+    Action: ACS::ExecuteApi
+    Description:
+      en: Bind the EIP to instance
+      zh-cn: 绑定EIP到实例
+    Properties:
+      Service: ECS
+      API: AssociateEipAddress
+      Parameters:
+        RegionId: '{{ regionId }}'
+        AllocationId: '{{ getEip.allocationId }}'
+        InstanceId: '{{ instanceId }}'

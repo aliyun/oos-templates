@@ -72,6 +72,21 @@ Tasks:
       snapshotInfo:
         Type: List
         ValueSelector: '.Snapshots.Snapshot[]'
+  - Name: queryNetworkInterfaces
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Query the details of one or more Elastic Network Interfaces
+      zh-cn: 查询一个或多个弹性网卡的详细信息
+    Properties:
+      Service: ECS
+      API: DescribeNetworkInterfaces
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+    Outputs:
+      ipv6Address:
+        Type: List
+        ValueSelector: '.NetworkInterfaceSets.NetworkInterfaceSet[].Ipv6Sets.Ipv6Set[].Ipv6Address'
 Outputs:
   instanceInfo:
     Type: Json
@@ -88,4 +103,5 @@ Outputs:
               - DataDisk: '{{ queryInstanceDisk.dataDisks }}'
               - SystemDisk: '{{ queryInstanceDisk.systemDisk }}'
         - SnapshotInfo: '{{ queryInstanceSnapshot.snapshotInfo }}'
+        - Ipv6Address: '{{ queryNetworkInterfaces.ipv6Address }}'
 

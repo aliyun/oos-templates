@@ -30,12 +30,20 @@ Parameters:
       - install
       - scan
     Default: install
+    AssociationPropertyMetadata:
+      LocaleKey: OOSPatchExecuteType
   rebootIfNeed:
     Label:
       en: RebootIfNeed
       zh-cn: 是否重启
     Type: Boolean
     Default: false
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+            'Fn::Equals':
+              - '${action}'
+              - install
   rateControl:
     Label:
       en: RateControl
