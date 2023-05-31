@@ -1,0 +1,103 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use lifecycle hook to attach EIP to the instance(only supports elastic expansion activities)
+  zh-cn: 使用生命周期挂钩绑定EIP到实例(仅支持弹性扩张活动)
+  name-en: ACS-ESS-LifeCycleAttachEipToInstance
+  name-zh-cn: 使用生命周期绑定EIP到实例
+  categories:
+    - elastic_manage
+Parameters:
+  EipIds:
+    Label:
+      en: EipIds
+      zh-cn: EipId列表
+    Type: List
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID，请使用弹性伸缩系统默认值 ${regionId}
+    Type: String
+    Default: ${regionId}
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
+    Description:
+      en: The ID list of the ECS instance.
+      zh-cn: ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]
+    Type: List
+    Default:
+      - ${instanceIds}
+  lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
+    Description:
+      en: The ID of the lifecycle hook.
+      zh-cn: 生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}
+    Type: String
+    Default: ${lifecycleHookId}
+  lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
+    Description:
+      en: The token that indicates a specific scaling activity associated with an instance.
+      zh-cn: 实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}
+    Type: String
+    Default: ${lifecycleActionToken}
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: associateEipAddress
+    Action: ACS::ECS::AttachEipToInstance
+    OnSuccess: CompleteLifecycleActionForContinue
+    OnError: CompleteLifecycleActionForAbandon
+    Description:
+      en: Bind EIP to ECS instance
+      zh-cn: 绑定EIP到ECS实例
+    Properties:
+      regionId: '{{ regionId }}'
+      EipIds: '{{ EipIds }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 1
+      Items: '{{ instanceIds }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
+    OnSuccess: ACS::END
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
+  - Name: CompleteLifecycleActionForAbandon
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: ABANDON

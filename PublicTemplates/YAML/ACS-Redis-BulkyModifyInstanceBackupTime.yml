@@ -1,0 +1,116 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Enable backup log of redis instances
+  zh-cn: Redis实例开启增量备份
+  name-en: ACS-Redis-BulkyModifyInstanceMaintainTime
+  name-zh-cn: Redis实例开启增量备份
+  categories:
+    - security
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  preferredBackupTime:
+    Label:
+      en: backup time
+      zh-cn: 备份时间
+    Description:
+      zh-cn: 必须为整点，且间隔时间为1小时,格式为HH:mmZ-HH:mmZ（UTC时间）
+      en: TThe beginning and end of the time range must be on the hour. The duration must be an hour. Specify the time in the ISO 8601 standard in the HH:mmZ-HH:mmZ format. The time must be in UTC.
+    Type: String
+    Default: '07:00Z-08:00Z'
+  preferredBackupPeriod:
+    Label:
+      en: backup period
+      zh-cn: 备份周期
+    Type: List
+    AllowedValues:
+      - Monday
+      - Tuesday
+      - Wednesday
+      - Thursday
+      - Friday
+      - Saturday
+      - Sunday
+  enableBackupLog:
+    Label:
+      en: enable or disable incremental data backup
+      zh-cn: 开启或关闭数据闪回功能
+    Description:
+      en:  Only Tair (Redis Enterprise Edition) memory type and persistent memory type support this parameter, 1 enable ,0 disable.
+      zh-cn: 仅Tair（Redis企业版）内存型和持久内存型支持该参数。1：开启  0：关闭，默认值。
+    Type: String
+    AllowedValues:
+      - 1
+      - 0
+  instanceIds:
+    Label:
+      en: The Ids of redis instances
+      zh-cn: Redis实例Id列表
+    Type: List
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ModifyInstanceMaintainTime
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Enable backup log
+      zh-cn: Redis实例开启增量备份
+    Properties:
+      Service: R-KVSTORE
+      API: ModifyBackupPolicy
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ ACS::TaskLoopItem }}'
+        PreferredBackupTime: '{{ preferredBackupTime }}'
+        PreferredBackupPeriod:
+          'Fn::Join':
+            - ','
+            - '{{ preferredBackupPeriod }}'
+        EnableBackupLog: '{{ enableBackupLog }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Instances
+      - Parameters:
+          - preferredBackupTime
+          - preferredBackupPeriod
+          - enableBackupLog
+        Label:
+          default:
+            zh-cn: 设置备份策略
+            en: Set Backup Policy
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

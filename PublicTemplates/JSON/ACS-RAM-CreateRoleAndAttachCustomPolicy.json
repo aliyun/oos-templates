@@ -1,0 +1,102 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Create RAM role and attach custom policy",
+    "zh-cn": "创建角色并授予自定义权限策略",
+    "name-en": "ACS-RAM-CreateRoleAndAttachCustomPolicy",
+    "name-zh-cn": "创建角色并授予自定义权限策略",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "roleName": {
+      "Label": {
+        "en": "RoleName",
+        "zh-cn": "新建角色名称"
+      },
+      "Type": "String"
+    },
+    "rolePlayerUid": {
+      "Label": {
+        "en": "RolePlayerUid",
+        "zh-cn": "角色信任的云账号"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::AccountId }}"
+    },
+    "policyName": {
+      "Label": {
+        "en": "PolicyName",
+        "zh-cn": "新建并授予的自定义权限策略名称"
+      },
+      "Type": "String"
+    },
+    "policyDocument": {
+      "Label": {
+        "en": "PolicyDocument",
+        "zh-cn": "授权的自定义权限策略脚本"
+      },
+      "Description": {
+        "en": "e.g.{ \"Version\": \"1\", \"Statement\": [ { \"Action\": [ \"oos:List*\", \"oos:Get*\" ], \"Resource\": \"*\", \"Effect\": \"Allow\" } ] }",
+        "zh-cn": "如{ \"Version\": \"1\", \"Statement\": [ { \"Action\": [ \"oos:List*\", \"oos:Get*\" ], \"Resource\": \"*\", \"Effect\": \"Allow\" } ] }"
+      },
+      "Type": "String",
+      "AssociationProperty": "Code"
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "createStackForRoleAndPolicy",
+      "Action": "ACS::ROS::CreateStack",
+      "Description": {
+        "en": "Create role and attach policy by Ros resource stack",
+        "zh-cn": "通过Ros资源栈创建角色并授权策略"
+      },
+      "Properties": {
+        "stackName": "OOS-{{ACS::ExecutionId}}",
+        "disableRollback": true,
+        "parameters": [
+          {
+            "ParameterKey": "RoleName",
+            "ParameterValue": "{{ roleName }}"
+          },
+          {
+            "ParameterKey": "RolePlayerUid",
+            "ParameterValue": "{{ rolePlayerUid }}"
+          },
+          {
+            "ParameterKey": "PolicyName",
+            "ParameterValue": "{{ policyName }}"
+          },
+          {
+            "ParameterKey": "PolicyDocument",
+            "ParameterValue": "{{ policyDocument }}"
+          }
+        ],
+        "templateBody": "{\n  \"ROSTemplateFormatVersion\": \"2015-09-01\",\n  \"Resources\": {\n    \"Role\": {\n      \"Type\": \"ALIYUN::RAM::Role\",\n      \"Properties\": {\n        \"RoleName\": {\n          \"Ref\": \"RoleName\"\n        },\n        \"AssumeRolePolicyDocument\": {\n          \"Statement\": [\n            {\n              \"Action\": \"sts:AssumeRole\",\n              \"Effect\": \"Allow\",\n              \"Principal\": {\n                \"RAM\": [\n                  {\n                    \"Fn::Sub\": [\n                      \"acs:ram::${uid}:root\",\n                      {\n                        \"uid\": {\n                          \"Ref\": \"RolePlayerUid\"\n                        }\n                      }\n                    ]\n                  }\n                ]\n              }\n            }\n          ],\n          \"Version\": \"1\"\n        }\n      }\n    },\n    \"Policy\": {\n      \"Type\": \"ALIYUN::RAM::ManagedPolicy\",\n      \"Properties\": {\n        \"PolicyName\": {\n          \"Ref\": \"PolicyName\"\n        },\n        \"PolicyDocumentUnchecked\": {\n          \"Ref\": \"PolicyDocument\"\n        },\n        \"Roles\": [\n          {\n            \"Fn::GetAtt\": [\n              \"Role\",\n              \"RoleName\"\n            ]\n          }\n        ]\n      }\n    }\n  },\n  \"Parameters\": {\n    \"RoleName\": {\n      \"Type\": \"String\",\n      \"Description\": \"Role name.\"\n    },\n    \"RolePlayerUid\": {\n      \"Type\": \"String\",\n      \"Description\": \"Role player uid.\"\n    },\n    \"PolicyName\": {\n      \"Type\": \"String\",\n      \"Description\": \"Policy name.\"\n    },\n    \"PolicyDocument\": {\n      \"Type\": \"Json\",\n       \"Description\": \"A policy document that describes what actions are allowed on which resources.\"\n    }\n  },\n  \"Outputs\": {\n    \"RoleName\": {\n      \"Description\": \"When the logical ID of this resource is provided to the Ref intrinsic function, Ref returns the ARN.\",\n      \"Value\": {\n        \"Fn::GetAtt\": [\n          \"Role\",\n          \"RoleName\"\n        ]\n      }\n    }\n  },\n  \"Metadata\": {\n    \"ALIYUN::ROS::Interface\": {\n      \"TemplateTags\": [\n        \"acs:integrate:oos:ram_create_role_and_attach_custom_policy\"\n      ]\n    }\n  }\n}\n"
+      },
+      "Outputs": {
+        "stackId": {
+          "Type": "String",
+          "ValueSelector": "stackId"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "stackId": {
+      "Type": "String",
+      "Value": "{{createStackForRoleAndPolicy.stackId}}"
+    }
+  }
+}

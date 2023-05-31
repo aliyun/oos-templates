@@ -1,0 +1,151 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use lifecycleHook to get the private network IP and modify the name of the ECS instance",
+    "zh-cn": "使用生命周期挂钩获取IP并修改实例名称",
+    "name-en": "ACS-ESS-LifeCycleGetIpAddressAndModifyInstanceName",
+    "name-zh-cn": "使用生命周期挂钩获取IP并修改实例名称",
+    "categories": [
+      "elastic_manage"
+    ]
+  },
+  "Parameters": {
+    "instanceNameFormat": {
+      "Label": {
+        "en": "InstanceNameFormat",
+        "zh-cn": "ECS实例名称的格式"
+      },
+      "Type": "String",
+      "Default": "Prefix{PrivateIpAddress}Suffix"
+    },
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID，请使用弹性伸缩系统默认值 ${regionId}"
+      },
+      "Type": "String",
+      "Default": "${regionId}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "InstanceIds",
+        "zh-cn": "ECS实例ID列表"
+      },
+      "Description": {
+        "en": "The ID list of the ECS instance",
+        "zh-cn": "ECS实例ID列表,请使用弹性伸缩系统默认值 [\"${instanceId}\"]"
+      },
+      "Type": "List",
+      "Default": [
+        "${instanceIds}"
+      ]
+    },
+    "lifecycleHookId": {
+      "Label": {
+        "en": "LifecycleHookId",
+        "zh-cn": "生命周期挂钩ID"
+      },
+      "Description": {
+        "en": "The ID of the lifecycle hook",
+        "zh-cn": "生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleHookId}"
+    },
+    "lifecycleActionToken": {
+      "Label": {
+        "en": "LifecycleActionToken",
+        "zh-cn": "实例关联的特定伸缩活动的令牌"
+      },
+      "Description": {
+        "en": "The token that indicates a specific scaling activity associated with an instance",
+        "zh-cn": "实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}"
+      },
+      "Type": "String",
+      "Default": "${lifecycleActionToken}"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "速率控制"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "GetIpAddressAndModifyInstanceName",
+      "Action": "ACS::ECS::GetIpAddressAndModifyInstanceName",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Description": {
+        "en": "Get the private network IP and modify the name of the ECS instance",
+        "zh-cn": "获取私网IP并修改ECS实例的名称"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "instanceNameFormat": "{{ instanceNameFormat }}"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForContinue",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify lifecycle action for continue",
+        "zh-cn": "修改伸缩活动的等待状态为继续完成"
+      },
+      "OnSuccess": "ACS::END",
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "CONTINUE"
+        }
+      }
+    },
+    {
+      "Name": "CompleteLifecycleActionForAbandon",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Complete lifecycle action for Abandon",
+        "zh-cn": "修改伸缩活动的等待状态为弃用"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "CompleteLifecycleAction",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "LifecycleHookId": "{{ lifecycleHookId }}",
+          "LifecycleActionToken": "{{ lifecycleActionToken }}",
+          "LifecycleActionResult": "ABANDON"
+        }
+      }
+    }
+  ]
+}

@@ -55,6 +55,7 @@ Parameters:
       - ACS::Ga::Acl
       - ACS::Ga::BandwidthPackage
       - ACS::Ga::BasicAccelerator
+      - ACS::Ga::EndpointGroup
       - ACS::HBase::Cluster
       - ACS::MongoDB::DBInstance
       - ACS::NAS::FileSystem

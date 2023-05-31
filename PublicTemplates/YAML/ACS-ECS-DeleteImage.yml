@@ -25,6 +25,12 @@ Parameters:
       RegionId: regionId
       ImageOwnerAlias:
         - self
+  force:
+    Label:
+      en: Force
+      zh-cn: 是否执行强制删除
+    Type: Boolean
+    Default: false
   OOSAssumeRole:
     Label:
       en: OOSAssumeRole
@@ -41,6 +47,7 @@ Tasks:
   Properties:
     regionId: '{{ regionId }}'
     imageId: '{{ imageId }}'
+    force: '{{ force }}'
   Outputs:
     imageId:
       ValueSelector: imageId

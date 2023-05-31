@@ -34,6 +34,14 @@
         ]
       }
     },
+    "force": {
+      "Label": {
+        "en": "Force",
+        "zh-cn": "是否执行强制删除"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
     "OOSAssumeRole": {
       "Label": {
         "en": "OOSAssumeRole",
@@ -54,7 +62,8 @@
       },
       "Properties": {
         "regionId": "{{ regionId }}",
-        "imageId": "{{ imageId }}"
+        "imageId": "{{ imageId }}",
+        "force": "{{ force }}"
       },
       "Outputs": {
         "imageId": {

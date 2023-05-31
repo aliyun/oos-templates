@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::RunInstancesFromTemplate",
-    "name-zh-cn": "通过指定启动模板创建一个或多个ECS实例",
+    "name-zh-cn": "通过启动模板创建ECS实例",
     "en": "Creates one or more ECS instances by specifying launch template",
     "zh-cn": "通过指定启动模板创建一个或多个ECS实例"
   },
@@ -20,14 +20,16 @@
         "en": "The ID of the instance launch template",
         "zh-cn": "实例启动模板的ID"
       },
-      "Type": "String"
+      "Type": "String",
+      "Default": ""
     },
     "launchTemplateName": {
       "Description": {
         "en": "The name of the instance launch template",
         "zh-cn": "实例启动模板的名称"
       },
-      "Type": "String"
+      "Type": "String",
+      "Default": ""
     },
     "amount": {
       "Description": {

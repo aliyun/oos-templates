@@ -38,7 +38,10 @@
         "install",
         "scan"
       ],
-      "Default": "install"
+      "Default": "install",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "OOSPatchExecuteType"
+      }
     },
     "rebootIfNeed": {
       "Label": {
@@ -46,7 +49,17 @@
         "zh-cn": "是否重启"
       },
       "Type": "Boolean",
-      "Default": false
+      "Default": false,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${action}",
+              "install"
+            ]
+          }
+        }
+      }
     },
     "rateControl": {
       "Label": {

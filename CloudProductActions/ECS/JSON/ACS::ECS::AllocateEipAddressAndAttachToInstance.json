@@ -67,6 +67,18 @@
           "Value": "{{ACS::ExecutionId}}"
         }
       ]
+    },
+    "ISP": {
+      "Label": {
+        "en": "ISP",
+        "zh-cn": "EIP的线路类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "BGP",
+        "BGP_PRO"
+      ],
+      "Default": "BGP"
     }
   },
   "Tasks": [
@@ -109,7 +121,8 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "InternetChargeType": "{{ internetChargeType }}",
-          "Bandwidth": "{{ bandwidth }}"
+          "Bandwidth": "{{ bandwidth }}",
+          "ISP": "{{ ISP }}"
         }
       },
       "Outputs": {
