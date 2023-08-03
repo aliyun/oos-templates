@@ -1,4 +1,8 @@
-Description: 'Example template, describe instances in some status'
+Description:
+  name-en: ACS::RDC::RunCommandByStaragent
+  name-zh-cn: 通过staragent到ECS实例中执行脚本
+  en: Example template, describe instances in some status
+  zh-cn: 实例模板，描述实例处于某种状态
 FormatVersion: OOS-2019-06-01
 Parameters:
   CorpIdentifier:

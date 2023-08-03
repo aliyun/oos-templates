@@ -197,14 +197,14 @@ Tasks:
             fi
             chmod +x /tmp/ossutil64
         fi
-        if [ ! -f "/tmp/modify-prefix" ]; then
-            echo "下载modify-prefix"
-            wget -c -t 10 -O /tmp/modify-prefix https://aliacs-k8s-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/public/pkg/etcd/modify-prefix
+        if [ ! -f "/tmp/modify-prefix-v2" ]; then
+            echo "下载modify-prefix-v2"
+            wget -c -t 10 -O /tmp/modify-prefix-v2 https://aliacs-k8s-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/public/pkg/etcd/modify-prefix-v2
             if [ $? -ne 0 ]; then
                 echo "下载修改prefix工具出错，退出。"
                 exit 1
             fi
-            chmod +x /tmp/modify-prefix
+            chmod +x /tmp/modify-prefix-v2
         fi
         if ! [[ {{ClusterID}} =~ ^c.* ]];then
         	echo "clusterID: {{ClusterID}}不是正确的集群id,退出。"
@@ -219,11 +219,13 @@ Tasks:
         echo "开始备份，备份名为/tmp/"$SNAP_NAME
         DestPrefix="/"{{ClusterID}}
         ETCDCTL_API=3 /usr/bin/etcdctl --cacert=/var/lib/etcd/cert/ca.pem --cert=/var/lib/etcd/cert/etcd-server.pem --key=/var/lib/etcd/cert/etcd-server-key.pem --endpoints=$ENDPOINT snapshot save /tmp/etcdsnap/$SNAP_NAME
-        /tmp/modify-prefix modify-prefix --db=/tmp/etcdsnap/$SNAP_NAME --src-prefix=/registry --dest-prefix=$DestPrefix --bucket=key
+        set +e
+        /tmp/modify-prefix-v2 change-prefix --db=/tmp/etcdsnap/$SNAP_NAME  --dest-prefix=$DestPrefix 
         if [ $? -ne 0 ]; then
             echo "修改prefix出错，退出。"
             exit 1
         fi
+        set -e
         # 获取oss 相关地址，上传
         ROLE=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/)
         ROLERES=$(curl -s 100.100.100.200/latest/meta-data/ram/security-credentials/$ROLE)
@@ -232,7 +234,13 @@ Tasks:
         SecurityToken=$(echo $ROLERES | jq .SecurityToken|sed 's/\"//g')
         # put object to oss
         echo "begin put object to oss"
+        set +e
         /tmp/ossutil64 -t $SecurityToken -i $AccessKeyId -k $AccessKeySecret -e {{OSSEndpoint}} cp /tmp/etcdsnap/$SNAP_NAME oss://{{BucketName}}/$SNAP_NAME
+        if [ $? -ne 0 ]; then
+            echo "推送数据到{{BucketName}} bucket失败，退出。"
+            exit 1
+        fi
+        set -e
         # sign
         oss_url=$(/tmp/ossutil64 -t $SecurityToken -i $AccessKeyId -k $AccessKeySecret -e {{OSSEndpoint}} sign --timeout 2400 oss://{{BucketName}}/$SNAP_NAME | grep -v "elapsed" | tr -d '\n')
         set +x

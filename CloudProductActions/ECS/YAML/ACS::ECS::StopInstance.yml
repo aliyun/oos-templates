@@ -36,6 +36,12 @@ Parameters:
       zh-cn: 实例是否休眠
     Type: Boolean
     Default: false
+  forceStop:
+    Label:
+      en: ForceStop
+      zh-cn: 是否强制关机
+    Type: Boolean
+    Default: false
 Tasks:
 - Name: getInstanceStatus
   Description:
@@ -92,6 +98,7 @@ Tasks:
       InstanceId: '{{ instanceId }}'
       StoppedMode: '{{ stoppedMode }}'
       Hibernate: '{{ hibernate }}'
+      ForceStop: '{{ forceStop }}'
 - Name: untilInstanceReady
   Action: ACS::WaitFor
   Description:

@@ -1,6 +1,6 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  name-ne: ACS::ECS::AllocatePublicIpAddress
+  name-en: ACS::ECS::AllocatePublicIpAddress
   name-zh-cn: 为ECS实例分配一个公网IP
   en: Assigns a public IP address to ECS instance
   zh-cn: 为ECS实例分配一个公网IP地址

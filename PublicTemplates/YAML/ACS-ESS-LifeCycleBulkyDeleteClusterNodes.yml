@@ -133,7 +133,7 @@ Tasks:
           - 'Fn::Equals':
               - SPOT_REMEDY
               - '{{ essTaskType }}'
-          - '{"drain_node": {{ drainNode }}, "release_node": {{ releaseNode }}, "nodes": {{ describeClusterNodes.nodeNames }}, "call_back": true, "is_expired": true}'
+          - '{"drain_node": {{ drainNode }}, "release_node": true, "nodes": {{ describeClusterNodes.nodeNames }}, "call_back": true, "is_expired": true}'
           - '{"drain_node": {{ drainNode }}, "release_node": {{ releaseNode }}, "nodes": {{ describeClusterNodes.nodeNames }}, "call_back": true, "is_expired": false}'
     Outputs:
       taskId:

@@ -16,6 +16,17 @@ Parameters:
       zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
+  resourceType:
+    Type: String
+    Label:
+      en: ResourceType
+      zh-cn: 资源类型
+    AssociationPropertyMetadata:
+      LocaleKey: TargetResourceType
+    AllowedValues:
+      - ALIYUN::ECS::Instance
+      - ALIYUN::ECS::ManagedInstance
+    Default: ALIYUN::ECS::Instance
   targets:
     Type: Json
     Label:
@@ -23,7 +34,7 @@ Parameters:
       zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: resourceType
       RegionId: regionId
       Status: Running
   commandType:
@@ -143,7 +154,7 @@ Tasks:
       zh-cn: 获取ECS实例
     Action: ACS::SelectTargets
     Properties:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: '{{ resourceType }}'
       RegionId: '{{ regionId }}'
       Filters:
         - '{{ targets }}'
@@ -198,6 +209,7 @@ Metadata:
             en: run command options
       - Parameters:
           - regionId
+          - resourceType
           - targets
         Label:
           default:
@@ -210,6 +222,3 @@ Metadata:
           default:
             zh-cn: 高级选项
             en: Control Options
-    Hidden:
-      - username
-      - enableParameter

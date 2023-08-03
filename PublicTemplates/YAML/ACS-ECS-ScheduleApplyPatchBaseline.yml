@@ -58,7 +58,7 @@ Parameters:
       en: Timeout
       zh-cn: ECS实例中执行命令的超时时间
     Type: Number
-    Default: 86400
+    Default: 7200
   rateControl:
     Label:
       en: RateControl

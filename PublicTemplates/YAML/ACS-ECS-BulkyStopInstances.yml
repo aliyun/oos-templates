@@ -35,6 +35,12 @@ Parameters:
     Type: String
     Default: KeepCharging
     AssociationProperty: ALIYUN::ECS::Instance::StopMode
+  forceStop:
+    Label:
+      en: ForceStop
+      zh-cn: 是否强制关机
+    Type: Boolean
+    Default: false
   rateControl:
     Label:
       en: RateControl
@@ -76,6 +82,7 @@ Tasks:
     regionId: '{{ regionId }}'
     stoppedMode: '{{ stoppedMode }}'
     instanceId: '{{ ACS::TaskLoopItem }}'
+    forceStop: '{{ forceStop }}'
   Loop:
     RateControl: '{{ rateControl }}'
     Items: '{{ getInstance.instanceIds }}'
@@ -100,6 +107,7 @@ Metadata:
             zh-cn: 选择实例
             en: Select Ecs Instances
       - Parameters:
+          - forceStop
           - rateControl
           - OOSAssumeRole
         Label:

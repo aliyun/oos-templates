@@ -60,7 +60,7 @@
         "zh-cn": "执行脚本的超时时间"
       },
       "Type": "Number",
-      "Default": 600
+      "Default": 7200
     },
     "enableParameter": {
       "Description": {
@@ -158,7 +158,7 @@
         "zh-cn": "等待云助手命令执行完成"
       },
       "OnError": "ACS::END",
-      "Retries": 30,
+      "Retries": 120,
       "DelayType": "Constant",
       "Delay": 60,
       "Properties": {

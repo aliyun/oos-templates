@@ -25,6 +25,12 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
+  forceStop:
+    Label:
+      en: ForceStop
+      zh-cn: 是否强制关机
+    Type: Boolean
+    Default: false
   rateControl:
     Label:
       en: RateControl
@@ -65,6 +71,7 @@ Tasks:
   Properties:
     regionId: '{{ regionId }}'
     instanceId: '{{ ACS::TaskLoopItem }}'
+    forceStop: '{{ forceStop }}'
   Loop:
     RateControl: '{{ rateControl }}'
     Items: '{{ getInstance.instanceIds }}'
@@ -83,6 +90,7 @@ Metadata:
             zh-cn: 选择实例
             en: Select Ecs Instances
       - Parameters:
+          - forceStop
           - rateControl
           - OOSAssumeRole
         Label:

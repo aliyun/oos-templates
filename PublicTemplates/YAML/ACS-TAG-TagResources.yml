@@ -30,10 +30,22 @@ Parameters:
       - ACS::AliKafka::ConsumerGroup
       - ACS::AliKafka::Instance
       - ACS::AliKafka::Topic
+      - ACS::ALB::Acl
+      - ACS::ALB::LoadBalancer
+      - ACS::ALB::SecurityPolicy
+      - ACS::ALB::ServerGroup
       - ACS::ApiGateway::Api
       - ACS::ApiGateway::ApiGroup
+      - ACS::CBWP::CommonBandwidthPackage
       - ACS::CDN::Domain
       - ACS::CEN::CenInstance
+      - ACS::CEN::CenBandwidthPackage
+      - ACS::CEN::Flowlog
+      - ACS::CEN::TransitRouter
+      - ACS::CEN::TransitRouterVbrAttachment
+      - ACS::CEN::TransitRouterVpcAttachment
+      - ACS::CEN::TransitRouterVpnAttachment
+      - ACS::CEN::TransitRouterRouteTable
       - ACS::DCDN::Domain
       - ACS::DdosCoo::Instance
       - ACS::EBS::DedicatedBlockStorageCluster
@@ -74,10 +86,20 @@ Parameters:
       - ACS::RDS::DBInstance
       - ACS::Redis::DBInstance
       - ACS::ResourceManager::Account
+      - ACS::SLB::AccessControlList
+      - ACS::SLB::CACertificate
       - ACS::SLB::LoadBalancer
+      - ACS::SLB::MasterSlaveServerGroup
+      - ACS::SLB::ServerCertificate
+      - ACS::SLB::VServerGroup
+      - ACS::VPC::DhcpOptionsSet
       - ACS::VPC::FlowLog
+      - ACS::VPC::GatewayEndpoint
       - ACS::VPC::HaVip
       - ACS::VPC::Ipv4Gateway
+      - ACS::VPC::Ipv4Gateway
+      - ACS::VPC::Ipv6Gateway
+      - ACS::VPC::NetworkAcl
       - ACS::VPC::PrefixList
       - ACS::VPC::PublicIpAddressPool
       - ACS::VPC::RouteTable
@@ -368,7 +390,6 @@ Parameters:
       - ALIYUN::VPC::VPNGATEWAY
       - ALIYUN::VPC::VSWITCH
       - ALIYUN::WAF::DOMAIN
-
   tags:
     Label:
       en: Tags
