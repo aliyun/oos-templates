@@ -29,7 +29,7 @@
     },
     "forceStop": {
       "Label": {
-        "en": "WhetherForceStop",
+        "en": "ForceStop",
         "zh-cn": "是否强制关机"
       },
       "Type": "Boolean",

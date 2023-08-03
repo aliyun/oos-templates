@@ -1,0 +1,89 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::RDS::StopInstance
+  name-zh-cn: 停止RDS实例
+  en: Stops a RDS instance
+  zh-cn: 停止RDS实例
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: RDSInstanceId
+      zh-cn: RDS实例ID
+    Type: String
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+Tasks:
+- Name: getInstanceStatus
+  Description:
+    en: Gets the RDS instance status
+    zh-cn: 获取RDS实例的状态
+  Action: ACS::ExecuteApi
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+  Outputs:
+    status:
+      Type: String
+      ValueSelector: Items.DBInstance[].DBInstanceStatus
+- Name: whetherInstanceIsStopped
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by instance STOPPED status
+    zh-cn: 根据实例的已停止状态选择下一个任务
+  Properties:
+    DefaultTask: whetherInstanceIsStopping
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'STOPPED'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: ACS::END
+- Name: whetherInstanceIsStopping
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by instance STOPPING status
+    zh-cn: 根据实例的停止中状态选择下一个任务
+  Properties:
+    DefaultTask: stopDBInstance
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'STOPPING'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: untilInstanceReady
+- Name: stopDBInstance
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Stops the RDS instance
+    zh-cn: 停止RDS实例
+  Properties:
+    Service: RDS
+    API: StopDBInstance
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description:
+    en: Waits for the RDS instance to enter STOPPED status
+    zh-cn: 等待RDS实例进入已停止状态
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+    DesiredValues:
+    - STOPPED
+    PropertySelector: Items.DBInstance[].DBInstanceStatus

@@ -11,6 +11,15 @@ Parameters:
       zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
+  action:
+    Type: String
+    Label:
+      en: Action
+      zh-cn: 操作类型
+    AllowedValues:
+      - install
+      - uninstall
+    Default: install
   instanceId:
     Description:
       en: The ID of ECS instance
@@ -100,8 +109,31 @@ Tasks:
           fi
         }
 
-        install_docker_CE
-        docker -v
+        function uninstall_docker_CE() {
+          if check_distro 'CentOS'; then
+            yum -y remove docker-ce
+          elif check_distro 'Ubuntu'; then
+            apt-get -y remove docker-ce
+          elif check_distro 'Debian'; then
+            apt-get -y remove docker-ce
+          elif check_distro 'Fedora'; then
+            dnf -y remove docker-ce
+          elif check_distro 'Alibaba Cloud Linux (Aliyun Linux) 2'; then
+            yum -y remove docker-ce
+          elif check_distro 'Alibaba Cloud Linux 3'; then
+            dnf -y remove docker-ce
+          else
+            echo 'Linux release version not support.'
+            exit 1;
+          fi
+        }
+
+        if [ "{{ action }}" = "install" ]; then
+            install_docker_CE
+            docker -v
+        else
+            uninstall_docker_CE
+        fi
 
     Outputs:
       commandOutput:
@@ -471,7 +503,15 @@ Tasks:
         
         try
         {
-            Install-ContainerHost
+            switch($action)
+            {
+                "install" {
+                    Install-ContainerHost
+                }
+                "uninstall" {
+                    Write-Error "Not support uninstall DockerCE on Windows"
+                }
+            }    
         }
         catch
         {

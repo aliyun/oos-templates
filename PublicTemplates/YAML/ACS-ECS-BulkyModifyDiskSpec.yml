@@ -44,6 +44,8 @@ Parameters:
       - cloud_auto
       - cloud_ssd
       - cloud_efficiency
+      - ''
+    Default: ''
   rateControl:
     Label:
       en: RateControl

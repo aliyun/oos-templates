@@ -1,0 +1,89 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::RDS::StartInstance
+  name-zh-cn: 启动RDS实例
+  en: Starts a RDS instance
+  zh-cn: 启动RDS实例
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Label:
+      en: RDSInstanceId
+      zh-cn: RDS实例ID
+    Type: String
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+Tasks:
+- Name: getInstanceStatus
+  Description:
+    en: Gets the RDS instance status
+    zh-cn: 获取RDS实例的状态
+  Action: ACS::ExecuteApi
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+  Outputs:
+    status:
+      Type: String
+      ValueSelector: Items.DBInstance[].DBInstanceStatus
+- Name: whetherInstanceIsRunning
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by instance Running status
+    zh-cn: 根据实例的运行中状态选择下一个任务
+  Properties:
+    DefaultTask: whetherInstanceIsStarting
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'Running'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: ACS::END
+- Name: whetherInstanceIsStarting
+  Action: 'ACS::Choice'
+  Description:
+    en: Choose next task by instance Starting status
+    zh-cn: 根据实例的启动中状态选择下一个任务
+  Properties:
+    DefaultTask: startDBInstance
+    Choices:
+      - When:
+          'Fn::Equals':
+            - 'STARTING'
+            - '{{ getInstanceStatus.status }}'
+        NextTask: untilInstanceReady
+- Name: startDBInstance
+  Action: ACS::ExecuteAPI
+  Description:
+    en: Starts the RDS instance
+    zh-cn: 启动RDS实例
+  Properties:
+    Service: RDS
+    API: StartDBInstance
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+- Name: untilInstanceReady
+  Action: ACS::WaitFor
+  Description:
+    en: Waits for the RDS instance to enter running status
+    zh-cn: 等待RDS实例进入运行中状态
+  Properties:
+    Service: RDS
+    API: DescribeDBInstances
+    Parameters:
+      RegionId: '{{ regionId }}'
+      DBInstanceId: '{{ instanceId }}'
+    DesiredValues:
+    - Running
+    PropertySelector: Items.DBInstance[].DBInstanceStatus

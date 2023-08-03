@@ -1,0 +1,442 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to install software on ecs",
+    "zh-cn": "使用这个模板批量的在ECS安装软件",
+    "name-en": "ACS-ECS-BulkyConfigureSoftwareFromEcsAppStore",
+    "name-zh-cn": "批量安装软件",
+    "categories": [
+      "run_command",
+      "application_manage"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "softwareType": {
+      "Type": "String",
+      "Label": {
+        "en": "Software Type",
+        "zh-cn": "软件类型"
+      },
+      "AllowedValues": [
+        "Aliyun",
+        "Community",
+        "SystemRepository"
+      ],
+      "Default": "Aliyun",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "SoftwareType"
+      }
+    },
+    "action": {
+      "Type": "String",
+      "Label": {
+        "en": "Action",
+        "zh-cn": "操作类型"
+      },
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ],
+      "Default": "install",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "SoftwareOperationType"
+      }
+    },
+    "aliyunSoftwareName": {
+      "Type": "String",
+      "Label": {
+        "en": "Aliyun Software Name",
+        "zh-cn": "阿里云提供的软件名称"
+      },
+      "AllowedValues": [
+        "Logtail",
+        "CloudMonitorAgent"
+      ],
+      "Default": "Logtail",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "AliyunSoftwareName",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${softwareType}",
+              "Aliyun"
+            ]
+          }
+        }
+      }
+    },
+    "communitySoftwareName": {
+      "Type": "String",
+      "Label": {
+        "en": "Community Software Name",
+        "zh-cn": "社区软件名称"
+      },
+      "AllowedValues": [
+        "DockerCE"
+      ],
+      "Default": "DockerCE",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${softwareType}",
+              "Community"
+            ]
+          }
+        }
+      }
+    },
+    "installer": {
+      "Type": "String",
+      "Label": {
+        "en": "Installer",
+        "zh-cn": "安装源"
+      },
+      "Default": "yum",
+      "AllowedValues": [
+        "apt-get",
+        "yum"
+      ],
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${softwareType}",
+              "SystemRepository"
+            ]
+          }
+        }
+      }
+    },
+    "softwareName": {
+      "Type": "String",
+      "Label": {
+        "en": "Software Name",
+        "zh-cn": "软件名称"
+      },
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${softwareType}",
+              "SystemRepository"
+            ]
+          }
+        }
+      }
+    },
+    "targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId",
+        "Status": "Running"
+      }
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        },
+        "instanceInfos": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[] | {\"osType\":.OSType, \"instanceId\":.InstanceId}"
+        }
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "commandContent": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".|map(select(.instanceId == \"{{ ACS::TaskLoopItem }}\").osType)[]",
+                    "{{ getInstance.instanceInfos }}"
+                  ]
+                },
+                "linux"
+              ]
+            },
+            {
+              "Fn::If": [
+                {
+                  "Fn::Equals": [
+                    "{{ softwareType }}",
+                    "Aliyun"
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ aliyunSoftwareName }}",
+                        "Logtail"
+                      ]
+                    },
+                    "{{ oos:aliyun/services/oos/commands/install_logtail_for_linux }}",
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ aliyunSoftwareName }}",
+                            "CloudMonitorAgent"
+                          ]
+                        },
+                        "{{ oos:aliyun/services/oos/commands/install_CloudMonitorAgent_for_linux }}",
+                        "echo \"Aliyun software ({{ aliyunSoftwareName }}) is not supported\"\nexit 1"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ softwareType }}",
+                        "Community"
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ communitySoftwareName }}",
+                            "DockerCE"
+                          ]
+                        },
+                        "{{ oos:aliyun/services/oos/commands/install_DockerCE_for_linux }}",
+                        "echo \"Community software ({{ communitySoftwareName }}) is not supported\"\nexit 1"
+                      ]
+                    },
+                    "{{ oos:aliyun/services/oos/commands/install_from_linux_repository }}"
+                  ]
+                }
+              ]
+            },
+            {
+              "Fn::If": [
+                {
+                  "Fn::Equals": [
+                    "{{ softwareType }}",
+                    "Aliyun"
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ aliyunSoftwareName }}",
+                        "Logtail"
+                      ]
+                    },
+                    "{{ oos:aliyun/services/oos/commands/install_logtail_for_windows }}",
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ aliyunSoftwareName }}",
+                            "CloudMonitorAgent"
+                          ]
+                        },
+                        "{{ oos:aliyun/services/oos/commands/install_CloudMonitorAgent_for_windows }}",
+                        "echo \"Aliyun software ({{ aliyunSoftwareName }}) is not supported\"\nexit 1"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ softwareType }}",
+                        "Community"
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ communitySoftwareName }}",
+                            "DockerCE"
+                          ]
+                        },
+                        "{{ oos:aliyun/services/oos/commands/install_DockerCE_for_windows }}",
+                        "echo \"Community software ({{ communitySoftwareName }}) is not supported\"\nexit 1"
+                      ]
+                    },
+                    "echo \"Windows system does not support SystemRepository {{ installer }}\"\nexit 1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "regionId": "{{ regionId }}",
+        "commandType": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".|map(select(.instanceId == \"{{ ACS::TaskLoopItem }}\").osType)[]",
+                    "{{ getInstance.instanceInfos }}"
+                  ]
+                },
+                "linux"
+              ]
+            },
+            "RunShellScript",
+            "RunPowerShellScript"
+          ]
+        },
+        "enableParameter": true,
+        "parameters": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{softwareType }}",
+                "SystemRepository"
+              ]
+            },
+            {
+              "action": "{{ action }}",
+              "installer": "{{ installer }}",
+              "softwareName": "{{ softwareName }}"
+            },
+            {
+              "action": "{{ action }}"
+            }
+          ]
+        }
+      },
+      "Loop": {
+        "Items": "{{ getInstance.instanceIds }}",
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ runCommand.commandOutputs }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "softwareType",
+            "aliyunSoftwareName",
+            "communitySoftwareName",
+            "installer",
+            "softwareName",
+            "action"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "设置软件参数",
+              "en": "Configure Software Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Ecs Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

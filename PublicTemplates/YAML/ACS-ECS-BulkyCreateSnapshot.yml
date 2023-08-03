@@ -7,17 +7,32 @@ Description:
   categories:
     - data_backup
 Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
   diskIds:
     Label:
       en: DiskIds
       zh-cn: 云盘 ID
     Type: List
+    AssociationProperty: ALIYUN::ECS::Disk::DiskId
+    AssociationPropertyMetadata:
+      RegionId: regionId
   retentionDays:
     Label:
       en: RetentionDays
-      zh-cn: 快照的保留时间，取值范围：1~65536,单位为天
-    Type: String
-    Default: ''
+      zh-cn: 快照保留时间
+    Description:
+      en: The unit is day. Snapshots are automatically released after the retention time expires.The default is 0, indicating that the snapshot will not be automatically released.
+      zh-cn: 单位为天,保留时间到期后快照会被自动释放。默认为0，表示快照不会被自动释放。
+    Type: Number
+    MaxValue: 65536
+    MinValue: 0
+    Default: 0
   rateControl:
     Label:
       en: RateControl
@@ -43,7 +58,13 @@ Tasks:
       zh-cn: 为一块云盘创建一份快照
     Properties:
       diskId: '{{ ACS::TaskLoopItem }}'
-      retentionDays: '{{ retentionDays }}'
+      retentionDays:
+        Fn::If:
+          - Fn::Equals:
+            - '{{ retentionDays }}'
+            - 0
+          - ''
+          - '{{ retentionDays }}'
     Outputs:
       snapshotId:
         Type: String

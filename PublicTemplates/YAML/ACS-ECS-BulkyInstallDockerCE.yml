@@ -14,6 +14,15 @@ Parameters:
       zh-cn: 地域ID
     AssociationProperty: RegionId
     Default: '{{ ACS::RegionId }}'
+  action:
+    Type: String
+    Label:
+      en: Action
+      zh-cn: 操作类型
+    AllowedValues:
+      - install
+      - uninstall
+    Default: install
   targets:
     Type: Json
     Label:
@@ -61,6 +70,7 @@ Tasks:
       zh-cn: 安装Docker社区版
     Properties:
       regionId: '{{ regionId }}'
+      action: '{{ action }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
     Loop:
       RateControl: '{{ rateControl }}'

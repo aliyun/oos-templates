@@ -17,12 +17,13 @@ Parameters:
       en: ModifyMode
       zh-cn: 修改IP白名单的方式
     Description:
-      en: The method to modify the IP whitelist, Delete is used for elastic contraction activities, and Append is used for elastic expansion activities
-      zh-cn: 修改IP白名单的方式，Append用于弹性扩张活动，Delete用于弹性收缩活动
+      en: The method of modifying the IP whitelist, Append and AppendDup are used for elastic expansion activities, and Delete is used for elastic contraction activities
+      zh-cn: 修改IP白名单的方式，Append和AppendDup用于弹性扩张活动，Delete用于弹性收缩活动
     Type: String
     AllowedValues:
       - Append
       - Delete
+      - AppendDup
   regionId:
     Label:
       en: RegionId

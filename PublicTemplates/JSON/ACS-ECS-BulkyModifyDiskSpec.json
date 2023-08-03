@@ -55,8 +55,10 @@
         "cloud_essd",
         "cloud_auto",
         "cloud_ssd",
-        "cloud_efficiency"
-      ]
+        "cloud_efficiency",
+        ""
+      ],
+      "Default": ""
     },
     "rateControl": {
       "Label": {

@@ -19,6 +19,18 @@
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
+    "action": {
+      "Type": "String",
+      "Label": {
+        "en": "Action",
+        "zh-cn": "操作类型"
+      },
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ],
+      "Default": "install"
+    },
     "targets": {
       "Type": "Json",
       "Label": {
@@ -84,6 +96,7 @@
       },
       "Properties": {
         "regionId": "{{ regionId }}",
+        "action": "{{ action }}",
         "instanceId": "{{ ACS::TaskLoopItem }}"
       },
       "Loop": {

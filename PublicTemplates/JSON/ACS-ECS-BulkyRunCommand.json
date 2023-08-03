@@ -21,6 +21,21 @@
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
+    "resourceType": {
+      "Type": "String",
+      "Label": {
+        "en": "ResourceType",
+        "zh-cn": "资源类型"
+      },
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "TargetResourceType"
+      },
+      "AllowedValues": [
+        "ALIYUN::ECS::Instance",
+        "ALIYUN::ECS::ManagedInstance"
+      ],
+      "Default": "ALIYUN::ECS::Instance"
+    },
     "targets": {
       "Type": "Json",
       "Label": {
@@ -29,7 +44,7 @@
       },
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
-        "ResourceType": "ALIYUN::ECS::Instance",
+        "ResourceType": "resourceType",
         "RegionId": "regionId",
         "Status": "Running"
       }
@@ -213,7 +228,7 @@
       },
       "Action": "ACS::SelectTargets",
       "Properties": {
-        "ResourceType": "ALIYUN::ECS::Instance",
+        "ResourceType": "{{ resourceType }}",
         "RegionId": "{{ regionId }}",
         "Filters": [
           "{{ targets }}"
@@ -291,6 +306,7 @@
         {
           "Parameters": [
             "regionId",
+            "resourceType",
             "targets"
           ],
           "Label": {
@@ -312,10 +328,6 @@
             }
           }
         }
-      ],
-      "Hidden": [
-        "username",
-        "enableParameter"
       ]
     }
   }

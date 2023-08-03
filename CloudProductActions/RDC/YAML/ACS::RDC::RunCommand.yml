@@ -1,5 +1,9 @@
 FormatVersion: OOS-2019-06-01
-Description: Creates a cloud assistant command and triggers it on one ECS instance.
+Description:
+  name-en: ACS::RDC::RunCommand
+  name-zh-cn: 到ECS实例中执行脚本
+  en: Creates a cloud assistant command and triggers it on one ECS instance.
+  zh-cn: 创建一个云助手命令并在一个ECS实例上触发。
 Parameters:
   InstanceId:
     Description: The ID of ECS instance that will invoke command.

@@ -47,6 +47,14 @@
       },
       "Type": "Boolean",
       "Default": false
+    },
+    "forceStop": {
+      "Label": {
+        "en": "ForceStop",
+        "zh-cn": "是否强制关机"
+      },
+      "Type": "Boolean",
+      "Default": false
     }
   },
   "Tasks": [
@@ -132,7 +140,8 @@
           "RegionId": "{{ regionId }}",
           "InstanceId": "{{ instanceId }}",
           "StoppedMode": "{{ stoppedMode }}",
-          "Hibernate": "{{ hibernate }}"
+          "Hibernate": "{{ hibernate }}",
+          "ForceStop": "{{ forceStop }}"
         }
       }
     },
