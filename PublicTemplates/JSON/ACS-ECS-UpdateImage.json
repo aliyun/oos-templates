@@ -20,6 +20,18 @@
       "AssociationProperty": "RegionId",
       "Default": "{{ ACS::RegionId }}"
     },
+    "zoneId": {
+      "Type": "String",
+      "Label": {
+        "en": "VSwitch Availability Zone",
+        "zh-cn": "交换机可用区"
+      },
+      "Default": "",
+      "AssociationProperty": "ALIYUN::ECS::Instance::ZoneId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
     "targetImageName": {
       "Label": {
         "en": "TargetImageName",
@@ -54,7 +66,63 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
       "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "ZoneId": "zoneId"
+      }
+    },
+    "whetherCreateVpc": {
+      "Type": "Boolean",
+      "Label": {
+        "en": "WhetherCreateVpc",
+        "zh-cn": "是否新建VPC"
+      },
+      "Default": false
+    },
+    "vpcCidrBlock": {
+      "Type": "String",
+      "Label": {
+        "en": "VPC CIDR IPv4 Block",
+        "zh-cn": "专有网络IPv4网段"
+      },
+      "Description": {
+        "zh-cn": "VPC的ip地址段范围，<br>您可以使用以下的ip地址段或其子网:<br><font color='green'>[10.0.0.0/8]</font><br><font color='green'>[172.16.0.0/12]</font><br><font color='green'>[192.168.0.0/16]</font>",
+        "en": "The ip address range of the VPC in the CidrBlock form; <br>You can use the following ip address ranges and their subnets: <br><font color='green'>[10.0.0.0/8]</font><br><font color='green'>[172.16.0.0/12]</font><br><font color='green'>[192.168.0.0/16]</font>"
+      },
+      "Default": "192.168.0.0/16",
+      "AssociationProperty": "ALIYUN::VPC::VPC::CidrBlock",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${whetherCreateVpc}",
+              true
+            ]
+          }
+        }
+      }
+    },
+    "vSwitchCidrBlock": {
+      "Type": "String",
+      "Label": {
+        "en": "VSwitch CIDR Block",
+        "zh-cn": "交换机子网网段"
+      },
+      "Description": {
+        "zh-cn": "必须属于VPC的子网段",
+        "en": "Must belong to the subnet segment of VPC"
+      },
+      "Default": "192.168.1.0/24",
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::CidrBlock",
+      "AssociationPropertyMetadata": {
+        "VpcCidrBlock": "vpcCidrBlock",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${whetherCreateVpc}",
+              true
+            ]
+          }
+        }
       }
     },
     "securityGroupId": {
@@ -63,9 +131,18 @@
         "zh-cn": "安全组ID"
       },
       "Type": "String",
+      "Default": "",
       "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId",
       "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${whetherCreateVpc}",
+              false
+            ]
+          }
+        }
       }
     },
     "vSwitchId": {
@@ -74,14 +151,24 @@
         "zh-cn": "交换机ID"
       },
       "Type": "String",
+      "Default": "",
       "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
       "AssociationPropertyMetadata": {
         "RegionId": "regionId",
+        "ZoneId": "zoneId",
         "Filters": [
           {
             "SecurityGroupId": "securityGroupId"
           }
-        ]
+        ],
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${whetherCreateVpc}",
+              false
+            ]
+          }
+        }
       }
     },
     "ramRoleName": {
@@ -161,6 +248,95 @@
       }
     },
     {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "{{ whetherCreateVpc }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Create a resource stack",
+        "zh-cn": "创建资源栈"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackName": "OOS-{{ACS::ExecutionId}}",
+          "TimeoutInMinutes": 10,
+          "DisableRollback": false,
+          "Parameters": [
+            {
+              "ParameterKey": "ZoneId",
+              "ParameterValue": "{{ zoneId }}"
+            },
+            {
+              "ParameterKey": "VpcCidrBlock",
+              "ParameterValue": "{{ vpcCidrBlock  }}"
+            },
+            {
+              "ParameterKey": "VSwitchCidrBlock",
+              "ParameterValue": "{{ vSwitchCidrBlock  }}"
+            }
+          ],
+          "TemplateBody": "ROSTemplateFormatVersion: '2015-09-01'\nParameters:\n  ZoneId:\n    Type: String\n  VpcCidrBlock:\n    Type: String\n  VSwitchCidrBlock:\n    Type: String\nResources:\n  EcsVpc:\n    Type: ALIYUN::ECS::VPC\n    Properties:\n      CidrBlock:\n        Ref: VpcCidrBlock\n      VpcName:\n        Ref: ALIYUN::StackName\n  EcsVSwitch:\n    Type: ALIYUN::ECS::VSwitch\n    Properties:\n      ZoneId:\n        Ref: ZoneId\n      VpcId:\n        Ref: EcsVpc\n      CidrBlock:\n        Ref: VSwitchCidrBlock\n  EcsSecurityGroup:\n    Type: ALIYUN::ECS::SecurityGroup\n    Properties:\n      VpcId:\n        Ref: EcsVpc\nOutputs:\n  SecurityGroupId:\n    Value:\n      Ref: EcsSecurityGroup\n  VSwitchId:\n    Value:\n      Ref: EcsVSwitch\n"
+        }
+      },
+      "Outputs": {
+        "StackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilStackReady",
+      "Action": "ACS::WaitFor",
+      "When": {
+        "Fn::Equals": [
+          "{{ whetherCreateVpc }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Wait for the stack status CREATE_COMPLETE",
+        "zh-cn": "等待资源栈至创建成功状态"
+      },
+      "OnError": "deleteStack",
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "securityGroupId": {
+          "Type": "String",
+          "ValueSelector": "Outputs[0].OutputValue"
+        },
+        "vSwitchId": {
+          "Type": "String",
+          "ValueSelector": "Outputs[1].OutputValue"
+        }
+      }
+    },
+    {
       "Name": "runInstances",
       "Action": "ACS::ECS::RunInstances",
       "Description": {
@@ -171,8 +347,30 @@
         "regionId": "{{ regionId }}",
         "imageId": "{{ sourceImageId }}",
         "instanceType": "{{ instanceType }}",
-        "securityGroupId": "{{ securityGroupId }}",
-        "vSwitchId": "{{ vSwitchId }}",
+        "securityGroupId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ whetherCreateVpc }}",
+                true
+              ]
+            },
+            "{{ untilStackReady.securityGroupId }}",
+            "{{ securityGroupId }}"
+          ]
+        },
+        "vSwitchId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ whetherCreateVpc }}",
+                true
+              ]
+            },
+            "{{ untilStackReady.vSwitchId }}",
+            "{{ vSwitchId }}"
+          ]
+        },
         "ramRoleName": "{{ ramRoleName }}"
       },
       "Outputs": {
@@ -186,7 +384,7 @@
       "Name": "installCloudAssistant",
       "Action": "ACS::ECS::InstallCloudAssistant",
       "Description": {
-        "en": "Install cloud assostant for ECS instance",
+        "en": "Install cloud assistant for ECS instance",
         "zh-cn": "给实例安装云助手"
       },
       "OnError": "deleteInstance",
@@ -199,7 +397,7 @@
       "Name": "runCommand",
       "Action": "ACS::ECS::RunCommand",
       "Description": {
-        "en": "Run cloud assostant command on ECS instance",
+        "en": "Run cloud assistant command on ECS instance",
         "zh-cn": "在实例中运行云助手命令"
       },
       "OnError": "deleteInstance",
@@ -260,6 +458,28 @@
           "Force": true
         }
       }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteApi",
+      "When": {
+        "Fn::Equals": [
+          "{{ whetherCreateVpc }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Delete the stack",
+        "zh-cn": "删除资源栈"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackId": "{{ createStack.StackId }}"
+        }
+      }
     }
   ],
   "Outputs": {
@@ -274,6 +494,7 @@
         {
           "Parameters": [
             "regionId",
+            "zoneId",
             "sourceImageId"
           ],
           "Label": {
@@ -298,6 +519,9 @@
         {
           "Parameters": [
             "instanceType",
+            "whetherCreateVpc",
+            "vpcCidrBlock",
+            "vSwitchCidrBlock",
             "securityGroupId",
             "vSwitchId",
             "ramRoleName"

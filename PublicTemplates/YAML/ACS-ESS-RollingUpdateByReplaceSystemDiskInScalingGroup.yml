@@ -122,6 +122,9 @@ Tasks:
       Parameters:
         ScalingGroupId: '{{ scalingGroupId }}'
         LifecycleState: InService
+        CreationTypes:
+          - AutoCreated
+          - Attached
     Outputs:
       instanceIds:
         Type: List
