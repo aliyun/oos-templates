@@ -12,6 +12,17 @@ Parameters:
     AssociationProperty: RegionId
     Type: String
     Default: '{{ ACS::RegionId }}'
+  resourceType:
+    Type: String
+    Label:
+      en: ResourceType
+      zh-cn: 资源类型
+    AssociationPropertyMetadata:
+      LocaleKey: TargetResourceType
+    AllowedValues:
+      - ALIYUN::ECS::Instance
+      - ALIYUN::ECS::ManagedInstance
+    Default: ALIYUN::ECS::Instance
   targets:
     Label:
       en: TargetInstance
@@ -19,7 +30,7 @@ Parameters:
     Type: Json
     AssociationProperty: Targets
     AssociationPropertyMetadata:
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: resourceType
       RegionId: regionId
   action:
     Label:
@@ -74,7 +85,7 @@ Tasks:
     Action: ACS::SelectTargets
     Properties:
       RegionId: '{{ regionId }}'
-      ResourceType: ALIYUN::ECS::Instance
+      ResourceType: '{{ resourceType }}'
       Filters:
         - '{{ targets }}'
     Outputs:
@@ -86,11 +97,40 @@ Tasks:
       en: Apply patch baseline on ECS instance
       zh-cn: 在ECS实例中配置补丁基线
     Action: ACS::ECS::ApplyPatchBaseline
+    When:
+      Fn::Equals:
+        - '{{ resourceType }}'
+        - ALIYUN::ECS::Instance
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       action: '{{ action }}'
       rebootIfNeed: '{{ rebootIfNeed }}'
+      timeout: '{{ timeout }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: commandOutput
+  - Name: applyPatchBaselineOnManagedInstance
+    Description:
+      en: Apply patch baseline on ECS managed instance
+      zh-cn: 在ECS托管实例中配置补丁基线
+    Action: ACS::ECS::ApplyPatchBaselineOnMangedInstance
+    When:
+      Fn::Equals:
+        - '{{ resourceType }}'
+        - ALIYUN::ECS::ManagedInstance
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      action: '{{ action }}'
       timeout: '{{ timeout }}'
     Loop:
       RateControl: '{{ rateControl }}'
@@ -120,6 +160,7 @@ Metadata:
             en: Configure Parameters
       - Parameters:
           - regionId
+          - resourceType
           - targets
         Label:
           default:

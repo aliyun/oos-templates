@@ -103,7 +103,7 @@ Tasks:
           cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
           chmod +x oosutil_linux
           cd $currentPath
-          $path/oosutil_linux download_content {{ sourceType }} {{ sourcePath }} \''{{ tokenInfo }}'\' {{destinationDir}}
+          $path/oosutil_linux download_content {{ sourceType }} "{{ sourcePath }}" \''{{ tokenInfo }}'\' {{destinationDir}}
         fi
     Outputs:
       commandOutput:

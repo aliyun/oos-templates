@@ -122,7 +122,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunShellScript",
-        "commandContent": "#/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  currentPath=`pwd`\n  test -e $path || mkdir -p $path\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  $path/oosutil_linux download_content {{ sourceType }} {{ sourcePath }} \\''{{ tokenInfo }}'\\' {{destinationDir}}\nfi"
+        "commandContent": "#/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  currentPath=`pwd`\n  test -e $path || mkdir -p $path\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  $path/oosutil_linux download_content {{ sourceType }} \"{{ sourcePath }}\" \\''{{ tokenInfo }}'\\' {{destinationDir}}\nfi"
       },
       "Outputs": {
         "commandOutput": {

@@ -3,7 +3,7 @@
   "Description": {
     "en": "Use this template to install software on ecs",
     "zh-cn": "使用这个模板批量的在ECS安装软件",
-    "name-en": "ACS-ECS-BulkyConfigureSoftwareFromEcsAppStore",
+    "name-en": "Bulky Configure Software",
     "name-zh-cn": "批量安装软件",
     "categories": [
       "run_command",
@@ -81,10 +81,12 @@
         "zh-cn": "社区软件名称"
       },
       "AllowedValues": [
-        "DockerCE"
+        "DockerCE",
+        "BaotaPanelFree"
       ],
       "Default": "DockerCE",
       "AssociationPropertyMetadata": {
+        "LocaleKey": "CommunitySoftwareName",
         "Visible": {
           "Condition": {
             "Fn::Equals": [
@@ -93,6 +95,10 @@
             ]
           }
         }
+      },
+      "Description": {
+        "en": "Baota Panel only supports to be installed on Linux. Information can be found in execution outputs.",
+        "zh-cn": "宝塔面板仅支持Linux操作系统安装，安装后可以在执行输出中查看访问信息。"
       }
     },
     "installer": {
@@ -263,7 +269,18 @@
                           ]
                         },
                         "{{ oos:aliyun/services/oos/commands/install_DockerCE_for_linux }}",
-                        "echo \"Community software ({{ communitySoftwareName }}) is not supported\"\nexit 1"
+                        {
+                          "Fn::If": [
+                            {
+                              "Fn::Equals": [
+                                "{{ communitySoftwareName }}",
+                                "BaotaPanelFree"
+                              ]
+                            },
+                            "{{ oos:aliyun/services/oos/commands/install_BaoTaPanelFree_for_linux }}",
+                            "echo \"Community software ({{ communitySoftwareName }}) is not supported\"\nexit 1"
+                          ]
+                        }
                       ]
                     },
                     "{{ oos:aliyun/services/oos/commands/install_from_linux_repository }}"

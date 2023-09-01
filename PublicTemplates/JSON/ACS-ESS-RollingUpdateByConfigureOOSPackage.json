@@ -163,7 +163,11 @@
         "API": "DescribeScalingInstances",
         "Parameters": {
           "ScalingGroupId": "{{ scalingGroupId }}",
-          "LifecycleState": "InService"
+          "LifecycleState": "InService",
+          "CreationTypes": [
+            "AutoCreated",
+            "Attached"
+          ]
         }
       },
       "Outputs": {

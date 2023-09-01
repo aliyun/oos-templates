@@ -1,0 +1,119 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::ApplyPatchBaselineOnMangedInstance
+  name-zh-cn: 在ECS托管实例中配置补丁基线
+  en: Apply patch baseline on ECS managed instance
+  zh-cn: 在ECS托管实例中配置补丁基线
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  action:
+    Description:
+      en: The action to apply patch baseline
+      zh-cn: 配置补丁基线的方式
+    Type: String
+    AllowedValues:
+      - install
+      - scan
+    Default: install
+  rebootIfNeed:
+    Description:
+      en: Whether to reboot
+      zh-cn: 是否重启
+    Type: Boolean
+    Default: false
+  timeout:
+    Description:
+      en: The value of the invocation timeout period of a command on ECS instances.
+      zh-cn: ECS实例中执行命令的超时时间。
+    Type: Number
+    Default: 1800
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS managed instance OS type
+      zh-cn: 获取托管实例的操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeManagedInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances[].OsType'
+      instanceId:
+        Type: Json
+        ValueSelector: .
+  - Name: applyLinuxPatchBaseline
+    Description:
+      en: Apply patch baseline on Linux managed instance
+      zh-cn: 在Linux类型托管实例中配置补丁基线
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - Linux
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #/bin/bash
+
+        if  [ '{{ action }}' != 'scan' ] ; then
+            acs-plugin-manager --exec  --plugin=patch_manager   --params --operation,install,--reboot,no
+        else
+            acs-plugin-manager --exec  --plugin=patch_manager  --params --operation,scan
+        fi
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: applyWindowsPatchBaseline
+    Description:
+      en: Apply patch baseline on Windows instance
+      zh-cn: 在Windows类型实例中配置补丁基线
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - Windows
+    Action: 'ACS::ECS::RunCommandForApplyPatchBaseline'
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      timeout: '{{ timeout }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        if ('{{ action }}' -eq 'scan'){
+            acs-plugin-manager.exe     --exec  --plugin=patch_manager_win    --params "-operation",scan
+        }else{
+            acs-plugin-manager.exe    --exec  --plugin=patch_manager_win   --params "-operation,install,-reboot,no"
+        }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value:
+      'Fn::If':
+        - 'Fn::Equals':
+            - Linux
+            - '{{ queryInstanceOSType.OSType }}'
+        - '{{ applyLinuxPatchBaseline.commandOutput }}'
+        - '{{ applyWindowsPatchBaseline.commandOutput }}'
