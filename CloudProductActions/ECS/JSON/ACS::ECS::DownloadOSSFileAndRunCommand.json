@@ -15,6 +15,14 @@
       "Type": "String",
       "Default": "{{ ACS::RegionId }}"
     },
+    "parameters": {
+      "Label": {
+        "en": "Parameters",
+        "zh-cn": "命令中的参数"
+      },
+      "Type": "Json",
+      "Default": {}
+    },
     "instanceId": {
       "Description": {
         "en": "The ID of ECS instance",
@@ -124,7 +132,7 @@
               {
                 "Fn::Equals": [
                   "{{ OSSRegion }}",
-                  "{{ ACS::RegionId }}"
+                  "{{ regionId }}"
                 ]
               },
               "true",
@@ -236,7 +244,20 @@
         "commandType": "RunShellScript",
         "commandContent": "{{ commandContent }}",
         "workingDir": "{{ workingDir }}",
-        "timeout": "{{ timeout }}"
+        "timeout": "{{ timeout }}",
+        "parameters": "{{ parameters }}",
+        "enableParameter": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ parameters }}",
+                {}
+              ]
+            },
+            false,
+            true
+          ]
+        }
       },
       "Outputs": {
         "commandOutput": {
@@ -262,7 +283,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": "if ({{whetherSaveToFile}} -eq \"true\"){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'\"\n} else {\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}"
+        "commandContent": "if (\"{{whetherSaveToFile}}\" -eq \"true\"){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'\"\n} else {\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}"
       },
       "Outputs": {
         "commandOutput": {
@@ -290,7 +311,20 @@
         "commandType": "RunPowerShellScript",
         "commandContent": "{{ commandContent }}",
         "workingDir": "{{ workingDir }}",
-        "timeout": "{{ timeout }}"
+        "timeout": "{{ timeout }}",
+        "parameters": "{{ parameters }}",
+        "enableParameter": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ parameters }}",
+                {}
+              ]
+            },
+            false,
+            true
+          ]
+        }
       },
       "Outputs": {
         "commandOutput": {

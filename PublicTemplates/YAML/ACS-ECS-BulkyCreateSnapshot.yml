@@ -33,6 +33,15 @@ Parameters:
     MaxValue: 65536
     MinValue: 0
     Default: 0
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 快照标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
   rateControl:
     Label:
       en: RateControl
@@ -48,7 +57,7 @@ Parameters:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: createSnapshot
@@ -58,6 +67,7 @@ Tasks:
       zh-cn: 为一块云盘创建一份快照
     Properties:
       diskId: '{{ ACS::TaskLoopItem }}'
+      tags: '{{ tags }}'
       retentionDays:
         Fn::If:
           - Fn::Equals:
@@ -86,6 +96,7 @@ Metadata:
       - Parameters:
           - diskIds
           - retentionDays
+          - tags
         Label:
           default:
             zh-cn: 配置参数

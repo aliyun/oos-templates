@@ -1,0 +1,122 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky delete expired snapshot
+  zh-cn: 批量删除过期的快照
+  name-en: ACS-ECS-BulkyDeleteExpiredSnapshot
+  name-zh-cn: 批量删除过期的快照
+  categories:
+    - data_backup
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  force:
+    Label:
+      en: Forced deletion of Snapshot
+      zh-cn: 是否强制删除快照
+    Type: Boolean
+    Default: false
+  expiredDays:
+    Label:
+      en: Snapshot Expiration Days
+      zh-cn: 快照过期天数
+    Type: Number
+  snapshotName:
+    Label:
+      en: Name Field Used To Filter Snapshot
+      zh-cn: 用于过滤快照的名称字段
+    Type: String
+    Default: " "
+  tags:
+    Label:
+      en: Snapshot Tags
+      zh-cn: 快照标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: [ ]
+  rateControl:
+    Label:
+      en: Rate Control
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeSnapshots
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get the snapshots
+      zh-cn: 获取快照
+    Properties:
+      Service: ECS
+      API: DescribeSnapshots
+      Parameters:
+        RegionId: '{{ regionId }}'
+        Tags: '{{ tags }}'
+        Filter2Key: CreationEndTime
+        Filter2Value:
+          'Fn::FormatUTCTime':
+            - 'Fn::AddHour':
+                - '{{ ACS::CurrentUTCTime }}'
+                - "Fn::Eval":
+                    - '-{{ expiredDays }}*24'
+            - '%Y-%m-%dT00:00Z'
+    Outputs:
+      snapshotIds:
+        Type: List
+        ValueSelector: '.Snapshots.Snapshot[] | select( .SnapshotName | test("{{snapshotName}}")) | .SnapshotId'
+  - Name: deleteSnapshots
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Delete the snapshots
+      zh-cn: 删除快照
+    Properties:
+      Service: ECS
+      API: DeleteSnapshot
+      Parameters:
+        RegionId: '{{ regionId }}'
+        SnapshotId: '{{ ACS::TaskLoopItem }}'
+        Force: '{{ force }}'
+    Loop:
+      Items: '{{ describeSnapshots.snapshotIds }}'
+      RateControl: '{{ rateControl }}'
+Outputs:
+  deletedSnapshotIds:
+    Type: List
+    Value: '{{ describeSnapshots.snapshotIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - expiredDays
+          - snapshotName
+          - tags
+          - force
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

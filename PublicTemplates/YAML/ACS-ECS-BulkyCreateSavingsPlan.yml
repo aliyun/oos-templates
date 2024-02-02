@@ -1,0 +1,184 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-ECS-BulkyCreateSavingsPlan
+  name-zh-cn: 批量通过节省计划换购实例
+  en: Bulky create savings plan
+  zh-cn: 批量通过节省计划换购实例
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  refundInstanceGroup:
+    Type: Json
+    Label:
+      en: RefundInstanceGroup
+      zh-cn: 退款实例组
+  defrayInstanceGroup:
+    Type: Json
+    Label:
+      en: PaymentInstanceGroup
+      zh-cn: 付款实例组
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: refundSavingsPlanByInstance
+    Action: ACS::ECS::CreateSavingsPlan
+    Description:
+      en: Refund instance through savings plan
+      zh-cn: 按节省计划退款
+    Properties:
+      regionId: '{{ regionId }}'
+      resourceId:
+        Fn::Select:
+          - InstanceIds
+          - '{{ ACS::TaskLoopItem }}'
+      planType:
+        Fn::Jq:
+          - First
+          - .PlanType
+          - '{{ ACS::TaskLoopItem }}'
+      offeringType:
+        Fn::Jq:
+          - First
+          - .OfferingType
+          - '{{ ACS::TaskLoopItem }}'
+      committedAmount:
+        Fn::Jq:
+          - First
+          - .CommittedAmount
+          - '{{ ACS::TaskLoopItem }}'
+      instanceTypeFamily:
+        Fn::Jq:
+          - First
+          - .InstanceTypeFamily
+          - '{{ ACS::TaskLoopItem }}'
+      periodUnit:
+        Fn::Jq:
+          - First
+          - .PeriodUnit
+          - '{{ ACS::TaskLoopItem }}'
+      period:
+        Fn::Jq:
+          - First
+          - .Period
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ refundInstanceGroup }}'
+      Outputs:
+        orderIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: orderId
+    Outputs:
+      orderId:
+        Type: Json
+        ValueSelector: .orderId
+  - Name: deFrayInstanceBySavingsPlan
+    Action: ACS::ECS::CreateSavingsPlan
+    Description:
+      en: Defray instance through savings plan
+      zh-cn: 按节省计划付款
+    Properties:
+      regionId: '{{ regionId }}'
+      resourceId:
+        Fn::Select:
+          - InstanceIds
+          - '{{ ACS::TaskLoopItem }}'
+      planType:
+        Fn::Jq:
+          - First
+          - .PlanType
+          - '{{ ACS::TaskLoopItem }}'
+      offeringType:
+        Fn::Jq:
+          - First
+          - .OfferingType
+          - '{{ ACS::TaskLoopItem }}'
+      committedAmount:
+        Fn::Jq:
+          - First
+          - .CommittedAmount
+          - '{{ ACS::TaskLoopItem }}'
+      instanceTypeFamily:
+        Fn::Jq:
+          - First
+          - .InstanceTypeFamily
+          - '{{ ACS::TaskLoopItem }}'
+      periodUnit:
+        Fn::Jq:
+          - First
+          - .PeriodUnit
+          - '{{ ACS::TaskLoopItem }}'
+      period:
+        Fn::Jq:
+          - First
+          - .Period
+          - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ defrayInstanceGroup }}'
+      Outputs:
+        orderIds:
+          AggregateType: Fn::ListJoin
+          AggregateField: orderId
+    Outputs:
+      orderId:
+        Type: Json
+        ValueSelector: .orderId
+  - Name: untilOrderPaidReady
+    Action: ACS::WaitFor
+    Retries: 57
+    Description:
+      en: Waits for the order is paid
+      zh-cn: 等待订单支付完成
+    Properties:
+      Service: BssOpenApi
+      API: GetOrderDetail
+      Parameters:
+        RegionId: '{{ regionId }}'
+        OrderId: '{{ ACS::TaskLoopItem }}'
+      DesiredValues:
+        - Paid
+      StopRetryValues:
+        - Cancelled
+      PropertySelector: Data.OrderList.Order[].PaymentStatus
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ deFrayInstanceBySavingsPlan.orderIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - RegionId
+          - refundInstanceGroup
+          - defrayInstanceGroup
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

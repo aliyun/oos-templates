@@ -1,0 +1,175 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-ECS-BulkyDescribeSavingsPlanEstimation
+  name-zh-cn: 批量测算ECS实例SP类型
+  en: Bulky describe savings plan estimation
+  zh-cn: 批量测算ECS实例SP类型
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: resourceType
+      RegionId: regionId
+      Status: Running
+  planType:
+    Type: String
+    Label:
+      en: PlanType
+      zh-cn: 计划类型
+    AllowedValues:
+      - ecs
+      - universal
+    Default: ecs
+  offeringType:
+    Type: String
+    Label:
+      en: OfferingType
+      zh-cn: 产品类型
+    AllowedValues:
+      - All Upfront
+      - Partial Upfront
+      - No Upfront
+    Default: All Upfront
+  periodUnit:
+    Type: String
+    Label:
+      en: PeriodUnit
+      zh-cn: 时长单位
+    AllowedValues:
+      - Year
+    Default: Year
+  period:
+    Label:
+      en: Period
+      zh-cn: 续费时长
+    Type: Number
+    Default: 1
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: OOSServiceRole
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: describeSavingsPlanEstimation
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Calculate savings plan by instance
+      zh-cn: 按实例计测算节省计划
+    Properties:
+      Service: ECS
+      API: DescribeSavingsPlanEstimation
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceId: '{{ ACS::TaskLoopItem }}'
+        PlanType: '{{ planType }}'
+        OfferingType: '{{ offeringType }}'
+        PeriodUnit: '{{ periodUnit }}'
+        Period: '{{ period }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+      Outputs:
+        results:
+          AggregateType: Fn::ListJoin
+          AggregateField: result
+    Outputs:
+      result:
+        Type: Json
+        ValueSelector: .
+  - Name: bulkyDescribeSavingsPlanPriceByInstanceGroup
+    Action: ACS::ECS::DescribeSavingsPlanPriceByInstanceGroup
+    Description:
+      en: Bulky describe savings plan price by instance group
+      zh-cn: 批量根据实例分组进行SP询价
+    Properties:
+      regionId: '{{ regionId }}'
+      targetGroupOfInstanceFamilyGroup: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items:
+        Fn::Jq:
+          - First
+          - group_by(.InstanceTypeFamily)
+          - '{{ describeSavingsPlanEstimation.results }}'
+      Outputs:
+        priceResults:
+          AggregateType: Fn::ListJoin
+          AggregateField: result
+    Outputs:
+      result:
+        Type: Json
+        ValueSelector: .results
+Outputs:
+  PriceResults:
+    Type: Json
+    Value: '{{ bulkyDescribeSavingsPlanPriceByInstanceGroup.priceResults }}'
+  InstanceInfos:
+    Type: Json
+    Value:
+      Fn::Jq:
+        - First
+        - group_by(.InstanceTypeFamily)
+        - '{{ describeSavingsPlanEstimation.results }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - RegionId
+          - resourceType
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - planType
+          - offeringType
+          - periodUnit
+          - period
+        Label:
+          default:
+            zh-cn: 执行命令选型
+            en: run command options
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

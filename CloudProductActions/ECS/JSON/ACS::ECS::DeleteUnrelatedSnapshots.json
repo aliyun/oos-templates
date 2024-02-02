@@ -1,0 +1,103 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Delete unrelated snapshots",
+    "zh-cn": "删除用户账号下所有无关联的快照",
+    "name-en": "ACS::ECS::DeleteUnrelatedSnapshots",
+    "name-zh-cn": "删除用户账号下所有无关联的快照"
+  },
+  "Parameters": {
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getRegionIds",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get region id list",
+        "zh-cn": "获取地域ID列表"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeRegions",
+        "Parameters": {}
+      },
+      "Outputs": {
+        "regionIds": {
+          "Type": "List",
+          "ValueSelector": ".Regions.Region[].RegionId"
+        }
+      }
+    },
+    {
+      "Name": "getSnapshotIds",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get snapshot id list",
+        "zh-cn": "获取快照ID列表"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSnapshots",
+        "Parameters": {
+          "RegionId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "snapshotIds": {
+          "Type": "List",
+          "ValueSelector": ".Snapshots.Snapshot | map(select(.Usage != \"image\" and .Usage != \"image_disk\" and all(.Tags.Tag[]?; .TagKey != \"acs:ecs:isShared\") and all(.Tags.Tag[]?; .TagKey != \"acs:ecs:sharedFrom\")) | .SnapshotId)  | .[]"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ GetRegionIds.regionIds }}",
+        "Outputs": {
+          "snapshotIdList": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "snapshotIds"
+          }
+        }
+      }
+    },
+    {
+      "Name": "deleteSnapshots",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "em": "Delete snapshots",
+        "zh-cn": "删除快照"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteSnapshot",
+        "Parameters": {
+          "SnapshotId": "{{ ACS::TaskLoopItem }}",
+          "Force": true
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": {
+          "Fn::Jq": [
+            "First",
+            "map(select(. != null)) | [.[][]]",
+            "{{ GetSnapshotIds.snapshotIdList }}"
+          ]
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "deletedSnapshotIdList": {
+      "Type": "List",
+      "Value": "{{ GetSnapshotIds.snapshotIdList }}"
+    }
+  }
+}

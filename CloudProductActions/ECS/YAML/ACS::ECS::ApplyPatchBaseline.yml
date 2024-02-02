@@ -25,6 +25,18 @@ Parameters:
       - install
       - scan
     Default: install
+  whetherCreateSnapshot:
+    Description:
+      en: Whether to create snapshot
+      zh-cn: 是否创建快照
+    Type: Boolean
+    Default: false
+  retentionDays:
+    Description:
+      en: 'The retention period of the snapshot. Valid values: 1 to 65536. Unit: days'
+      zh-cn: 快照的保留时间，取值范围：1~65536,单位为天
+    Type: String
+    Default: ''
   rebootIfNeed:
     Description:
       en: Whether to reboot
@@ -38,6 +50,49 @@ Parameters:
     Type: Number
     Default: 1800
 Tasks:
+  - Name: whetherCreateSnapshot
+    Action: ACS::Choice
+    Description:
+      en: Choose the next task based on whether to create snapshot
+      zh-cn: 根据是否创建快照选择下一个任务
+    Properties:
+      DefaultTask: queryInstanceOSType
+      Choices:
+        - When:
+            Fn::Equals:
+              - true
+              - '{{ whetherCreateSnapshot }}'
+          NextTask: getSystemDisk
+  - Name: getSystemDisk
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Queries the system disk
+      zh-cn: 获取系统盘
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ instanceId }}'
+        DiskType: system
+    Outputs:
+      diskId:
+        Type: String
+        ValueSelector: Disks.Disk[].DiskId
+  - Name: createSnapshot
+    Action: ACS::ECS::CreateSnapshot
+    Description:
+      en: Creates a snapshot for the system disk
+      zh-cn: 为系统盘创建快照
+    Properties:
+      regionId: '{{ regionId }}'
+      diskId: '{{ getSystemDisk.diskId }}'
+      snapshotName: 'Snapshot-{{ ACS::ExecutionId }}'
+      retentionDays: '{{ retentionDays }}'
+    Outputs:
+      snapshotId:
+        Type: String
+        ValueSelector: snapshotId
   - Name: queryInstanceOSType
     Action: 'ACS::ExecuteApi'
     Description:
@@ -190,6 +245,9 @@ Tasks:
     Description:
       en: Gets the instance cloud assistant status
       zh-cn: 获取实例云助手状态
+    DelayType: Constant
+    Delay: 60
+    Retries: 30
     Properties:
       Service: ECS
       API: DescribeCloudAssistantStatus

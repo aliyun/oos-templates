@@ -13,7 +13,7 @@ Parameters:
     Default: '{{ ACS::RegionId }}'
   instanceId:
     Description:
-      en: The ID of ECS instace
+      en: The ID of ECS instance
       zh-cn: ECS实例ID
     Type: String
   sourceType:
@@ -41,6 +41,36 @@ Parameters:
       en: Target directory for file download in instance
       zh-cn: 文件在实例中的下载目录
     Type: String
+  timeout:
+    Description:
+      en: Timeout for file download
+      zh-cn: 文件下载超时时间
+    Type: Number
+    Default: 600
+  fileOwner:
+    Description:
+      en: The owner of the file
+      zh-cn: 文件所有者
+    Type: String
+    Default: ''
+  fileGroup:
+    Description:
+      en: The group of the file
+      zh-cn: 文件所属组
+    Type: String
+    Default: ''
+  fileMode:
+    Description:
+      en: The mode of the file
+      zh-cn: 文件权限
+    Type: String
+    Default: ''
+  overwrite:
+    Description:
+      en: Overwrite the existing file
+      zh-cn: 覆盖已存在的文件
+    Type: Boolean
+    Default: true
 Tasks:
   - Name: queryInstanceOSType
     Action: 'ACS::ExecuteApi'
@@ -70,30 +100,40 @@ Tasks:
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'
+      timeout: '{{ timeout }}'
       commandType: RunShellScript
       commandContent: |-
         #/bin/bash
-        if [ {{sourceType}} = 'local' ]; then
-          filePath=$(echo "{{sourcePath}}" | awk -F'?' '{print$1}')
-          fileName=$(echo $filePath | awk -F'/' '{print$5}')
-          wget "{{sourcePath}}" -O {{destinationDir}}/$fileName -q
-          echo "{{destinationDir}}/$fileName Execute Success"
-        else
-          current_version=`aliyun-service -v`
-          specified_version=1.0.2.497
-
-          if [[ $current_version > $specified_version ]]; then
-            acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'"{{sourcePath}}"',\''{{ tokenInfo }}'\','{{destinationDir}}'
+        
+        fileName=$(echo "{{sourcePath}}" | awk -F'?' '{print$1}' | awk -F'/' '{print$NF}')
+        destinationFile="{{destinationDir}}/${fileName}"
+        
+        if [ ! -d "{{destinationDir}}" ]; then
+          mkdir -p "{{destinationDir}}"
+        fi
+        
+        if [ '{{ overwrite }}' = 'true' ] || [ ! -f "$destinationFile" ]; then
+          if [ '{{sourceType}}' = 'local' ]; then
+            wget "{{sourcePath}}" -O "$destinationFile" -q
+            echo "$destinationFile execute success."
           else
-            version='{{ ACS::OOSUtilVersion }}'
-            path=/usr/local/share/aliyun-oosutil/$version
-            currentPath=`pwd`
-            test -e $path || mkdir -p $path
-            cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
-            chmod +x oosutil_linux
-            cd $currentPath
-            $path/oosutil_linux download_content {{ sourceType }} "{{ sourcePath }}" \''{{ tokenInfo }}'\' {{destinationDir}}
+            acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'"{{sourcePath}}"',\''{{ tokenInfo }}'\','{{destinationDir}}'
           fi
+        else
+          echo "File already exists."
+          exit 1
+        fi
+        
+        if [ '{{fileMode}}' != '' ] ; then
+          chmod '{{fileMode}}' "$destinationFile"
+        fi
+        
+        if [ '{{fileGroup}}' != '' ] ; then
+          chgrp {{fileGroup}} "$destinationFile"
+        fi
+        
+        if [ '{{fileOwner}}' != '' ] ; then
+          chown {{fileOwner}} "$destinationFile"
         fi
     Outputs:
       commandOutput:
@@ -111,43 +151,37 @@ Tasks:
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'
+      timeout: '{{ timeout }}'
       commandType: RunPowerShellScript
       commandContent: |-
         $sourcePath = "{{ sourcePath }}"
-        if ("{{ sourceType }}" -eq "local"){
-          $destinationDir = "{{ destinationDir }}"
-          $httpFilePath = $sourcePath.Split("?")[0]
-          $fileName = $httpFilePath.Split("/")[4]
-          $client = new-object System.Net.WebClient
-          $client.DownloadFile($sourcePath, "$destinationDir/$fileName")
-          echo "{{destinationDir}}/$fileName Execute Success"
-        }else{
-          $current_version=(aliyun_assist_service.exe -v)
-          $specified_version="1.0.0.134"
-          if ($current_version -gt $specified_version){
-            acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',{{destinationDir}}"
-            if ($LASTEXITCODE -ne 0){
-              exit $LASTEXITCODE;
-            }
-          }else{
-            $version="{{ACS::OOSUtilVersion}}"
-            $path = "C:\aliyun-oosutil\$version"
-            $currentPath=(pwd)
-            $pathExistOrNot = Test-Path -Path "$path"
-            if ($pathExistOrNot){
-                cd $path
-            }else{
-                mkdir $path
-                cd $path
-            }
-            $client = new-object System.Net.WebClient
-            $client.DownloadFile("https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe", "$path/oosutil_windows.exe")
-            cd $currentPath
-            C:\aliyun-oosutil\{{ ACS::OOSUtilVersion }}\oosutil_windows.exe download_content {{ sourceType }} $sourcePath '`{{ tokenInfo }}`' {{destinationDir}}
+        $destinationDir = "{{ destinationDir }}"
+        $fileName = ($sourcePath -split '\?')[0] | Split-Path -Leaf
+        $destinationFile = Join-Path $destinationDir $fileName
+        
+        if (-not (Test-Path -Path $destinationDir)) {
+          New-Item -ItemType Directory -Path $destinationDir
+        }
+        
+        if ("{{overwrite}}" -eq "true" -or !(Test-Path $destinationFile))
+        {
+          if ("{{sourceType}}" -eq "local")
+          {
+            Invoke-WebRequest -Uri $sourcePath -OutFile $destinationFile
+            Write-Host "$destinationFile execute success."
+          }
+          else
+          {
+            acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',$destinationDir"
             if ($LASTEXITCODE -ne 0){
               exit $LASTEXITCODE;
             }
           }
+        }
+        else
+        {
+          Write-Host "File already exists."
+          Exit 1
         }
     Outputs:
       commandOutput:

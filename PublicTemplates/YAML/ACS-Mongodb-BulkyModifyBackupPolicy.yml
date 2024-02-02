@@ -1,0 +1,103 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-Mongodb-BulkyModifyBackupPolicy
+  name-zh-cn: 修改MongoDB实例的备份策略
+  en: Update mongodb instance backup policy
+  zh-cn: 修改MongoDB实例的备份策略
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceIds:
+    Description:
+      en: The Ids of instances
+      zh-cn: 实例ID列表
+    Type: List
+  preferredBackupTime:
+    Description:
+      en: Backup Time
+      zh-cn: 执行备份的时间，格式为HH:mmZ-HH:mmZ（UTC时间）。时间范围限制为1小时。
+    Type: String
+    Default: 03:00Z-04:00Z
+  preferredBackupPeriod:
+    Description:
+      en: Backup Period
+      zh-cn: 备份周期
+    Type: List
+    AllowedValues:
+      - Monday
+      - Tuesday
+      - Wednesday
+      - Thursday
+      - Friday
+      - Saturday
+      - Sunday
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ModifyBackupPolicy
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify mongodb instance backup policy
+      zh-cn: 修改MongoDB实例的备份策略
+    Properties:
+      Service: dds
+      API: ModifyBackupPolicy
+      Parameters:
+        RegionId: '{{ regionId }}'
+        DBInstanceId: '{{ ACS::TaskLoopItem }}'
+        PreferredBackupTime: '{{ preferredBackupTime }}'
+        PreferredBackupPeriod:
+          Fn::Join:
+            - ','
+            - '{{ preferredBackupPeriod }}'
+        BackupRetentionPeriod: 30
+        EnableBackupLog: 1
+        LogBackupRetentionPeriod: 30
+        SnapshotBackupType: Standard
+        BackupInterval: -1
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{  instanceIds}}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - instanceIds
+        Label:
+          default:
+            zh-cn: 选择实例列表
+            en: Select Instances
+      - Parameters:
+          - preferredBackupTime
+          - preferredBackupPeriod
+        Label:
+          default:
+            zh-cn: 备份策略设置
+            en: Set Backup Policy
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

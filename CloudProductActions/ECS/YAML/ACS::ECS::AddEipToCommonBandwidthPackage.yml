@@ -22,13 +22,6 @@ Parameters:
       en: BandwidthPackageId
       zh-cn: 共享带宽包ID
     Type: String
-  OOSAssumeRole:
-    Label:
-      en: OOSAssumeRole
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getEipAttribute
     Action: 'ACS::ExecuteApi'

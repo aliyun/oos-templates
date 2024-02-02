@@ -33,13 +33,6 @@ Parameters:
       zh-cn: 资源类型
     Type: String
     Default: vpc
-  OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: checkAvailableInstanceTypesExist
     Action: 'ACS::CheckFor'

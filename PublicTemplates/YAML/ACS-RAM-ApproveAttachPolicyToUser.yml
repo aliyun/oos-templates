@@ -122,7 +122,10 @@ Tasks:
     Properties:
       TemplateName: 'ACS::ROS::CreateStack'
       Parameters:
-        stackName: 'OOS-{{ACS::ExecutionId}}'
+        stackName:
+          Fn::Replace:
+            - .: _
+            - OOS-{{ACS::ExecutionId}}
         disableRollback: true
         parameters:
           - ParameterKey: PolicyType

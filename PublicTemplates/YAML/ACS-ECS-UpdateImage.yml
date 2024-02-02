@@ -122,12 +122,34 @@ Parameters:
           Fn::Equals:
             - ${whetherCreateVpc}
             - false
+  internetMaxBandwidthOut:
+    Type: Number
+    Label:
+      zh-cn: 流量公网带宽
+      en: Internet Max Bandwidth Out
+    Description:
+      zh-cn: 取值范围0-100, 0为不开公网ip
+      en: no public ip if zero
+    Default: 0
+    MinValue: 0
+    MaxValue: 100
   ramRoleName:
     Label:
       en: RamRoleName
       zh-cn: 实例的RAM角色
     Type: String
+    AssociationProperty: ALIYUN::ECS::RAM::Role
     Default: ''
+  systemDiskCategory:
+    Label:
+      en: SystemDiskCategory
+      zh-cn: 系统盘的云盘种类
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Disk::SystemDiskCategory
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      InstanceType: instanceType
+    Default: cloud_essd
   commandType:
     Label:
       en: CommandType
@@ -135,6 +157,11 @@ Parameters:
     Type: String
     AssociationPropertyMetadata:
       LocaleKey: PricingCycle
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - RunCommand
     AllowedValues:
       - RunBatScript
       - RunPowerShellScript
@@ -155,13 +182,84 @@ Parameters:
       zh-cn: 在ECS实例中执行的云助手命令
     Type: String
     AssociationProperty: Code
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - RunCommand
     Default: 'echo hello'
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: 超时时间
+    Type: Number
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - RunCommand
+    Default: 600
+  updateType:
+    Label:
+      en: UpdateType
+      zh-cn: 更新方式
+    Type: String
+    AllowedValues:
+      - RunCommand
+      - InstallPackage
+    Default: RunCommand
+  packageName:
+    Label:
+      en: packageName
+      zh-cn: 要配置的软件包名称
+    Type: String
+    Default: ''
+    AssociationProperty: 'ALIYUN::OOS::Package::PackageName'
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - InstallPackage
+  packageVersion:
+    Label:
+      en: packageVersion
+      zh-cn: 要配置的软件包版本
+    Type: String
+    AssociationProperty: 'ALIYUN::OOS::Package::PackageVersion'
+    AssociationPropertyMetadata:
+      TemplateName: ${packageName}
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - InstallPackage
+    Default: ''
+  parameters:
+    Label:
+      en: Parameters
+      zh-cn: 命令中的参数
+    Type: Json
+    Default: {}
+    AssociationProperty: TemplateParameter
+    AssociationPropertyMetadata:
+      TemplateName: packageName
+      TemplateVersion: packageVersion
+      TemplateType: Package
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${updateType}
+            - InstallPackage
   OOSAssumeRole:
     Label:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: checkNewImageName
@@ -281,6 +379,7 @@ Tasks:
   Description:
     en: Create a ECS instance with source image
     zh-cn: 用源镜像创建一台ECS实例
+  OnError: deleteStack
   Properties:
     regionId: '{{ regionId }}'
     imageId: '{{ sourceImageId }}'
@@ -299,7 +398,9 @@ Tasks:
             - true
         - '{{ untilStackReady.vSwitchId }}'
         - '{{ vSwitchId }}'
+    internetMaxBandwidthOut: '{{ internetMaxBandwidthOut }}'
     ramRoleName: '{{ ramRoleName }}'
+    systemDiskCategory: '{{ systemDiskCategory }}'
   Outputs:
     instanceId:
       ValueSelector: instanceIds[0]
@@ -315,6 +416,10 @@ Tasks:
     instanceId: '{{ runInstances.instanceId }}'
 - Name: runCommand
   Action: ACS::ECS::RunCommand
+  When:
+    Fn::Equals:
+      - '{{ updateType }}'
+      - RunCommand
   Description:
     en: Run cloud assistant command on ECS instance
     zh-cn: 在实例中运行云助手命令
@@ -324,6 +429,27 @@ Tasks:
     commandContent: '{{ commandContent }}'
     commandType: '{{ commandType }}'
     instanceId: '{{ runInstances.instanceId }}'
+    timeout: '{{ timeout }}'
+- Name: configurePackage
+  Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+  Description:
+    en: Configure Package
+    zh-cn: 配置软件包
+  When:
+    Fn::Equals:
+      - '{{ updateType }}'
+      - InstallPackage
+  OnError: deleteInstance
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ runInstances.instanceId }}'
+    packageName: '{{ packageName }}'
+    packageVersion: '{{ packageVersion }}'
+    parameters: '{{ parameters }}'
+  Outputs:
+    commandOutput:
+      Type: String
+      ValueSelector: .commandOutput
 - Name: stopInstance
   Action: ACS::ECS::StopInstance
   Description:
@@ -404,14 +530,21 @@ Metadata:
           - vSwitchCidrBlock
           - securityGroupId
           - vSwitchId
+          - internetMaxBandwidthOut
+          - systemDiskCategory
           - ramRoleName
         Label:
           default:
             zh-cn: 配置中转实例
             en: ECS Instance Configure
       - Parameters:
+          - updateType
+          - packageName
+          - packageVersion
+          - parameters
           - commandType
           - commandContent
+          - timeout
         Label:
           default:
             zh-cn: 发送远程命令

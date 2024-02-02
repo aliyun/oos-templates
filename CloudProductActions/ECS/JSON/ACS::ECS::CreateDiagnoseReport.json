@@ -1,0 +1,94 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::CreateDiagnoseReport",
+    "name-zh-cn": "创建诊断报告",
+    "en": "Create diagnostic report",
+    "zh-cn": "创建诊断报告"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "resourceId": {
+      "Label": {
+        "en": "ResourceId",
+        "zh-cn": "资源ID"
+      },
+      "Type": "String"
+    },
+    "metricSetId": {
+      "Label": {
+        "en": "MetricSetId",
+        "zh-cn": "诊断指标集合ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createDiagnosticReport",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Creates a diagnostic report for ECS instance",
+        "zh-cn": "创建ECS实例诊断报告"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateDiagnosticReport",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ResourceId": "{{ resourceId }}",
+          "MetricSetId": "{{ metricSetId }}"
+        }
+      },
+      "Outputs": {
+        "reportId": {
+          "Type": "String",
+          "ValueSelector": ".ReportId"
+        }
+      }
+    },
+    {
+      "Name": "describeDiagnosticReport",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Describes the diagnostic report of ECS instance",
+        "zh-cn": "获取ECS实例诊断报告"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDiagnosticReportAttributes",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ReportId": "{{ createDiagnosticReport.reportId }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "NotDesiredValues": [
+          "Failed"
+        ],
+        "PropertySelector": "Status"
+      },
+      "Outputs": {
+        "metricResults": {
+          "Type": "Json",
+          "ValueSelector": ".|{\"ResourceId\": \"{{ resourceId }}\", \"HasPublicIp\": true, \"MetricSetId\": \"{{ metricSetId }}\", \"MetricResult\": .MetricResults.MetricResult}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "metricResults": {
+      "Type": "Json",
+      "Value": "{{ describeDiagnosticReport.metricResults }}"
+    }
+  }
+}

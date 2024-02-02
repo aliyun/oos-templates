@@ -78,13 +78,6 @@ Parameters:
       en: The host name for new ECS instance
       zh-cn: 新ECS实例的主机名
     Type: String
-  OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: queryInstanceInfo
     Action: 'ACS::ExecuteAPI'

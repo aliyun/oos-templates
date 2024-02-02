@@ -42,6 +42,18 @@ Parameters:
       - HealthCheck
       - AlarmNotification
       - ScheduledAction
+  lifecycleState:
+    Label:
+      en: LifecycleState
+      zh-cn: 生命周期状态
+    Description:
+      en: The lifecycle state of the ECS instance to be upgraded
+      zh-cn: 要升级的ECS实例所处的生命周期状态
+    Type: List
+    AllowedValues:
+      - InService
+      - Protected
+    Default: InService
   imageId:
     Label:
       en: InvokeImageId
@@ -102,7 +114,7 @@ Tasks:
     Action: 'ACS::Choice'
     Description:
       en: Choose next task by invoke type
-      zh-cn: 根据执行类型选择下一个任务
+      zh-cn: 根据执行类型选择任务
     Properties:
       DefaultTask: getInstance
       Choices:
@@ -121,14 +133,14 @@ Tasks:
       API: DescribeScalingInstances
       Parameters:
         ScalingGroupId: '{{ scalingGroupId }}'
-        LifecycleState: InService
+        LifecycleStates: '{{ lifecycleState }}'
         CreationTypes:
           - AutoCreated
           - Attached
     Outputs:
       instanceIds:
         Type: List
-        ValueSelector: 'ScalingInstances.ScalingInstance[].InstanceId'
+        ValueSelector: 'ScalingInstances.ScalingInstance | map({"InstanceId": (.InstanceId), "LifecycleState": (.LifecycleState)})[]'
   - Name: whetherTheScalingGroupInstanceIsEmpty
     Action: 'ACS::Choice'
     Description:
@@ -196,7 +208,14 @@ Tasks:
       en: Replaces the system disk of ECS instances
       zh-cn: 更换系统盘
     Properties:
-      instanceId: '{{ ACS::TaskLoopItem }}'
+      instanceId:
+        Fn::Select:
+          - 'InstanceId'
+          - '{{ ACS::TaskLoopItem }}'
+      lifecycleState:
+        Fn::Select:
+          - 'LifecycleState'
+          - '{{ ACS::TaskLoopItem }}'
       imageId: '{{ imageId }}'
       scalingGroupId: '{{ scalingGroupId }}'
     Loop:
@@ -225,7 +244,9 @@ Tasks:
       API: TagResources
       Parameters:
         ResourceIds:
-          - '{{ ACS::TaskLoopItem }}'
+          - Fn::Select:
+              - 'InstanceId'
+              - '{{ ACS::TaskLoopItem }}'
         ResourceType: Instance
         Tags:
         - Key: 'ess:rollingupdate'
@@ -274,6 +295,9 @@ Tasks:
       instanceIds:
         Type: List
         ValueSelector: 'Executions[].Parameters.instanceId'
+      lifecycleStates:
+        Type: List
+        ValueSelector: '.Executions | map({"InstanceId": (.Parameters.instanceId), "LifecycleState": (.Parameters.lifecycleState)})[]'
   - Name: getExistInstanceIds
     Description:
       en: Views the ECS instances
@@ -323,6 +347,11 @@ Tasks:
       zh-cn: 更换系统盘
     Properties:
       instanceId: '{{ ACS::TaskLoopItem }}'
+      lifecycleState:
+        Fn::Jq:
+          - First
+          - '.[] | select(.InstanceId == "{{ ACS::TaskLoopItem }}") | .LifecycleState'
+          - '{{ getExecutionInstanceIds.lifecycleStates }}'
       imageId: '{{ sourceImageId }}'
       scalingGroupId: '{{ scalingGroupId }}'
       rollBack: 'true'

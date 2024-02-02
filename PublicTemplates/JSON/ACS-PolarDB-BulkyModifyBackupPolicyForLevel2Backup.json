@@ -1,0 +1,159 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify maintain time of polardb cluster",
+    "zh-cn": "修改PolarDB集群的自动备份策略的二级备份保留周期",
+    "name-en": "ACS-PolarDB-BulkyModifyBackupPolicyForLevel2Backup",
+    "name-zh-cn": "修改PolarDB集群的自动备份策略的二级备份保留周期",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "The Ids of polardb clusters",
+        "zh-cn": "polardb集群ID列表"
+      },
+      "Type": "List"
+    },
+    "dataLevel2BackupRetentionPeriod": {
+      "Description": {
+        "en": "Data Level2 Backup Retention Period",
+        "zh-cn": "二级备份保留周期，取值范围如下：0：关闭二级备份功能。30～7300：二级备份保留周期，单位为天。-1：二级备份永久保留。"
+      },
+      "Label": {
+        "en": "Level2 Backup Retention Period",
+        "zh-cn": "二级备份保留周期"
+      },
+      "Type": "String"
+    },
+    "dataLevel2BackupPeriod": {
+      "Label": {
+        "en": "Data Level2 Backup Period",
+        "zh-cn": "二级备份周期"
+      },
+      "Type": "List",
+      "AllowedValues": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "ModifyBackupPolicy",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify maintain time of polardb cluster",
+        "zh-cn": "修改PolarDB集群的自动备份策略的二级备份保留周期"
+      },
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "ModifyBackupPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ ACS::TaskLoopItem }}",
+          "DataLevel2BackupRetentionPeriod": "{{ dataLevel2BackupRetentionPeriod }}",
+          "DataLevel2BackupPeriod": {
+            "Fn::Join": [
+              ",",
+              "{{ dataLevel2BackupPeriod }}"
+            ]
+          }
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择集群",
+              "en": "Select Clusters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "dataLevel2BackupRetentionPeriod"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "二级备份保留周期",
+              "en": "Data Level2 Backup Retention Period"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "dataLevel2BackupPeriod"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "二级备份周期",
+              "en": "Data Level2 Backup Period"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

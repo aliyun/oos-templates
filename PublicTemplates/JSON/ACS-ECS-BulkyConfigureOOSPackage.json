@@ -29,7 +29,10 @@
         "install",
         "uninstall"
       ],
-      "Default": "install"
+      "Default": "install",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "SoftwareOperationType"
+      }
     },
     "packageName": {
       "Label": {

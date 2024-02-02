@@ -230,13 +230,13 @@ Tasks:
         Content:
           msgtype: markdown
           markdown:
-            title: 监控结果
+            title: 监控结果(MonitoringResult)
             text:
               'Fn::Join':
                 - ''
                 - 'Fn::ListJoin':
                     - |
-                      ### 报警阈值：{{ threshold }}
+                      ### 报警阈值(alarm threshold)：{{ threshold }}
                     - 'Fn::Jq':
                           - First
                           - '.[0] | split(",&emsp;") | join("") | split("||") | join("|") | split(",") | join("") | split("|###") | join("###")'
@@ -248,7 +248,7 @@ Tasks:
                                   - 'map(. | .threshold=.threshold+"&emsp;|\n\n,")'
                                   - 'Fn::Jq':
                                       - All
-                                      - '.[] | .scalingGroupId = "### 伸缩组ID："+.scalingGroupId+"\n|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\n|:----|----:|:----:|:----|\n,"'
+                                      - '.[] | .scalingGroupId = "### 伸缩组ID(scaling group ID)："+.scalingGroupId+"\n|&emsp;机型(instance type)&emsp;|&emsp;&emsp;可用区(zone)|现价(current price)|折扣%(discount%)|\n|:----|----:|:----:|:----|\n,"'
                                       - 'Fn::MergeList':
                                               'Fn::MergeList': '{{ instanceThresholdInfo.thresholdInfos }}'
 Outputs:
@@ -259,7 +259,7 @@ Outputs:
         - ''
         - 'Fn::ListJoin':
             - |
-              ### 报警阈值：{{ threshold }}
+              ### 报警阈值(alarm threshold)：{{ threshold }}
             - 'Fn::Jq':
                   - First
                   - '.[0] | split(",&emsp;") | join("") | split("||") | join("|") | split(",") | join("") | split("|###") | join("###")'
@@ -271,7 +271,7 @@ Outputs:
                           - 'map(. | .threshold=.threshold+"&emsp;|\n\n,")'
                           - 'Fn::Jq':
                               - All
-                              - '.[] | .scalingGroupId = "### 伸缩组ID："+.scalingGroupId+"\n|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\n|:----|----:|:----:|:----|\n,"'
+                              - '.[] | .scalingGroupId = "### 伸缩组ID(scaling group ID)："+.scalingGroupId+"\n|&emsp;机型(instance type)&emsp;|&emsp;&emsp;可用区(zone)|现价(current price)|折扣%(discount%)|\n|:----|----:|:----:|:----|\n,"'
                               - 'Fn::MergeList':
                                       'Fn::MergeList': '{{ instanceThresholdInfo.thresholdInfos }}'
 Metadata:

@@ -44,6 +44,18 @@
       "MinValue": 0,
       "Default": 0
     },
+    "tags": {
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "快照标签"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
+    },
     "rateControl": {
       "Label": {
         "en": "RateControl",
@@ -63,7 +75,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",
@@ -77,6 +89,7 @@
       },
       "Properties": {
         "diskId": "{{ ACS::TaskLoopItem }}",
+        "tags": "{{ tags }}",
         "retentionDays": {
           "Fn::If": [
             {
@@ -120,7 +133,8 @@
         {
           "Parameters": [
             "diskIds",
-            "retentionDays"
+            "retentionDays",
+            "tags"
           ],
           "Label": {
             "default": {

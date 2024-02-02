@@ -56,6 +56,22 @@
         "ScheduledAction"
       ]
     },
+    "lifecycleState": {
+      "Label": {
+        "en": "LifecycleState",
+        "zh-cn": "生命周期状态"
+      },
+      "Description": {
+        "en": "The lifecycle state of the ECS instance to be upgraded",
+        "zh-cn": "要升级的ECS实例所处的生命周期状态"
+      },
+      "Type": "List",
+      "AllowedValues": [
+        "InService",
+        "Protected"
+      ],
+      "Default": "InService"
+    },
     "commandType": {
       "Label": {
         "en": "CommandType",
@@ -130,7 +146,10 @@
     {
       "Name": "choiceNextTask",
       "Action": "ACS::Choice",
-      "Description": "Choose next task by invoke type",
+      "Description": {
+        "en": "Choose next task by invoke type",
+        "zh-cn": "根据执行类型选择任务"
+      },
       "Properties": {
         "DefaultTask": "getInstance",
         "Choices": [
@@ -158,7 +177,7 @@
         "API": "DescribeScalingInstances",
         "Parameters": {
           "ScalingGroupId": "{{ scalingGroupId }}",
-          "LifecycleState": "InService",
+          "LifecycleStates": "{{ lifecycleState }}",
           "CreationTypes": [
             "AutoCreated",
             "Attached"
@@ -168,7 +187,7 @@
       "Outputs": {
         "instanceIds": {
           "Type": "List",
-          "ValueSelector": "ScalingInstances.ScalingInstance[].InstanceId"
+          "ValueSelector": "ScalingInstances.ScalingInstance | map({\"InstanceId\": (.InstanceId), \"LifecycleState\": (.LifecycleState)})[]"
         }
       }
     },
@@ -241,7 +260,18 @@
       },
       "Properties": {
         "commandContent": "{{ invokeScript }}",
-        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "instanceId": {
+          "Fn::Select": [
+            "InstanceId",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
+        "lifecycleState": {
+          "Fn::Select": [
+            "LifecycleState",
+            "{{ ACS::TaskLoopItem }}"
+          ]
+        },
         "commandType": "{{ commandType }}",
         "scalingGroupId": "{{ scalingGroupId }}"
       },
@@ -280,7 +310,12 @@
         "API": "TagResources",
         "Parameters": {
           "ResourceIds": [
-            "{{ ACS::TaskLoopItem }}"
+            {
+              "Fn::Select": [
+                "InstanceId",
+                "{{ ACS::TaskLoopItem }}"
+              ]
+            }
           ],
           "ResourceType": "Instance",
           "Tags": [
@@ -355,6 +390,10 @@
         "instanceIds": {
           "Type": "List",
           "ValueSelector": "Executions[].Parameters.instanceId"
+        },
+        "lifecycleStates": {
+          "Type": "List",
+          "ValueSelector": ".Executions | map({\"InstanceId\": (.Parameters.instanceId), \"LifecycleState\": (.Parameters.lifecycleState)})[]"
         }
       }
     },
@@ -432,6 +471,13 @@
       "Properties": {
         "commandContent": "{{ rollbackScript }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
+        "lifecycleState": {
+          "Fn::Jq": [
+            "First",
+            ".[] | select(.InstanceId == \"{{ ACS::TaskLoopItem }}\") | .LifecycleState",
+            "{{ getExecutionInstanceIds.lifecycleStates }}"
+          ]
+        },
         "commandType": "RunShellScript",
         "scalingGroupId": "{{ scalingGroupId }}",
         "rollBack": "true"

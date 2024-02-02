@@ -116,13 +116,6 @@ Parameters:
       zh-cn: 命令参数
     Type: Json
     Default: {}
-  OOSAssumeRole:
-    Label:
-      en: OOSAssumeRole
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getInstance
     Description:

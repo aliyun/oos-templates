@@ -1,0 +1,269 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::CreateDiagnoseReportForInstanceConnectionFailure",
+    "name-zh-cn": "创建ECS远程无法连接的诊断报告",
+    "en": "Create diagnostic report for ECS instance connection failure",
+    "zh-cn": "创建ECS远程无法连接的诊断报告"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstance",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          {
+            "Type": "ResourceIds",
+            "ResourceIds": [
+              "{{ instanceId }}"
+            ],
+            "RegionId": "{{ regionId }}"
+          }
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "checkInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks the ECS instance is in running status",
+        "zh-cn": "检查ECS实例是否是Running或Starting状态"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": "{{ getInstance.instanceIds }}"
+        },
+        "DesiredValues": [
+          "Running",
+          "Starting"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "instanceStatus": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].Status"
+        },
+        "publicIpStatus": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance | map(select((.EipAddress.IpAddress != \"\") or (.PublicIpAddress.IpAddress[]|length > 0))) | .[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "queryCloudAssistantReady",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries the cloud assistant status",
+        "zh-cn": "获取云助手客户端的状态"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeCloudAssistantStatus",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ getInstance.instanceIds }}"
+        }
+      },
+      "Outputs": {
+        "cloudAssistantStatus": {
+          "Type": "String",
+          "ValueSelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
+        }
+      }
+    },
+    {
+      "Name": "queryInstanceFullStatus",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries the instance full status",
+        "zh-cn": "获取ECS实例的全状态信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstancesFullStatus",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ getInstance.instanceIds }}"
+        }
+      },
+      "Outputs": {
+        "instanceHealthStatus": {
+          "Type": "String",
+          "ValueSelector": "InstanceFullStatusSet.InstanceFullStatusType[].HealthStatus.Name"
+        }
+      }
+    },
+    {
+      "Name": "whetherInstanceStatusIsEmpty",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Select the next task based on the ECS instance status",
+        "zh-cn": "根据ECS实例状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "Running",
+                "{{ checkInstanceReady.instanceStatus }}"
+              ]
+            },
+            "NextTask": "whetherInstanceHasPublicIp"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                "Starting",
+                "{{ checkInstanceReady.instanceStatus }}"
+              ]
+            },
+            "NextTask": "createDiagnosticReport"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "whetherInstanceHasPublicIp",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Select the next task based on the instance public network IP status",
+        "zh-cn": "根据ECS实例公网IP状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Not": {
+                "Fn::Equals": [
+                  [],
+                  "{{ checkInstanceReady.publicIpStatus }}"
+                ]
+              }
+            },
+            "NextTask": "createDiagnosticReport"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "createDiagnosticReport",
+      "Action": "ACS::ECS::CreateDiagnoseReport",
+      "Description": {
+        "en": "Create diagnostic report for ECS instance",
+        "zh-cn": "创建ECS实例诊断报告"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "resourceId": "{{ instanceId }}",
+        "metricSetId": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Select": [
+            "{{checkInstanceReady.instanceStatus}}-{{queryInstanceFullStatus.instanceHealthStatus}}-{{queryCloudAssistantReady.cloudAssistantStatus}}",
+            {
+              "Running-Ok-true": [
+                "dms-remoteconnectdiagnose"
+              ],
+              "Running-Ok-false": [
+                "dms-nodecontrollerdiagnose"
+              ],
+              "Running-Impaired-true": [
+                "dms-performancedamaged"
+              ],
+              "Running-Impaired-false": [
+                "dms-osstartfaildiagnose",
+                "dms-offlinediagnosefull"
+              ],
+              "Running-Initializing-false": [
+                "dms-osstartfaildiagnose",
+                "dms-offlinediagnosefull"
+              ],
+              "Starting-Impaired-false": [
+                "dms-instancestartingdiagnose",
+                "dms-offlinediagnosefull"
+              ],
+              "Starting-Initializing-false": [
+                "dms-instancestartingdiagnose"
+              ]
+            }
+          ]
+        },
+        "Outputs": {
+          "metricResults": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "metricResult"
+          }
+        }
+      },
+      "Outputs": {
+        "metricResult": {
+          "Type": "Json",
+          "ValueSelector": ".metricResults"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "metricResults": {
+      "Type": "Json",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              [],
+              "{{ checkInstanceReady.publicIpStatus }}"
+            ]
+          },
+          {
+            "ResourceId": "{{ instanceId }}",
+            "HasPublicIp": false,
+            "MetricResult": []
+          },
+          "{{ createDiagnosticReport.metricResults }}"
+        ]
+      }
+    }
+  }
+}

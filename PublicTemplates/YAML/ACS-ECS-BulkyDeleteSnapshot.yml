@@ -7,11 +7,30 @@ Description:
   categories:
     - data_backup
 Parameters:
+  snapshotType:
+    Label:
+      en: SnapshotType
+      zh-cn: 快照类型
+    Description:
+      en: Specified： Specified snapshot, Unrelated： Unrelated snapshot
+      zh-cn: Specified：指定的快照，Unrelated：无关联的快照
+    Type: String
+    Default: Specified
+    AllowedValues:
+      - Specified
+      - Unrelated
   snapshotIds:
     Label:
       en: SnapshotIds
       zh-cn: 快照ID
     Type: List
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${snapshotType}
+            - Specified
+    Default: []
   force:
     Label:
       en: Force
@@ -33,11 +52,15 @@ Parameters:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: deleteSnapshot
-    Action: 'ACS::ExecuteAPI'
+    Action: ACS::ExecuteAPI
+    When:
+      Fn::Equals:
+        - '{{ snapshotType }}'
+        - Specified
     Description:
       en: Delete the specified snapshot
       zh-cn: 删除指定的快照
@@ -50,10 +73,22 @@ Tasks:
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ snapshotIds }}'
+  - Name: deleteUnrelatedSnapshot
+    Action: ACS::ECS::DeleteUnrelatedSnapshots
+    When:
+      Fn::Equals:
+        - '{{ snapshotType }}'
+        - Unrelated
+    Description:
+      en: Delete the unrelated snapshot
+      zh-cn: 删除无关联的快照
+    Properties:
+      rateControl: '{{ rateControl }}'
 Metadata:
   ALIYUN::OOS::Interface:
     ParameterGroups:
       - Parameters:
+          - snapshotType
           - snapshotIds
           - force
         Label:

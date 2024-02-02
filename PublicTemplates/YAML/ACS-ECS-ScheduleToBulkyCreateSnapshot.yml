@@ -28,6 +28,15 @@ Parameters:
     AssociationPropertyMetadata:
       RegionId: regionId
     Type: List
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 快照标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
   rateControl:
     Label:
       en: RateControl
@@ -76,6 +85,7 @@ Tasks:
     Properties:
       regionId: '{{ regionId }}'
       diskId: '{{ ACS::TaskLoopItem }}'
+      tags: '{{ tags }}'
     Outputs:
       snapshotId:
         Type: String

@@ -1,0 +1,84 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use snapshot to create a temporary cloud disk to restore data",
+    "zh-cn": "使用快照创建临时云盘恢复数据",
+    "name-en": "ACS-ECS-ResetDiskWithSnapshot",
+    "name-zh-cn": "使用快照恢复数据",
+    "categories": [
+      "instance_manage",
+      "computenest",
+      "application_manage"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId"
+    },
+    "instanceId": {
+      "Type": "String",
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "Status": "Running"
+      }
+    },
+    "diskId": {
+      "Type": "String",
+      "Label": {
+        "en": "Disk id",
+        "zh-cn": "云盘ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::Disk::DiskId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "InstanceId": "instanceId"
+      }
+    },
+    "snapshotId": {
+      "Type": "String",
+      "Label": {
+        "en": "Snapshot id",
+        "zh-cn": "快照ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::Snapshot::SnapshotId",
+      "AssociationPropertyMetadata": {
+        "DiskId": "diskId"
+      }
+    },
+    "OOSAssumeRole": {
+      "Type": "String",
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "resetDisk",
+      "Action": "ACS::ECS::ResetDisk",
+      "Description": {
+        "en": "Resets the ECS disk",
+        "zh-cn": "重置ECS云盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ diskId }}",
+        "snapshotId": "{{ snapshotId }}",
+        "instanceId": "{{ instanceId }}"
+      }
+    }
+  ]
+}

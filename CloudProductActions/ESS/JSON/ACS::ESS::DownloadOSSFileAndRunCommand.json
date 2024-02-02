@@ -262,7 +262,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": "if ({{whetherSaveToFile}} -eq \"true\"){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'\"\n} else {\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}"
+        "commandContent": "if (\"{{whetherSaveToFile}}\" -eq \"true\"){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'\"\n} else {\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}"
       },
       "Outputs": {
         "commandOutput": {

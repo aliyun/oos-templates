@@ -1,0 +1,103 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Enable deletion protection for the cluster",
+    "zh-cn": "开启集群的删除保护",
+    "name-en": "ACS-CS-BulkyEnableDeletionProtection",
+    "name-zh-cn": "开启集群的删除保护",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "clusterIds": {
+      "Label": {
+        "en": "Cluster Ids",
+        "zh-cn": "集群ID列表"
+      },
+      "Type": "List"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": "OOSServiceRole"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyCluster",
+      "Action": "ACS::ExecuteAPI",
+      "Properties": {
+        "Service": "CS",
+        "API": "ModifyCluster",
+        "Method": "PUT",
+        "URI": "/api/v2/clusters/{{ ACS::TaskLoopItem }}",
+        "Parameters": null,
+        "Body": "{\"deletion_protection\":true}"
+      },
+      "Description": {
+        "en": "Executes a command in cluster",
+        "zh-cn": "在集群中执行命令"
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ clusterIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "clusterIds",
+            "regionId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

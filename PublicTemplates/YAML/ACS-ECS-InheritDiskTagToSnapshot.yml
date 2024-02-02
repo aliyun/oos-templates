@@ -1,0 +1,86 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-ECS-InheritDiskTagToSnapshot 
+  name-zh-cn: 某个地域所有磁盘标签继承到快照
+  en: Inherit all disk tags to snapshots
+  zh-cn: 某个地域所有磁盘标签继承到快照
+Parameters:
+  regionId:
+    Type: String
+    Description:
+      en: The id of region
+      zh-cn: 地域ID
+    Label:
+      en: Region
+      zh-cn: 地域
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  tagKeys:
+    Type: List
+    Description:
+      en: The list of tag key
+      zh-cn: 标签Key的集合
+    Label:
+      en: TagKeys
+      zh-cn: 所需继承的标签键列表
+  isUpdate:
+    Type: Boolean
+    Label:
+      en: IsUpdate
+      zh-cn: 是否覆盖标签值
+    Description:
+      en: Whether to overwrite the tag value if the tag key is the same
+      zh-cn: 如果标签键相同，是否覆盖标签值
+    Default: false
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Description: 
+      en: Concurrency rate of task execution
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 100
+      Concurrency: 10
+  OOSAssumeRole:
+    Description:
+      name-en: The RAM role to be assumed by OOS.
+      name-zh-cn: OOS扮演的RAM角色。
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getDisks
+    Action: ACS::ExecuteAPI
+    Description: 
+      en: Query the disk information
+      zh-cn: 查询磁盘信息
+    Properties:
+      Service: ECS
+      API: DescribeDisks
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      disks:
+        Type: List
+        ValueSelector: .Disks.Disk[].DiskId
+  - Name: tagSnapshot
+    Action: ACS::ECS::InheritDiskTagToSnapshot
+    Description: 
+      en: Inherit the specified disk tags to snapshots
+      zh-cn: 将指定磁盘的标签继承到快照
+    Properties:
+      regionId: '{{ regionId }}'
+      diskId: '{{ACS::TaskLoopItem}}'
+      tagKeys: '{{tagKeys}}'
+      isUpdate: '{{isUpdate}}'
+      rateControl: '{{rateControl}}'
+    Loop:
+      RateControl: '{{rateControl}}'
+      Items: '{{getDisks.disks}}'
+      Outputs:
+        tagResult:
+          AggregateType: Fn::ListJoin
+          AggregateField: reqResult

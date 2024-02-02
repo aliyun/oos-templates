@@ -34,7 +34,8 @@
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "Status": "Running"
       }
     },
     "sourceType": {
@@ -82,6 +83,46 @@
       "Type": "String",
       "Default": "/root"
     },
+    "timeout": {
+      "Label": {
+        "en": "Timeout",
+        "zh-cn": "超时时间"
+      },
+      "Type": "Number",
+      "Default": 600
+    },
+    "fileOwner": {
+      "Label": {
+        "en": "FileOwner",
+        "zh-cn": "文件所有者"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "fileGroup": {
+      "Label": {
+        "en": "FileGroup",
+        "zh-cn": "文件所属组"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "fileMode": {
+      "Label": {
+        "en": "FileMode",
+        "zh-cn": "文件权限"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "overwrite": {
+      "Label": {
+        "en": "Overwrite",
+        "zh-cn": "覆盖已存在的文件"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
     "rateControl": {
       "Label": {
         "en": "RateControl",
@@ -101,7 +142,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",
@@ -139,7 +180,12 @@
         "instanceId": "{{ ACS::TaskLoopItem }}",
         "sourceType": "{{ sourceType }}",
         "sourcePath": "{{ sourcePath }}",
-        "destinationDir": "{{ destinationDir }}"
+        "destinationDir": "{{ destinationDir }}",
+        "timeout": "{{ timeout }}",
+        "fileOwner": "{{ fileOwner }}",
+        "fileGroup": "{{ fileGroup }}",
+        "fileMode": "{{ fileMode }}",
+        "overwrite": "{{ overwrite }}"
       },
       "Loop": {
         "Items": "{{ getInstance.instanceIds }}",
@@ -195,6 +241,11 @@
         },
         {
           "Parameters": [
+            "timeout",
+            "fileOwner",
+            "fileGroup",
+            "fileMode",
+            "overwrite",
             "rateControl",
             "OOSAssumeRole"
           ],

@@ -1,0 +1,59 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::TAG::TagResources
+  name-zh-cn: 给指定的资源集打标
+  en: Tag resources
+  zh-cn: 给指定的资源集打标
+Parameters:
+  resources:
+    Type: Json
+    Label:
+      en: Resources
+      zh-cn: 资源集
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 标签
+    Type: Json
+Tasks:
+  - Name: tagResources
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Tag the resources it manages through resource management
+      zh-cn: 通过资源管理给其管理的资源打标签
+    Properties:
+      Service: TAG
+      API: TagResources
+      Parameters:
+        RegionId:
+          Fn::Jq:
+            - First
+            - .[] | .RegionId
+            - '{{ resources }}'
+        ResourceARN:
+          Fn::Jq:
+            - All
+            - .[] | .RegionId as $regionId | .ResourceId as $resourceId | .ResourceType | ascii_downcase |split("::") | "arn:acs:"+.[1]+":"+$regionId+":{{ ACS::AccountId }}:"+.[2]+"/" + $resourceId
+            - '{{ resources }}'
+        Tags: '{{ tags }}'
+    Outputs:
+      errorMessage:
+        Type: List
+        ValueSelector: .FailedResources.FailedResource[]
+      errorNumber:
+        Type: Number
+        ValueSelector: .FailedResources.FailedResource | length
+Outputs:
+  errorMessage:
+    Type: List
+    Value: '{{ tagResources.errorMessage }}'
+  errorNumber:
+    Type: Number
+    Value: '{{ tagResources.errorNumber }}'
+  allNumber:
+    Type: Number
+    Value:
+      Fn::Jq:
+        - First
+        - . | length
+        - '{{ resources }}'

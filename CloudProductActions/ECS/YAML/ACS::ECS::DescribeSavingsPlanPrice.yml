@@ -1,0 +1,82 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DescribeSavingsPlanPrice
+  name-zh-cn: 预付费转按量付费并SavingsPlan询价
+  en: Describe exchange to post pay And savings plan price
+  zh-cn: 预付费转按量付费并做SP询价
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targetInstanceGroup:
+    Type: Json
+    Label:
+      en: TargetInstanceGroup
+      zh-cn: 目标实例组
+Tasks:
+  - Name: describeSavingsPlanPrice
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Describe exchange to post pay and savings plan price
+      zh-cn: 预付费转按量付费的SP询价
+    Properties:
+      Service: ECS
+      API: DescribeSavingsPlanPrice
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceId:
+          Fn::Jq:
+            - All
+            - .[].ResourceId
+            - '{{ targetInstanceGroup }}'
+        PlanType:
+          Fn::Jq:
+            - First
+            - .[].PlanType
+            - '{{ targetInstanceGroup }}'
+        OfferingType:
+          Fn::Jq:
+            - First
+            - .[].OfferingType
+            - '{{ targetInstanceGroup }}'
+        CommittedAmount:
+          Fn::Jq:
+            - First
+            - 'reduce .[] as $num (0; . + ($num * 1000)) / 1000'
+            - Fn::Jq:
+                - All
+                - .[].CommittedAmount
+                - '{{ targetInstanceGroup }}'
+        PeriodUnit:
+          Fn::Jq:
+            - First
+            - .[].PeriodUnit
+            - '{{ targetInstanceGroup }}'
+        Period:
+          Fn::Jq:
+            - First
+            - .[].Period
+            - '{{ targetInstanceGroup }}'
+        InstanceTypeFamily:
+          Fn::Jq:
+            - First
+            - .[].InstanceTypeFamily
+            - '{{ targetInstanceGroup }}'
+    Outputs:
+      result:
+        Type: Json
+        ValueSelector: .
+Outputs:
+  results:
+    Type: Json
+    Value:
+      InstanceIds:
+        Fn::Jq:
+          - All
+          - .[].ResourceId
+          - '{{ targetInstanceGroup }}'
+      SP: '{{ describeSavingsPlanPrice.result }}'
