@@ -24,6 +24,12 @@ Parameters:
     Type: String
     AssociationProperty: Code
     Default: echo hello
+  timeout:
+    Label:
+      en: Timeout
+      zh-cn: 超时时间
+    Type: Number
+    Default: 600
   lifecycleActionResult:
     Label:
       en: LifecycleActionResult
@@ -104,6 +110,7 @@ Tasks:
       commandContent: '{{ commandContent }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       commandType: '{{ commandType }}'
+      timeout: '{{ timeout }}'
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ instanceIds }}'

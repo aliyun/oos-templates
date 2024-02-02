@@ -110,7 +110,8 @@ Tasks:
   Description:
     en: Waits for the image to be available
     zh-cn: 等待创建的镜像可用
-  Retries: 57
+  Retries: 296
+  MaxRetryInterval: 300
   Properties:
     Service: ECS
     API: DescribeImages

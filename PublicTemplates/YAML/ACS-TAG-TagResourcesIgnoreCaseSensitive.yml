@@ -27,11 +27,15 @@ Parameters:
     AllowedValues:
       - ACS::ACK::Cluster
       - ACS::ADB::DBCluster
+      - ACS::ADB::DBClusterLakeVersion
       - ACS::AliKafka::ConsumerGroup
       - ACS::AliKafka::Instance
       - ACS::AliKafka::Topic
       - ACS::ALB::Acl
+      - ACS::ALB::HealthCheckTemplate
       - ACS::ALB::LoadBalancer
+      - ACS::ALB::Listener
+      - ACS::ALB::Rule
       - ACS::ALB::SecurityPolicy
       - ACS::ALB::ServerGroup
       - ACS::ApiGateway::Api
@@ -46,6 +50,8 @@ Parameters:
       - ACS::CEN::TransitRouterVpcAttachment
       - ACS::CEN::TransitRouterVpnAttachment
       - ACS::CEN::TransitRouterRouteTable
+      - ACS::CEN::TransitRouterPeerAttachment
+      - ACS::CEN::TransitRouterMulticastDomain
       - ACS::DCDN::Domain
       - ACS::DdosCoo::Instance
       - ACS::EBS::DedicatedBlockStorageCluster
@@ -59,6 +65,12 @@ Parameters:
       - ACS::ECS::NetworkInterface
       - ACS::ECS::SecurityGroup
       - ACS::ECS::Snapshot
+      - ACS::ESS::ScalingGroup
+      - ACS::ECI::ContainerGroup
+      - ACS::ECS::Command
+      - ACS::ECS::Image
+      - ACS::ECS::KeyPair
+      - ACS::ECS::AutoSnapshotPolicy
       - ACS::EIP::EipAddress
       - ACS::ExpressConnect::PhysicalConnection
       - ACS::FC::Service
@@ -72,6 +84,10 @@ Parameters:
       - ACS::MongoDB::DBInstance
       - ACS::NAS::FileSystem
       - ACS::NAT::NatGateway
+      - ACS::NLB::Listener
+      - ACS::NLB::LoadBalancer
+      - ACS::NLB::SecurityPolicy
+      - ACS::NLB::ServerGroup
       - ACS::OOS::Application
       - ACS::OOS::Parameter
       - ACS::OOS::SecretParameter
@@ -86,6 +102,7 @@ Parameters:
       - ACS::RDS::DBInstance
       - ACS::Redis::DBInstance
       - ACS::ResourceManager::Account
+      - ACS::ResourceManager::ResourceGroup
       - ACS::SLB::AccessControlList
       - ACS::SLB::CACertificate
       - ACS::SLB::LoadBalancer

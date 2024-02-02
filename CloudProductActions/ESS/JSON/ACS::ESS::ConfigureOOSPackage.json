@@ -36,6 +36,18 @@
       "MinLength": 1,
       "MaxLength": 30
     },
+    "lifecycleState": {
+      "Description": {
+        "en": "The lifecycle status of ECS instance",
+        "zh-cn": "ECS实例生命周期状态"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "InService",
+        "Protected"
+      ],
+      "Default": "InService"
+    },
     "action": {
       "Description": {
         "en": "The action to configure package",
@@ -112,8 +124,37 @@
               ]
             },
             "NextTask": "queryInstanceOSType"
+          },
+          {
+            "When": {
+              "Fn::Equals": [
+                "Protected",
+                "{{ viewInstanceLifecycleState.lifecycleState }}"
+              ]
+            },
+            "NextTask": "setInstancesProtectionToFalse"
           }
         ]
+      }
+    },
+    {
+      "Name": "setInstancesProtectionToFalse",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Sets the protection status of ECS instances to false",
+        "zh-cn": "设置ECS实例的保护状态为false"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "SetInstancesProtection",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ],
+          "ProtectedFromScaleIn": "false"
+        }
       }
     },
     {
@@ -142,7 +183,7 @@
         "StopRetryValues": [
           "OtherCodes"
         ],
-        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\"  or .Code==\"IncorrectScalingGroupStatus\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
       }
     },
     {
@@ -222,50 +263,6 @@
       }
     },
     {
-      "Name": "whetherToRollbackExitStandBy",
-      "Action": "ACS::Choice",
-      "Description": {
-        "en": "Choose next task by rollback parameter",
-        "zh-cn": "根据回滚参数选择下一个任务"
-      },
-      "Properties": {
-        "DefaultTask": "whetherToExitStandBy",
-        "Choices": [
-          {
-            "When": {
-              "Fn::Equals": [
-                "true",
-                "{{ rollBack }}"
-              ]
-            },
-            "NextTask": "exitStandBy"
-          }
-        ]
-      }
-    },
-    {
-      "Name": "whetherToExitStandBy",
-      "Action": "ACS::Choice",
-      "Description": {
-        "en": "Choose next task by instance lifecycle status",
-        "zh-cn": "根据实例生命周期挂钩的状态选择下一个任务"
-      },
-      "Properties": {
-        "DefaultTask": "exitStandBy",
-        "Choices": [
-          {
-            "When": {
-              "Fn::Equals": [
-                "Standby",
-                "{{ viewInstanceLifecycleState.lifecycleState }}"
-              ]
-            },
-            "NextTask": "ACS::END"
-          }
-        ]
-      }
-    },
-    {
       "Name": "exitStandBy",
       "Action": "ACS::WaitFor",
       "Description": {
@@ -291,7 +288,33 @@
         "StopRetryValues": [
           "OtherCodes"
         ],
-        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\"  or .Code==\"IncorrectScalingGroupStatus\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+      }
+    },
+    {
+      "Name": "setInstancesProtectionToTrue",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "Protected",
+          "{{ lifecycleState }}"
+        ]
+      },
+      "Description": {
+        "en": "Sets the protection status of ECS instances to true",
+        "zh-cn": "设置ECS实例的保护状态为true"
+      },
+      "Properties": {
+        "Service": "ESS",
+        "API": "SetInstancesProtection",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ScalingGroupId": "{{ scalingGroupId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ],
+          "ProtectedFromScaleIn": "true"
+        }
       }
     }
   ],

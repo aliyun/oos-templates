@@ -47,13 +47,6 @@ Parameters:
       zh-cn: 加密镜像使用的密钥ID
     Type: String
     Default: ""
-  OOSAssumeRole:
-    Label:
-      en: OOSAssumeRole
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: whetheToCopyImage
     Action: 'ACS::Choice'

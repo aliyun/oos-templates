@@ -19,6 +19,9 @@ Parameters:
     Label:
       en: ImageId
       zh-cn: 镜像ID
+    Description:
+      en: <div style="color:#F00">If the system disk capacity of the image you select is larger than the original system disk capacity, the system disk will be automatically expanded, which may incur additional costs. </div>
+      zh-cn: <div style="color:#F00">如果您选择的镜像的系统盘容量大于原系统盘容量，会自动对系统盘进行扩容，可能会产生额外费用。</div>
     Type: String
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
     AssociationPropertyMetadata:

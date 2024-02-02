@@ -39,6 +39,18 @@
       },
       "Type": "String",
       "Default": ""
+    },
+    "tags": {
+      "Description": {
+        "en": "Tags of snapshot",
+        "zh-cn": "快照标签"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
     }
   },
   "Tasks": [
@@ -137,6 +149,7 @@
           "RegionId": "{{ regionId }}",
           "DiskId": "{{ diskId }}",
           "SnapshotName": "{{ snapshotName }}",
+          "Tags": "{{ tags }}",
           "RetentionDays": {
             "Fn::If": [
               {

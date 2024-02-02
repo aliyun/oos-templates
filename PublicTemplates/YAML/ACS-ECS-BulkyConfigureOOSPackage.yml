@@ -23,6 +23,8 @@ Parameters:
       - install
       - uninstall
     Default: install
+    AssociationPropertyMetadata:
+      LocaleKey: SoftwareOperationType
   packageName:
     Label:
       en: packageName

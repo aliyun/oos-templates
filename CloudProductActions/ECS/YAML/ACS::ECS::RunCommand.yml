@@ -165,7 +165,8 @@ Tasks:
     en: Waits for the command to be completed
     zh-cn: 等待云助手命令执行完成
   OnError: ACS::END
-  Retries: 20
+  Retries: 296
+  MaxRetryInterval: 300
   Properties:
     Service: ECS
     API: DescribeInvocations

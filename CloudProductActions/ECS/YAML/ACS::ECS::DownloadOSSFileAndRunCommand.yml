@@ -11,6 +11,12 @@ Parameters:
       zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
+  parameters:
+    Label:
+      en: Parameters
+      zh-cn: 命令中的参数
+    Type: Json
+    Default: {}
   instanceId:
     Description:
       en: The ID of ECS instance
@@ -93,7 +99,7 @@ Tasks:
           Fn::If:
             - Fn::Equals:
                 - '{{ OSSRegion }}'
-                - '{{ ACS::RegionId }}'
+                - '{{ regionId }}'
             - 'true'
             - 'false'
       Body: ''
@@ -173,6 +179,14 @@ Tasks:
       commandContent: '{{ commandContent }}'
       workingDir: '{{ workingDir }}'
       timeout: '{{ timeout }}'
+      parameters: '{{ parameters }}'
+      enableParameter:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ parameters }}'
+              - {}
+          - false
+          - true
     Outputs:
       commandOutput:
         Type: String
@@ -191,7 +205,7 @@ Tasks:
       regionId: '{{ regionId }}'
       commandType: RunPowerShellScript
       commandContent: |-
-        if ({{whetherSaveToFile}} -eq "true"){
+        if ("{{whetherSaveToFile}}" -eq "true"){
           acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'"
         } else {
           acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,https,{{ generateUrl.URL }},'`{{ tokenInfo }}`',{{destinationDir}}"
@@ -216,6 +230,14 @@ Tasks:
       commandContent: '{{ commandContent }}'
       workingDir: '{{ workingDir }}'
       timeout: '{{ timeout }}'
+      parameters: '{{ parameters }}'
+      enableParameter:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ parameters }}'
+              - {}
+          - false
+          - true
     Outputs:
       commandOutput:
         Type: String

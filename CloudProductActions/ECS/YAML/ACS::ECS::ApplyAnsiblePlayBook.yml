@@ -100,7 +100,7 @@ Tasks:
             if cat /etc/system-release|grep -i 'CentOS Linux release' ; then
               sudo yum install -y ansible
               sudo yum -y install unzip
-            elif cat /etc/system-release|grep -i 'Aliyun Linux release' ; then
+            elif cat /etc/system-release|grep -i '^Ali.*Linux' ; then
               sudo yum install -y ansible
               sudo yum install -y unzip
             else

@@ -30,6 +30,15 @@ Parameters:
       zh-cn: 快照的保留时间，取值范围：1~65536,单位为天
     Type: String
     Default: ''
+  tags:
+    Description:
+      en: Tags of snapshot
+      zh-cn: 快照标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
 Tasks:
   - Action: 'ACS::ExecuteAPI'
     Name: describeDisks
@@ -95,6 +104,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         DiskId: '{{ diskId }}'
         SnapshotName: '{{ snapshotName }}'
+        Tags: '{{ tags }}'
         RetentionDays:
           'Fn::If':
             - 'Fn::Equals':

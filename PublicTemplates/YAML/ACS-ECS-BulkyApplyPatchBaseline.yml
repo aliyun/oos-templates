@@ -22,6 +22,7 @@ Parameters:
     AllowedValues:
       - ALIYUN::ECS::Instance
       - ALIYUN::ECS::ManagedInstance
+      - ALIYUN::ECD::Desktop
     Default: ALIYUN::ECS::Instance
   targets:
     Label:
@@ -43,6 +44,32 @@ Parameters:
     Default: install
     AssociationPropertyMetadata:
       LocaleKey: OOSPatchExecuteType
+  whetherCreateSnapshot:
+    Label:
+      en: WhetherCreateSnapshot
+      zh-cn: 是否为系统盘创建快照
+    Type: Boolean
+    Default: false
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+            Fn::Equals:
+              - '${action}'
+              - install
+  retentionDays:
+    Label:
+      en: RetentionDays
+      zh-cn: 快照保留天数
+    Type: Number
+    MinValue: 1
+    MaxValue: 65536
+    Default: 7
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+            Fn::Equals:
+              - '${whetherCreateSnapshot}'
+              - true
   rebootIfNeed:
     Label:
       en: RebootIfNeed
@@ -70,6 +97,7 @@ Parameters:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
+    Default: ''
   timeout:
     Label:
       en: Timeout
@@ -105,6 +133,8 @@ Tasks:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
       action: '{{ action }}'
+      whetherCreateSnapshot: '{{ whetherCreateSnapshot }}'
+      retentionDays: '{{ retentionDays }}'
       rebootIfNeed: '{{ rebootIfNeed }}'
       timeout: '{{ timeout }}'
     Loop:
@@ -143,15 +173,55 @@ Tasks:
       commandOutput:
         Type: String
         ValueSelector: commandOutput
+  - Name: applyPatchBaselineOnECDInstance
+    Description:
+      en: Apply patch baseline on ECD instance
+      zh-cn: 在ECD实例中配置补丁基线
+    Action: ACS::ECD::ApplyPatchBaseline
+    When:
+      Fn::Equals:
+        - '{{ resourceType }}'
+        - ALIYUN::ECD::Desktop
+    Properties:
+      regionId: '{{ regionId }}'
+      desktopId: '{{ ACS::TaskLoopItem }}'
+      action: '{{ action }}'
+      rebootIfNeed: '{{ rebootIfNeed }}'
+      whetherCreateSnapshot: '{{ whetherCreateSnapshot }}'
+      timeout: '{{ timeout }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+      Outputs:
+        commandOutputs:
+          AggregateType: Fn::ListJoin
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: commandOutput
 Outputs:
-  commandOutputs:
-    Type: List
-    Value: '{{ applyPatchBaseline.commandOutputs }}'
+  commandOutput:
+    Type: String
+    Value:
+      Fn::If:
+        - Fn::Equals:
+            - '{{ resourceType }}'
+            - ALIYUN::ECS::Instance
+        - '{{ applyPatchBaseline.commandOutputs }}'
+        - Fn::If:
+            - Fn::Equals:
+                - '{{ resourceType }}'
+                - ALIYUN::ECS::ManagedInstance
+            - '{{ applyPatchBaselineOnManagedInstance.commandOutputs }}'
+            - '{{ applyPatchBaselineOnECDInstance.commandOutputs }}'
 Metadata:
   ALIYUN::OOS::Interface:
     ParameterGroups:
       - Parameters:
           - action
+          - whetherCreateSnapshot
+          - retentionDays
           - rebootIfNeed
           - timeout
         Label:

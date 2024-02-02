@@ -21,6 +21,7 @@ Parameters:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
       InternetChargeType: PayByBandwidth
+      ChargeType: PrePaid
   triggerCron:
     Label:
       en: 'The schedule of bandwidth upgrade task'

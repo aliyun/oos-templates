@@ -17,7 +17,7 @@
     },
     "instanceId": {
       "Description": {
-        "en": "The ID of ECS instace",
+        "en": "The ID of ECS instance",
         "zh-cn": "ECS实例ID"
       },
       "Type": "String"
@@ -55,6 +55,46 @@
         "zh-cn": "文件在实例中的下载目录"
       },
       "Type": "String"
+    },
+    "timeout": {
+      "Description": {
+        "en": "Timeout for file download",
+        "zh-cn": "文件下载超时时间"
+      },
+      "Type": "Number",
+      "Default": 600
+    },
+    "fileOwner": {
+      "Description": {
+        "en": "The owner of the file",
+        "zh-cn": "文件所有者"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "fileGroup": {
+      "Description": {
+        "en": "The group of the file",
+        "zh-cn": "文件所属组"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "fileMode": {
+      "Description": {
+        "en": "The mode of the file",
+        "zh-cn": "文件权限"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "overwrite": {
+      "Description": {
+        "en": "Overwrite the existing file",
+        "zh-cn": "覆盖已存在的文件"
+      },
+      "Type": "Boolean",
+      "Default": true
     }
   },
   "Tasks": [
@@ -98,8 +138,9 @@
       "Properties": {
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
+        "timeout": "{{ timeout }}",
         "commandType": "RunShellScript",
-        "commandContent": "#/bin/bash\nif [ {{sourceType}} = 'local' ]; then\n  filePath=$(echo \"{{sourcePath}}\" | awk -F'?' '{print$1}')\n  fileName=$(echo $filePath | awk -F'/' '{print$5}')\n  wget \"{{sourcePath}}\" -O {{destinationDir}}/$fileName -q\n  echo \"{{destinationDir}}/$fileName Execute Success\"\nelse\n  current_version=`aliyun-service -v`\n  specified_version=1.0.2.497\n\n  if [[ $current_version > $specified_version ]]; then\n    acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\n  else\n    version='{{ ACS::OOSUtilVersion }}'\n    path=/usr/local/share/aliyun-oosutil/$version\n    currentPath=`pwd`\n    test -e $path || mkdir -p $path\n    cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n    chmod +x oosutil_linux\n    cd $currentPath\n    $path/oosutil_linux download_content {{ sourceType }} \"{{ sourcePath }}\" \\''{{ tokenInfo }}'\\' {{destinationDir}}\n  fi\nfi"
+        "commandContent": "#/bin/bash\n\nfileName=$(echo \"{{sourcePath}}\" | awk -F'?' '{print$1}' | awk -F'/' '{print$NF}')\ndestinationFile=\"{{destinationDir}}/${fileName}\"\n\nif [ ! -d \"{{destinationDir}}\" ]; then\n  mkdir -p \"{{destinationDir}}\"\nfi\n\nif [ '{{ overwrite }}' = 'true' ] || [ ! -f \"$destinationFile\" ]; then\n  if [ '{{sourceType}}' = 'local' ]; then\n    wget \"{{sourcePath}}\" -O \"$destinationFile\" -q\n    echo \"$destinationFile execute success.\"\n  else\n    acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\n  fi\nelse\n  echo \"File already exists.\"\n  exit 1\nfi\n\nif [ '{{fileMode}}' != '' ] ; then\n  chmod '{{fileMode}}' \"$destinationFile\"\nfi\n\nif [ '{{fileGroup}}' != '' ] ; then\n  chgrp {{fileGroup}} \"$destinationFile\"\nfi\n\nif [ '{{fileOwner}}' != '' ] ; then\n  chown {{fileOwner}} \"$destinationFile\"\nfi"
       },
       "Outputs": {
         "commandOutput": {
@@ -124,8 +165,9 @@
       "Properties": {
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
+        "timeout": "{{ timeout }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": "$sourcePath = \"{{ sourcePath }}\"\nif (\"{{ sourceType }}\" -eq \"local\"){\n  $destinationDir = \"{{ destinationDir }}\"\n  $httpFilePath = $sourcePath.Split(\"?\")[0]\n  $fileName = $httpFilePath.Split(\"/\")[4]\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile($sourcePath, \"$destinationDir/$fileName\")\n  echo \"{{destinationDir}}/$fileName Execute Success\"\n}else{\n  $current_version=(aliyun_assist_service.exe -v)\n  $specified_version=\"1.0.0.134\"\n  if ($current_version -gt $specified_version){\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',{{destinationDir}}\"\n    if ($LASTEXITCODE -ne 0){\n      exit $LASTEXITCODE;\n    }\n  }else{\n    $version=\"{{ACS::OOSUtilVersion}}\"\n    $path = \"C:\\aliyun-oosutil\\$version\"\n    $currentPath=(pwd)\n    $pathExistOrNot = Test-Path -Path \"$path\"\n    if ($pathExistOrNot){\n        cd $path\n    }else{\n        mkdir $path\n        cd $path\n    }\n    $client = new-object System.Net.WebClient\n    $client.DownloadFile(\"https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe\", \"$path/oosutil_windows.exe\")\n    cd $currentPath\n    C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe download_content {{ sourceType }} $sourcePath '`{{ tokenInfo }}`' {{destinationDir}}\n    if ($LASTEXITCODE -ne 0){\n      exit $LASTEXITCODE;\n    }\n  }\n}"
+        "commandContent": "$sourcePath = \"{{ sourcePath }}\"\n$destinationDir = \"{{ destinationDir }}\"\n$fileName = ($sourcePath -split '\\?')[0] | Split-Path -Leaf\n$destinationFile = Join-Path $destinationDir $fileName\n\nif (-not (Test-Path -Path $destinationDir)) {\n  New-Item -ItemType Directory -Path $destinationDir\n}\n\nif (\"{{overwrite}}\" -eq \"true\" -or !(Test-Path $destinationFile))\n{\n  if (\"{{sourceType}}\" -eq \"local\")\n  {\n    Invoke-WebRequest -Uri $sourcePath -OutFile $destinationFile\n    Write-Host \"$destinationFile execute success.\"\n  }\n  else\n  {\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',$destinationDir\"\n    if ($LASTEXITCODE -ne 0){\n      exit $LASTEXITCODE;\n    }\n  }\n}\nelse\n{\n  Write-Host \"File already exists.\"\n  Exit 1\n}"
       },
       "Outputs": {
         "commandOutput": {

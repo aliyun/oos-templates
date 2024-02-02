@@ -55,12 +55,26 @@
         "IpAddress": {
           "Type": "String",
           "ValueSelector": ".Instances.Instance[].VpcAttributes.PrivateIpAddress.IpAddress[]"
+        },
+        "TagValue": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[0].Tags.Tag[] | select(.TagKey == \"ack.attach.keepInstanceName\") | .TagValue"
         }
       }
     },
     {
       "Name": "ModifyInstanceName",
       "Action": "ACS::ExecuteApi",
+      "When": {
+        "Fn::Not": {
+          "Fn::Equals": [
+            "{{ GetInstance.TagValue }}",
+            [
+              true
+            ]
+          ]
+        }
+      },
       "Description": {
         "en": "Modifies the name of ECS instance",
         "zh-cn": "修改ECS实例名称"

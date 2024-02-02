@@ -31,7 +31,7 @@
       "AllowedValues": [
         "oss",
         "https",
-        "github"
+        "local"
       ]
     },
     "sourcePath": {
@@ -55,6 +55,14 @@
         "zh-cn": "文件在实例中的下载目录"
       },
       "Type": "String"
+    },
+    "overwrite": {
+      "Description": {
+        "en": "Overwrite the existing file",
+        "zh-cn": "覆盖已存在的文件"
+      },
+      "Type": "Boolean",
+      "Default": true
     },
     "commandContent": {
       "Description": {
@@ -122,7 +130,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunShellScript",
-        "commandContent": "#/bin/bash\ncurrent_version=`aliyun-service -v`\nspecified_version=1.0.2.497\n\nif [[ $current_version > $specified_version ]]; then\n  acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\nelse\n  version='{{ ACS::OOSUtilVersion }}'\n  path=/usr/local/share/aliyun-oosutil/$version\n  currentPath=`pwd`\n  test -e $path || mkdir -p $path\n  cd $path && test -e oosutil_linux || wget -q \"https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux\"\n  chmod +x oosutil_linux\n  cd $currentPath\n  $path/oosutil_linux download_content {{ sourceType }} \"{{ sourcePath }}\" \\''{{ tokenInfo }}'\\' {{destinationDir}}\nfi"
+        "commandContent": "#/bin/bash\nfileName=$(echo \"{{sourcePath}}\" | awk -F'?' '{print$1}' | awk -F'/' '{print$NF}')\ndestinationFile=\"{{destinationDir}}/${fileName}\"\n\nif [ ! -d \"{{destinationDir}}\" ]; then\n  mkdir -p \"{{destinationDir}}\"\nfi\n\nif [ '{{ overwrite }}' = 'true' ] || [ ! -f \"$destinationFile\" ]; then\n  if [ '{{sourceType}}' = 'local' ]; then\n    wget \"{{sourcePath}}\" -O \"$destinationFile\" -q\n    echo \"$destinationFile execute success.\"\n  else\n    acs-plugin-manager --exec -P oosutil --params  download_content,{{sourceType}},'\"{{sourcePath}}\"',\\''{{ tokenInfo }}'\\','{{destinationDir}}'\n  fi\nelse\n  echo \"File already exists.\"\n  exit 1\nfi"
       },
       "Outputs": {
         "commandOutput": {
@@ -176,7 +184,7 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunPowerShellScript",
-        "commandContent": "$current_version=(aliyun_assist_service.exe -v)\n$specified_version=\"1.0.0.134\"\nif ($current_version -gt $specified_version){\n  acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,{{ sourceType }},{{ sourcePath }},'`{{ tokenInfo }}`',{{destinationDir}}\"\n}else{\n  $version=\"{{ACS::OOSUtilVersion}}\"\n  $path = \"C:\\aliyun-oosutil\\$version\"\n  $currentPath=(pwd)\n  $pathExistOrNot = Test-Path -Path \"$path\"\n  if ($pathExistOrNot){\n      cd $path\n  }else{\n      mkdir $path\n      cd $path\n  }\n  $client = new-object System.Net.WebClient\n  $client.DownloadFile(\"https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe\", \"$path/oosutil_windows.exe\")\n  cd $currentPath\n  C:\\aliyun-oosutil\\{{ ACS::OOSUtilVersion }}\\oosutil_windows.exe download_content {{ sourceType }} {{ sourcePath }} '`{{ tokenInfo }}`' {{destinationDir}}\n}"
+        "commandContent": "$sourcePath = \"{{ sourcePath }}\"\n$destinationDir = \"{{ destinationDir }}\"\n$fileName = ($sourcePath -split '\\?')[0] | Split-Path -Leaf\n$destinationFile = Join-Path $destinationDir $fileName\n\nif (-not (Test-Path -Path $destinationDir)) {\n  New-Item -ItemType Directory -Path $destinationDir\n}\n\nif (\"{{overwrite}}\" -eq \"true\" -or !(Test-Path $destinationFile))\n{\n  if (\"{{sourceType}}\" -eq \"local\")\n  {\n    Invoke-WebRequest -Uri $sourcePath -OutFile $destinationFile\n    Write-Host \"$destinationFile execute success.\"\n  }\n  else\n  {\n    acs-plugin-manager.exe --exec -P oosutil_win --params \"download_content,{{ sourceType }},$sourcePath,'`{{ tokenInfo }}`',$destinationDir\"\n    if ($LASTEXITCODE -ne 0){\n      exit $LASTEXITCODE;\n    }\n  }\n}\nelse\n{\n  Write-Host \"File already exists.\"\n  Exit 1\n}"
       },
       "Outputs": {
         "commandOutput": {

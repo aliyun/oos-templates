@@ -1,0 +1,123 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify deletion of polardb clusters",
+    "zh-cn": "开启或者关闭集群保护锁",
+    "name-en": "ACS-PolarDB-BulkyModifyDBClusterDeletion",
+    "name-zh-cn": "开启或者关闭集群保护锁",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "The ids of polardb clusters",
+        "zh-cn": "集群ID列表"
+      },
+      "Type": "List"
+    },
+    "protection": {
+      "Label": {
+        "en": "Specifies whether to enable the cluster lock feature",
+        "zh-cn": "开启或者关闭集群保护锁"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "ModifyDBClusterDeletion",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Enable or disable cluster protection",
+        "zh-cn": "开启或者关闭集群保护锁"
+      },
+      "Properties": {
+        "Service": "POLARDB",
+        "API": "ModifyDBClusterDeletion",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ ACS::TaskLoopItem }}",
+          "Protection": "{{ protection }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择集群",
+              "en": "Select Clusters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "Protection"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "开启或者关闭集群保护锁",
+              "en": "Enable or disable cluster protection"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

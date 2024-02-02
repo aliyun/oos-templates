@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: 'Use this template to run Ansible playbook on ECS Instance.Only supports CentOS, AliyunLinux and Ubuntu.'
-  zh-cn: 使用这个模板执行ECS实例中的Ansible PlayBook，仅支持CentOS，AliyunLinux和Ubuntu
+  en: 'Use this template to run Ansible playbook on ECS Instance.Only supports CentOS, Alibaba Cloud Linux and Ubuntu.'
+  zh-cn: 使用这个模板执行ECS实例中的Ansible PlayBook，仅支持CentOS，Alibaba Cloud Linux和Ubuntu
   name-en: ACS-ECS-ApplyAnsiblePlayBooks
   name-zh-cn: 在实例中执行Ansible PlayBook
   categories:

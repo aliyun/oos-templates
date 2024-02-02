@@ -160,6 +160,41 @@ Tasks:
       instanceIds:
         Type: List
         ValueSelector: 'ScalingInstances.ScalingInstance[].InstanceId'
+  - Name: createLifecycleHookOfUpgrade
+    When:
+      Fn::Equals:
+        - '{{ getLifecycleHook.totalCount }}'
+        - 0
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Create lifecycle hook of upgrade
+      zh-cn: 创建用于升级的生命周期挂钩
+    Properties:
+      Service: ESS
+      API: CreateLifecycleHook
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        NotificationMetadata: '{"sourcePath":"{{ invokeSourcePath }}","destinationDir":"{{ invokeDestinationDir }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
+        LifecycleTransition: SCALE_OUT
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadFileAndRunCommand
+        NotificationArn: acs:oos:{{ ACS::RegionId }}:{{ACS::AccountId}}:template/ACS-ESS-LifeCycleDownloadFileAndRunCommand
+  - Name: modifyLifecycleHookOfUpgrade
+    When:
+      Fn::Equals:
+        - '{{ getLifecycleHook.totalCount }}'
+        - 1
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle hook of upgrade
+      zh-cn: 修改用于升级的生命周期挂钩
+    Properties:
+      Service: ESS
+      API: ModifyLifecycleHook
+      Parameters:
+        ScalingGroupId: '{{ scalingGroupId }}'
+        NotificationMetadata: '{"sourcePath":"{{ invokeSourcePath }}","destinationDir":"{{ invokeDestinationDir }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
+        LifecycleTransition: SCALE_OUT
+        LifecycleHookName: ACS-ESS-LifeCycleDownloadFileAndRunCommand
   - Name: whetherTheScalingGroupInstanceIsEmpty
     Action: 'ACS::Choice'
     Description:
@@ -244,41 +279,6 @@ Tasks:
       Mode: Concurrency
       MaxErrors: 0
       Concurrency: 10
-  - Name: createLifecycleHookOfUpgrade
-    When:
-      Fn::Equals:
-        - '{{ getLifecycleHook.totalCount }}'
-        - 0
-    Action: ACS::ExecuteAPI
-    Description:
-      en: Create lifecycle hook of upgrade
-      zh-cn: 创建用于升级的生命周期挂钩
-    Properties:
-      Service: ESS
-      API: CreateLifecycleHook
-      Parameters:
-        ScalingGroupId: '{{ scalingGroupId }}'
-        NotificationMetadata: '{"sourcePath":"{{ invokeSourcePath }}","destinationDir":"{{ invokeDestinationDir }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
-        LifecycleTransition: SCALE_OUT
-        LifecycleHookName: ACS-ESS-LifeCycleDownloadFileAndRunCommand
-        NotificationArn: acs:oos:{{ ACS::RegionId }}:{{ACS::AccountId}}:template/ACS-ESS-LifeCycleDownloadFileAndRunCommand
-  - Name: modifyLifecycleHookOfUpgrade
-    When:
-      Fn::Equals:
-        - '{{ getLifecycleHook.totalCount }}'
-        - 1
-    Action: ACS::ExecuteAPI
-    Description:
-      en: Modify lifecycle hook of upgradee
-      zh-cn: 修改用于升级的生命周期挂钩
-    Properties:
-      Service: ESS
-      API: ModifyLifecycleHook
-      Parameters:
-        ScalingGroupId: '{{ scalingGroupId }}'
-        NotificationMetadata: '{"sourcePath":"{{ invokeSourcePath }}","destinationDir":"{{ invokeDestinationDir }}","commandContent":"{{ invokeScript }}","timeout":"600","regionId":"${regionId}","instanceIds":"${instanceIds}","lifecycleHookId":"${lifecycleHookId}","lifecycleActionToken":"${lifecycleActionToken}","rateControl":"{\"Mode\":\"Concurrency\",\"MaxErrors\":0,\"Concurrency\":10}","OOSAssumeRole":"OOSServiceRole"}'
-        LifecycleTransition: SCALE_OUT
-        LifecycleHookName: ACS-ESS-LifeCycleDownloadFileAndRunCommand
   - Name: whetherToResumeProcesses
     Action: 'ACS::Choice'
     Description:

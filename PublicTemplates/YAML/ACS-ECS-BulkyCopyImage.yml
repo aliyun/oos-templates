@@ -58,6 +58,7 @@ Parameters:
       - ap-southeast-7
       - me-central-1
       - cn-nanjing
+      - cn-wuhan-lr
     Default:
       - all-regions
   rateControl:

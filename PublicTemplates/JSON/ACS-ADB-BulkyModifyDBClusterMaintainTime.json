@@ -1,0 +1,126 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Modify instance's maintain time",
+    "zh-cn": "修改实例可维护时间段",
+    "name-en": "ACS-ADB-BulkyModifyDBClusterMaintainTime",
+    "name-zh-cn": "修改实例可维护时间段",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceIds": {
+      "Label": {
+        "en": "The instance ids",
+        "zh-cn": "ADB实例ID列表"
+      },
+      "Type": "List"
+    },
+    "maintainTime": {
+      "Description": {
+        "en": "Maintain time",
+        "zh-cn": "集群的可维护时间段，格式为hh:mmZ-hh:mmZ，示例值:22:00Z-23:00Z"
+      },
+      "Label": {
+        "en": "Maintain time",
+        "zh-cn": "集群的可维护时间段"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "modifyDBClusterMaintainTime",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Modify instance's maintain time.",
+        "zh-cn": "修改实例可维护时间段"
+      },
+      "Properties": {
+        "Service": "ADB",
+        "API": "ModifyDBClusterMaintainTime",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ ACS::TaskLoopItem }}",
+          "MaintainTime": "{{ maintainTime }}"
+        }
+      },
+      "Loop": {
+        "RateControl": "{{ rateControl }}",
+        "Items": "{{ instanceIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceIds"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instance"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "maintainTime"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "集群的可维护时间段",
+              "en": "Maintain Time"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

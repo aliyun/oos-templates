@@ -1,8 +1,6 @@
 FormatVersion: OOS-2019-06-01
 Description:
-  en: Enable backup log of redis instances
-  zh-cn: Redis实例开启增量备份
-  name-en: ACS-Redis-BulkyModifyInstanceMaintainTime
+  name-en: ACS-Redis-BulkyModifyInstanceBackupTime
   name-zh-cn: Redis实例开启增量备份
   categories:
     - security

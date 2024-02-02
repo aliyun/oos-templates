@@ -37,17 +37,8 @@
         "zh-cn": "在linux类型实例中运行的云助手命令"
       },
       "Type": "String"
-    },
-    "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS",
-        "zh-cn": "OOS扮演的RAM角色"
-      },
-      "Type": "String",
-      "Default": "OOSServiceRole"
     }
   },
-  "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
     {
       "Name": "checkInstanceReady",

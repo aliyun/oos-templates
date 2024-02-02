@@ -29,7 +29,8 @@
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
         "RegionId": "regionId",
-        "InternetChargeType": "PayByBandwidth"
+        "InternetChargeType": "PayByBandwidth",
+        "ChargeType": "PrePaid"
       }
     },
     "timerTrigger": {

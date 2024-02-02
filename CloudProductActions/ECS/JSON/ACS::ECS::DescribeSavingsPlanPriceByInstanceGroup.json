@@ -1,0 +1,68 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::DescribeSavingsPlanPriceByInstanceGroup",
+    "name-zh-cn": "根据实例分组进行预付费转按量付费并做SP询价",
+    "en": "Describe exchange to post pay And savings plan price by instance group",
+    "zh-cn": "根据实例分组进行预付费转按量付费并做SP询价"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targetGroupOfInstanceFamilyGroup": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetGroupOfInstanceFamilyGroup",
+        "zh-cn": "目标实例规格组分组"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeSavingsPlanPriceByInstanceGroup",
+      "Action": "ACS::ECS::DescribeSavingsPlanPrice",
+      "Description": {
+        "en": "Describe exchange to post pay and savings plan price",
+        "zh-cn": "根据实例分组进行预付费转按量付费并做SP询价"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "targetInstanceGroup": "{{ ACS::TaskLoopItem }}"
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "First",
+            ". as $l | [range(0; length; 50)] | map( . as $i | $l[ $i: $i + 50])",
+            "{{ targetGroupOfInstanceFamilyGroup }}"
+          ]
+        },
+        "Outputs": {
+          "results": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "result"
+          }
+        }
+      },
+      "Outputs": {
+        "result": {
+          "Type": "Json",
+          "ValueSelector": ".results"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "results": {
+      "Type": "Json",
+      "Value": "{{ describeSavingsPlanPriceByInstanceGroup.results }}"
+    }
+  }
+}

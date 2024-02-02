@@ -46,7 +46,10 @@ Tasks:
       en: Create role and attach policy by Ros resource stack
       zh-cn: 通过Ros资源栈创建角色并授权策略
     Properties:
-      stackName: 'OOS-{{ACS::ExecutionId}}'
+      stackName:
+        Fn::Replace:
+          - .: _
+          - OOS-{{ACS::ExecutionId}}
       disableRollback: true
       parameters:
         - ParameterKey: RoleName

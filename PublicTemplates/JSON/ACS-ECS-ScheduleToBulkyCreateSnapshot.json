@@ -38,6 +38,18 @@
       },
       "Type": "List"
     },
+    "tags": {
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "快照标签"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
+    },
     "rateControl": {
       "Label": {
         "en": "RateControl",
@@ -105,7 +117,8 @@
       },
       "Properties": {
         "regionId": "{{ regionId }}",
-        "diskId": "{{ ACS::TaskLoopItem }}"
+        "diskId": "{{ ACS::TaskLoopItem }}",
+        "tags": "{{ tags }}"
       },
       "Outputs": {
         "snapshotId": {

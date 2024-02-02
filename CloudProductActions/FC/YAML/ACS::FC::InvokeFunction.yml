@@ -36,13 +36,6 @@ Parameters:
       zh-cn: 函数脚本的参数值
     Type: String
     Default: ''
-  OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: invokeFunction
     Action: 'ACS::ExecuteAPI'

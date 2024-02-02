@@ -1,0 +1,266 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Use this template to install multiple oos packages on ecs",
+    "zh-cn": "批量安装/卸载多个扩展程序",
+    "name-en": "ACS-ECS-BulkyConfigureMultipleOOSPackagesWithTemporaryURL",
+    "name-zh-cn": "批量安装/卸载多个扩展程序",
+    "categories": [
+      "run_command"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "action": {
+      "Label": {
+        "en": "Action",
+        "zh-cn": "执行动作"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "uninstall"
+      ],
+      "Default": "install",
+      "AssociationPropertyMetadata": {
+        "LocaleKey": "SoftwareOperationType"
+      }
+    },
+    "targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "Default": {
+        "Type": "ResourceIds",
+        "ResourceIds": [],
+        "RegionId": "{{ regionId }}"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "orderId": {
+      "Description": {
+        "en": "The ID of Order",
+        "zh-cn": "订单ID"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControlForMultipleEcs",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "packageInfo": {
+      "Label": {
+        "en": "PackageInfo",
+        "zh-cn": "一组扩展程序及其安装命令参数"
+      },
+      "Type": "List"
+    },
+    "reboot": {
+      "Description": {
+        "en": "Whether to reboot",
+        "zh-cn": "是否重启"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "sleepForEcsReady",
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "3s"
+      }
+    },
+    {
+      "Name": "getInstanceFromOrderId",
+      "Action": "ACS::WaitFor",
+      "Retries": 57,
+      "When": {
+        "Fn::Not": {
+          "Fn::Equals": [
+            "{{ orderId }}",
+            ""
+          ]
+        }
+      },
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "通过订单ID获取ECS实例"
+      },
+      "Properties": {
+        "Service": "BssOpenApi",
+        "API": "GetOrderDetail",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "OrderId": "{{ orderId }}"
+        },
+        "DesiredValues": [
+          "Paid"
+        ],
+        "StopRetryValues": [
+          "Cancelled"
+        ],
+        "PropertySelector": "Data.OrderList.Order[].PaymentStatus"
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Data.OrderList.Order[].InstanceIDs | fromjson | .[]"
+        }
+      }
+    },
+    {
+      "Name": "getInstanceFromTargets",
+      "When": {
+        "Fn::Equals": [
+          "{{ orderId }}",
+          ""
+        ]
+      },
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "configurePackage",
+      "Description": {
+        "en": "Configure Package",
+        "zh-cn": "配置软件包"
+      },
+      "Action": "ACS::ECS::ConfigureMultipleOOSPackagesWithTemporaryURL",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "action": "{{ action }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "reboot": "{{ reboot }}",
+        "packageInfo": "{{ packageInfo }}"
+      },
+      "Loop": {
+        "Items": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ orderId }}",
+                ""
+              ]
+            },
+            "{{ getInstanceFromTargets.instanceIds }}",
+            "{{ getInstanceFromOrderId.instanceIds }}"
+          ]
+        },
+        "RateControl": "{{ rateControl }}",
+        "Outputs": {
+          "commandOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "commandOutput"
+          }
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "List",
+          "ValueSelector": ".commandOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "List",
+      "Value": "{{ configurePackage.commandOutputs }}"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "packageInfo",
+            "action",
+            "reboot"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "配置参数",
+              "en": "Configure Parameters"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "targets",
+            "orderId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

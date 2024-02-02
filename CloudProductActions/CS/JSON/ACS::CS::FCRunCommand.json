@@ -21,17 +21,8 @@
       },
       "Type": "String",
       "AssociationProperty": "Code"
-    },
-    "OOSAssumeRole": {
-      "Description": {
-        "en": "The RAM role to be assumed by OOS",
-        "zh-cn": "OOS扮演的RAM角色"
-      },
-      "Type": "String",
-      "Default": "OOSServiceRole"
     }
   },
-  "RamRole": "{{ OOSAssumeRole }}",
   "Tasks": [
     {
       "Name": "getUserKubeconfig",

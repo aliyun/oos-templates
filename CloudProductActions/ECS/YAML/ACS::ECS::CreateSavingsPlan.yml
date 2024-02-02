@@ -1,0 +1,88 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::CreateSavingsPlan
+  name-zh-cn: 购买SP
+  en: Create savings plan
+  zh-cn: 购买SP
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  resourceId:
+    Type: List
+    Label:
+      en: InstanceID
+      zh-cn: ECS实例
+  planType:
+    Type: String
+    Label:
+      en: PlanType
+      zh-cn: 计划类型
+    AllowedValues:
+      - ecs
+      - universal
+    Default: ecs
+  offeringType:
+    Type: String
+    Label:
+      en: OfferingType
+      zh-cn: 产品类型
+    AllowedValues:
+      - All Upfront
+      - Partial Upfront
+      - No Upfront
+    Default: All Upfront
+  instanceTypeFamily:
+    Type: String
+    Label:
+      en: InstanceTypeFamily
+      zh-cn: 实例规格族
+  committedAmount:
+    Type: Number
+    Label:
+      en: CommittedAmount
+      zh-cn: 每小时承诺消费
+  periodUnit:
+    Type: String
+    Label:
+      en: PeriodUnit
+      zh-cn: 时长单位
+    AllowedValues:
+      - Year
+    Default: Year
+  period:
+    Label:
+      en: Period
+      zh-cn: 续费时长
+    Type: Number
+    Default: 1
+Tasks:
+  - Name: createSavingsPlan
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Create savings plan
+      zh-cn: 购买SP
+    Properties:
+      Service: ECS
+      API: CreateSavingsPlan
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ResourceId: '{{ resourceId }}'
+        PlanType: '{{ planType }}'
+        OfferingType: '{{ offeringType }}'
+        CommittedAmount: '{{ committedAmount }}'
+        InstanceTypeFamily: '{{ instanceTypeFamily }}'
+        PeriodUnit: '{{ periodUnit }}'
+        Period: '{{ period }}'
+    Outputs:
+      orderId:
+        Type: String
+        ValueSelector: .OrderId
+Outputs:
+  orderId:
+    Type: String
+    Value: '{{ createSavingsPlan.orderId }}'

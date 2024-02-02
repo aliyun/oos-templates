@@ -130,7 +130,7 @@
         "StopRetryValues": [
           "OtherCodes"
         ],
-        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\"  or .Code==\"IncorrectScalingGroupStatus\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
       }
     },
     {
@@ -235,7 +235,7 @@
         "StopRetryValues": [
           "OtherCodes"
         ],
-        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
+        "PropertySelector": ".| if .Code==null then \"CodeNotExists\" else if .Code==\"BackendServer.configuring\"  or .Code==\"IncorrectScalingGroupStatus\" then \"RetryCodeExists\" else \"OtherCodes\" end end"
       }
     }
   ]

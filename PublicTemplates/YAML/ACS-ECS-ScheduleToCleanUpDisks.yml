@@ -43,6 +43,7 @@ Parameters:
       zh-cn: 磁盘清理规则
     Type: String
     AssociationProperty: ALIYUN::OOS::Component::CleanUpInfo
+    AllowedPattern: "^[^\"$`'\\s]+$"
   rateControl:
     Label:
       en: RateControl

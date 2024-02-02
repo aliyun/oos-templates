@@ -1,0 +1,354 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECD::ApplyPatchBaseline",
+    "name-zh-cn": "在ECD实例中配置补丁基线",
+    "en": "Apply patch baseline on ECD instance",
+    "zh-cn": "在ECD实例中配置补丁基线"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String"
+    },
+    "desktopId": {
+      "Description": {
+        "en": "The ID of ECD instance",
+        "zh-cn": "ECD实例ID"
+      },
+      "Type": "String"
+    },
+    "action": {
+      "Description": {
+        "en": "The action to apply patch baseline",
+        "zh-cn": "配置补丁基线的方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "scan"
+      ],
+      "Default": "install"
+    },
+    "rebootIfNeed": {
+      "Description": {
+        "en": "Whether to reboot",
+        "zh-cn": "是否重启"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "whetherCreateSnapshot": {
+      "Description": {
+        "en": "Whether to create snapshot",
+        "zh-cn": "是否创建快照"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
+    "timeout": {
+      "Description": {
+        "en": "The value of the invocation timeout period of a command on ECD instances",
+        "zh-cn": "ECD实例中执行命令的超时时间"
+      },
+      "Type": "Number",
+      "Default": 7200
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "whetherCreateSnapshot",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose the next task based on whether to create snapshot",
+        "zh-cn": "根据是否创建快照选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "queryDesktop",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                "{{ whetherCreateSnapshot }}"
+              ]
+            },
+            "NextTask": "createSnapshot"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "createSnapshot",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Creates a snapshot with the specified disk ID and snapshot name",
+        "zh-cn": "通过云盘ID创建一个快照"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "CreateSnapshot",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": "{{ desktopId }}",
+          "SnapshotName": "Snapshot-{{ ACS::ExecutionId }}",
+          "SourceDiskType": "system"
+        }
+      },
+      "Outputs": {
+        "snapshotId": {
+          "Type": "String",
+          "ValueSelector": "SnapshotId"
+        }
+      }
+    },
+    {
+      "Name": "untilSnapshotsReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the snapshot to be accomplished",
+        "zh-cn": "等待快照创建完成"
+      },
+      "Retries": 57,
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeSnapshots",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "SnapshotId": "{{ createSnapshot.snapshotId }}"
+        },
+        "DesiredValues": [
+          "ACCOMPLISHED"
+        ],
+        "StopRetryValues": [
+          "FAILED"
+        ],
+        "PropertySelector": "Snapshots[].Status"
+      }
+    },
+    {
+      "Name": "queryDesktop",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query ECD instance",
+        "zh-cn": "获取ECD实例信息"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "desktopId": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    },
+    {
+      "Name": "applyPatchBaseline",
+      "Description": {
+        "en": "Apply patch baseline on ECD instance",
+        "zh-cn": "在ECD实例中配置补丁基线"
+      },
+      "Action": "ACS::ECD::RunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ desktopId }}",
+        "timeout": "{{ timeout }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": "if ('{{ action }}' -eq 'scan'){\n    acs-plugin-manager.exe  --exec  --plugin=patch_manager_win  --params \"-operation scan -aliUid {{ACS::AccountId}} -instanceId {{ desktopId }}\"\n}else{\n    acs-plugin-manager.exe  --exec  --plugin=patch_manager_win  --params \"-operation install -reboot no -aliUid {{ACS::AccountId}} -instanceId {{ desktopId }}\"\n}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "whetherToRebootInstance",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by instance reboot status",
+        "zh-cn": "根据实例是否重启状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                "{{ rebootIfNeed }}"
+              ]
+            },
+            "NextTask": "listInstancePatchStates"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "listInstancePatchStates",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Gets the instance patch repair status",
+        "zh-cn": "获取实例补丁修复状态"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListInstancePatchStates",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": {
+            "Fn::Jq": [
+              "First",
+              "[.Desktops[].DesktopId] | tostring",
+              "{{ queryDesktop.desktopId }}"
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "installedPendingRebootCount": {
+          "Type": "Json",
+          "ValueSelector": "."
+        }
+      }
+    },
+    {
+      "Name": "checkDiscountThreshold",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose next task by instance patch repair status",
+        "zh-cn": "根据实例补丁修复状态选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                true,
+                {
+                  "Fn::Jq": [
+                    "First",
+                    ".InstancePatchStates[0].InstalledPendingRebootCount > 0",
+                    "{{ listInstancePatchStates.installedPendingRebootCount }}"
+                  ]
+                }
+              ]
+            },
+            "NextTask": "rebootDesktop"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "rebootDesktop",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Restarts the ECD instance",
+        "zh-cn": "重启ECD实例"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "RebootDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "untilDesktopReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the ECD instance to enter Running status",
+        "zh-cn": "等待ECD实例至运行中状态"
+      },
+      "DelayType": "Constant",
+      "Delay": 60,
+      "Retries": 30,
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeDesktops",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Desktops[].DesktopStatus"
+      },
+      "Outputs": {
+        "startTime": {
+          "Type": "String",
+          "ValueSelector": "Desktops[].StartTime"
+        }
+      }
+    },
+    {
+      "Name": "describeCloudAssistantStatus",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Gets the instance cloud assistant status",
+        "zh-cn": "获取实例云助手状态"
+      },
+      "Properties": {
+        "Service": "ECD",
+        "API": "DescribeCloudAssistantStatus",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DesktopId": [
+            "{{ desktopId }}"
+          ]
+        },
+        "DesiredValues": [
+          true
+        ],
+        "PropertySelector": ".StatusModels[].LastHeartbeatTime > \"{{untilDesktopReady.startTime}}\""
+      }
+    },
+    {
+      "Name": "scanWindowsPatch",
+      "Description": {
+        "en": "Scan patch on ECD instance",
+        "zh-cn": "在ECD实例中扫描补丁"
+      },
+      "Action": "ACS::ECD::RunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "desktopId": "{{ desktopId }}",
+        "timeout": "{{ timeout }}",
+        "commandType": "RunPowerShellScript",
+        "commandContent": "acs-plugin-manager.exe   --exec  --plugin=patch_manager_win  --params \"-operation scan -aliUid {{ACS::AccountId}} -instanceId {{ desktopId }}\""
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ applyPatchBaseline.commandOutput }}"
+    }
+  }
+}

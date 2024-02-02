@@ -24,6 +24,7 @@ Parameters:
       ResourceType: ALIYUN::ECS::Instance
       RegionId: regionId
       InternetChargeType: PayByBandwidth
+      ChargeType: PrePaid
   timerTrigger:
     Type: Json
     Label:

@@ -1,0 +1,366 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+  name-zh-cn: 在ECS实例中通过生成临时地址安装OOS自定义软件包
+  en: Configure OOS package on ECS instance
+  zh-cn: 在ECS实例中安装OOS自定义软件包
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  action:
+    Description:
+      en: The action to configure package
+      zh-cn: 设置软件包的方式
+    Type: String
+    AllowedValues:
+      - install
+      - uninstall
+    Default: install
+  packageName:
+    Description:
+      en: The name of package
+      zh-cn: 软件包名称
+    Type: String
+  packageVersion:
+    Description:
+      en: The version of package
+      zh-cn: 软件包版本
+    Type: String
+    Default: ''
+  parameters:
+    Label:
+      en: Parameters
+      zh-cn: 命令中的参数
+    Type: Json
+    Default: {}
+Tasks:
+  - Name: waitForEcsRunning
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Waits for the ECS instance to enter running status
+      zh-cn: 等待实例运行
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - Running
+      PropertySelector: 'Instances.Instance[].Status'
+  - Name: waitForCloudAssistantRunning
+    Action: 'ACS::WaitFor'
+    Description:
+      en: Waits for the Cloud Assistant to enter running status
+      zh-cn: 等待云助手运行
+    Retries: 7
+    Delay: 30
+    DelayType: Constant
+    Properties:
+      Service: ECS
+      API: DescribeCloudAssistantStatus
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - 'true'
+      PropertySelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: FetchEcsInfoLinux
+    Description:
+      en: Fetch architect and platform with os Linux
+      zh-cn: 查询ecs的平台和架构
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+        current_version=`aliyun-service -v`
+        specified_version=1.0.2.497
+
+        if [[ $current_version > $specified_version ]]; then
+          acs-plugin-manager --exec -P oosutil --params get_ecs_info
+        else
+          version='{{ ACS::OOSUtilVersion }}'
+          path=/usr/local/share/aliyun-oosutil/$version
+          test -e $path || mkdir -p $path
+          currentPath=`pwd`
+          cd $path && test -e oosutil_linux || wget -q "https://oos-public-{{regionId}}.oss-{{regionId}}-internal.aliyuncs.com/oosutil/$version/linux/oosutil_linux"
+          chmod +x oosutil_linux
+          cd $currentPath
+          $path/oosutil_linux get_ecs_info
+        fi
+    Outputs:
+      commandOutput:
+        Type: Json
+        ValueSelector: invocationOutput
+  - Name: FetchEcsInfoWindows
+    Description:
+      en: Fetch architect and platform with os windows
+      zh-cn: 查询ecs的平台和架构
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - windows
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunPowerShellScript
+      commandContent: |-
+        $current_version=(aliyun_assist_service.exe -v)
+        $specified_version="1.0.0.134"
+        if ($current_version -gt $specified_version){
+          acs-plugin-manager.exe --exec -P oosutil_win --params "get_ecs_info"
+        }else{
+          $version="{{ACS::OOSUtilVersion}}"
+          $path = "C:\aliyun-oosutil\$version"
+          $currentPath=(pwd)
+          $pathExistOrNot = Test-Path -Path "$path"
+          if ($pathExistOrNot){
+              cd $path
+          }else{
+              mkdir $path
+              cd $path
+          }
+          $client = new-object System.Net.WebClient
+          $client.DownloadFile("https://oos-public-{{ACS::RegionId}}.oss-{{ACS::RegionId}}-internal.aliyuncs.com/oosutil/$version/windows/oosutil_windows.exe", "$path/oosutil_windows.exe")
+          cd $currentPath
+          C:\aliyun-oosutil\{{ ACS::OOSUtilVersion }}\oosutil_windows.exe get_ecs_info
+        }
+    Outputs:
+      commandOutput:
+        Type: Json
+        ValueSelector: invocationOutput
+  - Name: queryTemplate
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries software info
+      zh-cn: 获取软件包信息
+    Properties:
+      Service: OOS
+      API: GetTemplate
+      Parameters:
+        RegionId: '{{ regionId }}'
+        TemplateName: '{{ packageName }}'
+        TemplateVersion:
+          Fn::If:
+            - Fn::Equals:
+                - ''
+                - '{{ packageVersion }}'
+            - Null
+            - '{{ packageVersion }}'
+    Outputs:
+      TemplateContent:
+        Type: String
+        ValueSelector: '.Content'
+  - Name: downloadAndRun
+    Action: ACS::ECS::DownloadOSSFileAndRunCommand
+    Description:
+      en: downloadAndRun
+      zh-cn: 下载软件包并运行脚本
+    OnError: DeletePackage
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      parameters: '{{ parameters }}'
+      timeout: 3600
+      bucketName:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - Fn::Select:
+              - 'BucketName'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoLinux.commandOutput }}'
+          - Fn::Select:
+              - 'BucketName'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoWindows.commandOutput }}'
+      objectName:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - Fn::Select:
+              - 'ObjectName'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoLinux.commandOutput }}'
+          - Fn::Select:
+              - 'ObjectName'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoWindows.commandOutput }}'
+      OSSRegion: '{{ regionId }}'
+      whetherSaveToFile: false
+      destinationDir:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - /root
+          - C:\\Windows\\System32
+      commandContent:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - 'Fn::If':
+              - 'Fn::Equals':
+                  - '{{ action }}'
+                  - install
+              - Fn::Select:
+                  - 'InstallScript'
+                  - Fn::FindMatchedPackage:
+                      - '{{ queryTemplate.TemplateContent }}'
+                      - '{{ FetchEcsInfoLinux.commandOutput }}'
+              - Fn::Select:
+                  - 'UninstallScript'
+                  - Fn::FindMatchedPackage:
+                      - '{{ queryTemplate.TemplateContent }}'
+                      - '{{ FetchEcsInfoLinux.commandOutput }}'
+          - 'Fn::If':
+              - 'Fn::Equals':
+                  - '{{ action }}'
+                  - install
+              - Fn::Select:
+                  - 'InstallScript'
+                  - Fn::FindMatchedPackage:
+                      - '{{ queryTemplate.TemplateContent }}'
+                      - '{{ FetchEcsInfoWindows.commandOutput }}'
+              - Fn::Select:
+                  - 'UninstallScript'
+                  - Fn::FindMatchedPackage:
+                      - '{{ queryTemplate.TemplateContent }}'
+                      - '{{ FetchEcsInfoWindows.commandOutput }}'
+    Outputs:
+      downloadFileCommandOutput:
+        Type: String
+        ValueSelector: downloadFileCommandOutput
+      runCommandOutput:
+        Type: String
+        ValueSelector: runCommandOutput
+  - Name: UpdateInstancePackageState
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Update Instance Package State
+      zh-cn: 更新实例软件包状态
+    Properties:
+      Service: OOS
+      API: UpdateInstancePackageState
+      Parameters:
+        RegionId: '{{ regionId }}'
+        TemplateName: '{{ packageName }}'
+        TemplateVersion:
+          Fn::If:
+            - Fn::Equals:
+                - ''
+                - '{{ packageVersion }}'
+            - Null
+            - '{{ packageVersion }}'
+        InstanceId: '{{ instanceId }}'
+        Parameters: '{{ parameters }}'
+        ConfigureAction:
+          Fn::If:
+            - 'Fn::Equals':
+                - '{{ action }}'
+                - install
+            - Install
+            - UnInstall
+  - Name: DeletePackage
+    Action: 'ACS::ECS::RunCommand'
+    Description:
+      en: Delete Package on instance
+      zh-cn: 删除软件包
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - RunShellScript
+          - RunPowerShellScript
+      commandContent:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - Fn::Replace:
+              - '$filename':
+                  Fn::Last:
+                    Fn::Split:
+                      - /
+                      - Fn::Select:
+                          - 'ObjectName'
+                          - Fn::FindMatchedPackage:
+                              - '{{ queryTemplate.TemplateContent }}'
+                              - '{{ FetchEcsInfoLinux.commandOutput }}'
+              - |-
+                if [ -f /root/$filename ]; then
+                rm /root/$filename
+                fi
+          - Fn::Replace:
+              - '$filename':
+                  Fn::Last:
+                    Fn::Split:
+                      - /
+                      - Fn::Select:
+                          - 'ObjectName'
+                          - Fn::FindMatchedPackage:
+                              - '{{ queryTemplate.TemplateContent }}'
+                              - '{{ FetchEcsInfoWindows.commandOutput }}'
+              - |-
+                $file = "C:\Windows\System32\$filename"
+                if (Test-Path $file -PathType Leaf) {
+                Remove-Item $file
+                }
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ downloadAndRun.runCommandOutput }}'
+  downloadFileCommandOutput:
+    Type: String
+    Value: '{{ downloadAndRun.downloadFileCommandOutput }}'

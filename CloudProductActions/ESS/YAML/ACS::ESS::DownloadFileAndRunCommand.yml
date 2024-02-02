@@ -161,7 +161,7 @@ Tasks:
       regionId: '{{ regionId }}'
       commandType: RunPowerShellScript
       commandContent: |-
-        if ({{whetherSaveToFile}} -eq "true"){
+        if ("{{whetherSaveToFile}}" -eq "true"){
           acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},{{ sourcePath }},'`{{ tokenInfo }}`',{{destinationDir}},'-F'"
         } else {
           acs-plugin-manager.exe --exec -P oosutil_win --params "download_content,{{ sourceType }},{{ sourcePath }},'`{{ tokenInfo }}`',{{destinationDir}}"

@@ -16,13 +16,6 @@ Parameters:
       en: The EIP address
       zh-cn: EIP的ip地址
     Type: String
-  OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS
-      zh-cn: OOS扮演的RAM角色
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: getEipAttribute
     Action: 'ACS::CheckFor'

@@ -1,0 +1,138 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Enable adb instance's backup policy.",
+    "zh-cn": "开启ADB实例的自动备份策略。",
+    "name-en": "ACS-ADB-EnableBackupPolicy",
+    "name-zh-cn": "开启ADB实例的自动备份策略",
+    "categories": [
+      "security"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "The instance id",
+        "zh-cn": "ADB实例ID"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String"
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "describeBackupPolicy",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Describe adb instance's backup policy.",
+        "zh-cn": "查看集群备份设置"
+      },
+      "Properties": {
+        "Service": "ADB",
+        "API": "DescribeBackupPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "PreferredBackupTime": {
+          "Type": "String",
+          "ValueSelector": ".PreferredBackupTime"
+        },
+        "PreferredBackupPeriod": {
+          "Type": "String",
+          "ValueSelector": ".PreferredBackupPeriod"
+        },
+        "BackupRetentionPeriod": {
+          "Type": "String",
+          "ValueSelector": ".BackupRetentionPeriod"
+        },
+        "LogBackupRetentionPeriod": {
+          "Type": "String",
+          "ValueSelector": ".LogBackupRetentionPeriod"
+        }
+      }
+    },
+    {
+      "Name": "modifyBackupPolicy",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "enable adb instance's backup policy.",
+        "zh-cn": "开启AnalyticDB MySQL版实例的备份策略"
+      },
+      "Properties": {
+        "Service": "ADB",
+        "API": "ModifyBackupPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBClusterId": "{{ instanceId }}",
+          "PreferredBackupTime": "{{ describeBackupPolicy.PreferredBackupTime }}",
+          "PreferredBackupPeriod": "{{ describeBackupPolicy.PreferredBackupPeriod }}",
+          "BackupRetentionPeriod": "{{ describeBackupPolicy.BackupRetentionPeriod }}",
+          "LogBackupRetentionPeriod": "{{ describeBackupPolicy.LogBackupRetentionPeriod }}",
+          "EnableBackupLog": "Enable"
+        }
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instance"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "rateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

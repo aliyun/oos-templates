@@ -1,0 +1,107 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use this template to install oos packages on a ecs
+  zh-cn: 使用这个模板批量的在单个ECS安装多个OOS自定义软件包
+  name-en: ACS::ECS::ConfigureMultipleOOSPackagesWithTemporaryURL
+  name-zh-cn: 使用这个模板批量的在单个ECS安装多个OOS自定义软件包
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  action:
+    Label:
+      en: Action
+      zh-cn: 配置的软件包的方式
+    Type: String
+    AllowedValues:
+      - install
+      - uninstall
+    Default: install
+    AssociationPropertyMetadata:
+      LocaleKey: SoftwareOperationType
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+  packageInfo:
+    Label:
+      en: PackageInfo
+      zh-cn: 一组软件包和相应的参数
+    Type: List
+  reboot:
+    Description:
+      en: Whether to reboot
+      zh-cn: 是否重启
+    Type: Boolean
+    Default: false
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: configurePackage
+    Description:
+      en: Configure Package
+      zh-cn: 配置软件包
+    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      action: '{{ action }}'
+      packageName:
+        Fn::Select:
+          - 'packageName'
+          - '{{ ACS::TaskLoopItem }}'
+      packageVersion:
+        Fn::Select:
+          - 'packageVersion'
+          - '{{ ACS::TaskLoopItem }}'
+      parameters:
+        Fn::If:
+          - Fn::Equals:
+              - Fn::Select:
+                  - 'parameters'
+                  - '{{ ACS::TaskLoopItem }}'
+              - ''
+          - { }
+          - Fn::Select:
+              - 'parameters'
+              - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ packageInfo }}'
+      RateControl:
+        Mode: Concurrency
+        MaxErrors: 0
+        Concurrency: 1
+      Outputs:
+        commandOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: commandOutput
+    Outputs:
+      commandOutput:
+        Type: List
+        ValueSelector: .commandOutput
+  - Name: rebootInstance
+    When:
+      'Fn::Equals':
+        - true
+        - '{{ reboot }}'
+    Action: 'ACS::ECS::RebootInstance'
+    Description:
+      en: Restarts the ECS instances
+      zh-cn: 重启实例
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+Outputs:
+  commandOutput:
+    Type: List
+    Value: '{{ configurePackage.commandOutputs }}'

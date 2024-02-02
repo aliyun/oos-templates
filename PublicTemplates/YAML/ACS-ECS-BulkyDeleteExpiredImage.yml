@@ -1,0 +1,124 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky delete expired image
+  zh-cn: 批量删除过期的镜像
+  name-en: ACS-ECS-BulkyDeleteExpiredImage
+  name-zh-cn: 批量删除过期的镜像
+  categories:
+    - image_manage
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  force:
+    Label:
+      en: Forced deletion of Image
+      zh-cn: 是否强制删除镜像
+    Type: Boolean
+    Default: false
+  expiredDays:
+    Label:
+      en: Image Expiration Days
+      zh-cn: 镜像过期天数
+    Type: Number
+  imageName:
+    Label:
+      en: Name Field Used To Filter Images
+      zh-cn: 用于过滤镜像的名称字段
+    Type: String
+    Default: " "
+  tags:
+    Label:
+      en: Image Tags
+      zh-cn: 镜像标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
+  rateControl:
+    Label:
+      en: Rate Control
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: describeImages
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Get the images
+      zh-cn: 获取镜像
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageOwnerAlias: self
+        Tags: '{{ tags }}'
+        Filter:
+          - Key: CreationEndTime
+            Value:
+              'Fn::FormatUTCTime':
+                - 'Fn::AddHour':
+                    - '{{ ACS::CurrentUTCTime }}'
+                    - "Fn::Eval":
+                        - '-{{ expiredDays }}*24'
+                - '%Y-%m-%dT00:00Z'
+    Outputs:
+      imageIds:
+        Type: List
+        ValueSelector: '.Images.Image[] | select( .ImageName | test("{{imageName}}")) | .ImageId'
+  - Name: deleteImages
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Delete the images
+      zh-cn: 删除镜像
+    Properties:
+      Service: ECS
+      API: DeleteImage
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ ACS::TaskLoopItem }}'
+        Force: '{{ force }}'
+    Loop:
+      Items: '{{ describeImages.imageIds }}'
+      RateControl: '{{ rateControl }}'
+Outputs:
+  deletedImageIds:
+    Type: List
+    Value: '{{ describeImages.imageIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - expiredDays
+          - imageName
+          - tags
+          - force
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

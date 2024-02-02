@@ -25,13 +25,6 @@ Parameters:
     Type: String
     MaxLength: 30
     MinLength: 1
-  OOSAssumeRole:
-    Description:
-      en: The RAM role to be assumed by OOS.
-      zh-cn: OOS扮演的RAM角色。
-    Type: String
-    Default: OOSServiceRole
-RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor

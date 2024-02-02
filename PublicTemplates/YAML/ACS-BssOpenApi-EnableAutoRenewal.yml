@@ -1,0 +1,134 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Enable resource auto renew
+  zh-cn: 开启资源自动续费
+  name-en: ACS-BssOpenApi-EnableAutoRenewal
+  name-zh-cn: 开启资源自动续费
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  resourceIds:
+    Label:
+      en: ResourceIds
+      zh-cn: 资源ID列表
+    Type: List
+  renewalPeriodUnit:
+    Label:
+      en: RenewalPeriodUnit
+      zh-cn: 续费时间单位
+    Type: String
+    AllowedValues:
+      - M
+      - Y
+  renewalPeriod:
+    Label:
+      en: RenewalPeriod
+      zh-cn: 续费时长
+    Type: Number
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 6
+      - 12
+  productCode:
+    Label:
+      en: Product code
+      zh-cn: 产品代码
+    Type: String
+    AllowedValues:
+      - ACS::Bastionhost::Instance
+      - ACS::CBWP::CommonBandwidthPackage
+      - ACS::ECS::Instance
+      - ACS::EIP::EipAddress
+      - ACS::MongoDB::DBInstance
+      - ACS::Redis::DBInstance
+      - ACS::ADB::DBCluster
+      - ACS::RDS::DBInstance
+      - ACS::PolarDB::DBCluster
+      - ACS::SLB::LoadBalancer
+      - ACS::DdosCoo::Instance
+      - ACS::CEN::CenBandwidthPackage
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ModifyInstanceRenewAttribute
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify renew attribute of instance
+      zh-cn: 修改实例自动续费属性
+    Properties:
+      Service: BssOpenApi
+      API: SetRenewal
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIDs:
+          Fn::Join:
+            - ','
+            - '{{ resourceIds }}'
+        RenewalStatus: 'AutoRenewal'
+        RenewalPeriod: '{{ renewalPeriod }}'
+        RenewalPeriodUnit: '{{ renewalPeriodUnit }}'
+        ProductCode:
+          Fn::Select:
+            - '{{ productCode }}'
+            - ACS::CBWP::CommonBandwidthPackage: cbwp
+              ACS::Bastionhost::Instance: bastionhost
+              ACS::ECS::Instance: ecs
+              ACS::EIP::EipAddress: eip
+              ACS::MongoDB::DBInstance: dds
+              ACS::Redis::DBInstance: redisa
+              ACS::ADB::DBCluster: ads
+              ACS::RDS::DBInstance: rds
+              ACS::PolarDB::DBCluster: polardb
+              ACS::SLB::LoadBalancer: slb
+              ACS::DdosCoo::Instance: ddos
+              ACS::CEN::CenBandwidthPackage: cbn
+        ProductType:
+          Fn::Select:
+            - '{{ productCode }}'
+            - ACS::CBWP::CommonBandwidthPackage: ''
+              ACS::Bastionhost::Instance: bastionhost
+              ACS::ECS::Instance: ''
+              ACS::EIP::EipAddress: ''
+              ACS::MongoDB::DBInstance: ''
+              ACS::Redis::DBInstance: ''
+              ACS::ADB::DBCluster: ''
+              ACS::RDS::DBInstance: rds
+              ACS::PolarDB::DBCluster: online
+              ACS::SLB::LoadBalancer: ''
+              ACS::DdosCoo::Instance: 'ddoscoo'
+              ACS::CEN::CenBandwidthPackage: 'cbn_bwp_pre'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - productCode
+          - resourceIds
+        Label:
+          default:
+            zh-cn: 选择资源
+            en: Select Resource
+      - Parameters:
+          - renewalPeriodUnit
+          - renewalPeriod
+        Label:
+          default:
+            zh-cn: 设置续费参数
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

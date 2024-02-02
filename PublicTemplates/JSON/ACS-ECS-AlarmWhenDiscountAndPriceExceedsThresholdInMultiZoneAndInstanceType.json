@@ -186,14 +186,14 @@
           "Content": {
             "msgtype": "markdown",
             "markdown": {
-              "title": "监控结果",
+              "title": "监控结果(MonitoringResult)",
               "text": {
                 "Fn::Join": [
                   "",
                   {
                     "Fn::ListJoin": [
-                      "##### 报警阈值：{{ threshold }}\n",
-                      "|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\n",
+                      "##### 报警阈值(alarm threshold)：{{ threshold }}\n",
+                      "|&emsp;机型(instance type)&emsp;|&emsp;&emsp;可用区(zone)|现价(current price)|折扣%(discount%)|\n",
                       "|:----|----:|:----:|:----|\n",
                       {
                         "Fn::Jq": [
@@ -252,8 +252,8 @@
           "",
           {
             "Fn::ListJoin": [
-              "##### 报警阈值：{{ threshold }}\n",
-              "|&emsp;机型&emsp;|&emsp;&emsp;可用区|现价|折扣%|\n",
+              "##### 报警阈值(alarm threshold)：{{ threshold }}\n",
+              "|&emsp;机型(instance type)&emsp;|&emsp;&emsp;可用区(zone)|现价(current price)|折扣%(discount%)|\n",
               "|:----|----:|:----:|:----|\n",
               {
                 "Fn::Jq": [
