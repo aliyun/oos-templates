@@ -1,0 +1,56 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::CR::GetAuthorizationToken",
+    "name-zh-cn": "获取容器镜像临时凭证(CR)",
+    "en": "Gets the temporary account and temporary password used to log in to the instance",
+    "zh-cn": "获取用于登录实例的临时账号和临时密码"
+  },
+  "Parameters": {
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ACR::Instance"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getAuthorizationToken",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get the temporary account and temporary password used to log in to the instance",
+        "zh-cn": "获取用于登录实例的临时账号和临时密码."
+      },
+      "Properties": {
+        "Service": "CR",
+        "API": "GetAuthorizationToken",
+        "Parameters": {
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "tempUsername": {
+          "Type": "String",
+          "ValueSelector": "TempUsername"
+        },
+        "authorizationToken": {
+          "Type": "String",
+          "ValueSelector": "AuthorizationToken"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "tempUsername": {
+      "Type": "String",
+      "Value": "{{ getAuthorizationToken.tempUsername }}"
+    },
+    "authorizationToken": {
+      "Type": "String",
+      "Value": "{{ getAuthorizationToken.authorizationToken }}"
+    }
+  }
+}

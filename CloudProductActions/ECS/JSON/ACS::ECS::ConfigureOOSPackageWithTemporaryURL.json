@@ -132,6 +132,32 @@
       }
     },
     {
+      "Name": "checkUserDataReady",
+      "Description": {
+        "en": "Check if user-data is ready",
+        "zh-cn": "查看用户数据是否准备"
+      },
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "linux"
+        ]
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\nwhich cloud-init >/dev/null 2>/dev/null\nif [ $? -eq 0 ]; then\n  version=$(cloud-init --version | awk '{print $2}')\n  threshold=\"17.2\"\n  if [[ $version < $threshold ]]; then\n    echo \"cloud-init version is too low, please upgrade to version $threshold or later.\"\n  else\n    cloud-init status --wait\n  fi\nelse\n  echo \"cloud-init not installed.\"\nfi"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "Json",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
       "Name": "FetchEcsInfoLinux",
       "Description": {
         "en": "Fetch architect and platform with os Linux",
@@ -228,7 +254,91 @@
       "Properties": {
         "regionId": "{{ regionId }}",
         "instanceId": "{{ instanceId }}",
-        "parameters": "{{ parameters }}",
+        "parameters": {
+          "Fn::If": [
+            {
+              "Fn::ContainsSubString": [
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ queryInstanceOSType.OSType }}",
+                        "linux"
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ action }}",
+                            "install"
+                          ]
+                        },
+                        {
+                          "Fn::Select": [
+                            "InstallScript",
+                            {
+                              "Fn::FindMatchedPackage": [
+                                "{{ queryTemplate.TemplateContent }}",
+                                "{{ FetchEcsInfoLinux.commandOutput }}"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "Fn::Select": [
+                            "UninstallScript",
+                            {
+                              "Fn::FindMatchedPackage": [
+                                "{{ queryTemplate.TemplateContent }}",
+                                "{{ FetchEcsInfoLinux.commandOutput }}"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Fn::If": [
+                        {
+                          "Fn::Equals": [
+                            "{{ action }}",
+                            "install"
+                          ]
+                        },
+                        {
+                          "Fn::Select": [
+                            "InstallScript",
+                            {
+                              "Fn::FindMatchedPackage": [
+                                "{{ queryTemplate.TemplateContent }}",
+                                "{{ FetchEcsInfoWindows.commandOutput }}"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "Fn::Select": [
+                            "UninstallScript",
+                            {
+                              "Fn::FindMatchedPackage": [
+                                "{{ queryTemplate.TemplateContent }}",
+                                "{{ FetchEcsInfoWindows.commandOutput }}"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "{{"
+              ]
+            },
+            "{{ parameters }}",
+            {}
+          ]
+        },
         "timeout": 3600,
         "bucketName": {
           "Fn::If": [
@@ -437,6 +547,117 @@
       }
     },
     {
+      "Name": "executeOutputScript",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Execute Output Script",
+        "zh-cn": "执行输出配置脚本"
+      },
+      "When": {
+        "Fn::And": [
+          {
+            "Fn::Not": {
+              "Fn::Equals": [
+                {
+                  "Fn::If": [
+                    {
+                      "Fn::Equals": [
+                        "{{ queryInstanceOSType.OSType }}",
+                        "linux"
+                      ]
+                    },
+                    {
+                      "Fn::Select": [
+                        "OutputScript",
+                        {
+                          "Fn::FindMatchedPackage": [
+                            "{{ queryTemplate.TemplateContent }}",
+                            "{{ FetchEcsInfoLinux.commandOutput }}"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Fn::Select": [
+                        "OutputScript",
+                        {
+                          "Fn::FindMatchedPackage": [
+                            "{{ queryTemplate.TemplateContent }}",
+                            "{{ FetchEcsInfoWindows.commandOutput }}"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                ""
+              ]
+            }
+          },
+          {
+            "Fn::Equals": [
+              "{{ action }}",
+              "install"
+            ]
+          }
+        ]
+      },
+      "Properties": {
+        "instanceId": "{{ instanceId }}",
+        "regionId": "{{ regionId }}",
+        "commandType": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ queryInstanceOSType.OSType }}",
+                "linux"
+              ]
+            },
+            "RunShellScript",
+            "RunPowerShellScript"
+          ]
+        },
+        "commandContent": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ queryInstanceOSType.OSType }}",
+                "linux"
+              ]
+            },
+            {
+              "Fn::Select": [
+                "OutputScript",
+                {
+                  "Fn::FindMatchedPackage": [
+                    "{{ queryTemplate.TemplateContent }}",
+                    "{{ FetchEcsInfoLinux.commandOutput }}"
+                  ]
+                }
+              ]
+            },
+            {
+              "Fn::Select": [
+                "OutputScript",
+                {
+                  "Fn::FindMatchedPackage": [
+                    "{{ queryTemplate.TemplateContent }}",
+                    "{{ FetchEcsInfoWindows.commandOutput }}"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Outputs": {
+        "configurationOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
       "Name": "DeletePackage",
       "Action": "ACS::ECS::RunCommand",
       "Description": {
@@ -532,9 +753,9 @@
       "Type": "String",
       "Value": "{{ downloadAndRun.runCommandOutput }}"
     },
-    "downloadFileCommandOutput": {
+    "configurationOutput": {
       "Type": "String",
-      "Value": "{{ downloadAndRun.downloadFileCommandOutput }}"
+      "Value": "{{ executeOutputScript.configurationOutput }}"
     }
   }
 }

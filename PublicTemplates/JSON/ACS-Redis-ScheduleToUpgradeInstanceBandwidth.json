@@ -1,0 +1,209 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Scheduled upgrade of the temporary bandwidth of a Redis instance",
+    "zh-cn": "定时升级Redis实例临时带宽",
+    "name-en": "ACS-Redis-ScheduleToUpgradeInstanceBandwidth",
+    "name-zh-cn": "定时升级Redis实例临时带宽"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "Targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "TargetInstance",
+        "zh-cn": "目标实例"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::Redis::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "TimerTrigger": {
+      "Type": "Json",
+      "Label": {
+        "en": "TimerTrigger",
+        "zh-cn": "定时类型"
+      },
+      "AssociationProperty": "ALIYUN::OOS::Component::TimerTrigger",
+      "AssociationPropertyMetadata": {
+        "MinuteInterval": 30
+      }
+    },
+    "Bandwidth": {
+      "Type": "Number",
+      "Label": {
+        "en": "Bandwidth",
+        "zh-cn": "要增加的带宽"
+      },
+      "Description": {
+        "en": "Unit:MB/s. The maximum incoming bandwidth is 6 times the default bandwidth of this instance specification, but the upper limit is 192MB/s. For example, the default bandwidth of an instance is 10 MB/s, and the value range of this parameter is 0~60.",
+        "zh-cn": "单位：MB/s。最大可传入该实例规格默认带宽的 6 倍，但上限为 192MB/s。例如实例默认带宽为 10 MB/s，本参数的取值范围为 0~60。"
+      },
+      "MinValue": 1,
+      "MaxValue": 192
+    },
+    "DurationHour": {
+      "Label": {
+        "en": "DurationHour",
+        "zh-cn": "带宽升级持续时间"
+      },
+      "Description": {
+        "zh-cn": "单位：小时。持续时间最少1小时",
+        "en": "Unit:Hour. The bandwidth upgrade should last at least 1 hours"
+      },
+      "Type": "Number",
+      "MinValue": 1,
+      "Default": 1
+    },
+    "RateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "TimerTrigger",
+      "Action": "ACS::TimerTrigger",
+      "Description": {
+        "en": "Triggers a task as scheduled by specifying type and expression",
+        "zh-cn": "通过指定触发类型和表达式按计划触发任务"
+      },
+      "Properties": {
+        "Type": {
+          "Fn::Select": [
+            "type",
+            "{{ TimerTrigger }}"
+          ]
+        },
+        "Expression": {
+          "Fn::Select": [
+            "expression",
+            "{{ TimerTrigger }}"
+          ]
+        },
+        "EndDate": {
+          "Fn::Select": [
+            "endDate",
+            "{{ TimerTrigger }}"
+          ]
+        },
+        "TimeZone": {
+          "Fn::Select": [
+            "timeZone",
+            "{{ TimerTrigger }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "GetInstance",
+      "Description": {
+        "en": "Get the redis instances",
+        "zh-cn": "获取Redis实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::Redis::Instance",
+        "RegionId": "{{ RegionId }}",
+        "Filters": [
+          "{{ Targets }}"
+        ]
+      },
+      "Outputs": {
+        "InstanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "UpgradeRedisInstanceBandwidth",
+      "Action": "ACS::Redis::UpgradeRedisInstanceBandwidth",
+      "Description": {
+        "en": "Modify redis instance bandwidth",
+        "zh-cn": "调整Redis实例的带宽"
+      },
+      "Properties": {
+        "RegionId": "{{ RegionId }}",
+        "InstanceId": "{{ ACS::TaskLoopItem }}",
+        "Bandwidth": "{{ Bandwidth }}",
+        "DurationHour": "{{ DurationHour }}"
+      },
+      "Loop": {
+        "RateControl": "{{ RateControl }}",
+        "Items": "{{ GetInstance.InstanceIds }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "TimerTrigger"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "定时设置",
+              "en": "Timer Trigger Configure"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "RegionId",
+            "Targets",
+            "Bandwidth",
+            "DurationHour"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "选择实例",
+              "en": "Select Instances"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "RateControl",
+            "OOSAssumeRole"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "高级选项",
+              "en": "Control Options"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Create redis backup and upload to OSS",
+    "zh-cn": "创建Redis备份并上传到OSS",
+    "name-en": "ACS::Redis::CreateBackupAndUploadToOSS",
+    "name-zh-cn": "创建Redis备份并上传到OSS"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::Redis::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "${regionId}"
+      }
+    },
+    "OSSRegionId": {
+      "Label": {
+        "en": "OSSRegionId",
+        "zh-cn": "OSS bucket所在地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId"
+    },
+    "OSSBucketName": {
+      "Label": {
+        "en": "OSSBucketName",
+        "zh-cn": "OSS Bucket 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "${OSSRegionId}"
+      },
+      "Default": ""
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "CreateBackup",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Create backup",
+        "zh-cn": "创建Redis备份"
+      },
+      "Properties": {
+        "Service": "r-kvstore",
+        "API": "CreateBackup",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      },
+      "Outputs": {
+        "BackupJobID": {
+          "Type": "String",
+          "ValueSelector": ".BackupJobID"
+        }
+      }
+    },
+    {
+      "Name": "WaitForBackupCreated",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for backup created",
+        "zh-cn": "等待备份创建完成"
+      },
+      "Retries": 30,
+      "DelayType": "Exponential",
+      "Delay": 2,
+      "BackOff": 2,
+      "Properties": {
+        "Service": "r-kvstore",
+        "API": "DescribeBackupTasks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "BackupJobId": "{{ CreateBackup.BackupJobID }}"
+        },
+        "DesiredValues": [
+          "Finished"
+        ],
+        "NotDesiredValues": [],
+        "StopRetryValues": [],
+        "PropertySelector": ".BackupJobs[].BackupProgressStatus"
+      }
+    },
+    {
+      "Name": "GetBackupDownloadUrl",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get backup download url",
+        "zh-cn": "获取备份下载地址"
+      },
+      "Properties": {
+        "Service": "r-kvstore",
+        "API": "DescribeBackups",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "BackupJobId": "{{ CreateBackup.BackupJobID }}",
+          "StartTime": {
+            "Fn::FormatUTCTime": [
+              {
+                "Fn::AddHour": [
+                  "{{ ACS::CurrentUTCTime }}",
+                  -1
+                ]
+              },
+              "%Y-%m-%dT%H:%MZ"
+            ]
+          },
+          "EndTime": {
+            "Fn::FormatUTCTime": [
+              "{{ ACS::CurrentUTCTime }}",
+              "%Y-%m-%dT%H:%MZ"
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "BackupDownloadURL": {
+          "Type": "List",
+          "ValueSelector": ".Backups.Backup[].BackupDownloadURL"
+        }
+      }
+    },
+    {
+      "Name": "UploadBackupToOSS",
+      "Action": "ACS::FC::ExecuteScript",
+      "Description": {
+        "en": "Upload backup to OSS",
+        "zh-cn": "上传备份到OSS"
+      },
+      "Properties": {
+        "runtime": "python3.10",
+        "handler": "index.handler",
+        "role": "acs:ram::{{ACS::AccountId}}:role/AliyunFcDefaultRole",
+        "script": "import oss2\nimport requests\n\ndef handler(event, context):\n  auth = oss2.StsAuth(context.credentials.access_key_id, context.credentials.access_key_secret, context.credentials.security_token)\n  endpoint = 'https://oss-{{OSSRegionId}}.aliyuncs.com'\n  bucket = oss2.Bucket(auth, endpoint, '{{OSSBucketName}}')\n  unique_identifier = '{{ACS::TaskLoopItem}}'.split('?')[0].split('/')[-1]\n  execution_id = '{{ACS::ExecutionId}}'.split('.')[0]\n  input = requests.get('{{ACS::TaskLoopItem}}')\n  bucket.put_object(f'Backup_{{InstanceId}}/{{ACS::CurrentDate}}/{execution_id}/{unique_identifier}', input)"
+      },
+      "Loop": {
+        "Items": "{{ GetBackupDownloadUrl.BackupDownloadURL }}",
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 20
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "OSSObjectURL": {
+      "Type": "String",
+      "Value": "https://oss.console.aliyun.com/bucket/oss-{{OSSRegionId}}/{{OSSBucketName}}/object?path=Backup_{{InstanceId}}/{{ACS::CurrentDate}}/"
+    }
+  }
+}

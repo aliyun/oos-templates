@@ -202,6 +202,10 @@
           "commandOutputs": {
             "AggregateType": "Fn::ListJoin",
             "AggregateField": "commandOutput"
+          },
+          "configurationOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "configurationOutput"
           }
         }
       },
@@ -209,6 +213,10 @@
         "commandOutput": {
           "Type": "List",
           "ValueSelector": ".commandOutput"
+        },
+        "configurationOutput": {
+          "Type": "List",
+          "ValueSelector": ".configurationOutput"
         }
       }
     }
@@ -217,6 +225,10 @@
     "commandOutput": {
       "Type": "List",
       "Value": "{{ configurePackage.commandOutputs }}"
+    },
+    "configurationOutput": {
+      "Type": "List",
+      "Value": "{{ configurePackage.configurationOutputs }}"
     }
   },
   "Metadata": {

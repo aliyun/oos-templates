@@ -1,9 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::RunCommand
-  name-zh-cn: 到ECS实例中执行脚本
+  name-zh-cn: 执行命令(ECS)
   en: Creates a cloud assistant command and triggers it on an ECS instance
-  zh-cn: 创建一个云助手命令并在ECS实例中执行
+  zh-cn: 创建一个云助手命令并在ECS实例中执行.
 Parameters:
   regionId:
     Label:
@@ -12,14 +12,6 @@ Parameters:
     Type: String
     AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
-  commandContent:
-    Label:
-      en: CommandContent
-      zh-cn: 命令内容
-    Type: String
-    AssociationProperty: ALIYUN::OOS::Command::CommandContent
-    AssociationPropertyMetadata:
-      CommandType: ${commandType}
   instanceId:
     Label:
       en: ECSInstanceId
@@ -41,6 +33,14 @@ Parameters:
     - RunShellScript
     - RunPythonScript
     - RunPerlScript
+  commandContent:
+    Label:
+      en: CommandContent
+      zh-cn: 命令内容
+    Type: String
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: ${commandType}
   workingDir:
     Description:
       en: 'Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\Windows\System32'
@@ -177,6 +177,7 @@ Tasks:
     - Finished
     StopRetryValues:
     - Failed
+    - Stopped
     PropertySelector: Invocations.Invocation[].InvokeStatus
 - Name: describeInvocationResults
   Action: ACS::ExecuteAPI

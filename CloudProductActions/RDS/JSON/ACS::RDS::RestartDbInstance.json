@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::RDS::RestartDbInstance",
-    "name-zh-cn": "重启RDS实例",
+    "name-zh-cn": "重启实例(RDS)",
     "en": "Restarts an RDS instance",
     "zh-cn": "重启一台RDS实例"
   },

@@ -29,7 +29,7 @@
       "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
       "AssociationPropertyMetadata": {
         "RegionId": "regionId",
-        "ImageOwnerAlias": [
+        "SupportedImageOwnerAlias": [
           "self"
         ]
       }
@@ -48,7 +48,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",
@@ -79,7 +79,8 @@
         {
           "Parameters": [
             "regionId",
-            "imageId"
+            "imageId",
+            "force"
           ],
           "Label": {
             "default": {

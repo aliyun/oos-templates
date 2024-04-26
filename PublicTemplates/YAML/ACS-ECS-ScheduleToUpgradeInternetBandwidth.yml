@@ -16,6 +16,9 @@ Parameters:
     Default: '{{ ACS::RegionId }}'
   targets:
     Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
     AssociationProperty: Targets
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ECS::Instance
@@ -26,9 +29,6 @@ Parameters:
     Label:
       en: 'The schedule of bandwidth upgrade task'
       zh-cn: '带宽升级任务的执行周期'
-    Description:
-      en: 'Cron expression.The upgrade takes effect after 3 minutes'
-      zh-cn: 'Cron表达式。带宽升级在下单时间点3分钟后生效'
     Type: String
     AssociationProperty: Cron
     Default: 0 0 12 ? * *
@@ -133,19 +133,11 @@ Tasks:
       InstanceId: '{{ ACS::TaskLoopItem }}'
       InternetMaxBandwidthIn: '{{ maxBandwidthIn }}'
       InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'
-      StartTime:
-        'Fn::FormatUTCTime':
-          - 'Fn::AddSecond':
-              - '{{ ACS::CurrentUTCTime }}'
-              - 180
-          - '%Y-%m-%dT%H:%MZ'
       EndTime:
-        'Fn::FormatUTCTime':
-          - 'Fn::AddSecond':
-            - 'Fn::AddHour':
-                - '{{ ACS::CurrentUTCTime }}'
-                - '{{ durationHour }}'
-            - 180
+        Fn::FormatUTCTime:
+          - Fn::AddHour:
+              - '{{ ACS::CurrentUTCTime }}'
+              - '{{ durationHour }}'
           - '%Y-%m-%dT%HZ'
   Loop:
     RateControl: '{{ rateControl }}'

@@ -1,0 +1,84 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky detach key pair from Linux instances without reboot
+  zh-cn: 批量对多台Linux实例解绑密钥对，无需重启
+  name-en: Detach Key Pair Online
+  name-zh-cn: 在线解绑密钥对
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: resourceType
+      RegionId: regionId
+      Status: Running
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: detachKeyPairOnline
+    Action: ACS::ECS::DetachKeyPairOnline
+    Description:
+      en: Detach Key Pair Online
+      zh-cn: 在线解绑密钥对
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configure Parameters
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

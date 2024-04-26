@@ -1,0 +1,80 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: FC runs script(Only support python), To use this template, you must first <a href='https://help.aliyun.com/zh/functioncompute/getting-started/quickly-create-a-function#p-t79-y7o-68z' target="_blank">activate the function computing service< /a>
+  zh-cn: FC运行脚本（仅支持python），使用此功能必须<a href='https://help.aliyun.com/zh/functioncompute/getting-started/quickly-create-a-function#p-t79-y7o-68z' target="_blank">开通函数计算服务</a>
+  name-en: ACS-FC-RunScript
+  name-zh-cn: FC运行脚本
+Parameters:
+  Runtime:
+    Type: String
+    Label:
+      en: Runtime
+      zh-cn: 运行环境
+    AllowedValues:
+      - python3.9
+      - python3.10
+    Default: python3.10
+  Script:
+    Type: String
+    Label:
+      en: Python Script
+      zh-cn: python脚本代码
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunPythonScript
+    Default: |-
+      import datetime
+      import os
+      import sys
+
+      def _now(format="%Y-%m-%d %H:%M:%S"):
+        return datetime.datetime.now().strftime(format)
+
+      def job_start():
+        return ("[%s][%s] job_start" % (_now(), os.getpid()))
+
+      def handler(event, context):
+        return job_start()
+  FCAssumeRole:
+    Label:
+      en: FCAssumeRole
+      zh-cn: FC扮演的RAM角色
+    Description:
+      en: The Function Compute platform will use this RAM role to generate a temporary key for accessing your Alibaba Cloud resources and pass it to your code. For details, please see <a href="https://help.aliyun.com/zh/functioncompute/user-guide/grant-function-compute-permissions-to-access-other-alibaba-cloud-services" target="_blank ">Grant Function Compute permissions to access other cloud services</a>
+      zh-cn: 函数计算平台会使用这个 RAM 角色（Role）来生成访问您的阿里云资源的临时密钥，并传递给您的代码。详情请查看<a href="https://help.aliyun.com/zh/functioncompute/user-guide/grant-function-compute-permissions-to-access-other-alibaba-cloud-services" target="_blank">授予函数计算访问其他云服务的权限</a>
+    Type: String
+    AssociationProperty: ALIYUN::RAM::Service::Role
+    AssociationPropertyMetadata:
+      Service: fc.aliyuncs.com
+    Default: ''
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: ExecuteScript
+    Action: ACS::FC::ExecuteScript
+    Description:
+      en: Run the python script
+      zh-cn: 运行Python脚本
+    Properties:
+      runtime: '{{ Runtime }}'
+      script: '{{ Script }}'
+      role:
+        Fn::If:
+          - Fn::Equals:
+              - '{{FCAssumeRole}}'
+              - ''
+          - ''
+          - 'acs:ram::{{ACS::AccountId}}:role/{{FCAssumeRole}}'
+    Outputs:
+      Result:
+        Type: String
+        ValueSelector: Result
+Outputs:
+  ScriptOutput:
+    Type: String
+    Value: '{{ ExecuteScript.Result }}'

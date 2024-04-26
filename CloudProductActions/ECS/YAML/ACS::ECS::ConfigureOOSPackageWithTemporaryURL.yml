@@ -93,6 +93,37 @@ Tasks:
       OSType:
         Type: String
         ValueSelector: 'Instances.Instance[].OSType'
+  - Name: checkUserDataReady
+    Description:
+      en: Check if user-data is ready
+      zh-cn: 查看用户数据是否准备
+    When:
+      'Fn::Equals':
+        - '{{ queryInstanceOSType.OSType }}'
+        - linux
+    Action: 'ACS::ECS::RunCommand'
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+        which cloud-init >/dev/null 2>/dev/null
+        if [ $? -eq 0 ]; then
+          version=$(cloud-init --version | awk '{print $2}')
+          threshold="17.2"
+          if [[ $version < $threshold ]]; then
+            echo "cloud-init version is too low, please upgrade to version $threshold or later."
+          else
+            cloud-init status --wait
+          fi
+        else
+          echo "cloud-init not installed."
+        fi
+    Outputs:
+      commandOutput:
+        Type: Json
+        ValueSelector: invocationOutput
   - Name: FetchEcsInfoLinux
     Description:
       en: Fetch architect and platform with os Linux
@@ -196,7 +227,44 @@ Tasks:
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ instanceId }}'
-      parameters: '{{ parameters }}'
+      parameters:
+        Fn::If:
+          - Fn::ContainsSubString:
+            - Fn::If:
+                - 'Fn::Equals':
+                    - '{{ queryInstanceOSType.OSType }}'
+                    - linux
+                - 'Fn::If':
+                    - 'Fn::Equals':
+                        - '{{ action }}'
+                        - install
+                    - Fn::Select:
+                        - 'InstallScript'
+                        - Fn::FindMatchedPackage:
+                            - '{{ queryTemplate.TemplateContent }}'
+                            - '{{ FetchEcsInfoLinux.commandOutput }}'
+                    - Fn::Select:
+                        - 'UninstallScript'
+                        - Fn::FindMatchedPackage:
+                            - '{{ queryTemplate.TemplateContent }}'
+                            - '{{ FetchEcsInfoLinux.commandOutput }}'
+                - 'Fn::If':
+                    - 'Fn::Equals':
+                        - '{{ action }}'
+                        - install
+                    - Fn::Select:
+                        - 'InstallScript'
+                        - Fn::FindMatchedPackage:
+                            - '{{ queryTemplate.TemplateContent }}'
+                            - '{{ FetchEcsInfoWindows.commandOutput }}'
+                    - Fn::Select:
+                        - 'UninstallScript'
+                        - Fn::FindMatchedPackage:
+                            - '{{ queryTemplate.TemplateContent }}'
+                            - '{{ FetchEcsInfoWindows.commandOutput }}'
+            - '{{'
+          - '{{ parameters }}'
+          - {}
       timeout: 3600
       bucketName:
         Fn::If:
@@ -304,6 +372,62 @@ Tasks:
                 - install
             - Install
             - UnInstall
+  - Name: executeOutputScript
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Execute Output Script
+      zh-cn: 执行输出配置脚本
+    When:
+      'Fn::And':
+        - 'Fn::Not':
+            'Fn::Equals':
+              - Fn::If:
+                  - 'Fn::Equals':
+                      - '{{ queryInstanceOSType.OSType }}'
+                      - linux
+                  - Fn::Select:
+                      - 'OutputScript'
+                      - Fn::FindMatchedPackage:
+                          - '{{ queryTemplate.TemplateContent }}'
+                          - '{{ FetchEcsInfoLinux.commandOutput }}'
+                  - Fn::Select:
+                      - 'OutputScript'
+                      - Fn::FindMatchedPackage:
+                          - '{{ queryTemplate.TemplateContent }}'
+                          - '{{ FetchEcsInfoWindows.commandOutput }}'
+              - ''
+        - 'Fn::Equals':
+            - '{{ action }}'
+            - install
+    Properties:
+      instanceId: '{{ instanceId }}'
+      regionId: '{{ regionId }}'
+      commandType:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - RunShellScript
+          - RunPowerShellScript
+      commandContent:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ queryInstanceOSType.OSType }}'
+              - linux
+          - Fn::Select:
+              - 'OutputScript'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoLinux.commandOutput }}'
+          - Fn::Select:
+              - 'OutputScript'
+              - Fn::FindMatchedPackage:
+                  - '{{ queryTemplate.TemplateContent }}'
+                  - '{{ FetchEcsInfoWindows.commandOutput }}'
+    Outputs:
+      configurationOutput:
+        Type: String
+        ValueSelector: invocationOutput
   - Name: DeletePackage
     Action: 'ACS::ECS::RunCommand'
     Description:
@@ -361,6 +485,6 @@ Outputs:
   commandOutput:
     Type: String
     Value: '{{ downloadAndRun.runCommandOutput }}'
-  downloadFileCommandOutput:
+  configurationOutput:
     Type: String
-    Value: '{{ downloadAndRun.downloadFileCommandOutput }}'
+    Value: '{{ executeOutputScript.configurationOutput }}'

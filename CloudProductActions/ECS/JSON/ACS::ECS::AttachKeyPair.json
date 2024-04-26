@@ -1,0 +1,99 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::AttachKeyPair",
+    "name-zh-cn": "绑定一个SSH密钥对到一台Linux实例",
+    "en": "Attach KeyPair to a linux instance",
+    "zh-cn": "绑定一个SSH密钥对到一台Linux实例"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "keyPairName": {
+      "Description": {
+        "en": "The key pair name",
+        "zh-cn": "SSH密钥对名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::KeyPair::KeyPairName"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "attachKeyPair",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Attach the key pair to the ECS instance",
+        "zh-cn": "挂载SSH密钥对到ECS实例"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "AttachKeyPair",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "KeyPairName": "{{ keyPairName }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      }
+    },
+    {
+      "Name": "rebootInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Restarts the ECS instance",
+        "zh-cn": "重启ECS实例"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "RebootInstance",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the ECS instance to enter running status",
+        "zh-cn": "等待ECS实例进入运行状态"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    }
+  ]
+}

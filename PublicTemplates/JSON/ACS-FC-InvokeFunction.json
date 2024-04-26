@@ -21,14 +21,23 @@
         "en": "ServiceName",
         "zh-cn": "服务名称"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::FC::Service::ServiceName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "functionName": {
       "Label": {
         "en": "FunctionName",
         "zh-cn": "函数名称"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::FC::Function::FunctionName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "ServiceName": "serviceName"
+      }
     },
     "parameters": {
       "Label": {
@@ -44,7 +53,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",

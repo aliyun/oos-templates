@@ -1,12 +1,12 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::Approve::DingTalkWebhook
-  name-zh-cn: 通过webhook向DingTalk发送请求批准的通知
+  name-zh-cn: 发送审批通知(DingTalk)
   en: 'Sends notification to DingTalk via webhook for asking approval. The execution remains paused until
-        approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq
+        approved or rejected. Please refer https://open.dingtalk.com/document/isvapp/message-type
         for details'
   zh-cn: '通过webhook向DingTalk发送请求批准的通知。执行将保持暂停状态，直到批准或拒绝。
-          请参阅https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq获取详细信息'
+          请参阅https://open.dingtalk.com/document/isvapp/message-type获取详细信息'
 Parameters:
   webhook:
     Description:
@@ -19,42 +19,84 @@ Parameters:
       zh-cn: 消息类型
     Type: String
     AllowedValues:
-    - text
-    - link
-    - markdown
+      - text
+      - link
+      - markdown
+    Default: text
   text:
     Description:
       en: Text param. If msgtype is text, this field is needed
       zh-cn: 文本参数。如果msgtype为text，则需要输入该字段
     Type: Json
-    Default: {}
+    Default:
+      content: 我就是我, 是不一样的烟火
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${msgtype}
+            - text
   link:
     Description:
       en: Link param. If msgtype is link, this field is needed
       zh-cn: 链接参数。如果“msgtype”为“link”，则需要输入该字段
     Type: Json
-    Default: {}
+    Default:
+      text: 这是Link消息
+      title: 这是一个Link消息
+      picUrl: https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png
+      messageUrl: https://open.dingtalk.com/document/
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${msgtype}
+            - link
   markdown:
     Description:
       en: MarkDown param. If msgtype is markdown, this field is needed
       zh-cn: MarkDown参数。如果msgtype为markdown，则需要此字段
     Type: Json
-    Default: {}
+    Default:
+      title: 杭州天气
+      text: |
+        #### 杭州天气
+        > 9度，西北风1级，空气良89，相对温度73%
+        > ![screenshot](https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png)
+        > ###### 10点20分发布 [天气](https://www.dingalk.com)
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${msgtype}
+            - markdown
   at:
     Description:
       en: '@ people to read the notification'
       zh-cn: '@人们阅读通知'
     Type: Json
-    Default: {}
+    Default:
+      atMobiles:
+        - 150XXXXXXXX
+      atUserIds:
+        - user123
+      isAtAll: false
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Or:
+            - Fn::Equals:
+                - ${msgtype}
+                - text
+            - Fn::Equals:
+                - ${msgtype}
+                - markdown
 Tasks:
 - Name: approveDingTaskWebhook
   Action: ACS::Approve
   Description:
-    en: 'Sends notification to DingTalk via webhook for asking approval. The execution remains
-        paused until approved or rejected. Please refer https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq
-        for details'
-    zh-cn: '通过webhook向DingTalk发送请求批准的通知。执行仍暂停直到批准或拒绝。
-              请参阅https://open-doc.dingtalk.com/microapp/serverapi2/qf2nxq获取详细信息'
+    en: Sends notification to DingTalk via webhook for asking approval. The execution remains paused until approved or rejected.
+    zh-cn: 通过webhook向DingTalk发送请求批准的通知。执行仍暂停直到批准或拒绝。
   Properties:
     NotifyType: WebHook
     WebHook:

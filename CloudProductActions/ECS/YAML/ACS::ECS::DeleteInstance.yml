@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::DeleteInstance
-  name-zh-cn: 删除ECS实例
+  name-zh-cn: 删除实例(ECS)
   en: Deletes ECS instance by specifying instance ID
   zh-cn: 通过指定的实例ID删除ECS实例
 Parameters:

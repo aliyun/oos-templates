@@ -1,0 +1,136 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-ECS-BulkyModifyInstanceMaintenanceAttributes
+  name-zh-cn: 批量修改实例的维护属性
+  en: Bulky modify instance maintenance attributes
+  zh-cn: 批量修改实例的维护属性
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  notifyOnMaintenance:
+    Label:
+      en: NotifyOnMaintenance
+      zh-cn: 实例宕机运维前是否发送事件通知
+    Type: Boolean
+  actionOnMaintenance:
+    Label:
+      en: ActionOnMaintenance
+      zh-cn: 维护动作
+    Type: String
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        Stop: 停止状态（即宕机）
+        AutoRecover: 自动恢复
+        AutoRedeploy: 宕机迁移，数据盘有损
+    AllowedValues:
+      - Stop
+      - AutoRecover
+      - AutoRedeploy
+  maintenanceWindowStartTime:
+    Label:
+      en: MaintenanceWindowStartTime
+      zh-cn: 维护窗口开始时间
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'HH:mm:ss'
+  maintenanceWindowEndTime:
+    Label:
+      en: MaintenanceWindowEndTime
+      zh-cn: 维护窗口结束时间
+    Type: String
+    AssociationProperty: DateTime
+    AssociationPropertyMetadata:
+      Format: 'HH:mm:ss'
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: modifyPostPaidInstanceSpec
+    Action: 'ACS::ExecuteAPI'
+    Description:
+      en: Modifies the instance maintenance attributes
+      zh-cn: 修改实例的维护属性
+    Properties:
+      Service: ECS
+      API: ModifyInstanceMaintenanceAttributes
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId:
+          - '{{ ACS::TaskLoopItem }}'
+        NotifyOnMaintenance: '{{ notifyOnMaintenance }}'
+        ActionOnMaintenance: '{{ actionOnMaintenance }}'
+        MaintenanceWindow:
+          - StartTime: '{{ maintenanceWindowStartTime }}'
+            EndTime: '{{ maintenanceWindowEndTime }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - notifyOnMaintenance
+          - actionOnMaintenance
+          - maintenanceWindowStartTime
+          - maintenanceWindowEndTime
+        Label:
+          default:
+            zh-cn: 设置参数
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

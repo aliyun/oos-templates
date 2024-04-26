@@ -1,9 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::RebootInstance
-  name-zh-cn: 重启ECS实例
+  name-zh-cn: 重启实例(ECS)
   en: Restarts the ECS instance by specifying instanceId
-  zh-cn: 重启指定的ECS实例
+  zh-cn: 重启指定的ECS实例.
 Parameters:
   regionId:
     Label:

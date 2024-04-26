@@ -1,0 +1,103 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS-ECS-BulkyCreateInstanceDiagnosticReport",
+    "name-zh-cn": "批量创建ECS的诊断报告",
+    "en": "Create diagnostic report for ECS instance in bulk",
+    "zh-cn": "批量创建ECS诊断报告"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "targets": {
+      "Type": "Json",
+      "Label": {
+        "en": "Targets",
+        "zh-cn": "实例ID"
+      },
+      "AssociationProperty": "Targets",
+      "AssociationPropertyMetadata": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "regionId"
+      }
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getInstances",
+      "Description": {
+        "en": "Views the ECS instances",
+        "zh-cn": "获取ECS实例"
+      },
+      "Action": "ACS::SelectTargets",
+      "Properties": {
+        "ResourceType": "ALIYUN::ECS::Instance",
+        "RegionId": "{{ regionId }}",
+        "Filters": [
+          "{{ targets }}"
+        ]
+      },
+      "Outputs": {
+        "instanceIds": {
+          "Type": "List",
+          "ValueSelector": "Instances.Instance[].InstanceId"
+        }
+      }
+    },
+    {
+      "Name": "createDiagnosticReports",
+      "Action": "ACS::ECS::CreateDiagnoseReport",
+      "Description": {
+        "en": "Create diagnostic report for ECS instance",
+        "zh-cn": "创建ECS实例诊断报告"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "resourceId": "{{ ACS::TaskLoopItem }}",
+        "metricSetId": "dms-instancedefault"
+      },
+      "Loop": {
+        "Items": "{{ getInstances.instanceIds }}",
+        "Outputs": {
+          "metricResults": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "metricResult"
+          }
+        },
+        "RateControl": "{{ rateControl }}"
+      },
+      "Outputs": {
+        "metricResult": {
+          "Type": "Json",
+          "ValueSelector": ".metricResults"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "metricResults": {
+      "Type": "Json",
+      "Value": "{{ createDiagnosticReports.metricResults }}"
+    }
+  }
+}

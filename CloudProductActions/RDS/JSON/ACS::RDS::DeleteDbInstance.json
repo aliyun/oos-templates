@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::RDS::DeleteDbInstance",
-    "name-zh-cn": "删除数据库实例",
+    "name-zh-cn": "删除实例(RDS)",
     "en": "Deletes DB instance",
     "zh-cn": "删除数据库实例"
   },

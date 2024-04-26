@@ -1,0 +1,148 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::PurchaseReservedInstancesOffering",
+    "name-zh-cn": "购买预留实例券",
+    "en": "Purchases reserved instances",
+    "zh-cn": "购买预留实例券"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId"
+    },
+    "scope": {
+      "Description": {
+        "en": "The scope of the reserved instance",
+        "zh-cn": "预留实例券的范围"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Region",
+        "Zone"
+      ],
+      "Default": "Region"
+    },
+    "zoneId": {
+      "Description": {
+        "en": "The zone ID of instance",
+        "zh-cn": "实例的可用区"
+      },
+      "Type": "String"
+    },
+    "instanceType": {
+      "Description": {
+        "en": "The instance type of reserved instance",
+        "zh-cn": "预留实例券的实例规格"
+      },
+      "Type": "String"
+    },
+    "instanceAmount": {
+      "Description": {
+        "en": "The number of pay-as-you-go instances of the same instance type that the reserved instance can match at the same time.",
+        "zh-cn": "预留实例券可以同时匹配同规格按量付费实例的数量"
+      },
+      "Type": "Number"
+    },
+    "description": {
+      "Description": {
+        "en": "The description of reserved instance",
+        "zh-cn": "预留实例券的描述"
+      },
+      "Type": "String"
+    },
+    "period": {
+      "Description": {
+        "en": "The term of the reserved instance",
+        "zh-cn": "购买预留实例券的时长"
+      },
+      "Type": "Number"
+    },
+    "periodUnit": {
+      "Description": {
+        "en": "The term unit of the reserved instance",
+        "zh-cn": "购买预留实例券的时长单位"
+      },
+      "Type": "String"
+    },
+    "platform": {
+      "Description": {
+        "en": "The platform of reserved instance",
+        "zh-cn": "实例使用的镜像的操作系统类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Linux",
+        "Windows"
+      ]
+    },
+    "offeringType": {
+      "Description": {
+        "en": "Payment Types for Reserved Instances",
+        "zh-cn": "预留实例券的付款类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "No Upfront",
+        "Partial Upfront",
+        "All Upfront"
+      ],
+      "Default": "All Upfront"
+    },
+    "tags": {
+      "Label": {
+        "en": "ImageTags",
+        "zh-cn": "镜像标签"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "purchaseReservedInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Purchases reserved instances",
+        "zh-cn": "购买预留实例券"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "PurchaseReservedInstancesOffering",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ZoneId": "{{ zoneId }}",
+          "Scope": "{{ scope }}",
+          "InstanceType": "{{ instanceType }}",
+          "InstanceAmount": "{{ instanceAmount }}",
+          "Description": "{{ description }}",
+          "Platform": "{{ platform }}",
+          "Period": "{{ period }}",
+          "PeriodUnit": "{{ periodUnit }}",
+          "OfferingType": "{{ offeringType }}",
+          "Tags": "{{ tags }}"
+        }
+      },
+      "Outputs": {
+        "reservedInstanceId": {
+          "Type": "String",
+          "ValueSelector": "ReservedInstanceIdSets.ReservedInstanceId[]"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "reservedInstanceId": {
+      "Type": "String",
+      "Value": "{{ purchaseReservedInstance.reservedInstanceId }}"
+    }
+  }
+}

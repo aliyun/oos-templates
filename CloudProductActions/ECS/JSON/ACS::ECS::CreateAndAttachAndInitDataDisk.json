@@ -1,0 +1,153 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::CreateAndAttachAndInitDataDisk",
+    "name-zh-cn": "创建挂载并初始化数据盘",
+    "en": "Create and attach and initialize data disk",
+    "zh-cn": "创建挂载并初始化数据盘"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "category": {
+      "Description": {
+        "en": "The category of data disk",
+        "zh-cn": "数据盘的云盘种类"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Disk::DataDiskCategory",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "AllowedValues": [
+        "cloud_efficiency",
+        "cloud_ssd",
+        "cloud_essd",
+        "cloud"
+      ],
+      "Default": "cloud_efficiency"
+    },
+    "diskSize": {
+      "Description": {
+        "en": "The size of data disk",
+        "zh-cn": "数据盘容量大小，单位：GiB"
+      },
+      "Type": "Number",
+      "MinValue": 40,
+      "MaxValue": 32768,
+      "Default": 40
+    },
+    "mountPointPath": {
+      "Description": {
+        "en": "The mount point path of data disk",
+        "zh-cn": "数据盘挂载点路径"
+      },
+      "Type": "String",
+      "Default": "/mnt"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getZoneId",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Check the OS type of ECS instance",
+        "zh-cn": "检查ECS实例操作系统类型"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "linux"
+        ],
+        "PropertySelector": "Instances.Instance[].OSType"
+      },
+      "Outputs": {
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].ZoneId"
+        }
+      }
+    },
+    {
+      "Name": "createDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create data disk",
+        "zh-cn": "创建磁盘"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateDisk",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DiskCategory": "{{ category }}",
+          "DiskName": "disk-{{ ACS::ExecutionId }}",
+          "Size": "{{ diskSize }}",
+          "ZoneId": "{{ getZoneId.zoneId }}"
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "DiskId"
+        }
+      }
+    },
+    {
+      "Name": "attachNewDisk",
+      "Action": "ACS::ECS::AttachDisk",
+      "Description": {
+        "en": "Attaches the disk to the ECS instance",
+        "zh-cn": "挂载磁盘到ECS实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "diskId": "{{ createDisk.diskId }}"
+      }
+    },
+    {
+      "Name": "initDisk",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Init data disk",
+        "zh-cn": "初始化数据盘"
+      },
+      "Properties": {
+        "commandContent": "echo '#!/bin/bash' >> initdisk.sh;\necho \"dir=`ls /dev |grep vd|awk 'END {print}'`\" >> initdisk.sh;\necho 'echo \"n' >> initdisk.sh;\necho 'p' >> initdisk.sh;\necho 1 >> initdisk.sh;\necho -e '\\n' >> initdisk.sh;\necho -e '\\n' >> initdisk.sh;\necho 'w' >> initdisk.sh;\necho '\" | fdisk /dev/${dir}' >> initdisk.sh;\necho 'mkfs.ext4 /dev/${dir}1' >> initdisk.sh;\necho 'cp /etc/fstab /etc/fstab.bak' >> initdisk.sh;\necho 'echo /dev/${dir}1 {{mountPointPath}} ext4 defaults 0 0 >> /etc/fstab' >> initdisk.sh;\necho 'mount /dev/${dir}1 {{mountPointPath}}' >> initdisk.sh;\necho 'df -h' >> initdisk.sh;\n/bin/bash initdisk.sh\nrm -f initdisk.sh",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    }
+  ]
+}

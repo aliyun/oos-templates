@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::RunInstances",
-    "name-zh-cn": "创建ECS实例",
+    "name-zh-cn": "创建实例(ECS)",
     "en": "Creates one or more ECS instances",
     "zh-cn": "创建一个或多个ECS实例"
   },
@@ -15,147 +15,6 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
-    },
-    "imageId": {
-      "Label": {
-        "en": "ImageId",
-        "zh-cn": "镜像ID"
-      },
-      "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
-      "MinLength": 1,
-      "MaxLength": 100,
-      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
-      "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
-      }
-    },
-    "instanceType": {
-      "Label": {
-        "en": "InstanceType",
-        "zh-cn": "实例类型"
-      },
-      "Type": "String",
-      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
-      "MaxLength": 30,
-      "MinLength": 1,
-      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
-      "AssociationPropertyMetadata": {
-        "RegionId": "regionId",
-        "InstanceChargeType": "instanceChargeType"
-      }
-    },
-    "instanceName": {
-      "Label": {
-        "en": "InstanceName",
-        "zh-cn": "实例名称"
-      },
-      "Type": "String",
-      "Default": ""
-    },
-    "ramRoleName": {
-      "Label": {
-        "en": "RAMRoleName",
-        "zh-cn": "RAM角色名称"
-      },
-      "Type": "String",
-      "Default": ""
-    },
-    "securityGroupId": {
-      "Label": {
-        "en": "SecurityGroupId",
-        "zh-cn": "安全组ID"
-      },
-      "Type": "String",
-      "AllowedPattern": "sg-[A-Za-z0-9]*",
-      "MaxLength": 30,
-      "MinLength": 1,
-      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId",
-      "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
-      }
-    },
-    "vSwitchId": {
-      "Label": {
-        "en": "The ID of the VSwitch",
-        "zh-cn": "交换机ID"
-      },
-      "Type": "String",
-      "AllowedPattern": "vsw-[A-Za-z0-9]*",
-      "MaxLength": 30,
-      "MinLength": 1,
-      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
-      "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
-      }
-    },
-    "amount": {
-      "Label": {
-        "en": "InstanceAmount",
-        "zh-cn": "实例数量"
-      },
-      "Type": "Number",
-      "Default": 1
-    },
-    "internetMaxBandwidthIn": {
-      "Label": {
-        "en": "InternetMaxBandwidthIn",
-        "zh-cn": "公网入带宽"
-      },
-      "Type": "Number",
-      "Default": 200
-    },
-    "internetMaxBandwidthOut": {
-      "Label": {
-        "en": "InternetMaxBandwidthOut",
-        "zh-cn": "公网出带宽"
-      },
-      "Type": "Number",
-      "Default": 0
-    },
-    "tags": {
-      "Label": {
-        "en": "Tags",
-        "zh-cn": "标签"
-      },
-      "Description": {
-        "en": "The tags of new ECS instance to add on,e.g.[{\"Key\":\"oos\",\"Value\":\"test\"}]",
-        "zh-cn": "ECS实例的标签，例如：[{\"Key\":\"oos\",\"Value\":\"test\"}]"
-      },
-      "Type": "Json",
-      "AssociationProperty": "Tags",
-      "AssociationPropertyMetadata": {
-        "ShowSystem": false
-      },
-      "Default": []
-    },
-    "systemDiskCategory": {
-      "Label": {
-        "en": "SystemDiskCategory",
-        "zh-cn": "系统盘的云盘种类"
-      },
-      "Type": "String",
-      "AssociationProperty": "ALIYUN::ECS::Disk::SystemDiskCategory",
-      "AssociationPropertyMetadata": {
-        "RegionId": "regionId",
-        "InstanceType": "instanceType",
-        "InstanceChargeType": "instanceChargeType"
-      },
-      "AllowedValues": [
-        "cloud_efficiency",
-        "cloud_ssd",
-        "cloud_essd",
-        "cloud"
-      ],
-      "Default": "cloud_efficiency"
-    },
-    "systemDiskSize": {
-      "Label": {
-        "en": "SystemDiskSize",
-        "zh-cn": "系统盘大小"
-      },
-      "Type": "String",
-      "Default": ""
     },
     "instanceChargeType": {
       "Label": {
@@ -233,6 +92,147 @@
         60
       ],
       "Default": 1
+    },
+    "vSwitchId": {
+      "Label": {
+        "en": "The ID of the VSwitch",
+        "zh-cn": "交换机ID"
+      },
+      "Type": "String",
+      "AllowedPattern": "vsw-[A-Za-z0-9]*",
+      "MaxLength": 30,
+      "MinLength": 1,
+      "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "instanceType": {
+      "Label": {
+        "en": "InstanceType",
+        "zh-cn": "实例类型"
+      },
+      "Type": "String",
+      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
+      "MaxLength": 30,
+      "MinLength": 1,
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "InstanceChargeType": "instanceChargeType"
+      }
+    },
+    "imageId": {
+      "Label": {
+        "en": "ImageId",
+        "zh-cn": "镜像ID"
+      },
+      "Type": "String",
+      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
+      "MinLength": 1,
+      "MaxLength": 100,
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "systemDiskCategory": {
+      "Label": {
+        "en": "SystemDiskCategory",
+        "zh-cn": "系统盘的云盘种类"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Disk::SystemDiskCategory",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "InstanceType": "instanceType",
+        "InstanceChargeType": "instanceChargeType"
+      },
+      "AllowedValues": [
+        "cloud_efficiency",
+        "cloud_ssd",
+        "cloud_essd",
+        "cloud"
+      ],
+      "Default": "cloud_efficiency"
+    },
+    "systemDiskSize": {
+      "Label": {
+        "en": "SystemDiskSize",
+        "zh-cn": "系统盘大小"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "internetMaxBandwidthIn": {
+      "Label": {
+        "en": "InternetMaxBandwidthIn",
+        "zh-cn": "公网入带宽"
+      },
+      "Type": "Number",
+      "Default": 200
+    },
+    "internetMaxBandwidthOut": {
+      "Label": {
+        "en": "InternetMaxBandwidthOut",
+        "zh-cn": "公网出带宽"
+      },
+      "Type": "Number",
+      "Default": 0
+    },
+    "securityGroupId": {
+      "Label": {
+        "en": "SecurityGroupId",
+        "zh-cn": "安全组ID"
+      },
+      "Type": "String",
+      "AllowedPattern": "sg-[A-Za-z0-9]*",
+      "MaxLength": 30,
+      "MinLength": 1,
+      "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "amount": {
+      "Label": {
+        "en": "InstanceAmount",
+        "zh-cn": "实例数量"
+      },
+      "Type": "Number",
+      "Default": 1
+    },
+    "instanceName": {
+      "Label": {
+        "en": "InstanceName",
+        "zh-cn": "实例名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "ramRoleName": {
+      "Label": {
+        "en": "RAMRoleName",
+        "zh-cn": "RAM角色名称"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "tags": {
+      "Label": {
+        "en": "Tags",
+        "zh-cn": "标签"
+      },
+      "Description": {
+        "en": "The tags of new ECS instance to add on, e.g.[{\"Key\":\"oos\",\"Value\":\"test\"}]",
+        "zh-cn": "ECS实例的标签，例如：[{\"Key\":\"oos\",\"Value\":\"test\"}]"
+      },
+      "Type": "Json",
+      "AssociationProperty": "Tags",
+      "AssociationPropertyMetadata": {
+        "ShowSystem": false
+      },
+      "Default": []
     }
   },
   "Tasks": [

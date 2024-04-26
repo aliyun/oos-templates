@@ -9,8 +9,8 @@ Description:
 Parameters:
   instanceAttributes:
     Description:
-      en: 'Format: [{"regionId": "cn-xxx", "instanceId": "i-xxx", "hostName": "", "instanceName": "", "description": ""}]'
-      zh-cn: '格式: [{"regionId": "cn-xxx", "instanceId": "i-xxx", "hostName": "", "instanceName": "", "description": ""}]'
+      en: 'Format: [{"regionId": "cn-xxx", "instanceId": "i-xxx", "hostName": "", "instanceName": "", "description": "", securityGroups: ["sg-xxx"]}]'
+      zh-cn: '格式: [{"regionId": "cn-xxx", "instanceId": "i-xxx", "hostName": "", "instanceName": "", "description": "", securityGroups: ["sg-xxx"]}]'
     Label:
       en: InstanceAttributes
       zh-cn: ECS实例的信息列表

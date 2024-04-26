@@ -1,0 +1,538 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::OOS::BuildDockerImageOnTemporaryEcsAndUploadToACR
+  name-zh-cn: 在临时ECS构建Docker镜像并上传到ACR
+  en: Build Docker Image On Temporary Ecs And Upload To ACR
+  zh-cn: 在临时ECS构建Docker镜像并上传到ACR
+Parameters:
+  regionId:
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+    AssociationProperty: RegionId
+  codeSource:
+    Label:
+      en: CodeResource
+      zh-cn: 代码源
+    Type: String
+    AllowedValues:
+      - oss
+      - git
+  codeSourceUrl:
+    Label:
+      en: CodeResourceUrl
+      zh-cn: 代码源链接
+    Type: String
+  zoneId:
+    Type: String
+    Label:
+      en: Availability Zone
+      zh-cn: 可用区
+    AssociationProperty: ZoneId
+    AssociationPropertyMetadata:
+      RegionId: ALIYUN::ECS::RegionId
+  ecsInstanceType:
+    Type: String
+    Label:
+      en: Instance Type
+      zh-cn: 实例类型
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceType
+    AssociationPropertyMetadata:
+      ZoneId: ${zoneId}
+      InstanceChargeType: PostPaid
+  imageId:
+    Type: String
+    Label:
+      en: Image ID
+      zh-cn: 镜像ID
+    Description:
+      en: Image ID, represents the image resource to startup one ECS instance
+      zh-cn: 镜像ID，ECS实例的镜像资源
+    AssociationProperty: ALIYUN::ECS::Image::ImageId
+    AssociationPropertyMetadata:
+      InstanceType: ${ecsInstanceType}
+      SupportedImageOwnerAlias:
+        - system
+        - self
+        - others
+    Default: centos_7
+  buildScript:
+    Label:
+      en: Build Command
+      zh-cn: 构建命令
+    Type: String
+    MaxLength: 16384
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunShellScript
+    Default: ''
+  pushScript:
+    Label:
+      en: Push Command
+      zh-cn: 推送命令
+    Type: String
+    MaxLength: 16384
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunShellScript
+    Default: ''
+  whetherToInstallDocker:
+    Label:
+      en: Whether to install Docker
+      zh-cn: 是否安装Docker
+    Type: Boolean
+    Default: false
+  acrId:
+    Label:
+      en: ACR ID
+      zh-cn: 容器镜像仓库ID
+    Description:
+      en: ACR ID, represents the container image repository to upload
+      zh-cn: 要上传的容器镜像仓库ID
+    Type: String
+    AssociationProperty: ALIYUN::ACR::Instance
+Tasks:
+  - Name: createTemporaryEcs
+    OnError: deleteTemporaryEcs
+    Action: ACS::ROS::CreateStack
+    Description:
+      en: Create temporary ECS and grant acr permission
+      zh-cn: 创建临时ecs并授予acr权限
+    Properties:
+      regionId: '{{ regionId }}'
+      stackName:
+        Fn::Replace:
+          - .: _
+          - OOS-{{ACS::ExecutionId}}
+      disableRollback: true
+      templateBody: |-
+        {
+          "ROSTemplateFormatVersion": "2015-09-01",
+          "Description": "Create ECS Ram Role",
+          "Parameters": {
+            "RoleName": {
+              "Type": "String",
+              "Description": {
+                "zh-cn": "Ram角色名称，长度为1-64个字符，以英文字母或数字开头，允许使用连字符，账号内唯一。",
+                "en": "Ram role name, 1 to 64 characters in length, beginning with English letters or numbers, hyphens allowed, unique in the account."
+              },
+              "ConstraintDescription": {
+                "zn-cn": "长度为1-64个字符，以英文字母或数字开头，允许使用连字符。",
+                "en": "1 to 64 characters in length, beginning with English letters or numbers, hyphens allowed."
+              },
+              "Label": {
+                "zh-cn": "Ram角色名",
+                "en": "RoleName"
+              },
+              "MinLength": 1,
+              "MaxLength": 64,
+              "Default": "EcsRamRoleDocumentTesting-{{ ACS::ExecutionId }}"
+            },
+            "PolicyAction": {
+              "Type": "Json",
+              "Description": {
+                "zh-cn": "授权给RAM角色的策略允许的操作。",
+                "en": "Operations allowed by the policy granted to the RAM role."
+              },
+              "Label": {
+                "zh-cn": "操作",
+                "en": "Action"
+              },
+              "Default": [
+                "cr:*"
+              ]
+            },
+            "ZoneId": {
+              "Type": "String",
+              "Label": {
+                "en": "Availability Zone",
+                "zh-cn": "可用区"
+              },
+              "AssociationProperty": "ZoneId",
+              "AssociationPropertyMetadata": {
+                "RegionId": "ALIYUN::ECS::RegionId"
+              }
+            },
+            "EcsInstanceType": {
+              "Type": "String",
+              "Label": {
+                "en": "Instance Type",
+                "zh-cn": "实例类型"
+              },
+              "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+              "AssociationPropertyMetadata": {
+                "ZoneId": "${ZoneId}",
+                "InstanceChargeType": "PostPaid"
+              }
+            },
+            "ImageId": {
+              "Type": "String",
+              "Label": {
+                "en": "Image ID",
+                "zh-cn": "镜像ID"
+              },
+              "Description": {
+                "en": "Image ID, represents the image resource to startup one ECS instance",
+                "zh-cn": "镜像ID，ECS实例的镜像资源"
+              },
+              "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+              "AssociationPropertyMetadata": {
+                "InstanceType": "${EcsInstanceType}",
+                "SupportedImageOwnerAlias": [
+                  "system",
+                  "self",
+                  "others"
+                ]
+              },
+              "Default": "centos_7"
+            }
+          },
+          "Resources": {
+            "ECSRole": {
+              "Type": "ALIYUN::RAM::Role",
+              "Properties": {
+                "RoleName": {
+                  "Ref": "RoleName"
+                },
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": [
+                          "ecs.aliyuncs.com"
+                        ]
+                      }
+                    }
+                  ],
+                  "Version": "1"
+                },
+                "Policies": [
+                  {
+                    "PolicyName": {
+                      "Fn::Sub": "EcsRamRolePolicy-${ALIYUN::StackId}"
+                    },
+                    "PolicyDocument": {
+                      "Version": "1",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": {
+                            "Ref": "PolicyAction"
+                          },
+                          "Resource": [
+                            "*"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "EcsVpc": {
+              "Type": "ALIYUN::ECS::VPC",
+              "Properties": {
+                "CidrBlock": "192.168.0.0/16",
+                "VpcName": {
+                  "Ref": "ALIYUN::StackName"
+                }
+              }
+            },
+            "EcsVSwitch": {
+              "Type": "ALIYUN::ECS::VSwitch",
+              "Properties": {
+                "ZoneId": {
+                  "Ref": "ZoneId"
+                },
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                },
+                "CidrBlock": "192.168.1.0/24"
+              }
+            },
+            "EcsSecurityGroup": {
+              "Type": "ALIYUN::ECS::SecurityGroup",
+              "Properties": {
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                }
+              }
+            },
+            "EcsInstanceGroup": {
+              "Type": "ALIYUN::ECS::InstanceGroup",
+              "DependsOn": "ECSRole",
+              "Properties": {
+                "InternetMaxBandwidthOut": 10,
+                "ZoneId": {
+                  "Ref": "ZoneId"
+                },
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                },
+                "VSwitchId": {
+                  "Ref": "EcsVSwitch"
+                },
+                "SecurityGroupId": {
+                  "Ref": "EcsSecurityGroup"
+                },
+                "ImageId": {
+                  "Ref": "ImageId"
+                },
+                "IoOptimized": "optimized",
+                "MaxAmount": 1,
+                "InstanceType": {
+                  "Ref": "EcsInstanceType"
+                },
+                "RamRoleName": {
+                  "Fn::GetAtt": [
+                    "ECSRole",
+                    "RoleName"
+                  ]
+                },
+                "InstanceName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      {
+                        "Ref": "ALIYUN::StackName"
+                      },
+                      "[1,4]"
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "EcsInstanceId": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "EcsInstanceGroup",
+                  "InstanceIds"
+                ]
+              }
+            }
+          }
+        }
+      parameters:
+        - ParameterKey: ZoneId
+          ParameterValue: '{{ zoneId }}'
+        - ParameterKey: EcsInstanceType
+          ParameterValue: '{{ ecsInstanceType }}'
+        - ParameterKey: ImageId
+          ParameterValue: '{{ imageId }}'
+    Outputs:
+      stackId:
+        Type: String
+        ValueSelector: stackId
+  - Name: getEcsInfo
+    Action: ACS::ExecuteAPI
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Get ECS info
+      zh-cn: 获取ecs信息
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createTemporaryEcs.stackId}}'
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: .Outputs[0].OutputValue[0]
+  - Name: downloadCodeFromOss
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ codeSource }}'
+        - oss
+    Description:
+      en: Download code from OSS
+      zh-cn: 从OSS下载代码
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        mkdir -p /root/workspace/{{ACS::ExecutionId}}
+        cd /root/workspace/{{ACS::ExecutionId}}
+        acs-plugin-manager --exec -P oosutil --params  download_content,https,'"{{ codeSourceUrl }}"',\'''\','.'
+  - Name: downloadCodeFromGit
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ codeSource }}'
+        - git
+    Description:
+      en: Download code from git
+      zh-cn: 从git下载代码
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+        # Function to install git on Ubuntu/Debian
+        install_git_debian() {
+            echo "Updating package lists..."
+            sudo apt-get update
+            echo "Installing git..."
+            sudo apt-get install git -y
+        }
+
+        # Function to install git on CentOS/Red Hat
+        install_git_centos() {
+            echo "Updating package lists..."
+            sudo yum update
+            echo "Installing git..."
+            sudo yum install git -y
+        }
+
+        # Identify the Operating System
+        . /etc/os-release
+
+        case $ID in
+            ubuntu|debian)
+                echo "Detected system: Ubuntu/Debian"
+                install_git_debian
+                ;;
+            centos|rhel)
+                echo "Detected system: CentOS/Red Hat"
+                install_git_centos
+                ;;
+            *)
+                echo "Unsupported Operating System: $ID"
+                exit 1
+                ;;
+        esac
+
+        echo "Git installation script has completed."
+        mkdir -p /root/workspace/{{ACS::ExecutionId}}
+        cd /root/workspace/{{ACS::ExecutionId}}
+        git clone {{ codeSourceUrl }} .
+  - Name: installDocker
+    When: '{{ whetherToInstallDocker }}'
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Install environment
+      zh-cn: 安装环境
+    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      action: install
+      packageName: ACS-Extension-DockerCE-1563457855438522
+  - Name: runCommandToBuildImage
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Run command to build image
+      zh-cn: 执行创建镜像命令
+    Properties:
+      workingDir: /root/workspace/{{ACS::ExecutionId}}
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      commandType: RunShellScript
+      commandContent: '{{ buildScript }}'
+  - Name: generateAuthorizationToken
+    Action: ACS::CR::GetAuthorizationToken
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Generate authorization token
+      zh-cn: 生成授权令牌
+    Properties:
+      instanceId: '{{ acrId }}'
+    Outputs:
+      tempUsername:
+        Type: String
+        ValueSelector: tempUsername
+      authorizationToken:
+        Type: String
+        ValueSelector: authorizationToken
+  - Name: getAcrName
+    Action: ACS::ExecuteAPI
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Get ACR name
+      zh-cn: 获取acr名称
+    Properties:
+      Service: CR
+      API: GetInstance
+      Parameters:
+        InstanceId: '{{acrId}}'
+    Outputs:
+      acrName:
+        Type: String
+        ValueSelector: .InstanceName
+  - Name: dockerLogin
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Login to ACR
+      zh-cn: 登录到acr
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      commandType: RunShellScript
+      commandContent: docker login --username={{ generateAuthorizationToken.tempUsername }} --password={{ generateAuthorizationToken.authorizationToken }} {{ getAcrName.acrName }}-registry.{{ regionId }}.cr.aliyuncs.com
+  - Name: runCommandToPushImage
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Push image to ACR
+      zh-cn: 推送镜像到acr
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ getEcsInfo.instanceId }}'
+      commandType: RunShellScript
+      commandContent: '{{ pushScript }}'
+  - Name: deleteTemporaryEcs
+    Action: ACS::ROS::DeleteStack
+    Description:
+      en: Delete temporary ECS and grant acr permission
+      zh-cn: 删除临时ecs并授予acr权限
+    Properties:
+      regionId: '{{ regionId }}'
+      stackId: '{{ createTemporaryEcs.stackId }}'
+      retainAllResources: false
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+        Label:
+          default:
+            zh-cn: 地域信息
+            en: Region
+      - Parameters:
+          - codeSource
+          - codeSourceUrl
+        SubTitle: 代码源链接一般来自代码源步骤的输出
+        Label:
+          default:
+            zh-cn: 指定代码源
+            en: Code Source
+      - Parameters:
+          - zoneId
+          - ecsInstanceType
+          - imageId
+          - whetherToInstallDocker
+        SubTitle: 临时开启一台ecs，完成构建任务后自动释放，会产生费用
+        Label:
+          default:
+            zh-cn: 启动临时Ecs
+            en: Start Temporary Ecs
+      - Parameters:
+          - buildScript
+          - acrId
+          - pushScript
+        Label:
+          default:
+            zh-cn: 构建镜像
+            en: Build Image

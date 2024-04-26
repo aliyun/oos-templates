@@ -1,0 +1,108 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::AttachKeyPairOnline",
+    "name-zh-cn": "在线绑定密钥对",
+    "en": "Attach key pair to Linux instance without reboot",
+    "zh-cn": "在线为Linux实例绑定密钥对，无需重启"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "Label": {
+        "en": "ECS Instance ID",
+        "zh-cn": "ECS实例ID"
+      }
+    },
+    "keyPairName": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::KeyPair::KeyPairName",
+      "Label": {
+        "en": "Key pair name",
+        "zh-cn": "密钥对名称"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "getKeyPairPublicKey",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get Key Pair Public Key",
+        "zh-cn": "获取密钥对Public Key"
+      },
+      "Properties": {
+        "Service": "ecs",
+        "API": "DescribeKeyPairs",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "KeyPairName": "{{ keyPairName }}",
+          "IncludePublicKey": true
+        }
+      },
+      "Outputs": {
+        "publicKey": {
+          "Type": "String",
+          "ValueSelector": ".KeyPairs.KeyPair[].PublicKey"
+        }
+      }
+    },
+    {
+      "Name": "addSshPublicKey",
+      "Action": "ACS::ECS::InvokeCommand",
+      "Description": {
+        "en": "Add ssh public key",
+        "zh-cn": "添加 ssh public key"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandId": "ACS-ECS-AddSshPublicKey-for-linux.sh",
+        "parameters": {
+          "user": "root",
+          "ssh_pub_key": "{{ getKeyPairPublicKey.publicKey }}",
+          "mode": "renew"
+        }
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "attachKeyPair",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Attach key pair",
+        "zh-cn": "绑定密钥对"
+      },
+      "Properties": {
+        "Service": "ecs",
+        "API": "AttachKeyPair",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "KeyPairName": "{{ keyPairName }}",
+          "InstanceIds": "[\"{{ instanceId }}\"]"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": "{{ addSshPublicKey.commandOutput }}"
+    }
+  }
+}

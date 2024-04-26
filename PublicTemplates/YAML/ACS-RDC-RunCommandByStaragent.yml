@@ -29,7 +29,7 @@ Parameters:
   OOSAssumeRole:
     Description: The RAM role to be assumed by OOS
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{OOSAssumeRole}}'
 Tasks:
   - Name: loopRunCommand

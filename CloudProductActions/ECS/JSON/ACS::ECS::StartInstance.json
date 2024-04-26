@@ -2,9 +2,9 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::StartInstance",
-    "name-zh-cn": "启动ECS实例",
+    "name-zh-cn": "启动实例(ECS)",
     "en": "Starts an ECS instance",
-    "zh-cn": "启动一台ECS实例"
+    "zh-cn": "启动一台ECS实例."
   },
   "Parameters": {
     "regionId": {

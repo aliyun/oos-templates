@@ -290,7 +290,19 @@
         "RunCommand",
         "InstallPackage"
       ],
-      "Default": "RunCommand"
+      "Default": "RunCommand",
+      "AssociationPropertyMetadata": {
+        "ValueLabelMapping": {
+          "RunCommand": {
+            "zh-cn": "运行命令",
+            "en": "RunCommand"
+          },
+          "InstallPackage": {
+            "zh-cn": "安装软件包",
+            "en": "InstallPackage"
+          }
+        }
+      }
     },
     "packageName": {
       "Label": {
@@ -670,7 +682,6 @@
         {
           "Parameters": [
             "regionId",
-            "zoneId",
             "sourceImageId"
           ],
           "Label": {
@@ -694,6 +705,7 @@
         },
         {
           "Parameters": [
+            "zoneId",
             "instanceType",
             "whetherCreateVpc",
             "vpcCidrBlock",
@@ -723,8 +735,8 @@
           ],
           "Label": {
             "default": {
-              "zh-cn": "发送远程命令",
-              "en": "Run Command"
+              "zh-cn": "更新镜像配置配置",
+              "en": "Update Image Configuration"
             }
           }
         },

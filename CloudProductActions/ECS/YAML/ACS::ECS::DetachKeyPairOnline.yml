@@ -1,0 +1,107 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DetachKeyPairOnline
+  name-zh-cn: 在线解绑密钥对
+  en: Detach key pair to Linux instance without reboot
+  zh-cn: 在线为Linux实例解绑密钥对，无需重启
+Parameters:
+  regionId:
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Default: '{{ ACS::RegionId }}'
+  instanceId:
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    Label:
+      en: ECS Instance ID
+      zh-cn: ECS实例ID
+Tasks:
+  - Name: queryInstance
+    Action: ACS::ExecuteApi
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取实例操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      keyPairName:
+        Type: String
+        ValueSelector: Instances.Instance[].KeyPairName
+      OSType:
+        Type: String
+        ValueSelector: Instances.Instance[].OSType
+  - Name: whetherInstanceIsStopped
+    Action: ACS::Choice
+    Description:
+      en: Choose next task by instance status
+      zh-cn: 根据实例状态选择任务
+    Properties:
+      DefaultTask: getKeyPairPublicKey
+      Choices:
+        - When:
+            Fn::Equals:
+              - Null
+              - '{{ queryInstance.keyPairName }}'
+          NextTask: ACS::END
+        - When:
+            Fn::Equals:
+              - windows
+              - '{{ queryInstance.OSType }}'
+          NextTask: ACS::END
+  - Name: getKeyPairPublicKey
+    Action: ACS::ExecuteApi
+    Description:
+      en: Get Key Pair Public Key
+      zh-cn: 获取密钥对Public Key
+    Properties:
+      Service: ecs
+      API: DescribeKeyPairs
+      Parameters:
+        RegionId: '{{ regionId }}'
+        KeyPairName: '{{ queryInstance.keyPairName }}'
+        IncludePublicKey: true
+    Outputs:
+      publicKey:
+        Type: String
+        ValueSelector: .KeyPairs.KeyPair[].PublicKey
+  - Name: removeSshPublicKey
+    Action: ACS::ECS::InvokeCommand
+    Description:
+      en: Remove ssh public key
+      zh-cn: 移除 ssh public key
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandId: ACS-ECS-RemoveSshPublicKey-for-linux.sh
+      parameters:
+        user: root
+        ssh_pub_key: '{{ getKeyPairPublicKey.publicKey }}'
+    Outputs:
+      commandOutput:
+        Type: String
+        ValueSelector: invocationOutput
+  - Name: detachKeyPair
+    Action: ACS::ExecuteApi
+    Description:
+      en: Detach key pair
+      zh-cn: 解绑密钥对
+    Properties:
+      Service: ecs
+      API: DetachKeyPair
+      Parameters:
+        RegionId: '{{ regionId }}'
+        KeyPairName: '{{ queryInstance.keyPairName }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+Outputs:
+  commandOutput:
+    Type: String
+    Value: '{{ removeSshPublicKey.commandOutput }}'

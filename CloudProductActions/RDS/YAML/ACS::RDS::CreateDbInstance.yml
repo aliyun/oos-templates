@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::RDS::CreateDbInstance
-  name-zh-cn: 创建RDS实例
+  name-zh-cn: 创建实例(RDS)
   en: Creates an RDS instance
   zh-cn: 创建一台RDS实例
 Parameters:
@@ -12,25 +12,59 @@ Parameters:
     Type: String
     AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
-  dBInstanceClass:
+  payType:
     Label:
-      en: RDSInstanceClass
-      zh-cn: RDS实例规格
-    Type: String
-    AssociationProperty: ALIYUN::RDS::Instance::InstanceType
-  dBInstanceNetType:
-    Label:
-      en: RDSInstanceNetType
-      zh-cn: 实例的网络类型
+      en: RDSInstancePayType
+      zh-cn: RDS实例的计费方式
     Type: String
     AllowedValues:
-      - Internet
-      - Intranet
-  dBInstanceStorage:
+      - Postpaid
+      - Prepaid
+      - Serverless
+  period:
     Label:
-      en: RDSInstanceStorage
-      zh-cn: RDS实例的存储容量
+      en: PeriodType
+      zh-cn: 周期类型
+    Type: String
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - '${payType}'
+            - Prepaid
+    AllowedValues:
+      - Month
+      - Year
+    Default: Month
+  usedTime:
+    Label:
+      en: Period
+      zh-cn: 预付费时长
+    Description:
+      en: >-
+        <td><p>Value:</p>
+            <ul>
+                <li><p>When the value of parameter PeriodType is Year:1~5. </p></li>
+                <li><p>When the parameter PeriodType value is Month:1~11. </p></li>
+            </ul>
+        </td>
+      zh-cn: >-
+        <td><p>取值：</p>
+            <ul>
+                <li><p>当参数PeriodType取值为Year时：1~5。</p></li>
+                <li><p>当参数PeriodType取值为Month：1~11。</p></li>
+            </ul>
+        </td>
     Type: Number
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - '${payType}'
+            - Prepaid
+    MinValue: 1
+    MaxValue: 9
+    Default: 1
   engine:
     Label:
       en: Engine
@@ -45,20 +79,53 @@ Parameters:
     AssociationProperty: ALIYUN::RDS::Engine::EngineVersion
     AssociationPropertyMetadata:
       Engine: engine
-  payType:
+  dBInstanceClass:
     Label:
-      en: RDSInstancePayType
-      zh-cn: RDS实例的计费方式
+      en: RDSInstanceClass
+      zh-cn: RDS实例规格
     Type: String
-    AllowedValues:
-      - Postpaid
-      - Prepaid
-      - Serverless
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceType
+  dBInstanceStorage:
+    Label:
+      en: RDSInstanceStorage
+      zh-cn: RDS实例的存储容量
+    Description:
+      en: >-
+        <td><p>Value:</p>
+            <ul>
+                <li><p>MySQL: 5~1000. </p></li>
+                <li><p>SQLServer: 10~1000. </p></li>
+                <li><p>PostgreSQL: 5~2000. </p></li>
+                <li><p>PPAS: 5~2000. </p></li>
+            </ul>
+            <p>Unit:GB. </p>
+            <div>
+                <div><i></i><strong>Description: Increments every 5 GB. </strong></div>
+            </div>
+        </td>
+      zh-cn: >-
+        <td><p>取值： </p>
+            <ul>
+                <li><p>MySQL：5~1000。</p></li>
+                <li><p>SQLServer：10~1000。</p></li>
+                <li><p>PostgreSQL：5~2000。</p></li>
+                <li><p>PPAS：5~2000。</p></li>
+            </ul>
+            <p>单位：GB。</p>
+            <div>
+                <div><i></i><strong>说明: 每5GB进行递增。</strong></div>
+            </div>
+        </td>
+    Type: Number
+    MinValue: 5
+    MaxValue: 2000
+    Default: 10
   securityIPList:
     Label:
       en: IPWhitelistRDSInstance
       zh-cn: RDS实例的IP白名单
     Type: String
+    Default: ''
   instanceNetworkType:
     Label:
       en: InstanceNetworkType
@@ -97,6 +164,15 @@ Parameters:
       - VPC
       - Classic
     Default: VPC
+  dBInstanceNetType:
+    Label:
+      en: RDSInstanceNetType
+      zh-cn: 数据库实例的网络类型
+    Type: String
+    AllowedValues:
+      - Internet
+      - Intranet
+    Default: Intranet
 Tasks:
 - Name: createDBInstance
   Action: ACS::ExecuteAPI
@@ -114,6 +190,8 @@ Tasks:
       Engine: '{{ engine }}'
       EngineVersion: '{{ engineVersion }}'
       PayType: '{{ payType }}'
+      Period: '{{ period }}'
+      UsedTime: '{{ usedTime }}'
       SecurityIPList: '{{ securityIPList }}'
       InstanceNetworkType: '{{ instanceNetworkType }}'
   Outputs:

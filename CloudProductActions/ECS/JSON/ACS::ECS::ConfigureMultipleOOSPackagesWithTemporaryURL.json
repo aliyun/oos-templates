@@ -121,6 +121,10 @@
           "commandOutputs": {
             "AggregateType": "Fn::ListJoin",
             "AggregateField": "commandOutput"
+          },
+          "configurationOutputs": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "configurationOutput"
           }
         }
       },
@@ -128,6 +132,10 @@
         "commandOutput": {
           "Type": "List",
           "ValueSelector": ".commandOutput"
+        },
+        "configurationOutput": {
+          "Type": "List",
+          "ValueSelector": ".configurationOutput"
         }
       }
     },

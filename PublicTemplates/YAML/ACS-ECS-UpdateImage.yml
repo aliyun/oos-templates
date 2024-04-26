@@ -210,6 +210,14 @@ Parameters:
       - RunCommand
       - InstallPackage
     Default: RunCommand
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        RunCommand:
+          zh-cn: 运行命令
+          en: RunCommand
+        InstallPackage:
+          zh-cn: 安装软件包
+          en: InstallPackage
   packageName:
     Label:
       en: packageName
@@ -510,7 +518,6 @@ Metadata:
     ParameterGroups:
       - Parameters:
           - regionId
-          - zoneId
           - sourceImageId
         Label:
           default:
@@ -524,6 +531,7 @@ Metadata:
             zh-cn: 镜像设置
             en: Image Configure
       - Parameters:
+          - zoneId
           - instanceType
           - whetherCreateVpc
           - vpcCidrBlock
@@ -547,8 +555,8 @@ Metadata:
           - timeout
         Label:
           default:
-            zh-cn: 发送远程命令
-            en: Run Command
+            zh-cn: 更新镜像配置配置
+            en: Update Image Configuration
       - Parameters:
           - OOSAssumeRole
         Label:

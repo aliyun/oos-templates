@@ -81,8 +81,8 @@
     },
     "workingDir": {
       "Description": {
-        "en": "Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32",
-        "zh-cn": "Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32"
+        "en": "Linux instances: under the home directory of the administrator (root user): /root.Windows instances: under the directory where the process of the Cloud Assistant client is located, such asC:\\Windows\\System32. Please ensure you input the correct directory.",
+        "zh-cn": "Linux系统实例默认在管理员（root用户）的home目录下，即/root。Windows系统实例默认在云助手客户端进程所在目录，例如C:\\Windows\\System32。请确保您输入的目录是正确的。'"
       },
       "Label": {
         "en": "WorkingDir",
@@ -157,8 +157,8 @@
     },
     "username": {
       "Description": {
-        "en": "The username that is used to run the command on the ECS instance, <a href=\"https://www.alibabacloud.com/help/doc-detail/203771.html\" target=\"_blank\">See more</a>",
-        "zh-cn": "在ECS实例中执行命令的用户名称，<a href=\"https://www.alibabacloud.com/help/doc-detail/203771.html\" target=\"_blank\">了解更多</a>"
+        "en": "The username that is used to run the command on the ECS instance, length must not exceed 255 characters. Linux system ECS instance, the default is root. Windows system ECS instance, the default is System. Please ensure you input the correct username. <a href=\"https://www.alibabacloud.com/help/doc-detail/203771.html\" target=\"_blank\">See more</a>",
+        "zh-cn": "在ECS实例中执行命令的用户名称，长度不得超过255个字符。Linux系统的实例，默认以root用户执行命令。Windows系统的实例，默认以System用户执行命令。请确保您输入的用户名是正确的。<a href=\"https://www.alibabacloud.com/help/doc-detail/203771.html\" target=\"_blank\">了解更多</a>"
       },
       "Label": {
         "en": "Username",
@@ -215,7 +215,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",
