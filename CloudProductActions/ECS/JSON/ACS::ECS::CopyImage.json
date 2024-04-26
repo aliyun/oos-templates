@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::CopyImage",
-    "name-zh-cn": "跨地域复制镜像",
+    "name-zh-cn": "复制镜像(ECS)",
     "en": "Cross Region copy images",
     "zh-cn": "跨区地域复制镜像"
   },

@@ -1,0 +1,58 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ROS::DeleteStack
+  name-zh-cn: 删除资源栈(ROS)
+  en: Delete ROS stack
+  zh-cn: 删除资源编排的资源栈
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  stackId:
+    Label:
+      en: StackId
+      zh-cn: 资源栈ID
+    Type: String
+  retainAllResources:
+    Label:
+      en: RetainAllResources
+      zh-cn: 是否保留资源栈中的所有资源
+    Type: Boolean
+    Default: false
+Tasks:
+  - Name: DeleteStack
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Delete ROS stack
+      zh-cn: 删除资源编排的资源栈
+    Properties:
+      Service: ROS
+      API: DeleteStack
+      Parameters:
+        RegionId: '{{ regionId }}'
+        StackId: '{{ stackId }}'
+        RetainAllResources: '{{ retainAllResources }}'
+  - Name: UntilStackDeleted
+    Action: ACS::WaitFor
+    Description:
+      en: Wait for the stack to be deleted successfully
+      zh-cn: 等待资源栈删除成功
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        RegionId: '{{ regionId }}'
+        StackId: '{{ stackId }}'
+      DesiredValues:
+        - DELETE_COMPLETE
+      StopRetryValues:
+        - DELETE_FAILED
+      PropertySelector: Status
+    Outputs:
+      statusReason:
+        Type: String
+        ValueSelector: StatusReason

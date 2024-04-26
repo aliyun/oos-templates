@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::ModifyInstanceAttribute
-  name-zh-cn: 修改ECS实例的属性
+  name-zh-cn: 修改实例属性(ECS)
   en: Modify the information of an ECS instance
   zh-cn: 修改ECS实例的属性
 Parameters:
@@ -47,6 +47,10 @@ Tasks:
           - First
           - .[] | select(.instanceId == "{{ instanceId }}") | .description
           - '{{ instanceAttributes }}'
+      SecurityGroupIds:
+        - First
+        - .[] | select(.instanceId == "{{ instanceId }}") | .securityGroups
+        - '{{ instanceAttributes }}'
 Outputs:
   instanceInfos:
     Type: String

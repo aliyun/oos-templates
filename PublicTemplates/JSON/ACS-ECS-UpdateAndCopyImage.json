@@ -331,7 +331,7 @@
         "zh-cn": "OOS扮演的RAM角色"
       },
       "Type": "String",
-      "Default": "OOSServiceRole"
+      "Default": ""
     }
   },
   "RamRole": "{{ OOSAssumeRole }}",

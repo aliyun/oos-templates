@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::CreateImage",
-    "name-zh-cn": "为ECS实例创建镜像",
+    "name-zh-cn": "创建镜像(ECS)",
     "en": "Creates a custom image from ECS instance",
     "zh-cn": "为ECS实例创建一份自定义镜像"
   },

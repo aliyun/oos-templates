@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::ReplaceSystemDisk
-  name-zh-cn: 更换ECS实例的系统盘
+  name-zh-cn: 更换系统盘(ECS)
   en: Replaces the system disk of an ECS instance
   zh-cn: 更换一台ECS实例的系统盘
 Parameters:
@@ -35,12 +35,15 @@ Parameters:
       en: ECSInstancePassword
       zh-cn: ECS实例密码
     Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::Password
+    NoEcho: true
     Default: ''
   keyPairName:
     Label:
       en: KeyPairName
       zh-cn: 密钥对名称
     Type: String
+    AssociationProperty: ALIYUN::ECS::KeyPair::KeyPairName
     Default: ''
 Tasks:
 - Name: viewInstanceStatus

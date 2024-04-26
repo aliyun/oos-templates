@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::FC::InvokeFunction
-  name-zh-cn: 执行FC函数
+  name-zh-cn: 执行函数(FC)
   en: Invoke Created Function
   zh-cn: 执行创建的函数
 Parameters:
@@ -11,16 +11,23 @@ Parameters:
       zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
-  functionName:
-    Description:
-      en: Function name To Invoke
-      zh-cn: 需要执行的函数名称
-    Type: String
   serviceName:
     Description:
-      en: Service name To Invoke
+      en: Service name to invoke
       zh-cn: 需要执行的服务名称
     Type: String
+    AssociationProperty: ALIYUN::FC::Service::ServiceName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  functionName:
+    Description:
+      en: Function name to invoke
+      zh-cn: 需要执行的函数名称
+    Type: String
+    AssociationProperty: ALIYUN::FC::Function::FunctionName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      ServiceName: serviceName
   invocationType:
     Description:
       en: Invocation Type

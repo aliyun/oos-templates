@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::ReInitDisk",
-    "name-zh-cn": "把云盘初始化到初始状态",
+    "name-zh-cn": "初始化云盘(ECS)",
     "en": "Reinitialize a disk to restore it to the status when it was created",
     "zh-cn": "重新初始化一块云盘到创建时的初始状态"
   },

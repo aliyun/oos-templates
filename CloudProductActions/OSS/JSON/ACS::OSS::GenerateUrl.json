@@ -1,0 +1,103 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "ACS::OSS::GenerateUrl",
+    "zh-cn": "获取oss文件临时地址",
+    "name-en": "Generate temporary OSS Url",
+    "name-zh-cn": "生成OSS临时地址"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "bucketName": {
+      "Label": {
+        "en": "BucketName",
+        "zh-cn": "OSS bucket 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "objectName": {
+      "Label": {
+        "en": "ObjectName",
+        "zh-cn": "OSS object 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Object::ObjectName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "BucketName": "bucketName",
+        "ValueType": "bucketName"
+      }
+    },
+    "validTime": {
+      "Label": {
+        "en": "Valid time of OSS file (s)",
+        "zh-cn": "OSS文件有效期（秒）"
+      },
+      "Type": "Number",
+      "Default": 6000
+    },
+    "isInternal": {
+      "Label": {
+        "en": "Whether to generate an internal url",
+        "zh-cn": "是否生成内网URL"
+      },
+      "Description": {
+        "en": "False generates an public url, True generates an internal url",
+        "zh-cn": "False生成公网URL，True生成内网URL"
+      },
+      "Type": "Boolean",
+      "Default": false
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "generateUrl",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Generate url",
+        "zh-cn": "生成URL"
+      },
+      "Properties": {
+        "Service": "OSS",
+        "API": "GenerateUrl",
+        "Method": "GET",
+        "URI": "{{ objectName }}",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/json"
+        },
+        "Parameters": {
+          "BucketName": "{{ bucketName }}",
+          "RegionId": "{{ regionId }}",
+          "Expires": "{{ validTime }}",
+          "Internal": "{{ isInternal }}"
+        },
+        "Body": ""
+      },
+      "Outputs": {
+        "temporaryUrl": {
+          "Type": "String",
+          "ValueSelector": ".Url"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "temporaryUrl": {
+      "Type": "String",
+      "Value": "{{ generateUrl.temporaryUrl }}"
+    }
+  }
+}

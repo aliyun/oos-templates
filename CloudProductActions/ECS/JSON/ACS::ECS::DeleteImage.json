@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::DeleteImage",
-    "name-zh-cn": "删除ECS镜像",
+    "name-zh-cn": "删除镜像(ECS)",
     "en": "Deletes image image of ECS instance by specifying image ID",
     "zh-cn": "通过镜像ID删除ECS镜像"
   },
@@ -24,7 +24,10 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
       "AssociationPropertyMetadata": {
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "SupportedImageOwnerAlias": [
+          "self"
+        ]
       }
     },
     "force": {

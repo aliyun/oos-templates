@@ -1,0 +1,94 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Create Redis backups in batches and upload them to OSS. Backing up redis and using fc to upload the backup to OSS may incur charges. For billing details, please refer to <a href='https://help .aliyun.com/zh/redis/user-guide/automatic-or-manual-backup#e606eb29c7mew'>Redis Backup Fee Instructions</a> and <a href='https://help.aliyun.com/zh/ fc/product-overview/billing-overview'>Function calculation billing instructions</a>
+  zh-cn: 批量创建Redis备份并上传到OSS。备份redis和使用fc将备份上传到oss都可能会产生费用，计费详情参考<a href='https://help.aliyun.com/zh/redis/user-guide/automatic-or-manual-backup#e606eb29c7mew'>Redis备份费用说明</a>和<a href='https://help.aliyun.com/zh/fc/product-overview/billing-overview'>函数计算计费说明</a>
+  name-en: ACS-Redis-BulkyCreateBackupAndUploadToOSS
+  name-zh-cn: 批量创建Redis备份并上传到OSS
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: RegionId
+    Default: '{{ACS::RegionId}}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::Redis::Instance
+      RegionId: regionId
+  OSSRegionId:
+    Label:
+      en: OSSRegionId
+      zh-cn: OSS Bucket所在地域ID
+    Type: String
+    AssociationProperty: RegionId
+  OSSBucketName:
+    Label:
+      en: OSSBucketName
+      zh-cn: OSS Bucket名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Bucket::BucketName
+    AssociationPropertyMetadata:
+      RegionId: ${OSSRegionId}
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: GetInstance
+    Description:
+      en: Get the redis instances
+      zh-cn: 获取Redis实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::Redis::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      InstanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: CreateBackupAndUploadToOSS
+    Action: ACS::Redis::CreateBackupAndUploadToOSS
+    Description:
+      en: Create backup and upload to OSS
+      zh-cn: 创建Redis备份并上传到OSS
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      OSSRegionId: '{{ OSSRegionId }}'
+      OSSBucketName: '{{ OSSBucketName }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ GetInstance.InstanceIds }}'
+      Outputs:
+        OSSObjectURLs:
+          AggregateType: Fn::ListJoin
+          AggregateField: OSSObjectURL
+    Outputs:
+      OSSObjectURL:
+        Type: String
+        ValueSelector: '.OSSObjectURL + "{{ACS::ExecutionId}}/"  | split(".t0") | .[0]'
+Outputs:
+  OSSObjectURLs:
+    Type: List
+    Value: '{{ CreateBackupAndUploadToOSS.OSSObjectURLs }}'

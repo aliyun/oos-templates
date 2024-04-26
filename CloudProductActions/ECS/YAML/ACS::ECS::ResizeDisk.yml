@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ECS::ResizeDisk
-  name-zh-cn: 扩容ECS实例上的云盘
+  name-zh-cn: 扩容磁盘(ECS)
   en: Extends the size of cloud disk on ECS instance
   zh-cn: 扩容ECS实例上的云盘
 Parameters:
@@ -36,7 +36,9 @@ Parameters:
     Label:
       en: NewSizeToReset
       zh-cn: 扩容后的云盘容量
-    Type: String
+    Type: Number
+    MinValue: 20
+    MaxValue: 32768
 Tasks:
 - Name: checkInstanceReady
   Action: ACS::CheckFor

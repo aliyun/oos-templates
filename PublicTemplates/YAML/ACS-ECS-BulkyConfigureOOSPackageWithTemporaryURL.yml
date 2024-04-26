@@ -1,11 +1,12 @@
 FormatVersion: OOS-2019-06-01
 Description:
   en: Use this template to install oos package on ecs
-  zh-cn: 批量安装/卸载单个扩展程序
+  zh-cn: 安装/卸载扩展程序
   name-en: ACS-ECS-BulkyConfigureOOSPackageWithTemporaryURL
-  name-zh-cn: 批量安装/卸载单个扩展程序
+  name-zh-cn: 安装/卸载扩展程序
   categories:
     - run_command
+    - application_manage
 Parameters:
   regionId:
     Type: String
@@ -159,14 +160,23 @@ Tasks:
         commandOutputs:
           AggregateType: 'Fn::ListJoin'
           AggregateField: commandOutput
+        configurationOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: configurationOutput
     Outputs:
       commandOutput:
         Type: String
-        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "ConfigureResult": .commandOutput}'
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "Result": .commandOutput}'
+      configurationOutput:
+        Type: String
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "Result": .configurationOutput}'
 Outputs:
   commandOutput:
     Type: List
     Value: '{{ configurePackage.commandOutputs }}'
+  configurationOutput:
+    Type: List
+    Value: '{{ configurePackage.configurationOutputs }}'
 Metadata:
   ALIYUN::OOS::Interface:
     ParameterGroups:

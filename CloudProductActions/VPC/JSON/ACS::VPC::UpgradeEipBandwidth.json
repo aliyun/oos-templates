@@ -1,0 +1,123 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Upgrading the temporary bandwidth of an EIP instance",
+    "zh-cn": "升级EIP实例临时带宽",
+    "name-en": "ACS::VPC::UpgradeEipBandwidth",
+    "name-zh-cn": "升级EIP实例临时带宽"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "The id of region",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "AllocationId": {
+      "Type": "String",
+      "Label": {
+        "en": "TargetEIPInstance",
+        "zh-cn": "目标EIP实例"
+      }
+    },
+    "Bandwidth": {
+      "Label": {
+        "en": "Bandwidth",
+        "zh-cn": "带宽"
+      },
+      "Description": {
+        "en": "Unit：Mbps",
+        "zh-cn": "单位：Mbps"
+      },
+      "Type": "Number",
+      "MinValue": 1,
+      "MaxValue": 200,
+      "Default": 10
+    },
+    "DurationHour": {
+      "Label": {
+        "en": "DurationHour",
+        "zh-cn": "带宽升级持续时间"
+      },
+      "Description": {
+        "zh-cn": "单位：小时。持续时间最少1小时",
+        "en": "Unit:Hour. The bandwidth upgrade should last at least 1 hours"
+      },
+      "Type": "Number",
+      "MinValue": 1,
+      "Default": 1
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "GetEipInstance",
+      "Description": {
+        "en": "Views the EIP instances",
+        "zh-cn": "获取EIP实例"
+      },
+      "Action": "ACS::ExecuteAPI",
+      "Properties": {
+        "Service": "VPC",
+        "API": "DescribeEipAddresses",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "AllocationId": "{{ AllocationId }}"
+        }
+      },
+      "Outputs": {
+        "Bandwidth": {
+          "Type": "String",
+          "ValueSelector": ".EipAddresses.EipAddress[].Bandwidth"
+        }
+      }
+    },
+    {
+      "Name": "UpgradeEipAddressBandwidth",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Upgrade EIP instance bandwidth",
+        "zh-cn": "升级EIP实例的带宽"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "ModifyEipAddressAttribute",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "AllocationId": "{{ AllocationId }}",
+          "Bandwidth": "{{ Bandwidth }}"
+        }
+      }
+    },
+    {
+      "Name": "DurationHour",
+      "Action": "ACS::Sleep",
+      "Description": {
+        "en": "Bandwidth upgrade duration",
+        "zh-cn": "带宽升级持续时间"
+      },
+      "Properties": {
+        "Duration": "{{ DurationHour }}H"
+      }
+    },
+    {
+      "Name": "RecoverEipAddressBandwidth",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Recover EIP instance bandwidth",
+        "zh-cn": "恢复EIP实例的带宽"
+      },
+      "Properties": {
+        "Service": "VPC",
+        "API": "ModifyEipAddressAttribute",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "AllocationId": "{{ AllocationId }}",
+          "Bandwidth": "{{ GetEipInstance.Bandwidth }}"
+        }
+      }
+    }
+  ]
+}

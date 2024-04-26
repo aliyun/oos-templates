@@ -1,0 +1,208 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedules to execute ECS diagnostic reports in bulk
+  zh-cn: 定时运行ECS健康诊断
+  name-en: ACS-ECS-ScheduleToExecuteECSDiagnosticReports
+  name-zh-cn: 定时执行ECS健康诊断
+  categories:
+    - time_trigger
+Parameters:
+  timerTrigger:
+    Type: Json
+    Label:
+      en: TimerTrigger
+      zh-cn: 定时类型
+    AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
+    Default:
+      expression: 0 0 1 ? * *
+      endDate: '2099-12-01T00:00:00Z'
+      type: cron
+      timeZone: Asia/Shanghai
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Description: ECS实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: regionId
+  whetherNotify:
+    Type: Boolean
+    Description: 是否通知
+    Default: false
+    Label:
+      en: whether notify
+      zh-cn: 是否通知异常结果
+  notifyURI:
+    Type: String
+    Description: 通知WebHook
+    AssociationProperty: TextArea
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${whetherNotify}
+            - true
+    Label:
+      en: notify uri
+      zh-cn: 通知地址
+    Default: ''
+  notifyAt:
+    Type: String
+    Description: 通知@人员
+    AssociationProperty: TextArea
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${whetherNotify}
+            - true
+    Label:
+      en: notify@
+      zh-cn: 通知@
+    Default: ''
+  rateControl:
+    Description: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency,
+      MaxErrors: 0,
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: timerTrigger
+    Action: ACS::TimerTrigger
+    Description:
+      en: Triggers a task as scheduled by specifying type and expression
+      zh-cn: 通过指定触发类型和表达式按计划触发任务
+    Properties:
+      Type:
+        Fn::Select:
+          - type
+          - '{{timerTrigger}}'
+      Expression:
+        Fn::Select:
+          - expression
+          - '{{timerTrigger}}'
+      EndDate:
+        Fn::Select:
+          - endDate
+          - '{{ timerTrigger }}'
+      TimeZone: Asia/Shanghai
+    Outputs: {}
+  - Name: getInstances
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: createDiagnosticReports
+    Action: ACS::ECS::CreateDiagnoseReport
+    Description:
+      en: Create diagnostic report for ECS instance
+      zh-cn: 创建ECS实例诊断报告
+    Properties:
+      regionId: '{{ regionId }}'
+      resourceId: '{{ ACS::TaskLoopItem }}'
+      metricSetId: dms-instancedefault
+    Loop:
+      Items: '{{ getInstances.instanceIds }}'
+      Outputs:
+        metricResults:
+          AggregateType: Fn::ListJoin
+          AggregateField: metricResult
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+    Outputs:
+      metricResult:
+        Type: Json
+        ValueSelector: .metricResults | .MetricResult = (.MetricResult[] | select(.Issues.Issue | length > 0))
+  - Name: wheatherNotify
+    Action: ACS::Choice
+    Description:
+      en: wheather notify
+      zh-cn: 通知选择
+    Properties:
+      DefaultTask: notify
+      Choices:
+        - When:
+            Fn::Equals:
+              - false
+              - '{{ whetherNotify }}'
+          NextTask: ACS::END
+  - Name: notify
+    Action: ACS::Notify
+    Description: 通知有异常Issue的诊断报告链接
+    Properties:
+      NotifyType: WebHook
+      WebHook:
+        URI: '{{ notifyURI }}'
+        Headers:
+          Content-Type: application/json
+        Content:
+          msgtype: text
+          text:
+            type: Json
+            content: '{{ createDiagnosticReports.metricResults }}'
+          At: '{{ notifyAt }}'
+    Outputs: {}
+Outputs:
+  metricResults:
+    Type: Json
+    Value: '{{ createDiagnosticReports.metricResults }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - timerTrigger
+        Label:
+          default:
+            zh-cn: 设置周期参数（必填)
+            en: Configure Parameters
+      - Parameters:
+          - regionId
+          - targets
+          - rateControl
+        Label:
+          default:
+            zh-cn: 设置地域、所选实例、并发个数（必填）
+            en: Configure Parameters
+      - Parameters:
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 设置执行的RAM角色（必填）
+            en: Configure Parameters
+      - Parameters:
+          - whetherNotify
+          - notifyURI
+          - notifyAt
+        Label:
+          default:
+            zh-cn: 设置类钉钉的参数（选填)
+            en: Configure Parameters

@@ -1,0 +1,124 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Schedule to upgrade EIP bandwidth
+  zh-cn: 定时升级EIP实例临时带宽
+  name-en: ACS-VPC-ScheduleToUpgradeEipBandwidth
+  name-zh-cn: 定时升级EIP实例临时带宽
+  categories:
+    - time_trigger
+Parameters:
+  TimerTrigger:
+    Type: Json
+    Label:
+      en: TimerTrigger
+      zh-cn: 定时类型
+    AssociationProperty: ALIYUN::OOS::Component::TimerTrigger
+    AssociationPropertyMetadata:
+      MinuteInterval: 30
+  RegionId:
+    Type: String
+    Label:
+      en: The id of region
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  AllocationId:
+    Type: List
+    Label:
+      en: TargetEIPInstance
+      zh-cn: 目标EIP实例
+  Bandwidth:
+    Label:
+      en: Bandwidth
+      zh-cn: 带宽
+    Description:
+      en: The peak bandwidth of EIP needs to be modified. The value is:1~500. It is billed based on fixed bandwidth, in Mbps.
+      zh-cn: 需要修改 EIP 的带宽峰值，取值：1~500，按固定带宽计费，单位为 Mbps。
+    Type: Number
+    MinValue: 1
+    MaxValue: 500
+  DurationHour:
+    Label:
+      en: DurationHour
+      zh-cn: 带宽升级持续时间
+    Description:
+      zh-cn: 单位：小时。持续时间最少1小时
+      en: Unit:Hour. The bandwidth upgrade should last at least 1 hours
+    Type: Number
+    MinValue: 1
+    MaxValue: 24
+    Default: 1
+  RateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: The RAM role to be assumed by OOS
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: GetEipInstance
+  Description:
+    en: Get the EIP instance
+    zh-cn: 获取EIP实例
+  Action: ACS::ExecuteAPI
+  Properties:
+    Service: VPC
+    API: DescribeEipAddresses
+    Parameters:
+      RegionId: '{{ RegionId }}'
+      AllocationId:
+        Fn::Join:
+          - ','
+          - '{{ AllocationId }}'
+  Outputs:
+    AllocationIds:
+      Type: List
+      ValueSelector: .EipAddresses.EipAddress[].AllocationId
+- Name: UpgradeEipAddressBandwidth
+  Action: ACS::VPC::UpgradeEipBandwidth
+  Description:
+    en: Upgrade EIP instance bandwidth
+    zh-cn: 升级EIP实例的带宽
+  Properties:
+    RegionId: '{{ RegionId }}'
+    AllocationId: '{{ ACS::TaskLoopItem }}'
+    Bandwidth: '{{ Bandwidth }}'
+    DurationHour: '{{ DurationHour }}'
+  Loop:
+    RateControl: '{{ RateControl }}'
+    Items: '{{ GetEipInstance.AllocationIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - TimerTrigger
+        Label:
+          default:
+            zh-cn: 定时设置
+            en: Timer Trigger Configure
+      - Parameters:
+          - RegionId
+          - AllocationId
+          - Bandwidth
+          - DurationHour
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select ECS Instances
+      - Parameters:
+          - RateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

@@ -145,14 +145,23 @@ Tasks:
         commandOutputs:
           AggregateType: 'Fn::ListJoin'
           AggregateField: commandOutput
+        configurationOutputs:
+          AggregateType: 'Fn::ListJoin'
+          AggregateField: configurationOutput
     Outputs:
       commandOutput:
         Type: List
         ValueSelector: .commandOutput
+      configurationOutput:
+        Type: List
+        ValueSelector: .configurationOutput
 Outputs:
   commandOutput:
     Type: List
     Value: '{{ configurePackage.commandOutputs }}'
+  configurationOutput:
+    Type: List
+    Value: '{{ configurePackage.configurationOutputs }}'
 Metadata:
   ALIYUN::OOS::Interface:
     ParameterGroups:

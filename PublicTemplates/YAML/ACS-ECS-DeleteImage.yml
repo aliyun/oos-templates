@@ -23,7 +23,7 @@ Parameters:
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
     AssociationPropertyMetadata:
       RegionId: regionId
-      ImageOwnerAlias:
+      SupportedImageOwnerAlias:
         - self
   force:
     Label:
@@ -36,7 +36,7 @@ Parameters:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
 - Name: deleteImage
@@ -58,6 +58,7 @@ Metadata:
       - Parameters:
           - regionId
           - imageId
+          - force
         Label:
           default:
             zh-cn: 选择镜像

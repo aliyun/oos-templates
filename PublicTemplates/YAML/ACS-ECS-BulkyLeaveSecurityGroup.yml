@@ -1,0 +1,92 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-ECS-BulkyLeaveSecurityGroup
+  name-zh-cn: 批量将ECS实例移出指定的安全组
+  en: Bulky leave security group
+  zh-cn: 批量将ECS实例移出指定的安全组
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  securityGroupId:
+    Label:
+      en: SecurityGroupId
+      zh-cn: 安全组ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+      Status: Running
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Views the ECS instances
+      zh-cn: 获取ECS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::ECS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: leaveSecurityGroup
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Leave security group
+      zh-cn: 移出安全组
+    Properties:
+      Service: ECS
+      API: LeaveSecurityGroup
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceId: '{{ ACS::TaskLoopItem }}'
+        SecurityGroupId: '{{ securityGroupId }}'
+    Loop:
+      Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+          - securityGroupId
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

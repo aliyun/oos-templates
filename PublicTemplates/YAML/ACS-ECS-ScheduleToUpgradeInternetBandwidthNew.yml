@@ -120,19 +120,11 @@ Tasks:
       RegionId: '{{ regionId }}'
       InstanceId: '{{ ACS::TaskLoopItem }}'
       InternetMaxBandwidthOut: '{{ maxBandwidthOut }}'
-      StartTime:
-        Fn::FormatUTCTime:
-          - Fn::AddSecond:
-              - '{{ ACS::CurrentUTCTime }}'
-              - 180
-          - '%Y-%m-%dT%H:%MZ'
       EndTime:
         Fn::FormatUTCTime:
-          - Fn::AddSecond:
-              - Fn::AddHour:
-                  - '{{ ACS::CurrentUTCTime }}'
-                  - '{{ durationHour }}'
-              - 180
+          - Fn::AddHour:
+              - '{{ ACS::CurrentUTCTime }}'
+              - '{{ durationHour }}'
           - '%Y-%m-%dT%HZ'
   Loop:
     RateControl: '{{ rateControl }}'

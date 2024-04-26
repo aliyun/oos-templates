@@ -1,0 +1,102 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Upgrade of the temporary bandwidth of a Redis instance",
+    "zh-cn": "升级Redis实例临时带宽",
+    "name-en": "ACS::Redis::UpgradeRedisInstanceBandwidth",
+    "name-zh-cn": "升级Redis实例临时带宽"
+  },
+  "Parameters": {
+    "RegionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "InstanceId": {
+      "Type": "String",
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "Redis实例ID"
+      }
+    },
+    "Bandwidth": {
+      "Type": "Number",
+      "Label": {
+        "en": "Bandwidth",
+        "zh-cn": "要增加的带宽"
+      },
+      "Description": {
+        "en": "Unit:MB/s. The maximum incoming bandwidth is 6 times the default bandwidth of this instance specification, but the upper limit is 192MB/s. For example, the default bandwidth of an instance is 10 MB/s, and the value range of this parameter is 0~60.",
+        "zh-cn": "单位：MB/s。最大可传入该实例规格默认带宽的 6 倍，但上限为 192MB/s。例如实例默认带宽为 10 MB/s，本参数的取值范围为 0~60。"
+      },
+      "MinValue": 1,
+      "MaxValue": 192
+    },
+    "DurationHour": {
+      "Label": {
+        "en": "DurationHour",
+        "zh-cn": "带宽升级持续时间"
+      },
+      "Description": {
+        "zh-cn": "单位：小时。持续时间最少1小时",
+        "en": "Unit:Hour. The bandwidth upgrade should last at least 1 hours"
+      },
+      "Type": "Number",
+      "MinValue": 1,
+      "Default": 1
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "UpgradeRedisInstanceBandwidth",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Upgrade redis instance bandwidth",
+        "zh-cn": "升级Redis实例的带宽"
+      },
+      "Properties": {
+        "Service": "r-kvstore",
+        "API": "EnableAdditionalBandwidth",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "InstanceId": "{{ InstanceId }}",
+          "Bandwidth": "{{ Bandwidth }}",
+          "AutoPay": true
+        }
+      }
+    },
+    {
+      "Name": "DurationHour",
+      "Action": "ACS::Sleep",
+      "Description": {
+        "en": "Bandwidth upgrade duration",
+        "zh-cn": "带宽升级持续时间"
+      },
+      "Properties": {
+        "Duration": "{{ DurationHour }}H"
+      }
+    },
+    {
+      "Name": "RecoverRedisInstanceBandwidth",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Recover redis instance bandwidth",
+        "zh-cn": "恢复redis实例的带宽"
+      },
+      "Properties": {
+        "Service": "r-kvstore",
+        "API": "EnableAdditionalBandwidth",
+        "Parameters": {
+          "RegionId": "{{ RegionId }}",
+          "InstanceId": "{{ InstanceId }}",
+          "Bandwidth": 0,
+          "AutoPay": true
+        }
+      }
+    }
+  ]
+}

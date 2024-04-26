@@ -33,6 +33,8 @@ Parameters:
       - ACS::ECS::Disk
       - ACS::ECS::NetworkInterface
       - ACS::EIP::EipAddress
+      - ACS::ECS::Snapshot
+
   rateControl:
     Label:
       en: RateControl
@@ -48,7 +50,7 @@ Parameters:
       en: OOSAssumeRole
       zh-cn: OOS扮演的RAM角色
     Type: String
-    Default: OOSServiceRole
+    Default: ''
 RamRole: '{{ OOSAssumeRole }}'
 Tasks:
   - Name: moveResources
@@ -60,21 +62,24 @@ Tasks:
       Service: ResourceManager
       API: MoveResources
       Parameters:
-        RegionId: '{{ regionId }}'
         ResourceGroupId: '{{ resourceGroupId }}'
         Resources:
           - ResourceId: '{{ACS::TaskLoopItem }}'
             ResourceType:
-              Fn::Jq:
-                - First
-                - .resourceType | ascii_downcase |split("::") | .[2]
-                - '{"resourceType":"{{resourceType}}"}'
+              Fn::Select:
+                - '{{ resourceType }}'
+                - ACS::ECS::Disk: disk
+                  ACS::ECS::NetworkInterface: eni
+                  ACS::EIP::EipAddress: eip
+                  ACS::ECS::Snapshot: snapshot
             RegionId: '{{ regionId }}'
             Service:
-              Fn::Jq:
-                - First
-                - .resourceType | ascii_downcase |split("::") | .[1]
-                - '{"resourceType":"{{resourceType}}"}'
+              Fn::Select:
+                - '{{ resourceType }}'
+                - ACS::ECS::Disk: ecs
+                  ACS::ECS::NetworkInterface: ecs
+                  ACS::EIP::EipAddress: eip
+                  ACS::ECS::Snapshot: ecs
     Loop:
       RateControl: '{{ rateControl }}'
       Items: '{{ resourceIds }}'

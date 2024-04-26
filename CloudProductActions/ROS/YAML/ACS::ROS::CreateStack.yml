@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::ROS::CreateStack
-  name-zh-cn: 创建ROS资源栈
+  name-zh-cn: 创建资源栈(ROS)
   en: Create ROS stack
   zh-cn: 创建ROS资源栈
 Parameters:
@@ -12,25 +12,30 @@ Parameters:
     Type: String
     AssociationProperty: ALIYUN::ECS::RegionId
     Default: '{{ ACS::RegionId }}'
-  parameters:
-    Label:
-      en: ROSTemplateParameters
-      zh-cn: ROS模板参数
-    Description:
-      en: 'The parameters that ROS template need. e.g.[ { "ParameterValue": "System",
-    "ParameterKey": "PolicyType" }, { "ParameterValue": "zhangsan", "ParameterKey":
-    "UserName" }, { "ParameterValue": "AliyunOSSReadOnlyAccess", "ParameterKey": "PolicyName"
-    } ]'
-      zh-cn:  'ROS模板需要的参数。例如[{"ParameterValue": "System"， "ParameterKey": "PolicyType"}，
-    {"ParameterValue": "zhangsan"， "ParameterKey": "UserName"}， {"ParameterValue":
-    "AliyunOSSReadOnlyAccess"， "ParameterKey": "PolicyName"}]'
-    Type: Json
   templateBody:
     Label:
       en: ROSTemplateBody
       zh-cn: ROS模板内容
     Type: Json
     AssociationProperty: Code
+  parameters:
+    Label:
+      en: ROSTemplateParameters
+      zh-cn: ROS模板参数
+    Type: Json
+    AssociationProperty: List[Parameters]
+    AssociationPropertyMetadata:
+      Parameters:
+        ParameterKey:
+          Type: String
+          Label:
+            en: Template parameter key
+            zh-cn: 模板中已定义的参数的名称
+        ParameterValue:
+          Type: String
+          Label:
+            en: Template parameter value
+            zh-cn: 模板中已定义的参数的取值
   stackName:
     Label:
       en: ROSStackName

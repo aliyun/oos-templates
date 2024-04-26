@@ -2,9 +2,9 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::RunCommand",
-    "name-zh-cn": "到ECS实例中执行脚本",
+    "name-zh-cn": "执行命令(ECS)",
     "en": "Creates a cloud assistant command and triggers it on an ECS instance",
-    "zh-cn": "创建一个云助手命令并在ECS实例中执行"
+    "zh-cn": "创建一个云助手命令并在ECS实例中执行."
   },
   "Parameters": {
     "regionId": {
@@ -15,17 +15,6 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::RegionId",
       "Default": "{{ ACS::RegionId }}"
-    },
-    "commandContent": {
-      "Label": {
-        "en": "CommandContent",
-        "zh-cn": "命令内容"
-      },
-      "Type": "String",
-      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
-      "AssociationPropertyMetadata": {
-        "CommandType": "${commandType}"
-      }
     },
     "instanceId": {
       "Label": {
@@ -54,6 +43,17 @@
         "RunPythonScript",
         "RunPerlScript"
       ]
+    },
+    "commandContent": {
+      "Label": {
+        "en": "CommandContent",
+        "zh-cn": "命令内容"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
+      "AssociationPropertyMetadata": {
+        "CommandType": "${commandType}"
+      }
     },
     "workingDir": {
       "Description": {
@@ -267,7 +267,8 @@
           "Finished"
         ],
         "StopRetryValues": [
-          "Failed"
+          "Failed",
+          "Stopped"
         ],
         "PropertySelector": "Invocations.Invocation[].InvokeStatus"
       }

@@ -2,7 +2,7 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "name-en": "ACS::ECS::AllocateEipAddressAndAttachToInstance",
-    "name-zh-cn": "创建并绑定EIP到ECS实例",
+    "name-zh-cn": "创建并绑定EIP(ECS)",
     "en": "Create the eip and bind it to ECS instance",
     "zh-cn": "创建EIP并绑定到ECS实例"
   },
