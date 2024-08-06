@@ -49,6 +49,7 @@ Tasks:
     Description:
       en: Waits for the ECS instance to enter running status
       zh-cn: 等待实例运行
+    MaxRetryInterval: 180
     Properties:
       Service: ECS
       API: DescribeInstances
@@ -59,47 +60,52 @@ Tasks:
       DesiredValues:
         - Running
       PropertySelector: 'Instances.Instance[].Status'
-  - Name: waitForCloudAssistantRunning
+    Outputs:
+      startTime:
+        Type: String
+        ValueSelector: 'Instances.Instance[].StartTime'
+      osType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+      instanceTypeFamily:
+        Type: String
+        ValueSelector: 'Instances.Instance[].InstanceTypeFamily'
+  - Name: sleepForWindows
+    Description:
+      en: Windows specific instance type wait for restart
+      zh-cn: Windows实例类型等待重启
+    When:
+      Fn::Equals:
+        - '{{ waitForEcsRunning.osType }}'
+        - windows
+    Action: ACS::Sleep
+    Properties:
+      Duration: 4m
+  - Name: waitForCloudAssistantHeartbeatNormal
     Action: 'ACS::WaitFor'
     Description:
-      en: Waits for the Cloud Assistant to enter running status
-      zh-cn: 等待云助手运行
-    Retries: 7
-    Delay: 30
+      en: Waits for the cloud assistant's heartbeat to be normal
+      zh-cn: 等待云助手心跳正常
     DelayType: Constant
+    Delay: 60
+    Retries: 30
     Properties:
       Service: ECS
       API: DescribeCloudAssistantStatus
       Parameters:
         RegionId: '{{ regionId }}'
-        InstanceIds:
+        InstanceId:
           - '{{ instanceId }}'
       DesiredValues:
-        - 'true'
-      PropertySelector: 'InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus'
-  - Name: queryInstanceOSType
-    Action: 'ACS::ExecuteApi'
-    Description:
-      en: Queries ECS instance OS type
-      zh-cn: 获取操作系统类型
-    Properties:
-      Service: ECS
-      API: DescribeInstances
-      Parameters:
-        RegionId: '{{ regionId }}'
-        InstanceIds:
-          - '{{ instanceId }}'
-    Outputs:
-      OSType:
-        Type: String
-        ValueSelector: 'Instances.Instance[].OSType'
+        - true
+      PropertySelector: '.InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].LastHeartbeatTime > "{{waitForEcsRunning.startTime}}"'
   - Name: checkUserDataReady
     Description:
       en: Check if user-data is ready
       zh-cn: 查看用户数据是否准备
     When:
       'Fn::Equals':
-        - '{{ queryInstanceOSType.OSType }}'
+        - '{{ waitForEcsRunning.osType }}'
         - linux
     Action: 'ACS::ECS::RunCommand'
     Properties:
@@ -120,6 +126,7 @@ Tasks:
         else
           echo "cloud-init not installed."
         fi
+      timeout: 1800
     Outputs:
       commandOutput:
         Type: Json
@@ -130,7 +137,7 @@ Tasks:
       zh-cn: 查询ecs的平台和架构
     When:
       'Fn::Equals':
-        - '{{ queryInstanceOSType.OSType }}'
+        - '{{ waitForEcsRunning.osType }}'
         - linux
     Action: 'ACS::ECS::RunCommand'
     Properties:
@@ -164,7 +171,7 @@ Tasks:
       zh-cn: 查询ecs的平台和架构
     When:
       'Fn::Equals':
-        - '{{ queryInstanceOSType.OSType }}'
+        - '{{ waitForEcsRunning.osType }}'
         - windows
     Action: 'ACS::ECS::RunCommand'
     Properties:
@@ -232,7 +239,7 @@ Tasks:
           - Fn::ContainsSubString:
             - Fn::If:
                 - 'Fn::Equals':
-                    - '{{ queryInstanceOSType.OSType }}'
+                    - '{{ waitForEcsRunning.osType }}'
                     - linux
                 - 'Fn::If':
                     - 'Fn::Equals':
@@ -265,11 +272,11 @@ Tasks:
             - '{{'
           - '{{ parameters }}'
           - {}
-      timeout: 3600
+      timeout: 7200
       bucketName:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - Fn::Select:
               - 'BucketName'
@@ -284,7 +291,7 @@ Tasks:
       objectName:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - Fn::Select:
               - 'ObjectName'
@@ -301,14 +308,21 @@ Tasks:
       destinationDir:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
-          - /root
-          - C:\\Windows\\System32
+          - /root/workspace/{{ACS::ExecutionId}}
+          - C:\\Windows\\System32\\Workspace\\{{ACS::ExecutionId}}
+      workingDir:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ waitForEcsRunning.osType }}'
+              - linux
+          - /root/workspace/{{ACS::ExecutionId}}
+          - C:\\Windows\\System32\\Workspace\\{{ACS::ExecutionId}}
       commandContent:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - 'Fn::If':
               - 'Fn::Equals':
@@ -383,7 +397,7 @@ Tasks:
             'Fn::Equals':
               - Fn::If:
                   - 'Fn::Equals':
-                      - '{{ queryInstanceOSType.OSType }}'
+                      - '{{ waitForEcsRunning.osType }}'
                       - linux
                   - Fn::Select:
                       - 'OutputScript'
@@ -402,17 +416,24 @@ Tasks:
     Properties:
       instanceId: '{{ instanceId }}'
       regionId: '{{ regionId }}'
+      workingDir:
+        Fn::If:
+          - 'Fn::Equals':
+              - '{{ waitForEcsRunning.osType }}'
+              - linux
+          - /root/workspace/{{ACS::ExecutionId}}
+          - C:\\Windows\\System32\\Workspace\\{{ACS::ExecutionId}}
       commandType:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - RunShellScript
           - RunPowerShellScript
       commandContent:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - Fn::Select:
               - 'OutputScript'
@@ -439,44 +460,24 @@ Tasks:
       commandType:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
           - RunShellScript
           - RunPowerShellScript
       commandContent:
         Fn::If:
           - 'Fn::Equals':
-              - '{{ queryInstanceOSType.OSType }}'
+              - '{{ waitForEcsRunning.osType }}'
               - linux
-          - Fn::Replace:
-              - '$filename':
-                  Fn::Last:
-                    Fn::Split:
-                      - /
-                      - Fn::Select:
-                          - 'ObjectName'
-                          - Fn::FindMatchedPackage:
-                              - '{{ queryTemplate.TemplateContent }}'
-                              - '{{ FetchEcsInfoLinux.commandOutput }}'
-              - |-
-                if [ -f /root/$filename ]; then
-                rm /root/$filename
-                fi
-          - Fn::Replace:
-              - '$filename':
-                  Fn::Last:
-                    Fn::Split:
-                      - /
-                      - Fn::Select:
-                          - 'ObjectName'
-                          - Fn::FindMatchedPackage:
-                              - '{{ queryTemplate.TemplateContent }}'
-                              - '{{ FetchEcsInfoWindows.commandOutput }}'
-              - |-
-                $file = "C:\Windows\System32\$filename"
-                if (Test-Path $file -PathType Leaf) {
-                Remove-Item $file
-                }
+          - |-
+            if [ -d /root/workspace/{{ACS::ExecutionId}} ]; then
+            rm -rf /root/workspace/{{ACS::ExecutionId}}
+            fi
+          - |-
+            $dir = "C:\\Windows\\System32\\Workspace\\{{ACS::ExecutionId}}"
+            if (Test-Path $dir -PathType Container) {
+            Remove-Item -Recurse -Force $dir
+            }
     Outputs:
       commandOutput:
         Type: String

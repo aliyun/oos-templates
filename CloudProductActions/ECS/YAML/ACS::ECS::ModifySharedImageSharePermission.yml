@@ -1,0 +1,109 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::ModifySharedImageSharePermission
+  name-zh-cn: 修改共享镜像共享权限
+  en: Modify shared image share permission
+  zh-cn: 修改共享镜像共享权限
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+Tasks:
+  - Name: DescribeSnapshotsRelatedToImage
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe snapshots related to image
+      zh-cn: 查询被自定义镜像关联快照
+    Properties:
+      Service: ECS
+      API: DescribeSnapshots
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      imageSnapshotIds:
+        Type: List
+        ValueSelector: .Snapshots.Snapshot | map(select(.Usage == "image" or .Usage == "image_disk" ) | .SnapshotId) | .[]
+  - Name: DescribeSharedImagesRelatedToSnapshot
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe shared images related to snapshot
+      zh-cn: 查询被快照关联的被共享的自定义镜像
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ regionId }}'
+        SnapshotId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      imageIds:
+        Type: List
+        ValueSelector: .Images.Image | map(select(.IsSelfShared == "True") | .ImageId) | .[]
+    Loop:
+      Items: '{{ DescribeSnapshotsRelatedToImage.imageSnapshotIds }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+      Outputs:
+        imageIdList:
+          AggregateType: Fn::ListJoin
+          AggregateField: imageIds
+  - Name: DescribeSharedImageSharePermission
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe shared images share permission
+      zh-cn: 查询自定义镜像共享权限
+    Properties:
+      Service: ECS
+      API: DescribeImageSharePermission
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      imageSharePermission:
+        Type: Json
+        ValueSelector: .ImageId as $imageId | .Accounts.Account | map({imageId:$imageId, uid:.AliyunId})
+    Loop:
+      Items:
+        Fn::Jq:
+          - All
+          - map(select(. != null)) | .[][]
+          - '{{ DescribeSharedImagesRelatedToSnapshot.imageIdList }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+      Outputs:
+        imageSharePermissionList:
+          AggregateType: Fn::ListJoin
+          AggregateField: imageSharePermission
+  - Name: ModifySharedImageSharePermission
+    Action: ACS::ExecuteApi
+    Description:
+      en: Modify shared images share permission
+      zh-cn: 修改自定义镜像共享权限
+    Properties:
+      Service: ECS
+      API: ModifyImageSharePermission
+      Parameters:
+        RegionId: '{{ regionId }}'
+        ImageId:
+          Fn::Select:
+            - imageId
+            - '{{ ACS::TaskLoopItem }}'
+        RemoveAccount:
+          - Fn::Select:
+              - uid
+              - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items:
+        Fn::Jq:
+          - All
+          - map(select(. != null)) | .[][]
+          - '{{ DescribeSharedImageSharePermission.imageSharePermissionList }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1

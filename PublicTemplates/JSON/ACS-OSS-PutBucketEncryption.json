@@ -51,7 +51,11 @@
         "en": "BucketName",
         "zh-cn": "OSS bucket 名称"
       },
-      "Type": "String"
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
     },
     "OOSAssumeRole": {
       "Label": {

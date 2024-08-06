@@ -23,44 +23,40 @@ Parameters:
       en: Python script function name(example:index.handler, index is the file name, handler is the name of the script function.)
       zh-cn: python脚本函数名称(例:index.handler, index是文件名，handler是脚本函数名)
     Default: index.handler
-  inputPayload:
-    Type: Json
-    Label:
-      en: InputPayload
-      zh-cn: 输入参数
-    Description:
-      en: The parameter value of the script
-      zh-cn: 脚本的参数值
-    Default: ''
   script:
     Type: String
     Label:
       en: Python Script
-      zh-cn: python脚本代码
+      zh-cn: Python脚本代码
     AssociationProperty: ALIYUN::OOS::Command::CommandContent
     AssociationPropertyMetadata:
       CommandType: RunPythonScript
     Default: |-
-      import datetime
-      import os
-      import sys
-      
-      def _now(format="%Y-%m-%d %H:%M:%S"):
-        return datetime.datetime.now().strftime(format)
-      
-      def job_start():
-        return ("[%s][%s] job_start" % (_now(), os.getpid()))
-      
+      import json
+
       def handler(event, context):
-        return job_start()
+        # 解析传入的调用参数
+        data = json.loads(event)
+        handler_name = data.get('handler_name')
+        print(f'My name is {handler_name}')
+        return handler_name
+  inputPayload:
+    Type: String
+    Label:
+      en: The parameters of function invocation
+      zh-cn: 函数调用参数
+    Description:
+      en: 'JSON Format: {"key": "value"} Please refer to <a href="https://www.alibabacloud.com/help/en/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q" target="_blank">document</a>'
+      zh-cn: 'JSON格式：{"key": "value"} 详情请<a href="https://help.aliyun.com/zh/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q" target="_blank">参考</a>'
+    Default: '{"handler_name": "fc_demo"}'
   role:
     Type: String
     Label:
-      en: RamRoleArn
-      zh-cn: 授予函数计算所需权限的RAM角色ARN
-    Description:
-      en: Format："acs:ram::{{ACS::AccountId}}:role/{RoleName}, for example:"acs:ram::{{ACS::AccountId}}:role/fc-test-role"
-      zh-cn: 格式："acs:ram::{{ACS::AccountId}}:role/{RoleName}, 如:"acs:ram::{{ACS::AccountId}}:role/fc-test-role"
+      en: FCRamRole
+      zh-cn: 授予函数计算所需权限的RAM角色
+    AssociationProperty: ALIYUN::RAM::Service::Role
+    AssociationPropertyMetadata:
+      Service: fc.aliyuncs.com
     Default: ''
 Tasks:
   - Name: createStack
@@ -83,6 +79,8 @@ Tasks:
             ParameterValue: '{{ inputPayload }}'
           - ParameterKey: Script
             ParameterValue: '{{ script }}'
+          - ParameterKey: Role
+            ParameterValue: '{{ role }}'
         TemplateBody: |-
           ROSTemplateFormatVersion: 2015-09-01
           Parameters:
@@ -90,13 +88,29 @@ Tasks:
               Type: String
             Script:
               Type: String
+            Role:
+              Type: String
+              Default: ''
+          Conditions:
+            Role:
+              Fn::Equals:
+                - Ref: Role
+                - ''
           Resources:
             Service:
               Type: ALIYUN::FC::Service
               Properties:
                 ServiceName:
                   Ref: ALIYUN::StackName
-                Role: "{{ role }}"
+                Role: 
+                  Fn::If:
+                    - Role
+                    - ''
+                    - Fn::Sub:
+                        - acs:ram::${AccountId}:role/${Role}
+                        - AccountId: '{{ ACS::AccountId }}'
+                          Role:
+                            Ref: Role
             Function:
               Type: ALIYUN::FC::Function
               DependsOn: Service

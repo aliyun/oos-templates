@@ -275,6 +275,40 @@
       }
     },
     {
+      "Name": "runCommandOpenselinux",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run cloud assistant command on ECS instance",
+        "zh-cn": "在实例中运行命令"
+      },
+      "OnError": "stopInstances",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandContent": "sed -i s/^SELINUX=.*/SELINUX=permissive/g /etc/selinux/config",
+        "commandType": "RunShellScript",
+        "instanceId": "{{ runInstances.instanceId }}"
+      },
+      "Outputs": {
+        "invocationOutput": {
+          "Type": "String",
+          "ValueSelector": "invocationOutput"
+        }
+      }
+    },
+    {
+      "Name": "rebootInstance",
+      "Action": "ACS::ECS::RebootInstance",
+      "Description": {
+        "en": "Reboot Instance",
+        "zh-cn": "重启实例"
+      },
+      "OnError": "stopInstances",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ runInstances.instanceId }}"
+      }
+    },
+    {
       "Name": "runCommand",
       "Action": "ACS::ECS::InvokeCommand",
       "Description": {
@@ -376,7 +410,29 @@
             ]
           },
           "DetectionStrategy": "Standard",
-          "Platform": "{{ checkImage.platform }}",
+          "Platform": {
+            "Fn::Select": [
+              "{{ checkImage.platform }}",
+              {
+                "Aliyun": "Aliyun",
+                "Anolis": "Anolis",
+                "CentOS": "CentOS",
+                "Ubuntu": "Ubuntu",
+                "SUSE": "SUSE",
+                "Debian": "Debian",
+                "OpenSUSE": "OpenSUSE",
+                "Red Hat": "RedHat",
+                "Kylin": "Kylin",
+                "UOS": "UOS",
+                "Fedora": "Fedora",
+                "CentOS Stream": "CentOS Stream",
+                "AlmaLinux": "AlmaLinux",
+                "Rocky Linux": "Rocky Linux",
+                "Customized Linux": "Customized Linux",
+                "Others Linux": "Others Linux"
+              }
+            ]
+          },
           "BootMode": "{{ checkImage.bootMode }}",
           "Architecture": "{{ checkImage.architecture }}"
         }
@@ -461,8 +517,8 @@
           "Parameters": [
             "zoneId",
             "instanceType",
-            "vSwitchId",
             "securityGroupId",
+            "vSwitchId",
             "systemDiskCategory"
           ],
           "Label": {

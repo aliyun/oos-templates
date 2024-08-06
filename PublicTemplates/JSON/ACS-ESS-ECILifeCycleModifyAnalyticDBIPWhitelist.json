@@ -110,7 +110,7 @@
         }
       },
       "Outputs": {
-        "ipAddress": {
+        "Ips": {
           "Type": "List",
           "ValueSelector": ".ContainerGroups[].IntranetIp"
         }

@@ -3,6 +3,7 @@ Description:
   en: Cross Region copy and run ECS instance by InstanceIds
   zh-cn: 跨地域克隆ECS实例
   title: ACS-ECS-CloneInstancesAcrossRegion
+  name-en: ACS-ECS-CloneInstancesAcrossRegion
   name-zh-cn: 跨地域克隆ECS实例
   categories:
     - cross_region

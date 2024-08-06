@@ -6,41 +6,44 @@ Description:
   zh-cn: 执行创建的函数
 Parameters:
   regionId:
-    Description:
-      en: The ID of region
+    Label:
+      en: RegionId
       zh-cn: 地域ID
     Type: String
     Default: '{{ ACS::RegionId }}'
   serviceName:
-    Description:
-      en: Service name to invoke
-      zh-cn: 需要执行的服务名称
+    Label:
+      en: ServiceName
+      zh-cn: 服务名称
     Type: String
     AssociationProperty: ALIYUN::FC::Service::ServiceName
     AssociationPropertyMetadata:
       RegionId: regionId
   functionName:
-    Description:
-      en: Function name to invoke
-      zh-cn: 需要执行的函数名称
+    Label:
+      en: FunctionName
+      zh-cn: 函数名称
     Type: String
     AssociationProperty: ALIYUN::FC::Function::FunctionName
     AssociationPropertyMetadata:
       RegionId: regionId
       ServiceName: serviceName
   invocationType:
-    Description:
-      en: Invocation Type
-      zh-cn: 需要执行的执行类型
+    Label:
+      en: InvocationType
+      zh-cn: 执行类型
     Type: String
     AllowedValues:
       - Sync
       - Async
     Default: Sync
   event:
+    Label:
+      en: The parameters of function invocation
+      zh-cn: 函数调用参数
     Description:
-      en: The parameters of the function are inside the event
-      zh-cn: 函数脚本的参数值
+      en: 'JSON Format: {"key": "value"} Please refer to <a href="https://www.alibabacloud.com/help/en/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q" target="_blank">document</a>'
+      zh-cn: 'JSON格式：{"key": "value"} 详情请<a href="https://help.aliyun.com/zh/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q" target="_blank">参考</a>'
     Type: String
     Default: ''
 Tasks:

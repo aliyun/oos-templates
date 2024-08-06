@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   en: 'When using ECS instances, some situations can lead to system disk corruption, such as instances being forced to stop or restart, or sudden downtime, failure to update /etc/fstab when the disk is unloaded, or even loss or corruption of /etc/fstab or initrd files. When the instance cannot be accessed, the state of the instance displayed in the ECS instance console may still be Running, but the application in the instance cannot be accessed, the network in the instance cannot be reached, and the connection cannot be established through workbench or SSH. If you can connect to an instance from the console with VNC, you will probably see a page that indicates a system startup failure. At this point, you can consider executing the template to cure the damaged instance. The cure process is that the system disk of the damaged instance will be mounted to the newly created temporary instance, then a cure script will be executed in the temporary instance, and finally the cured system disk will be mounted back to the original instance.'
-  zh-cn: 使用ECS实例时，有些情况可能导致系统盘损伤，比如实例被强制地停止或重启，抑或突然发生了宕机，以及数据盘被卸载后未更新/etc/fstab，甚至于/etc/fstab或initrd文件丢失或损坏。当无法访问实例时，该实例在ECS实例控制台显示的状态可能还是运行中，但实例内的应用不可访问，实例内的网络不可达，更无法通过workbench或者ssh建立连接。如果您在控制台通过vnc能连接上实例，看到的页面大概是系统启动失败的提示信息。此时您可考虑执行该模版对损伤实例进行救治，救治流程主要是损伤的实例的系统盘将被挂载到新创建的临时实例上，接着在临时实例中会执行一段救治脚本，最后救治过的系统盘将被挂载回原实例
+  zh-cn: 使用ECS实例时，有些情况可能导致系统盘损伤，比如实例被强制地停止或重启，抑或突然发生了宕机，以及数据盘被卸载后未更新/etc/fstab，甚至于/etc/fstab或initrd文件丢失或损坏。当无法访问实例时，该实例在ECS实例控制台显示的状态可能还是运行中，但实例内的应用不可访问，实例内的网络不可达，更无法通过workbench或者ssh建立连接。如果您在控制台通过vnc能连接上实例，看到的页面大概是系统启动失败的提示信息。此时您可考虑执行该模板对损伤实例进行救治，救治流程主要是损伤的实例的系统盘将被挂载到新创建的临时实例上，接着在临时实例中会执行一段救治脚本，最后救治过的系统盘将被挂载回原实例
   name-en: ACS-ECS-RescueUnreachableInstance-Linux
   name-zh-cn: 自助救治损伤的ECS实例Linux系统盘
   categories:
@@ -199,7 +199,7 @@ Tasks:
 - Name: untilStopUnreachableInstanceSuccess
   Action: 'ACS::WaitFor'
   Description:
-    en: Waits for the ECS instance to enter stoped status
+    en: Waits for the ECS instance to enter stopped status
     zh-cn: 等待实例停止
   Properties:
     Service: ECS
@@ -410,7 +410,7 @@ Tasks:
   Action: 'ACS::WaitFor'
   OnError: deleteStack
   Description:
-    en: Waits for the helper instance to enter stoped status
+    en: Waits for the helper instance to enter stopped status
     zh-cn: 等待临时实例停止
   Properties:
     Service: ECS

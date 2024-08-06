@@ -54,12 +54,7 @@ Tasks:
         #!/bin/bash
         cleanUpInfos="{{cleanUpInfos}}"
 
-        function deletefiles() {
-          if [ ! -d $2 ]; then
-            echo "The specified directory("$2") is not exist."
-            return
-          fi
-
+        function delete_files() {        
           expiredTimeUnit=${1: -1}
           expiredTimeValue=${1:0:-1}
 
@@ -86,12 +81,14 @@ Tasks:
           done
         }
 
-        cleanUpArray=(${cleanUpInfos//,/ })
-        for cleanUpInfo in ${cleanUpArray[@]}; do
-          delayTime=$(echo $cleanUpInfo | awk -F'|' '{print$1}')
-          filePath=$(echo $cleanUpInfo | awk -F'|' '{print$2}')
-          matchPattern=$(echo $cleanUpInfo | awk -F'|' '{print $3}')
-          deletefiles $delayTime $filePath "/$matchPattern"
+        cleanup_array=(${cleanUpInfos//,/ })
+        for cleanup_info in "${cleanup_array[@]}"; do
+          IFS='|' read -ra fields <<< "$cleanup_info"
+          delayTime="${fields[0]}"
+          filePath="${fields[1]}"
+          matchPattern="${fields[2]}"
+
+          delete_files $delayTime "$filePath" "/$matchPattern"
         done
       instanceId: '{{ instanceId }}'
       commandType: RunShellScript

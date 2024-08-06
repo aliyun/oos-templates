@@ -1,9 +1,9 @@
 FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS-ECS-CreateImageAndUpdateLaunchTemplates
-  name-zh-cn: 创建ECS镜像并更新启动模版
+  name-zh-cn: 创建ECS镜像并更新启动模板
   en: Creates an ECS image and update launch template
-  zh-cn: 创建ECS镜像并更新启动模版
+  zh-cn: 创建ECS镜像并更新启动模板
   categories:
     - image_manage
 Parameters:
@@ -37,7 +37,7 @@ Parameters:
       zh-cn: <font color='red'><b>必须要在所选的地域</b></font>
     Label:
       en: LaunchTemplateNames
-      zh-cn: 待更新的实例启动模版名称列表
+      zh-cn: 待更新的实例启动模板名称列表
     Type: List
     Default: []
   tags:
@@ -52,7 +52,7 @@ Parameters:
   deleteSourceTemplateVersion:
     Label:
       en: DeleteSourceTemplateVersion
-      zh-cn: 删除启动模版的原版本
+      zh-cn: 删除启动模板的原版本
     Type: Boolean
     Default: true
   rateControl:
@@ -112,7 +112,7 @@ Tasks:
   Action: 'ACS::ECS::UpdateLaunchTemplate'
   Description:
     en: Update instance launch template
-    zh-cn: 更新实例启动模版
+    zh-cn: 更新实例启动模板
   Properties:
     regionId: '{{ regionId }}'
     imageId: '{{ createImage.imageId }}'

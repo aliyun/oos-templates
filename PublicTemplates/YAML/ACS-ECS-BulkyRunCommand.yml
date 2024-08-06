@@ -8,6 +8,7 @@ Description:
     - run_command
     - application_manage
     - computenest
+    - tag_operate_resource
 Parameters:
   regionId:
     Type: String

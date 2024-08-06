@@ -735,7 +735,7 @@
           ],
           "Label": {
             "default": {
-              "zh-cn": "更新镜像配置配置",
+              "zh-cn": "更新镜像配置",
               "en": "Update Image Configuration"
             }
           }

@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "en": "ACS::OSS::GenerateUrl",
-    "zh-cn": "获取oss文件临时地址",
-    "name-en": "Generate temporary OSS Url",
-    "name-zh-cn": "生成OSS临时地址"
+    "name-en": "ACS::OSS::GenerateUrl",
+    "name-zh-cn": "获取oss文件临时地址",
+    "en": "Generate temporary OSS Url",
+    "zh-cn": "生成OSS临时地址"
   },
   "Parameters": {
     "regionId": {
@@ -54,8 +54,8 @@
         "zh-cn": "是否生成内网URL"
       },
       "Description": {
-        "en": "False generates an public url, True generates an internal url",
-        "zh-cn": "False生成公网URL，True生成内网URL"
+        "en": "False generates an public url, True generates an internal url. If the ECS and OSS are in the same region, you can choose True to download via the internal URL, which saves traffic fees.",
+        "zh-cn": "False生成公网URL，True生成内网URL。如果您要下载到的ECS和OSS同地域，可选择True，通过内网URL下载，节省流量。"
       },
       "Type": "Boolean",
       "Default": false

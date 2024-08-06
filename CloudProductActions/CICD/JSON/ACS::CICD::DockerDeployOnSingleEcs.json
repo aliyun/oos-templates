@@ -1,0 +1,355 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::CICD::DockerDeployOnSingleEcs",
+    "name-zh-cn": "部署Docker镜像在单台ECS",
+    "en": "Deploy Docker Image (only support linux machine)",
+    "zh-cn": "部署Docker镜像 （仅支持在linux机器部署)"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "region",
+        "zh-cn": "地域"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}",
+      "AssociationProperty": "RegionId"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "acrType": {
+      "Label": {
+        "en": "ACR Type",
+        "zh-cn": "容器镜像类型"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Enterprise",
+        "Personal"
+      ],
+      "AssociationPropertyMetadata": {
+        "ValueLabelMapping": {
+          "Enterprise": "企业版",
+          "Personal": "个人版"
+        }
+      }
+    },
+    "username": {
+      "Label": {
+        "en": "Username",
+        "zh-cn": "用户名"
+      },
+      "Description": {
+        "en": "Username, represents the username of the container image",
+        "zh-cn": "容器镜像仓库用户名"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Personal"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Personal"
+            ]
+          }
+        }
+      }
+    },
+    "password": {
+      "Label": {
+        "en": "Password",
+        "zh-cn": "密码"
+      },
+      "Description": {
+        "en": "Password, represents the password of the container image",
+        "zh-cn": "容器镜像仓库密码"
+      },
+      "Default": "",
+      "Type": "String",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Personal"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Personal"
+            ]
+          }
+        }
+      }
+    },
+    "acrId": {
+      "Label": {
+        "en": "ACR Instance ID",
+        "zh-cn": "容器镜像服务实例ID"
+      },
+      "Description": {
+        "en": "ACR ID, represents the ID of the cloud container registry",
+        "zh-cn": "容器镜像服务实例ID"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationProperty": "ALIYUN::CR::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Enterprise"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Enterprise"
+            ]
+          }
+        }
+      }
+    },
+    "namespace": {
+      "Label": {
+        "en": "NameSpace",
+        "zh-cn": "命名空间"
+      },
+      "Description": {
+        "en": "namespace, represents the namespace of the container image",
+        "zh-cn": "容器镜像仓库命名空间"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationProperty": "ALIYUN::CR::NameSpace::Name",
+      "AssociationPropertyMetadata": {
+        "InstanceId": "${acrId}",
+        "Attribute": "NamespaceName",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Enterprise"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${acrType}",
+              "Enterprise"
+            ]
+          }
+        }
+      }
+    },
+    "repoName": {
+      "Label": {
+        "en": "Repo Name",
+        "zh-cn": "仓库名称"
+      },
+      "Description": {
+        "en": "Repo Name, represents the repository name of the container image",
+        "zh-cn": "容器镜像仓库名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::CR::Repository::RepoName",
+      "AssociationPropertyMetadata": {
+        "AcrType": "${acrType}",
+        "RegionId": "${regionId}",
+        "InstanceId": "${acrId}",
+        "RepoNamespaceName": "${namespace}",
+        "RepoStatus": "ALL"
+      }
+    },
+    "imageVersion": {
+      "Label": {
+        "en": "Image Version",
+        "zh-cn": "镜像版本"
+      },
+      "Description": {
+        "en": "Image Version, represents the version of the container image to pull",
+        "zh-cn": "要拉取的镜像版本"
+      },
+      "Type": "String"
+    },
+    "dockerRunOptions": {
+      "Label": {
+        "en": "DockerRunOptions",
+        "zh-cn": "Docker运行选项"
+      },
+      "Description": {
+        "en": "DockerRunOptions, represents the options of the command \"docker run\", such as \"-p 80:80\". These will be added to the docker run command. Note that --name is not open for specification, OOS will automatically generate the default container name.",
+        "zh-cn": "docker run命令的选项, 例如\"-p 80:80\"，这些选项会被添加到docker run命令中。注意，--name不开放指定，由OOS自动生成默认容器名。"
+      },
+      "Type": "String",
+      "AllowedPattern": "^(?!.*--name).*$",
+      "Default": ""
+    },
+    "isInternal": {
+      "Label": {
+        "en": "whether to use internal link to pull image",
+        "zh-cn": "是否通过内网链接拉取镜像"
+      },
+      "Description": {
+        "en": "False generates an public url, True generates an internal url. If you want to use internal link to pull image, please ensure that your image repository and ECS instance are in the same VPC (personal acr, accessible to all VPC machines, no separate configuration required), please refer to <a href=\"https://help.aliyun.com/zh/acr/user-guide/configure-access-over-vpcs/?spm=a2c4g.11186623.0.0.3af016be83KUhr\" target=\"_blank\">acr configuration access VPC</a>.",
+        "zh-cn": "False生成公网URL，True生成内网URL。如果您想要使用内网链接拉取镜像，请确保您的镜像仓库和ECS实例在同一个VPC内(个人版acr，VPC机器均可访问，无需单独配置)，具体请参考<a href=\"https://help.aliyun.com/zh/acr/user-guide/configure-access-over-vpcs/?spm=a2c4g.11186623.0.0.3af016be83KUhr\" target=\"_blank\">acr配置访问VPC</a>。"
+      },
+      "Type": "Boolean",
+      "Default": true
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkInstance",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks if the ECS OSType is linux",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "linux"
+        ],
+        "PropertySelector": "Instances.Instance[].OSType"
+      }
+    },
+    {
+      "Name": "installDocker",
+      "Description": {
+        "en": "Install environment",
+        "zh-cn": "安装环境"
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "action": "install",
+        "packageName": "ACS-Extension-DockerCE-1853370294850618"
+      }
+    },
+    {
+      "Name": "generateAuthorizationToken",
+      "Action": "ACS::CR::GetAuthorizationToken",
+      "When": {
+        "Fn::Equals": [
+          "{{ acrType }}",
+          "Enterprise"
+        ]
+      },
+      "Description": {
+        "en": "Generate authorization token",
+        "zh-cn": "生成授权令牌"
+      },
+      "Properties": {
+        "instanceId": "{{ acrId }}"
+      },
+      "Outputs": {
+        "tempUsername": {
+          "Type": "String",
+          "ValueSelector": "tempUsername"
+        },
+        "authorizationToken": {
+          "Type": "String",
+          "ValueSelector": "authorizationToken"
+        }
+      }
+    },
+    {
+      "Name": "getAcrName",
+      "Action": "ACS::ExecuteAPI",
+      "When": {
+        "Fn::Equals": [
+          "{{ acrType }}",
+          "Enterprise"
+        ]
+      },
+      "Description": {
+        "en": "Get ACR name",
+        "zh-cn": "获取acr名称"
+      },
+      "Properties": {
+        "Service": "CR",
+        "API": "GetInstance",
+        "Parameters": {
+          "InstanceId": "{{acrId}}"
+        }
+      },
+      "Outputs": {
+        "acrName": {
+          "Type": "String",
+          "ValueSelector": ".InstanceName"
+        }
+      }
+    },
+    {
+      "Name": "dockerDeployEnterprise",
+      "When": {
+        "Fn::Equals": [
+          "{{ acrType }}",
+          "Enterprise"
+        ]
+      },
+      "Description": {
+        "en": "Deploy Docker Image (from enterprise ACR)",
+        "zh-cn": "部署Docker镜像（从企业版仓库拉取）"
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\nif [ {{ isInternal }} == true ]; then\n  repo={{getAcrName.acrName}}-registry-vpc.{{regionId}}.cr.aliyuncs.com\n  current_image={{getAcrName.acrName}}-registry-vpc.{{regionId}}.cr.aliyuncs.com/{{namespace}}/{{repoName}}:{{imageVersion}}\nelse\n  repo={{getAcrName.acrName}}-registry.{{regionId}}.cr.aliyuncs.com\n  current_image={{getAcrName.acrName}}-registry.{{regionId}}.cr.aliyuncs.com/{{namespace}}/{{repoName}}:{{imageVersion}}\nfi\ndocker login --username={{ generateAuthorizationToken.tempUsername }} --password={{ generateAuthorizationToken.authorizationToken }} $repo\ndocker pull $current_image\n\ncontainer_name=\"oos-{{getAcrName.acrName}}-{{regionId}}-{{namespace}}-{{repoName}}\"\ncontainer_id=$(docker ps -aq -f name=${container_name}) \n\nif [ -n \"$container_id\" ]; then\n  docker stop $container_id\n  docker rm $container_id\nfi\n\nif [ -n '{{ dockerRunOptions }}' ]; then\n  docker run -d --name ${container_name} {{ dockerRunOptions }} $current_image\nelse\n  docker run -d --name ${container_name} $current_image\nfi"
+      }
+    },
+    {
+      "Name": "dockerDeployPersonal",
+      "When": {
+        "Fn::Equals": [
+          "{{ acrType }}",
+          "Personal"
+        ]
+      },
+      "Description": {
+        "en": "Deploy Docker Image (from personal ACR)",
+        "zh-cn": "部署Docker镜像（从个人版仓库拉取）"
+      },
+      "Action": "ACS::ECS::RunCommand",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\nif [ {{ isInternal }} == true ]; then\n  repo=registry-vpc.{{regionId}}.aliyuncs.com\n  original_repo_name=\"{{repoName}}\"\n  modified_repo_name=$(echo \"$original_repo_name\" | sed 's/registry\\(.*\\)\\./registry-vpc\\1./')\n  current_image=$modified_repo_name:{{imageVersion}}\nelse\n  repo=registry.{{regionId}}.aliyuncs.com\n  current_image={{repoName}}:{{imageVersion}}\nfi\ndocker login --username={{ username }} --password={{ password }} $repo\ndocker pull $current_image\n\ninput_full_repo_name=\"{{repoName}}\"\ncur_repo_name=${input_full_repo_name##*/}\ninput_full_repo_name_without_tail=${input_full_repo_name%/*}\ncur_namespace=${input_full_repo_name_without_tail##*/}\n\ncontainer_name=\"oos-{{regionId}}-$cur_namespace-$cur_repo_name\"\ncontainer_id=$(docker ps -aq -f name=${container_name}) \n\nif [ -n \"$container_id\" ]; then\n  docker stop $container_id\n  docker rm $container_id\nfi\n\nif [ -n '{{ dockerRunOptions }}' ]; then\n  docker run -d --name ${container_name} {{ dockerRunOptions }} $current_image\nelse\n  docker run -d --name ${container_name} $current_image\nfi"
+      }
+    }
+  ]
+}

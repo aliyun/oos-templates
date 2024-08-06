@@ -1,0 +1,310 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::EncryptSystemDisk",
+    "name-zh-cn": "加密系统盘",
+    "en": "Encrypt system disk",
+    "zh-cn": "加密系统盘"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId"
+    },
+    "KMSKeyId": {
+      "Label": {
+        "en": "KMSKeyId",
+        "zh-cn": "加密镜像使用的KMS密钥ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "waitInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits the ECS instance status to running or stopped",
+        "zh-cn": "等待实例到running或者stopped状态"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running",
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "keyPairName": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].KeyPairName"
+        }
+      }
+    },
+    {
+      "Name": "describeDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the disk info",
+        "zh-cn": "获取磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "DiskType": "system"
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        },
+        "encrypted": {
+          "Type": "Boolean",
+          "ValueSelector": "Disks.Disk[].Encrypted"
+        }
+      }
+    },
+    {
+      "Name": "whetherToEncrypt",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose the next task according to whether the disk is encrypted",
+        "zh-cn": "根据磁盘是否加密选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "createSnapshot",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "{{ describeDisk.encrypted }}",
+                true
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "createSnapshot",
+      "Action": "ACS::ECS::CreateSnapshot",
+      "Description": {
+        "en": "Creates a snapshot for the system disk",
+        "zh-cn": "为系统盘创建快照"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ describeDisk.diskId }}",
+        "snapshotName": "Snapshot-{{ ACS::ExecutionId }}"
+      },
+      "Outputs": {
+        "snapshotId": {
+          "Type": "String",
+          "ValueSelector": "snapshotId"
+        }
+      }
+    },
+    {
+      "Name": "createImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Creates a custom image",
+        "zh-cn": "创建一份自定义镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageName": "CreateImage-{{ ACS::ExecutionId }}",
+          "SnapshotId": "{{ createSnapshot.snapshotId }}"
+        }
+      },
+      "Outputs": {
+        "imageId": {
+          "Type": "String",
+          "ValueSelector": "ImageId"
+        }
+      }
+    },
+    {
+      "Name": "untilImageReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the image to be available",
+        "zh-cn": "等待创建的镜像可用"
+      },
+      "Retries": 296,
+      "MaxRetryInterval": 300,
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ createImage.imageId }}",
+          "Status": "Creating,Waiting,Available,UnAvailable,CreateFailed,Deprecated"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Images.Image[].Status"
+      }
+    },
+    {
+      "Name": "copyImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Copies image",
+        "zh-cn": "复制镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CopyImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ createImage.imageId }}",
+          "DestinationRegionId": "{{ regionId }}",
+          "KMSKeyId": "{{ KMSKeyId }}",
+          "Encrypted": true
+        }
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "ImageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "untilCopyImageReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for copied image available",
+        "zh-cn": "等待复制的镜像可用"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ copyImage.imageId }}"
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Images.Image[].Status"
+      },
+      "Retries": 296,
+      "MaxRetryInterval": 300
+    },
+    {
+      "Name": "replaceSystemDisk",
+      "Action": "ACS::ECS::ReplaceSystemDisk",
+      "OnError": "ACS::NEXT",
+      "Description": {
+        "en": "Replaces the system disk of ECS instances",
+        "zh-cn": "更换系统盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "imageId": "{{ copyImage.imageId }}",
+        "keyPairName": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                null,
+                "{{ waitInstanceReady.keyPairName }}"
+              ]
+            },
+            "",
+            "{{ waitInstanceReady.keyPairName }}"
+          ]
+        },
+        "passwordInherit": false
+      }
+    },
+    {
+      "Name": "deleteImage",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes the image",
+        "zh-cn": "删除镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ ACS::TaskLoopItem }}",
+          "Force": true
+        }
+      },
+      "Loop": {
+        "Items": [
+          "{{ createImage.imageId }}",
+          "{{ copyImage.imageId }}"
+        ]
+      }
+    },
+    {
+      "Name": "deleteSnapshot",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Deletes the snapshot",
+        "zh-cn": "删除快照"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteSnapshot",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "SnapshotId": "{{ createSnapshot.snapshotId }}"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "systemDiskEncryptedInstance": {
+      "Type": "List",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "{{ describeDisk.encrypted }}",
+              true
+            ]
+          },
+          "{{ instanceId }}",
+          null
+        ]
+      }
+    }
+  }
+}

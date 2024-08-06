@@ -232,7 +232,7 @@ Parameters:
       zh-cn: <font color='red'><b>必须要在所选的地域</b></font>
     Label:
       en: LaunchTemplateNames
-      zh-cn: 待更新的实例启动模版名称列表
+      zh-cn: 待更新的实例启动模板名称列表
     Type: List
     Default: []
   rateControl:
@@ -574,7 +574,7 @@ Tasks:
   OnSuccess: ACS::END
   Description:
     en: Update instance launch template
-    zh-cn: 更新实例启动模版
+    zh-cn: 更新实例启动模板
   Properties:
     regionId: '{{ ACS::RegionId }}'
     imageId: '{{ createImage.imageId }}'

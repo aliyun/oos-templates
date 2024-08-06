@@ -2,7 +2,7 @@ FormatVersion: OOS-2019-06-01
 Description:
   en: ''
   zh-cn: SAP AAS(Additional application server)自动扩展服务，基于已有SAP系统的PAS(Primary application server)创建弹性伸缩组，自动或手动扩展ECS实例并部署AAS，并将AAS自动加入SAP Logon groups
-  name-en: ACS-SAP-AutoScalingService
+  name-en: ACS-SAP-SAPAutoScaling
   name-zh-cn: SAP AAS自动扩展
 Parameters:
   PASInstanceId:

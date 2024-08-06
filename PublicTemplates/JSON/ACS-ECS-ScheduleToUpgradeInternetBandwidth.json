@@ -45,7 +45,7 @@
     "triggerEndDate": {
       "Label": {
         "en": "The end date of bandwidth upgrade task",
-        "zh-cn": "带宽升级任务结束时间"
+        "zh-cn": "规则结束时间"
       },
       "Type": "String",
       "AssociationProperty": "DateTime",
@@ -82,8 +82,8 @@
         "zh-cn": "公网最大出带宽"
       },
       "Description": {
-        "en": "<p>Unit：Mbit/s (Megabit per second), value range： 0~100，OOS does not validate the maxBandwidthOut parameter value. <br/><font color='red'>If the value exceeded the limit of ECS，bandwidth upgrade task will fail, you can submit a ticket to ECS to raise the maximum bandwidth or modify the bandwidth parameter in limit range.</font></p>",
-        "zh-cn": "<p>单位：Mbit/s（Megabit per second），取值范围：0~100，运维编排不对带宽值入参进行校验。<br/><font color='red'>如果您设置的带宽值超过ECS的限制，带宽临时升级会失败，您可以在ECS控制台提交工单提高带宽峰值，或者将带宽值修改到限制范围内。</font></p>"
+        "en": "<p>Unit：Mbit/s (Megabit per second), value range： 0~100，OOS does not validate the maxBandwidthOut parameter value. <br/><font color='red'>If the value exceeded 100，bandwidth upgrade task may fail, you can submit a ticket to ECS to raise the maximum bandwidth and then use OOS to upgrade or modify the bandwidth parameter in limit range.</font></p>",
+        "zh-cn": "<p>单位：Mbit/s（Megabit per second），取值范围：0~100，系统运维管理不对带宽值入参进行校验。<br/><font color='red'>如果您设置的带宽值超过100，带宽临时升级可能会失败，您可以在ECS控制台提交工单提高带宽峰值后使用系统运维管理进行升级，或者将带宽值修改到限制范围内。</font></p>"
       },
       "Type": "Number",
       "MinValue": 0,

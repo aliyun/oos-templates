@@ -2,7 +2,7 @@ FormatVersion: OOS-2019-06-01
 Description:
   en: Rolling update ECS instances that in scaling group by download file and run command
   zh-cn: 通过下载文件并执行命令的方式滚动更新伸缩组内的ECS实例
-  name-en: ACS-ESS-RollingUpdateByDownloadFileAndRunCommandInScalingGroup
+  name-en: ACS-ESS-RollingUpdateByDownloadFileAndRunCommand
   name-zh-cn: 通过下载文件并执行命令的方式滚动更新伸缩组内的ECS实例
   categories:
     - elastic_manage

@@ -48,9 +48,10 @@ Tasks:
           - .[] | select(.instanceId == "{{ instanceId }}") | .description
           - '{{ instanceAttributes }}'
       SecurityGroupIds:
-        - First
-        - .[] | select(.instanceId == "{{ instanceId }}") | .securityGroups
-        - '{{ instanceAttributes }}'
+        'Fn::Jq':
+          - First
+          - .[] | select(.instanceId == "{{ instanceId }}") | .securityGroups
+          - '{{ instanceAttributes }}'
 Outputs:
   instanceInfos:
     Type: String

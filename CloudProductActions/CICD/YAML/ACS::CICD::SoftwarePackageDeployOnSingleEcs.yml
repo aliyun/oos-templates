@@ -1,0 +1,125 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::CICD::SoftwarePackageDeployOnSingleEcs
+  name-zh-cn: 部署软件包在单台ECS
+  en: Pull software package from OSS and deploy (only support linux machine)
+  zh-cn: 从OSS拉取软件包并部署 （仅支持在linux机器部署)
+Parameters:
+  regionId:
+    Label:
+      en: region
+      zh-cn: 地域
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+    AssociationProperty: RegionId
+  instanceId:
+    Label:
+      en: ECSInstanceId
+      zh-cn: ECS实例ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  bucketName:
+    Label:
+      en: Bucket Name
+      zh-cn: OSS bucket 名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Bucket::BucketName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  objectName:
+    Label:
+      en: ObjectName
+      zh-cn: OSS object 名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Object::ObjectName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      BucketName: bucketName
+      ValueType: bucketName
+  isInternal:
+    Label:
+      en: Whether to generate an internal url
+      zh-cn: 是否生成内网URL
+    Description:
+      en: False generates an public url, True generates an internal url. If the ECS and OSS are in the same region, you can choose True to download via the internal URL, which saves traffic fees.
+      zh-cn: False生成公网URL，True生成内网URL。如果您要下载到的ECS和OSS同地域，可选择True，通过内网URL下载，节省流量。
+    Type: Boolean
+    Default: true
+  downloadPath:
+    Label:
+      en: DownloadPath
+      zh-cn: 下载路径
+    Description:
+      en: The path to download the file to
+      zh-cn: 下载文件的路径
+    Type: String
+    Default: /home/admin/app/
+  deployScript:
+    Label:
+      en: DeployScript
+      zh-cn: 部署脚本
+    Description:
+      en: The script to deploy
+      zh-cn: 部署脚本
+    Type: String
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunShellScript
+    Default: |-
+      # 部署脚本会在部署组的每台机器上执行。一个典型脚本逻辑如下：先将制品包（在下载路径中配置的下载路径）解压缩到指定目录中，再执行启动脚本（通常在代码中维护，如示例中deploy.sh）。
+      # 关于这个例子的详细解释见 https://help.aliyun.com/document_detail/153848.html
+      # tar zxvf /home/admin/app/package.tgz -C /home/admin/app/
+      # sh /home/admin/app/deploy.sh restart
+      # 如果你是php之类的无需制品包的制品方式，可以使用git clone 或者 git pull将源代码更新到服务器，再执行其他命令
+      # git clone ***@***.git
+Tasks:
+  - Name: checkInstance
+    Action: ACS::CheckFor
+    Description: Checks if the ECS OSType is linux
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+          - '{{ instanceId }}'
+      DesiredValues:
+        - linux
+      PropertySelector: Instances.Instance[].OSType
+  - Name: generateOssUrl
+    Action: 'ACS::OSS::GenerateUrl'
+    Description:
+      en: Generate Oss url
+      zh-cn: 生成 Oss URL
+    Properties:
+      regionId: '{{ regionId }}'
+      bucketName: '{{ bucketName }}'
+      objectName: '{{ objectName }}'
+      isInternal: '{{ isInternal }}'
+    Outputs:
+      temporaryUrl:
+        Type: String
+        ValueSelector: .temporaryUrl
+  - Name: downloadDeployMaterial
+    Action: ACS::ECS::DownloadFile
+    Description:
+      en: Download DeployMaterial from OSS
+      zh-cn: 从OSS下载部署物
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      sourceType: https
+      sourcePath: '{{ generateOssUrl.temporaryUrl }}'
+      destinationDir: '{{ downloadPath }}'
+  - Name: deploy
+    Action: ACS::ECS::RunCommand
+    Description:
+      en: Deploy
+      zh-cn: 部署
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType: RunShellScript
+      workingDir: '{{ downloadPath }}'
+      commandContent: '{{ deployScript }}'

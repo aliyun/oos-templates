@@ -2,7 +2,7 @@ FormatVersion: OOS-2019-06-01
 Description:
   en: Schedules to execute ECS diagnostic reports in bulk
   zh-cn: 定时运行ECS健康诊断
-  name-en: ACS-ECS-ScheduleToExecuteECSDiagnosticReports
+  name-en: ACS-ECS-ScheduleToExecuteDiagnosticReports
   name-zh-cn: 定时执行ECS健康诊断
   categories:
     - time_trigger

@@ -64,11 +64,13 @@
               "{{ instanceAttributes }}"
             ]
           },
-          "SecurityGroupIds": [
-            "First",
-            ".[] | select(.instanceId == \"{{ instanceId }}\") | .securityGroups",
-            "{{ instanceAttributes }}"
-          ]
+          "SecurityGroupIds": {
+            "Fn::Jq": [
+              "First",
+              ".[] | select(.instanceId == \"{{ instanceId }}\") | .securityGroups",
+              "{{ instanceAttributes }}"
+            ]
+          }
         }
       }
     }

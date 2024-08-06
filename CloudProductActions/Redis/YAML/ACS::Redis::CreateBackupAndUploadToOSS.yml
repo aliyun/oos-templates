@@ -105,7 +105,7 @@ Tasks:
     Properties:
       runtime: python3.10
       handler: index.handler
-      role: acs:ram::{{ACS::AccountId}}:role/AliyunFcDefaultRole
+      role: AliyunFcDefaultRole
       script: |-
         import oss2
         import requests

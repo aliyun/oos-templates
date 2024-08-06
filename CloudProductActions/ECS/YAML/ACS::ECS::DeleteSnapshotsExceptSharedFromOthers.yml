@@ -1,0 +1,44 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DeleteSnapshotsExceptSharedFromOthers
+  name-zh-cn: 删除快照（排除来自其他用户的共享快照）
+  en: Delete snapshots except shared from others.
+  zh-cn: 删除快照（排除来自其他用户的共享快照）
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域Id
+Tasks:
+  - Name: DescribeSnapshotsExceptSharedFromOthers
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe snapshots except shared from others
+      zh-cn: 查询快照（排除来自其他用户的共享快照）
+    Properties:
+      Service: ECS
+      API: DescribeSnapshots
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      snapshotIds:
+        Type: List
+        ValueSelector: .Snapshots.Snapshot | map(select(all(.Tags.Tag[]; .TagKey != "acs:ecs:sharedFrom")) | .SnapshotId) | .[]
+  - Name: DeleteSnapshotsExceptSharedFromOthers
+    Action: ACS::ExecuteApi
+    Description:
+      en: Delete snapshots except shared from others
+      zh-cn: 删除快照（排除来自其他用户的共享快照）
+    Properties:
+      Service: ECS
+      API: DeleteSnapshot
+      Parameters:
+        SnapshotId: '{{ ACS::TaskLoopItem }}'
+        Force: true
+    Loop:
+      Items: '{{ DescribeSnapshotsExceptSharedFromOthers.snapshotIds }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1

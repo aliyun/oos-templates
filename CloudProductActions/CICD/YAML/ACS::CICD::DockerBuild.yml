@@ -1,0 +1,930 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::CICD::DockerBuild
+  name-zh-cn: 构建Docker镜像
+  en: Build Docker Image and Upload to ACR (Only support linux machine)
+  zh-cn: 构建Docker镜像并上传至阿里云镜像仓库 （仅支持在linux机器构建)
+Parameters:
+  regionId:
+    Label:
+      en: region
+      zh-cn: 地域
+    Type: String
+    Default: '{{ ACS::RegionId }}'
+    AssociationProperty: RegionId
+  codeSource:
+    Label:
+      en: CodeResource
+      zh-cn: 代码源
+    Type: String
+    AllowedValues:
+      - oss
+      - git
+  codeSourceUrl:
+    Label:
+      en: CodeResourceUrl
+      zh-cn: 代码源链接
+    Type: String
+    AssociationPropertyMetadata:
+      PropertyType: ref
+  branch:
+    Label:
+      en: Branch
+      zh-cn: 分支
+    Description:
+      en: Branch, pull default branch if not set
+      zh-cn: 代码仓库分支，不填拉取默认分支
+    Type: String
+    Default: ''
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${codeSource}
+            - 'git'
+  buildType:
+    Label:
+      en: Build Type
+      zh-cn: 构建类型
+    Type: String
+    Default: ExistingEcs
+    AllowedValues:
+      - ExistingEcs
+      - NewTemporaryEcs
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        ExistingEcs: 在已有ECS构建
+        NewTemporaryEcs: 新启动临时ECS构建
+  instanceId:
+    Label:
+      en: ECSInstanceId
+      zh-cn: ECS实例ID
+    Type: String
+    Default: ''
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'ExistingEcs'
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'ExistingEcs'
+  zoneId:
+    Type: String
+    Label:
+      en: Availability Zone
+      zh-cn: 可用区
+    Default: ''
+    AssociationProperty: ZoneId
+    AssociationPropertyMetadata:
+      RegionId: ALIYUN::ECS::RegionId
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+  ecsInstanceType:
+    Type: String
+    Label:
+      en: Instance Type
+      zh-cn: 实例类型
+    Default: ecs.g6.large
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceType
+    AssociationPropertyMetadata:
+      ZoneId: ${zoneId}
+      InstanceChargeType: PostPaid
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+  imageId:
+    Type: String
+    Label:
+      en: Image ID
+      zh-cn: 镜像ID
+    Description:
+      en: Image ID, represents the image resource to startup one ECS instance
+      zh-cn: 镜像ID，ECS实例的镜像资源
+    AssociationProperty: ALIYUN::ECS::Image::ImageId
+    AssociationPropertyMetadata:
+      InstanceType: ${ecsInstanceType}
+      OSType: linux
+      SupportedImageOwnerAlias:
+        - system
+        - self
+        - others
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+    Default: centos_7
+  allocatePublicIP:
+    Type: Boolean
+    Label:
+      en: Allocate Public IP
+      zh-cn: 分配公网IP
+    Default: true
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${buildType}
+            - 'NewTemporaryEcs'
+  buildScript:
+    Label:
+      en: Build Command
+      zh-cn: 构建命令
+    Description:
+      en: Build Command, represents the command to build the container image
+      zh-cn: buildScript会在docker build之前执行，以便您做一些构建准备的工作，如果不需要构建准备，可以不填写
+    Type: String
+    MaxLength: 16384
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunShellScript
+    Default: |-
+      # java sample command
+      # mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip
+      
+      # golang sample command
+      # go build
+      
+      # nodejs sample command
+      # cnpm install && npm run build
+  dockerFilePath:
+    Label:
+      en: Dockerfile Path
+      zh-cn: Dockerfile路径
+    Description:
+      en: Dockerfile Path as the path of the Dockerfile file relative to the root directory of the code repository
+      zh-cn: Dockerfile路径为Dockerfile文件相对于代码库根目录所在路径
+    Default: 'Dockerfile'
+    Type: String
+  contextPath:
+    Label:
+      en: Context Path
+      zh-cn: 上下文路径
+    Description:
+      en: Context Path as the path of the context directory relative to the root directory of the code repository
+      zh-cn: ContextPath为docker build命令执行上下文路径,填写相对于代码根目录的路径, 如.代表代码根目录。如果不填写，默认为Dockerfile文件所在目录。
+    Type: String
+    Default: ''
+  imageVersion:
+    Label:
+      en: Image Version
+      zh-cn: 镜像版本
+    Description:
+      en: Image Version, represents the version of the container image to upload
+      zh-cn: 要构建的镜像版本
+    Type: String
+    Default: 'v-{{ACS::CurrentDate}}-{{ACS::ExecutionId}}'
+  acrType:
+    Label:
+      en: ACR Type
+      zh-cn: 容器镜像类型
+    Type: String
+    AllowedValues:
+      - Enterprise
+      - Personal
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        Enterprise: 企业版
+        Personal: 个人版
+  username:
+    Label:
+      en: Username
+      zh-cn: 用户名
+    Description:
+      en: Username, represents the username of the container image to upload
+      zh-cn: 要上传的容器镜像仓库用户名
+    Type: String
+    Default: ''
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Personal
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Personal
+  password:
+    Label:
+      en: Password
+      zh-cn: 密码
+    Description:
+      en: Password, represents the password of the container image to upload
+      zh-cn: 要上传的容器镜像仓库密码
+    Default: ''
+    Type: String
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Personal
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Personal
+  acrId:
+    Label:
+      en: ACR Instance ID
+      zh-cn: 容器镜像服务实例ID
+    Description:
+      en: ACR ID, represents the ID of the cloud container registry to upload
+      zh-cn: 要上传的容器镜像服务实例ID
+    Type: String
+    Default: ''
+    AssociationProperty: ALIYUN::CR::Instance::InstanceId
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Enterprise
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Enterprise
+  namespace:
+    Label:
+      en: NameSpace
+      zh-cn: 命名空间
+    Description:
+      en: namespace, represents the namespace of the container image to upload
+      zh-cn: 要上传的容器镜像仓库命名空间
+    Type: String
+    Default: ''
+    AssociationProperty: ALIYUN::CR::NameSpace::Name
+    AssociationPropertyMetadata:
+      InstanceId: ${acrId}
+      Attribute: NamespaceName
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Enterprise
+      Required:
+        Condition:
+          Fn::Equals:
+            - ${acrType}
+            - Enterprise
+  repoName:
+    Label:
+      en: Repo Name
+      zh-cn: 仓库名称
+    Description:
+      en: Repo Name, represents the repository name of the container image to upload
+      zh-cn: 要上传的容器镜像仓库名称
+    Type: String
+    AssociationProperty: ALIYUN::CR::Repository::RepoName
+    AssociationPropertyMetadata:
+      AcrType: ${acrType}
+      RegionId: ${regionId}
+      InstanceId: ${acrId}
+      RepoNamespaceName: ${namespace}
+      RepoStatus: ALL
+  isInternal:
+    Label:
+      en: whether to use internal link to push image
+      zh-cn: 是否通过内网链接上传镜像
+    Description:
+      en: False generates an public url, True generates an internal url. If you want to use internal link to push image, please ensure that your image repository and ECS instance are in the same VPC (personal acr, accessible to all VPC machines, no separate configuration required), please refer to <a href="https://help.aliyun.com/zh/acr/user-guide/configure-access-over-vpcs/?spm=a2c4g.11186623.0.0.3af016be83KUhr" target="_blank">acr configuration access VPC</a>.
+      zh-cn: False生成公网URL，True生成内网URL。如果您想要使用内网链接上传镜像，请确保您的镜像仓库和ECS实例在同一个VPC内(个人版acr，VPC机器均可访问，无需单独配置)，具体请参考<a href="https://help.aliyun.com/zh/acr/user-guide/configure-access-over-vpcs/?spm=a2c4g.11186623.0.0.3af016be83KUhr" target="_blank">acr配置访问VPC</a>。
+    Type: Boolean
+    Default: true
+Tasks:
+  - Name: createTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ buildType }}'
+        - NewTemporaryEcs
+    OnError: deleteTemporaryEcs
+    Action: ACS::ROS::CreateStack
+    Description:
+      en: Create temporary ECS
+      zh-cn: 创建临时ecs
+    Properties:
+      regionId: '{{ regionId }}'
+      stackName:
+        Fn::Replace:
+          - .: _
+          - OOS-{{ACS::ExecutionId}}
+      disableRollback: true
+      templateBody: |-
+        {
+          "ROSTemplateFormatVersion": "2015-09-01",
+          "Description": "Create ECS Ram Role",
+          "Parameters": {
+            "ZoneId": {
+              "Type": "String",
+              "Label": {
+                "en": "Availability Zone",
+                "zh-cn": "可用区"
+              },
+              "AssociationProperty": "ZoneId",
+              "AssociationPropertyMetadata": {
+                "RegionId": "ALIYUN::ECS::RegionId"
+              }
+            },
+            "EcsInstanceType": {
+              "Type": "String",
+              "Label": {
+                "en": "Instance Type",
+                "zh-cn": "实例类型"
+              },
+              "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+              "AssociationPropertyMetadata": {
+                "ZoneId": "${ZoneId}",
+                "InstanceChargeType": "PostPaid"
+              }
+            },
+            "ImageId": {
+              "Type": "String",
+              "Label": {
+                "en": "Image ID",
+                "zh-cn": "镜像ID"
+              },
+              "Description": {
+                "en": "Image ID, represents the image resource to startup one ECS instance",
+                "zh-cn": "镜像ID，ECS实例的镜像资源"
+              },
+              "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+              "AssociationPropertyMetadata": {
+                "InstanceType": "${EcsInstanceType}",
+                "SupportedImageOwnerAlias": [
+                  "system",
+                  "self",
+                  "others"
+                ]
+              },
+              "Default": "centos_7"
+            },
+            "AllocatePublicIP": {
+              "Type": "Boolean",
+              "Label": {
+                "en": "Allocate Public IP",
+                "zh-cn": "分配公网IP"
+              },
+              "Description": {
+                "en": "Whether to allocate public IP",
+                "zh-cn": "是否分配公网IP"
+              },
+              "Default": "true"
+            }
+          },
+          "Resources": {
+            "EcsVpc": {
+              "Type": "ALIYUN::ECS::VPC",
+              "Properties": {
+                "CidrBlock": "192.168.0.0/16",
+                "VpcName": {
+                  "Ref": "ALIYUN::StackName"
+                }
+              }
+            },
+            "EcsVSwitch": {
+              "Type": "ALIYUN::ECS::VSwitch",
+              "Properties": {
+                "ZoneId": {
+                  "Ref": "ZoneId"
+                },
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                },
+                "CidrBlock": "192.168.1.0/24"
+              }
+            },
+            "EcsSecurityGroup": {
+              "Type": "ALIYUN::ECS::SecurityGroup",
+              "Properties": {
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                }
+              }
+            },
+            "EcsInstanceGroup": {
+              "Type": "ALIYUN::ECS::InstanceGroup",
+              "Properties": {
+                "InternetMaxBandwidthOut": 10,
+                "ZoneId": {
+                  "Ref": "ZoneId"
+                },
+                "VpcId": {
+                  "Ref": "EcsVpc"
+                },
+                "VSwitchId": {
+                  "Ref": "EcsVSwitch"
+                },
+                "SecurityGroupId": {
+                  "Ref": "EcsSecurityGroup"
+                },
+                "ImageId": {
+                  "Ref": "ImageId"
+                },
+                "IoOptimized": "optimized",
+                "MaxAmount": 1,
+                "InstanceType": {
+                  "Ref": "EcsInstanceType"
+                },
+                "InstanceName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      {
+                        "Ref": "ALIYUN::StackName"
+                      },
+                      "[1,4]"
+                    ]
+                  ]
+                },
+                "AllocatePublicIP": {
+                  "Ref": "AllocatePublicIP"
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "EcsInstanceId": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "EcsInstanceGroup",
+                  "InstanceIds"
+                ]
+              }
+            }
+          }
+        }
+      parameters:
+        - ParameterKey: ZoneId
+          ParameterValue: '{{ zoneId }}'
+        - ParameterKey: EcsInstanceType
+          ParameterValue: '{{ ecsInstanceType }}'
+        - ParameterKey: ImageId
+          ParameterValue: '{{ imageId }}'
+        - ParameterKey: AllocatePublicIP
+          ParameterValue: '{{ allocatePublicIP }}'
+    Outputs:
+      stackId:
+        Type: String
+        ValueSelector: stackId
+  - Name: getEcsInstanceId
+    When:
+      Fn::Equals:
+        - '{{ buildType }}'
+        - NewTemporaryEcs
+    Action: ACS::ExecuteAPI
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Get ECS info
+      zh-cn: 获取ecs信息
+    Properties:
+      Service: ROS
+      API: GetStack
+      Parameters:
+        StackId: '{{createTemporaryEcs.stackId}}'
+    Outputs:
+      instanceId:
+        Type: String
+        ValueSelector: .Outputs[0].OutputValue[0]
+  - Name: checkInstance
+    Action: ACS::CheckFor
+    Description: Checks if the ECS OSType is linux
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        InstanceIds:
+          - Fn::If:
+              - Fn::Equals:
+                  - '{{ buildType }}'
+                  - 'NewTemporaryEcs'
+              - '{{ getEcsInstanceId.instanceId }}'
+              - '{{ instanceId }}'
+      DesiredValues:
+        - linux
+      PropertySelector: Instances.Instance[].OSType
+  - Name: downloadCodeFromOss
+    Action: ACS::ECS::DownloadFile
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ codeSource }}'
+        - oss
+    Description:
+      en: Download code from OSS
+      zh-cn: 从OSS下载代码
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+            - '{{ buildType }}'
+            - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      sourceType: https
+      sourcePath: '{{ codeSourceUrl }}'
+      destinationDir: /root/workspace/{{ACS::ExecutionId}}
+  - Name: downloadCodeFromGit
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ codeSource }}'
+        - git
+    Description:
+      en: Download code from git
+      zh-cn: 从git下载代码
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        #!/bin/bash
+        # Function to install git on Ubuntu/Debian
+        install_git_debian() {
+            echo "Installing git..."
+            sudo apt-get install git -y
+        }
+
+        # Function to install git on CentOS/Red Hat
+        install_git_centos() {
+            echo "Installing git..."
+            sudo yum install git -y
+        }
+
+        # Identify the Operating System
+        . /etc/os-release
+
+        case $ID in
+            ubuntu|debian)
+                echo "Detected system: Ubuntu/Debian"
+                install_git_debian
+                ;;
+            centos|rhel|alinux)
+                echo "Detected system: CentOS/Red Hat"
+                install_git_centos
+                ;;
+            *)
+                echo "Unsupported Operating System: $ID"
+                exit 1
+                ;;
+        esac
+
+        echo "Git installation script has completed."
+        mkdir -p /root/workspace/{{ACS::ExecutionId}}
+        cd /root/workspace/{{ACS::ExecutionId}}
+        if [ -n "{{ branch }}" ]; then
+          git clone --branch {{ branch }} {{ codeSourceUrl }} .
+        else
+          git clone {{ codeSourceUrl }} .
+        fi
+  - Name: installDocker
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Install environment
+      zh-cn: 安装环境
+    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      action: install
+      packageName: ACS-Extension-DockerCE-1853370294850618
+  - Name: configureDockerRegistryMirror
+    OnError: deleteTemporaryEcs
+    Description:
+      en: configure docker registry mirror
+      zh-cn: 配置Docker镜像加速器
+    Action: ACS::ECS::RunCommand
+    Properties:
+      workingDir: /root/workspace/{{ACS::ExecutionId}}
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      commandType: RunShellScript
+      commandContent: |-
+        region="{{regionId}}"
+        
+        if [ -f /etc/docker/daemon.json ]; then
+          echo "daemon.json already exists, skip"
+          exit 0
+        fi
+
+        if [[ $region =~ ^cn && $region != "cn-hongkong" ]]; then
+        echo "configure docker mirror for current region"
+        mkdir -p /etc/docker
+        tee /etc/docker/daemon.json <<-'EOF'
+        {
+            "registry-mirrors": [
+                "https://0vmzj3q6.mirror.aliyuncs.com",
+                "https://docker.m.daocloud.io",
+                "https://mirror.baidubce.com",
+                "https://dockerproxy.com",
+                "https://mirror.iscas.ac.cn",
+                "https://huecker.io",
+                "https://dockerhub.timeweb.cloud",
+                "https://noohub.ru",
+                "https://vlgh0kqj.mirror.aliyuncs.com"
+            ]
+        }
+        EOF
+        systemctl daemon-reload
+        systemctl restart docker
+        fi
+  - Name: runCommandToBuild
+    Action: ACS::ECS::RunCommand
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Run command to build
+      zh-cn: 执行构建命令
+    Properties:
+      workingDir: /root/workspace/{{ACS::ExecutionId}}
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      commandType: RunShellScript
+      commandContent: '{{ buildScript }}'
+  - Name: generateAuthorizationToken
+    Action: ACS::CR::GetAuthorizationToken
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ acrType }}'
+        - 'Enterprise'
+    Description:
+      en: Generate authorization token
+      zh-cn: 生成授权令牌
+    Properties:
+      instanceId: '{{ acrId }}'
+    Outputs:
+      tempUsername:
+        Type: String
+        ValueSelector: tempUsername
+      authorizationToken:
+        Type: String
+        ValueSelector: authorizationToken
+  - Name: getAcrName
+    Action: ACS::ExecuteAPI
+    OnError: deleteTemporaryEcs
+    When:
+      Fn::Equals:
+        - '{{ acrType }}'
+        - 'Enterprise'
+    Description:
+      en: Get ACR name
+      zh-cn: 获取acr名称
+    Properties:
+      Service: CR
+      API: GetInstance
+      Parameters:
+        InstanceId: '{{acrId}}'
+    Outputs:
+      acrName:
+        Type: String
+        ValueSelector: .InstanceName
+  - Name: dockerLoginAndPushEnterprise
+    Action: ACS::ECS::RunCommand
+    When:
+      Fn::Equals:
+        - '{{ acrType }}'
+        - 'Enterprise'
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Login to enterprise ACR and push image
+      zh-cn: 登录到企业版acr并推送镜像
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      commandType: RunShellScript
+      workingDir: /root/workspace/{{ACS::ExecutionId}}
+      commandContent:
+        Fn::Sub:
+          - |-
+              if [ {{ isInternal }} == true ]; then
+                repo={{getAcrName.acrName}}-registry-vpc.{{regionId}}.cr.aliyuncs.com
+                current_image_version={{getAcrName.acrName}}-registry-vpc.{{regionId}}.cr.aliyuncs.com/{{namespace}}/{{repoName}}:{{imageVersion}}
+              else
+                repo={{getAcrName.acrName}}-registry.{{regionId}}.cr.aliyuncs.com
+                current_image_version={{getAcrName.acrName}}-registry.{{regionId}}.cr.aliyuncs.com/{{namespace}}/{{repoName}}:{{imageVersion}}
+              fi
+              docker build -f {{dockerFilePath}} -t $current_image_version ${FinalContextPath}
+              docker login --username={{ generateAuthorizationToken.tempUsername }} --password={{ generateAuthorizationToken.authorizationToken }} $repo
+              docker push $current_image_version
+          - FinalContextPath:
+              Fn::If:
+                - Fn::Equals:
+                    - '{{ contextPath }}'
+                    - ''
+                - Fn::If:
+                    - Fn::ContainsSubString:
+                        - '{{ dockerFilePath }}'
+                        - /
+                    - Fn::Join:
+                        - /
+                        - Fn::RangeSelect:
+                            - 0
+                            - -1
+                            - Fn::Split:
+                                - /
+                                - '{{ dockerFilePath }}'
+                    - '.'
+                - '{{ contextPath }}'
+  - Name: dockerLoginAndPushPersonal
+    Action: ACS::ECS::RunCommand
+    When:
+      Fn::Equals:
+        - '{{ acrType }}'
+        - 'Personal'
+    OnError: deleteTemporaryEcs
+    Description:
+      en: Login to Personal ACR and push image
+      zh-cn: 登录到个人版acr并推送镜像
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ buildType }}'
+              - 'NewTemporaryEcs'
+          - '{{ getEcsInstanceId.instanceId }}'
+          - '{{ instanceId }}'
+      commandType: RunShellScript
+      workingDir: /root/workspace/{{ACS::ExecutionId}}
+      commandContent:
+        Fn::Sub:
+          - |-
+            if [ {{ isInternal }} == true ]; then
+              repo=registry-vpc.{{regionId}}.aliyuncs.com
+              original_repo_name="{{repoName}}"
+              modified_repo_name=$(echo "$original_repo_name" | sed 's/registry\(.*\)\./registry-vpc\1./')
+              current_image_version=$modified_repo_name:{{imageVersion}}
+            else
+              repo=registry.{{regionId}}.aliyuncs.com
+              current_image_version={{repoName}}:{{imageVersion}}
+            fi
+            docker build -f {{dockerFilePath}} -t $current_image_version ${FinalContextPath}
+            docker login --username={{ username }} --password={{ password }} $repo
+            docker push $current_image_version
+          - FinalContextPath:
+              Fn::If:
+                - Fn::Equals:
+                    - '{{ contextPath }}'
+                    - ''
+                - Fn::If:
+                    - Fn::ContainsSubString:
+                        - '{{ dockerFilePath }}'
+                        - /
+                    - Fn::Join:
+                        - /
+                        - Fn::RangeSelect:
+                            - 0
+                            - -1
+                            - Fn::Split:
+                                - /
+                                - '{{ dockerFilePath }}'
+                    - '.'
+                - '{{ contextPath }}'
+  - Name: deleteTemporaryEcs
+    Action: ACS::ROS::DeleteStack
+    When:
+      Fn::Equals:
+        - '{{ buildType }}'
+        - NewTemporaryEcs
+    Description:
+      en: Delete temporary ECS and grant acr permission
+      zh-cn: 删除临时ecs并授予acr权限
+    Properties:
+      regionId: '{{ regionId }}'
+      stackId: '{{ createTemporaryEcs.stackId }}'
+      retainAllResources: false
+Outputs:
+  imageVersion:
+    Type: String
+    Value: '{{ imageVersion }}'
+  username:
+    Type: String
+    Value: '{{ username }}'
+  password:
+    Type: String
+    Value: '{{ password }}'
+  acrId:
+    Type: String
+    Value: '{{ acrId }}'
+  namespace:
+    Type: String
+    Value: '{{ namespace }}'
+  repoName:
+    Type: String
+    Value: '{{ repoName }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+        Label:
+          default:
+            zh-cn: 地域信息
+            en: Region
+      - Parameters:
+          - codeSource
+          - codeSourceUrl
+          - branch
+        SubTitle: 代码源链接一般来自代码源步骤的输出
+        Label:
+          default:
+            zh-cn: 指定代码源
+            en: Code Source
+      - Parameters:
+          - buildType
+          - zoneId
+          - ecsInstanceType
+          - imageId
+          - allocatePublicIP
+          - instanceId
+        SubTitle: 选择构建Ecs相关信息，支持使用已有ECS和临时启动ECS(会产生费用)
+        Label:
+          default:
+            zh-cn: 选择构建Ecs
+            en: Choose Building Ecs
+      - Parameters:
+          - buildScript
+        Label:
+          default:
+            zh-cn: 构建配置
+            en: Build Configuration
+      - Parameters:
+          - dockerFilePath
+          - contextPath
+          - acrType
+          - username
+          - password
+          - acrId
+          - namespace
+          - repoName
+          - imageVersion
+          - isInternal
+        Label:
+          default:
+            zh-cn: docker构建并上传acr仓库
+            en: Docker Build and Upload ACR Repository

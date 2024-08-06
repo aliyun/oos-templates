@@ -99,7 +99,6 @@
         "zh-cn": "交换机ID"
       },
       "Type": "String",
-      "AllowedPattern": "vsw-[A-Za-z0-9]*",
       "MaxLength": 30,
       "MinLength": 1,
       "AssociationProperty": "ALIYUN::VPC::VSwitch::VSwitchId",
@@ -113,7 +112,6 @@
         "zh-cn": "实例类型"
       },
       "Type": "String",
-      "AllowedPattern": "ecs\\.[A-Za-z0-9\\.\\-]*",
       "MaxLength": 30,
       "MinLength": 1,
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
@@ -128,7 +126,6 @@
         "zh-cn": "镜像ID"
       },
       "Type": "String",
-      "AllowedPattern": "[A-Za-z0-9_\\-\\.]*",
       "MinLength": 1,
       "MaxLength": 100,
       "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
@@ -152,9 +149,10 @@
         "cloud_efficiency",
         "cloud_ssd",
         "cloud_essd",
+        "cloud_auto",
         "cloud"
       ],
-      "Default": "cloud_efficiency"
+      "Default": "cloud_essd"
     },
     "systemDiskSize": {
       "Label": {
@@ -186,7 +184,6 @@
         "zh-cn": "安全组ID"
       },
       "Type": "String",
-      "AllowedPattern": "sg-[A-Za-z0-9]*",
       "MaxLength": 30,
       "MinLength": 1,
       "AssociationProperty": "ALIYUN::ECS::SecurityGroup::SecurityGroupId",

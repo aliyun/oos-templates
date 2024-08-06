@@ -81,7 +81,7 @@ Tasks:
         RegionId: '{{ regionId }}'
         ContainerGroupIds: '{{ instanceIds }}'
     Outputs:
-      ipAddress:
+      Ips:
         Type: List
         ValueSelector: '.ContainerGroups[].IntranetIp'
   - Name: modifySecurityIps
@@ -133,4 +133,3 @@ Outputs:
   ipAddresses:
     Type: List
     Value: '{{ getInstanceIpAddress.Ips }}'
-

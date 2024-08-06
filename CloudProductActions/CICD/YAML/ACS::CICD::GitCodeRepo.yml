@@ -1,0 +1,63 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::CICD::GitCodeRepo
+  name-zh-cn: git代码源
+  en: Generate the address of the user-specified github/gitee repository code
+  zh-cn: 生成用户指定的github/gitee仓库代码的地址
+Parameters:
+  platform:
+    Type: String
+    Label:
+      en: Platform
+      zh-cn: 平台
+    AssociationProperty: ALIYUN::OOS::GitPlatform::Name
+    AllowedValues:
+      - github
+      - gitee
+  owner:
+    Type: String
+    Label:
+      en: Owner
+      zh-cn: 所有者
+    AssociationProperty: ALIYUN::OOS::GitAccount::Name
+    AssociationPropertyMetadata:
+      Platform: '${platform}'
+  organization:
+    Type: String
+    Label:
+      en: Organization
+      zh-cn: 组织
+    Default: ''
+    AssociationProperty: ALIYUN::OOS::GitOrganization::Name
+    AssociationPropertyMetadata:
+      Platform: '${platform}'
+      Owner: '${owner}'
+  repository:
+    Type: String
+    Label:
+      en: Repository
+      zh-cn: 仓库
+    AssociationProperty: ALIYUN::OOS::GitRepository::Name
+    AssociationPropertyMetadata:
+      Platform: '${platform}'
+      Organization: '${organization}'
+      Owner: '${owner}'
+Tasks:
+  - Name: getGitCodeRepo
+    Action: ACS::GitCodeRepo
+    Description:
+      en: get git code repo
+      zh-cn: 生成git仓库地址
+    Properties:
+      Platform: '{{platform}}'
+      Owner: '{{owner}}'
+      Organization: '{{organization}}'
+      Repository: '{{repository}}'
+    Outputs:
+      authorizedUrl:
+        Type: String
+        ValueSelector: .AuthorizedUrl
+Outputs:
+  authorizedUrl:
+    Type: String
+    Value: '{{getGitCodeRepo.authorizedUrl}}'

@@ -67,6 +67,7 @@
         "en": "Waits for the ECS instance to enter running status",
         "zh-cn": "等待实例运行"
       },
+      "MaxRetryInterval": 180,
       "Properties": {
         "Service": "ECS",
         "API": "DescribeInstances",
@@ -80,55 +81,62 @@
           "Running"
         ],
         "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "startTime": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].StartTime"
+        },
+        "osType": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].OSType"
+        },
+        "instanceTypeFamily": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].InstanceTypeFamily"
+        }
       }
     },
     {
-      "Name": "waitForCloudAssistantRunning",
+      "Name": "sleepForWindows",
+      "Description": {
+        "en": "Windows specific instance type wait for restart",
+        "zh-cn": "Windows实例类型等待重启"
+      },
+      "When": {
+        "Fn::Equals": [
+          "{{ waitForEcsRunning.osType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "4m"
+      }
+    },
+    {
+      "Name": "waitForCloudAssistantHeartbeatNormal",
       "Action": "ACS::WaitFor",
       "Description": {
-        "en": "Waits for the Cloud Assistant to enter running status",
-        "zh-cn": "等待云助手运行"
+        "en": "Waits for the cloud assistant's heartbeat to be normal",
+        "zh-cn": "等待云助手心跳正常"
       },
-      "Retries": 7,
-      "Delay": 30,
       "DelayType": "Constant",
+      "Delay": 60,
+      "Retries": 30,
       "Properties": {
         "Service": "ECS",
         "API": "DescribeCloudAssistantStatus",
         "Parameters": {
           "RegionId": "{{ regionId }}",
-          "InstanceIds": [
+          "InstanceId": [
             "{{ instanceId }}"
           ]
         },
         "DesiredValues": [
-          "true"
+          true
         ],
-        "PropertySelector": "InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].CloudAssistantStatus"
-      }
-    },
-    {
-      "Name": "queryInstanceOSType",
-      "Action": "ACS::ExecuteApi",
-      "Description": {
-        "en": "Queries ECS instance OS type",
-        "zh-cn": "获取操作系统类型"
-      },
-      "Properties": {
-        "Service": "ECS",
-        "API": "DescribeInstances",
-        "Parameters": {
-          "RegionId": "{{ regionId }}",
-          "InstanceIds": [
-            "{{ instanceId }}"
-          ]
-        }
-      },
-      "Outputs": {
-        "OSType": {
-          "Type": "String",
-          "ValueSelector": "Instances.Instance[].OSType"
-        }
+        "PropertySelector": ".InstanceCloudAssistantStatusSet.InstanceCloudAssistantStatus[].LastHeartbeatTime > \"{{waitForEcsRunning.startTime}}\""
       }
     },
     {
@@ -139,7 +147,7 @@
       },
       "When": {
         "Fn::Equals": [
-          "{{ queryInstanceOSType.OSType }}",
+          "{{ waitForEcsRunning.osType }}",
           "linux"
         ]
       },
@@ -148,7 +156,8 @@
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
         "commandType": "RunShellScript",
-        "commandContent": "#!/bin/bash\nwhich cloud-init >/dev/null 2>/dev/null\nif [ $? -eq 0 ]; then\n  version=$(cloud-init --version | awk '{print $2}')\n  threshold=\"17.2\"\n  if [[ $version < $threshold ]]; then\n    echo \"cloud-init version is too low, please upgrade to version $threshold or later.\"\n  else\n    cloud-init status --wait\n  fi\nelse\n  echo \"cloud-init not installed.\"\nfi"
+        "commandContent": "#!/bin/bash\nwhich cloud-init >/dev/null 2>/dev/null\nif [ $? -eq 0 ]; then\n  version=$(cloud-init --version | awk '{print $2}')\n  threshold=\"17.2\"\n  if [[ $version < $threshold ]]; then\n    echo \"cloud-init version is too low, please upgrade to version $threshold or later.\"\n  else\n    cloud-init status --wait\n  fi\nelse\n  echo \"cloud-init not installed.\"\nfi",
+        "timeout": 1800
       },
       "Outputs": {
         "commandOutput": {
@@ -165,7 +174,7 @@
       },
       "When": {
         "Fn::Equals": [
-          "{{ queryInstanceOSType.OSType }}",
+          "{{ waitForEcsRunning.osType }}",
           "linux"
         ]
       },
@@ -191,7 +200,7 @@
       },
       "When": {
         "Fn::Equals": [
-          "{{ queryInstanceOSType.OSType }}",
+          "{{ waitForEcsRunning.osType }}",
           "windows"
         ]
       },
@@ -262,7 +271,7 @@
                   "Fn::If": [
                     {
                       "Fn::Equals": [
-                        "{{ queryInstanceOSType.OSType }}",
+                        "{{ waitForEcsRunning.osType }}",
                         "linux"
                       ]
                     },
@@ -339,12 +348,12 @@
             {}
           ]
         },
-        "timeout": 3600,
+        "timeout": 7200,
         "bucketName": {
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -376,7 +385,7 @@
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -410,19 +419,31 @@
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
-            "/root",
-            "C:\\\\Windows\\\\System32"
+            "/root/workspace/{{ACS::ExecutionId}}",
+            "C:\\\\Windows\\\\System32\\\\Workspace\\\\{{ACS::ExecutionId}}"
+          ]
+        },
+        "workingDir": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ waitForEcsRunning.osType }}",
+                "linux"
+              ]
+            },
+            "/root/workspace/{{ACS::ExecutionId}}",
+            "C:\\\\Windows\\\\System32\\\\Workspace\\\\{{ACS::ExecutionId}}"
           ]
         },
         "commandContent": {
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -562,7 +583,7 @@
                   "Fn::If": [
                     {
                       "Fn::Equals": [
-                        "{{ queryInstanceOSType.OSType }}",
+                        "{{ waitForEcsRunning.osType }}",
                         "linux"
                       ]
                     },
@@ -605,11 +626,23 @@
       "Properties": {
         "instanceId": "{{ instanceId }}",
         "regionId": "{{ regionId }}",
+        "workingDir": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ waitForEcsRunning.osType }}",
+                "linux"
+              ]
+            },
+            "/root/workspace/{{ACS::ExecutionId}}",
+            "C:\\\\Windows\\\\System32\\\\Workspace\\\\{{ACS::ExecutionId}}"
+          ]
+        },
         "commandType": {
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -621,7 +654,7 @@
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -671,7 +704,7 @@
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
@@ -683,60 +716,12 @@
           "Fn::If": [
             {
               "Fn::Equals": [
-                "{{ queryInstanceOSType.OSType }}",
+                "{{ waitForEcsRunning.osType }}",
                 "linux"
               ]
             },
-            {
-              "Fn::Replace": [
-                {
-                  "$filename": {
-                    "Fn::Last": {
-                      "Fn::Split": [
-                        "/",
-                        {
-                          "Fn::Select": [
-                            "ObjectName",
-                            {
-                              "Fn::FindMatchedPackage": [
-                                "{{ queryTemplate.TemplateContent }}",
-                                "{{ FetchEcsInfoLinux.commandOutput }}"
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                },
-                "if [ -f /root/$filename ]; then\nrm /root/$filename\nfi"
-              ]
-            },
-            {
-              "Fn::Replace": [
-                {
-                  "$filename": {
-                    "Fn::Last": {
-                      "Fn::Split": [
-                        "/",
-                        {
-                          "Fn::Select": [
-                            "ObjectName",
-                            {
-                              "Fn::FindMatchedPackage": [
-                                "{{ queryTemplate.TemplateContent }}",
-                                "{{ FetchEcsInfoWindows.commandOutput }}"
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                },
-                "$file = \"C:\\Windows\\System32\\$filename\"\nif (Test-Path $file -PathType Leaf) {\nRemove-Item $file\n}"
-              ]
-            }
+            "if [ -d /root/workspace/{{ACS::ExecutionId}} ]; then\nrm -rf /root/workspace/{{ACS::ExecutionId}}\nfi",
+            "$dir = \"C:\\\\Windows\\\\System32\\\\Workspace\\\\{{ACS::ExecutionId}}\"\nif (Test-Path $dir -PathType Container) {\nRemove-Item -Recurse -Force $dir\n}"
           ]
         }
       },

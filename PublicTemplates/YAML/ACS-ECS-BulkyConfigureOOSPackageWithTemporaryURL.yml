@@ -23,6 +23,7 @@ Parameters:
     AllowedValues:
       - install
       - uninstall
+      - update
     Default: install
     AssociationPropertyMetadata:
       LocaleKey: SoftwareOperationType
@@ -43,6 +44,8 @@ Parameters:
     AssociationProperty: 'ALIYUN::OOS::Package::PackageVersion'
     AssociationPropertyMetadata:
       TemplateName: ${packageName}
+      PublicDisabled: true
+      DoRequestAtFirst: true
     Default: ''
   targets:
     Type: Json
@@ -57,6 +60,7 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: 'ALIYUN::ECS::Instance'
       RegionId: regionId
+      Status: Running
   orderId:
     Description:
       en: The ID of Order
@@ -139,7 +143,7 @@ Tasks:
     Description:
       en: Configure Package
       zh-cn: 配置软件包
-    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURLFullActions
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ ACS::TaskLoopItem }}'
@@ -165,11 +169,11 @@ Tasks:
           AggregateField: configurationOutput
     Outputs:
       commandOutput:
-        Type: String
-        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "Result": .commandOutput}'
+        Type: Json
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "InstanceResult": [{"Package": "{{packageName}}", "PackageResult": .commandOutput}]}'
       configurationOutput:
-        Type: String
-        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "Result": .configurationOutput}'
+        Type: Json
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "InstanceResult": [{"Package": "{{packageName}}", "PackageResult": .configurationOutput}]}'
 Outputs:
   commandOutput:
     Type: List

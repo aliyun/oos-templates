@@ -22,6 +22,7 @@ Parameters:
     AllowedValues:
       - install
       - uninstall
+      - update
     Default: install
     AssociationPropertyMetadata:
       LocaleKey: SoftwareOperationType
@@ -150,11 +151,11 @@ Tasks:
           AggregateField: configurationOutput
     Outputs:
       commandOutput:
-        Type: List
-        ValueSelector: .commandOutput
+        Type: Json
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "InstanceResult": .commandOutput}'
       configurationOutput:
-        Type: List
-        ValueSelector: .configurationOutput
+        Type: Json
+        ValueSelector: '.|{"InstanceId": "{{ ACS::TaskLoopItem }}", "InstanceResult": .configurationOutput}'
 Outputs:
   commandOutput:
     Type: List

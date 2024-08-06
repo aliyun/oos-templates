@@ -24,7 +24,7 @@ Parameters:
   deleteSourceTemplateVersion:
     Description:
       en: delete launch template source version or not,the default is true
-      zh-cn: 删除启动模版的原版本
+      zh-cn: 删除启动模板的原版本
     Type: Boolean
     Default: true
     AllowedValues:
@@ -53,7 +53,7 @@ Tasks:
   Action: ACS::ExecuteAPI
   Description:
     en: Query launch default template version
-    zh-cn: 查询启动模版的版本号
+    zh-cn: 查询启动模板的版本号
   Properties:
     Service: ECS
     API: DescribeLaunchTemplates
@@ -82,7 +82,7 @@ Tasks:
   Action: ACS::ExecuteAPI
   Description:
     en: Query the content of launch template default version
-    zh-cn: 查询启动模版默认版本的内容
+    zh-cn: 查询启动模板默认版本的内容
   Properties:
     Service: ECS
     API: DescribeLaunchTemplateVersions
@@ -207,7 +207,7 @@ Tasks:
   Action: ACS::ExecuteAPI
   Description:
     en: Create launch template new version
-    zh-cn: 创建启动模版的新版本
+    zh-cn: 创建启动模板的新版本
   Properties:
     Service: ECS
     API: CreateLaunchTemplateVersion
@@ -285,7 +285,7 @@ Tasks:
   Action: ACS::ExecuteAPI
   Description:
     en: Modify launch template default version
-    zh-cn: 更改启动模版的默认版本
+    zh-cn: 更改启动模板的默认版本
   Properties:
     Service: ECS
     API: ModifyLaunchTemplateDefaultVersion
@@ -299,7 +299,7 @@ Tasks:
   OnSuccess: deleteLaunchTemplateVersion
   Description:
     en: Waits for modifying launch template default version success
-    zh-cn: 等待启动模版默认版本更改成功
+    zh-cn: 等待启动模板默认版本更改成功
   Retries: 7
   Properties:
     Service: ECS
@@ -319,7 +319,7 @@ Tasks:
       - true
   Description:
     en: Delete source launch template version
-    zh-cn: 删除启动模版原默认版本
+    zh-cn: 删除启动模板原默认版本
   Properties:
     Service: ECS
     API: DeleteLaunchTemplateVersion
