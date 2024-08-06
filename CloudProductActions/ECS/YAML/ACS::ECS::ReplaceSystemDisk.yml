@@ -45,6 +45,12 @@ Parameters:
     Type: String
     AssociationProperty: ALIYUN::ECS::KeyPair::KeyPairName
     Default: ''
+  passwordInherit:
+    Label:
+      en: PasswordInherit
+      zh-cn: 是否使用镜像预设的密码
+    Type: Boolean
+    Default: false
 Tasks:
 - Name: viewInstanceStatus
   Action: ACS::ExecuteApi
@@ -127,6 +133,7 @@ Tasks:
               - '{{ password }}'
           - Null
           - '{{ password }}'
+      PasswordInherit: '{{ passwordInherit }}'
   Outputs:
     diskId:
       Type: String

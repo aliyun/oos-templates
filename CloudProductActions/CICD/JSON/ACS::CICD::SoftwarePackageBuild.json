@@ -1,0 +1,653 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::CICD::SoftwarePackageBuild",
+    "name-zh-cn": "构建软件包",
+    "en": "Build software package（like jar） and upload to OSS (only support linux machine)",
+    "zh-cn": "构建软件包（如jar包）并上传到OSS （仅支持在linux机器构建)"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "region",
+        "zh-cn": "地域"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}",
+      "AssociationProperty": "RegionId"
+    },
+    "codeSource": {
+      "Label": {
+        "en": "CodeResource",
+        "zh-cn": "代码源"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "oss",
+        "git"
+      ]
+    },
+    "codeSourceUrl": {
+      "Label": {
+        "en": "CodeResourceUrl",
+        "zh-cn": "代码源链接"
+      },
+      "Type": "String",
+      "AssociationPropertyMetadata": {
+        "PropertyType": "ref"
+      }
+    },
+    "branch": {
+      "Label": {
+        "en": "Branch",
+        "zh-cn": "分支"
+      },
+      "Description": {
+        "en": "Branch, pull default branch if not set",
+        "zh-cn": "代码仓库分支，不填拉取默认分支"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${codeSource}",
+              "git"
+            ]
+          }
+        }
+      }
+    },
+    "buildType": {
+      "Label": {
+        "en": "Build Type",
+        "zh-cn": "构建类型"
+      },
+      "Type": "String",
+      "Default": "ExistingEcs",
+      "AllowedValues": [
+        "ExistingEcs",
+        "NewTemporaryEcs"
+      ],
+      "AssociationPropertyMetadata": {
+        "ValueLabelMapping": {
+          "ExistingEcs": "在已有ECS构建",
+          "NewTemporaryEcs": "新启动临时ECS构建"
+        }
+      }
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "ExistingEcs"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "ExistingEcs"
+            ]
+          }
+        }
+      }
+    },
+    "zoneId": {
+      "Type": "String",
+      "Label": {
+        "en": "Availability Zone",
+        "zh-cn": "可用区"
+      },
+      "Default": "",
+      "AssociationProperty": "ZoneId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "ALIYUN::ECS::RegionId",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        }
+      }
+    },
+    "ecsInstanceType": {
+      "Type": "String",
+      "Label": {
+        "en": "Instance Type",
+        "zh-cn": "实例类型"
+      },
+      "Default": "ecs.g6.large",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceType",
+      "AssociationPropertyMetadata": {
+        "ZoneId": "${zoneId}",
+        "InstanceChargeType": "PostPaid",
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        }
+      }
+    },
+    "imageId": {
+      "Type": "String",
+      "Label": {
+        "en": "Image ID",
+        "zh-cn": "镜像ID"
+      },
+      "Description": {
+        "en": "Image ID, represents the image resource to startup one ECS instance",
+        "zh-cn": "镜像ID，ECS实例的镜像资源"
+      },
+      "AssociationProperty": "ALIYUN::ECS::Image::ImageId",
+      "AssociationPropertyMetadata": {
+        "InstanceType": "${ecsInstanceType}",
+        "OSType": "linux",
+        "SupportedImageOwnerAlias": [
+          "system",
+          "self",
+          "others"
+        ],
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        }
+      },
+      "Default": "centos_7"
+    },
+    "allocatePublicIP": {
+      "Type": "Boolean",
+      "Label": {
+        "en": "Allocate Public IP",
+        "zh-cn": "是否分配公网IP"
+      },
+      "Default": true,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        },
+        "Required": {
+          "Condition": {
+            "Fn::Equals": [
+              "${buildType}",
+              "NewTemporaryEcs"
+            ]
+          }
+        }
+      }
+    },
+    "buildScript": {
+      "Label": {
+        "en": "Build Command",
+        "zh-cn": "构建命令"
+      },
+      "Type": "String",
+      "MaxLength": 16384,
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
+      "AssociationPropertyMetadata": {
+        "CommandType": "RunShellScript"
+      },
+      "Default": "# maven build default command\nmvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip\n\n# gradle build default command\n# ./gradlew build\n\n# ant build default command\n# ant"
+    },
+    "packageDir": {
+      "Label": {
+        "en": "PackageDir",
+        "zh-cn": "打包路径"
+      },
+      "Description": {
+        "en": "PackageDir, represents the path to the directory to be packaged",
+        "zh-cn": "PackageDir表示要打成压缩包的路径（通常是包含jar包的文件夹，如target/）, 起始位置为项目文件夹的相对路径"
+      },
+      "Type": "String",
+      "Default": "target/"
+    },
+    "buildMaterialName": {
+      "Label": {
+        "en": "buildMaterialName",
+        "zh-cn": "构建物名称"
+      },
+      "Description": {
+        "en": "buildMaterialName, represents the name of the build material",
+        "zh-cn": "要打成的压缩包名称，如把target/目录打成your_build_material_name.tgz"
+      },
+      "Type": "String",
+      "Default": "buildMaterial-{{ACS::ExecutionId}}"
+    },
+    "bucketName": {
+      "Label": {
+        "en": "BucketName to upload",
+        "zh-cn": "要上传到的 OSS bucket 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "bucketDir": {
+      "Label": {
+        "en": "bucketDir",
+        "zh-cn": "要上传到的 OSS bucket 目录"
+      },
+      "Description": {
+        "en": "bucketDir, represents the path in the bucket to upload",
+        "zh-cn": "形式为\"path_section_1/path_section_2/path_section_3\", 文件会上传到该目录下"
+      },
+      "Type": "String",
+      "Default": "oos_build_materials/{{ACS::CurrentDate}}"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "createTemporaryEcs",
+      "OnError": "deleteTemporaryEcs",
+      "When": {
+        "Fn::Equals": [
+          "{{ buildType }}",
+          "NewTemporaryEcs"
+        ]
+      },
+      "Action": "ACS::ROS::CreateStack",
+      "Description": {
+        "en": "Create temporary ECS",
+        "zh-cn": "创建临时ecs"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "stackName": {
+          "Fn::Replace": [
+            {
+              ".": "_"
+            },
+            "OOS-{{ACS::ExecutionId}}"
+          ]
+        },
+        "disableRollback": true,
+        "templateBody": "{\n  \"ROSTemplateFormatVersion\": \"2015-09-01\",\n  \"Description\": \"Create ECS\",\n  \"Parameters\": {\n    \"ZoneId\": {\n      \"Type\": \"String\",\n      \"Label\": {\n        \"en\": \"Availability Zone\",\n        \"zh-cn\": \"可用区\"\n      },\n      \"AssociationProperty\": \"ZoneId\",\n      \"AssociationPropertyMetadata\": {\n        \"RegionId\": \"ALIYUN::ECS::RegionId\"\n      }\n    },\n    \"EcsInstanceType\": {\n      \"Type\": \"String\",\n      \"Label\": {\n        \"en\": \"Instance Type\",\n        \"zh-cn\": \"实例类型\"\n      },\n      \"AssociationProperty\": \"ALIYUN::ECS::Instance::InstanceType\",\n      \"AssociationPropertyMetadata\": {\n        \"ZoneId\": \"${ZoneId}\",\n        \"InstanceChargeType\": \"PostPaid\"\n      }\n    },\n    \"ImageId\": {\n      \"Type\": \"String\",\n      \"Label\": {\n        \"en\": \"Image ID\",\n        \"zh-cn\": \"镜像ID\"\n      },\n      \"Description\": {\n        \"en\": \"Image ID, represents the image resource to startup one ECS instance\",\n        \"zh-cn\": \"镜像ID，ECS实例的镜像资源\"\n      },\n      \"AssociationProperty\": \"ALIYUN::ECS::Image::ImageId\",\n      \"AssociationPropertyMetadata\": {\n        \"InstanceType\": \"${EcsInstanceType}\",\n        \"SupportedImageOwnerAlias\": [\n          \"system\",\n          \"self\",\n          \"others\"\n        ]\n      },\n      \"Default\": \"centos_7\"\n    },\n    \"AllocatePublicIP\": {\n      \"Type\": \"Boolean\",\n      \"Label\": {\n        \"en\": \"Allocate Public IP\",\n        \"zh-cn\": \"分配公网IP\"\n      },\n      \"Description\": {\n        \"en\": \"Whether to allocate public IP\",\n        \"zh-cn\": \"是否分配公网IP\"\n      },\n      \"Default\": \"true\"\n    }\n  },\n  \"Resources\": {\n    \"EcsVpc\": {\n      \"Type\": \"ALIYUN::ECS::VPC\",\n      \"Properties\": {\n        \"CidrBlock\": \"192.168.0.0/16\",\n        \"VpcName\": {\n          \"Ref\": \"ALIYUN::StackName\"\n        }\n      }\n    },\n    \"EcsVSwitch\": {\n      \"Type\": \"ALIYUN::ECS::VSwitch\",\n      \"Properties\": {\n        \"ZoneId\": {\n          \"Ref\": \"ZoneId\"\n        },\n        \"VpcId\": {\n          \"Ref\": \"EcsVpc\"\n        },\n        \"CidrBlock\": \"192.168.1.0/24\"\n      }\n    },\n    \"EcsSecurityGroup\": {\n      \"Type\": \"ALIYUN::ECS::SecurityGroup\",\n      \"Properties\": {\n        \"VpcId\": {\n          \"Ref\": \"EcsVpc\"\n        }\n      }\n    },\n    \"EcsInstanceGroup\": {\n      \"Type\": \"ALIYUN::ECS::InstanceGroup\",\n      \"Properties\": {\n        \"InternetMaxBandwidthOut\": 10,\n        \"ZoneId\": {\n          \"Ref\": \"ZoneId\"\n        },\n        \"VpcId\": {\n          \"Ref\": \"EcsVpc\"\n        },\n        \"VSwitchId\": {\n          \"Ref\": \"EcsVSwitch\"\n        },\n        \"SecurityGroupId\": {\n          \"Ref\": \"EcsSecurityGroup\"\n        },\n        \"ImageId\": {\n          \"Ref\": \"ImageId\"\n        },\n        \"IoOptimized\": \"optimized\",\n        \"MaxAmount\": 1,\n        \"InstanceType\": {\n          \"Ref\": \"EcsInstanceType\"\n        },\n        \"InstanceName\": {\n          \"Fn::Join\": [\n            \"-\",\n            [\n              {\n                \"Ref\": \"ALIYUN::StackName\"\n              },\n              \"[1,4]\"\n            ]\n          ]\n        },\n        \"AllocatePublicIP\": {\n          \"Ref\": \"AllocatePublicIP\"\n        }\n      }\n    }\n  },\n  \"Outputs\": {\n    \"EcsInstanceId\": {\n      \"Value\": {\n        \"Fn::GetAtt\": [\n          \"EcsInstanceGroup\",\n          \"InstanceIds\"\n        ]\n      }\n    }\n  }\n}",
+        "parameters": [
+          {
+            "ParameterKey": "ZoneId",
+            "ParameterValue": "{{ zoneId }}"
+          },
+          {
+            "ParameterKey": "EcsInstanceType",
+            "ParameterValue": "{{ ecsInstanceType }}"
+          },
+          {
+            "ParameterKey": "ImageId",
+            "ParameterValue": "{{ imageId }}"
+          },
+          {
+            "ParameterKey": "AllocatePublicIP",
+            "ParameterValue": "{{ allocatePublicIP }}"
+          }
+        ]
+      },
+      "Outputs": {
+        "stackId": {
+          "Type": "String",
+          "ValueSelector": "stackId"
+        }
+      }
+    },
+    {
+      "Name": "getEcsInstanceId",
+      "When": {
+        "Fn::Equals": [
+          "{{ buildType }}",
+          "NewTemporaryEcs"
+        ]
+      },
+      "OnError": "deleteTemporaryEcs",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Get ECS info",
+        "zh-cn": "获取ecs信息"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "StackId": "{{createTemporaryEcs.stackId}}"
+        }
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": ".Outputs[0].OutputValue[0]"
+        }
+      }
+    },
+    {
+      "Name": "checkInstance",
+      "Action": "ACS::CheckFor",
+      "Description": "Checks if the ECS OSType is linux",
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "InstanceIds": [
+            {
+              "Fn::If": [
+                {
+                  "Fn::Equals": [
+                    "{{ buildType }}",
+                    "NewTemporaryEcs"
+                  ]
+                },
+                "{{ getEcsInstanceId.instanceId }}",
+                "{{ instanceId }}"
+              ]
+            }
+          ]
+        },
+        "DesiredValues": [
+          "linux"
+        ],
+        "PropertySelector": "Instances.Instance[].OSType"
+      }
+    },
+    {
+      "Name": "downloadCodeFromOss",
+      "Action": "ACS::ECS::DownloadFile",
+      "OnError": "deleteTemporaryEcs",
+      "When": {
+        "Fn::Equals": [
+          "{{ codeSource }}",
+          "oss"
+        ]
+      },
+      "Description": {
+        "en": "Download code from OSS",
+        "zh-cn": "从OSS下载代码"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ buildType }}",
+                "NewTemporaryEcs"
+              ]
+            },
+            "{{ getEcsInstanceId.instanceId }}",
+            "{{ instanceId }}"
+          ]
+        },
+        "sourceType": "https",
+        "sourcePath": "{{ codeSourceUrl }}",
+        "destinationDir": "/root/workspace/{{ACS::ExecutionId}}"
+      }
+    },
+    {
+      "Name": "downloadCodeFromGit",
+      "OnError": "deleteTemporaryEcs",
+      "Action": "ACS::ECS::RunCommand",
+      "When": {
+        "Fn::Equals": [
+          "{{ codeSource }}",
+          "git"
+        ]
+      },
+      "Description": {
+        "en": "Download code from git",
+        "zh-cn": "从git下载代码"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ buildType }}",
+                "NewTemporaryEcs"
+              ]
+            },
+            "{{ getEcsInstanceId.instanceId }}",
+            "{{ instanceId }}"
+          ]
+        },
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\n# Function to install git on Ubuntu/Debian\ninstall_git_debian() {\n    echo \"Installing git...\"\n    sudo apt-get install git -y\n}\n\n# Function to install git on CentOS/Red Hat\ninstall_git_centos() {\n    echo \"Installing git...\"\n    sudo yum install git -y\n}\n\n# Identify the Operating System\n. /etc/os-release\n\ncase $ID in\n    ubuntu|debian)\n        echo \"Detected system: Ubuntu/Debian\"\n        install_git_debian\n        ;;\n    centos|rhel|alinux)\n        echo \"Detected system: CentOS/Red Hat\"\n        install_git_centos\n        ;;\n    *)\n        echo \"Unsupported Operating System: $ID\"\n        exit 1\n        ;;\nesac\n\necho \"Git installation script has completed.\"\nmkdir -p /root/workspace/{{ACS::ExecutionId}}\ncd /root/workspace/{{ACS::ExecutionId}}\n\nif [ -n \"{{ branch }}\" ]; then\n  git clone --branch {{ branch }} {{ codeSourceUrl }} .\nelse\n  git clone {{ codeSourceUrl }} .\nfi"
+      }
+    },
+    {
+      "Name": "runCommandToBuild",
+      "OnError": "deleteTemporaryEcs",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run command to build",
+        "zh-cn": "执行构建命令"
+      },
+      "Properties": {
+        "workingDir": "/root/workspace/{{ACS::ExecutionId}}",
+        "regionId": "{{ regionId }}",
+        "instanceId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ buildType }}",
+                "NewTemporaryEcs"
+              ]
+            },
+            "{{ getEcsInstanceId.instanceId }}",
+            "{{ instanceId }}"
+          ]
+        },
+        "commandType": "RunShellScript",
+        "commandContent": "{{ buildScript }}"
+      }
+    },
+    {
+      "Name": "generateOssPutUrl",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Generate upload url",
+        "zh-cn": "生成上传链接"
+      },
+      "Properties": {
+        "Service": "OSS",
+        "API": "GenerateUrl",
+        "Method": "PUT",
+        "URI": "{{ bucketDir }}/{{ buildMaterialName }}.tgz",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/json"
+        },
+        "Parameters": {
+          "BucketName": "{{ bucketName }}",
+          "RegionId": "{{ regionId }}",
+          "Expires": 6000,
+          "Internal": true
+        },
+        "Body": ""
+      },
+      "Outputs": {
+        "temporaryUrl": {
+          "Type": "String",
+          "ValueSelector": ".Url"
+        }
+      }
+    },
+    {
+      "Name": "PushDeploymentMaterialToOSS",
+      "OnError": "deleteTemporaryEcs",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Push deployment material to OSS",
+        "zh-cn": "推送部署物到OSS"
+      },
+      "Properties": {
+        "workingDir": "/root/workspace/{{ACS::ExecutionId}}",
+        "regionId": "{{ regionId }}",
+        "instanceId": {
+          "Fn::If": [
+            {
+              "Fn::Equals": [
+                "{{ buildType }}",
+                "NewTemporaryEcs"
+              ]
+            },
+            "{{ getEcsInstanceId.instanceId }}",
+            "{{ instanceId }}"
+          ]
+        },
+        "commandType": "RunShellScript",
+        "commandContent": "tar -zcvf /root/workspace/{{ACS::ExecutionId}}/{{ buildMaterialName }}.tgz -C {{ packageDir }} .\ncurl -X PUT -T \"/root/workspace/{{ACS::ExecutionId}}/{{ buildMaterialName }}.tgz\" \"{{generateOssPutUrl.temporaryUrl}}\""
+      }
+    },
+    {
+      "Name": "deleteTemporaryEcs",
+      "Action": "ACS::ROS::DeleteStack",
+      "When": {
+        "Fn::Equals": [
+          "{{ buildType }}",
+          "NewTemporaryEcs"
+        ]
+      },
+      "Description": {
+        "en": "Delete temporary ECS",
+        "zh-cn": "删除临时ecs"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "stackId": "{{ createTemporaryEcs.stackId }}",
+        "retainAllResources": false
+      }
+    }
+  ],
+  "Outputs": {
+    "bucketName": {
+      "Type": "String",
+      "Value": "{{ bucketName }}"
+    },
+    "objectName": {
+      "Type": "String",
+      "Value": "{{ bucketDir }}/{{ buildMaterialName }}.tgz"
+    }
+  },
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "regionId"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "地域信息",
+              "en": "Region"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "codeSource",
+            "codeSourceUrl",
+            "branch"
+          ],
+          "SubTitle": "代码源链接一般来自代码源步骤的输出",
+          "Label": {
+            "default": {
+              "zh-cn": "指定代码源",
+              "en": "Code Source"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "buildType",
+            "zoneId",
+            "ecsInstanceType",
+            "imageId",
+            "allocatePublicIP",
+            "instanceId"
+          ],
+          "SubTitle": "选择构建Ecs相关信息，支持使用已有ECS和临时启动ECS(会产生费用)",
+          "Label": {
+            "default": {
+              "zh-cn": "选择构建Ecs",
+              "en": "Choose Building Ecs"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "buildScript",
+            "buildMaterialName",
+            "packageDir"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "构建信息",
+              "en": "Build Info"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "bucketName",
+            "bucketDir"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "上传到的OSS",
+              "en": "Oss to Upload"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

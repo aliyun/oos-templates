@@ -20,6 +20,7 @@ Parameters:
     AllowedValues:
       - install
       - uninstall
+      - update
     Default: install
     AssociationPropertyMetadata:
       LocaleKey: SoftwareOperationType
@@ -51,7 +52,7 @@ Tasks:
     Description:
       en: Configure Package
       zh-cn: 配置软件包
-    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURL
+    Action: ACS::ECS::ConfigureOOSPackageWithTemporaryURLFullActions
     Properties:
       regionId: '{{ regionId }}'
       instanceId: '{{ instanceId }}'
@@ -90,11 +91,23 @@ Tasks:
           AggregateField: configurationOutput
     Outputs:
       commandOutput:
-        Type: List
-        ValueSelector: .commandOutput
+        Type: Json
+        ValueSelector:
+          Fn::Sub:
+            - '.|{"Package": "${package}", "PackageResult": .commandOutput}'
+            - package:
+                Fn::Select:
+                  - packageName
+                  - '{{ ACS::TaskLoopItem }}'
       configurationOutput:
-        Type: List
-        ValueSelector: .configurationOutput
+        Type: Json
+        ValueSelector:
+          Fn::Sub:
+            - '.|{"Package": "${package}", "PackageResult": .configurationOutput}'
+            - package:
+                Fn::Select:
+                  - packageName
+                  - '{{ ACS::TaskLoopItem }}'
   - Name: rebootInstance
     When:
       'Fn::Equals':
@@ -111,3 +124,6 @@ Outputs:
   commandOutput:
     Type: List
     Value: '{{ configurePackage.commandOutputs }}'
+  configurationOutput:
+    Type: List
+    Value: '{{ configurePackage.configurationOutputs }}'

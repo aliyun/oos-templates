@@ -37,7 +37,7 @@ Parameters:
     Default:
       Mode: Concurrency
       MaxErrors: 0
-      Concurrency: 10
+      Concurrency: 100
   OOSAssumeRole:
     Label:
       en: OOSAssumeRole

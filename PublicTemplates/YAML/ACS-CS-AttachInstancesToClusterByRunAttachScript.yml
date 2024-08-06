@@ -2,7 +2,7 @@ FormatVersion: OOS-2019-06-01
 Description:
   en: Attach ECS instances to cluster
   zh-cn: 添加已有ECS节点到集群
-  name-en: ACS-CS-AttackInstancesToACKCluster
+  name-en: ACS-CS-AttackInstancesToClusterByRunAttachScript
   name-zh-cn: 添加已有ECS节点到集群
   categories:
     - ACK_manage

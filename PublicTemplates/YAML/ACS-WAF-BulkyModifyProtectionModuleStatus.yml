@@ -1,7 +1,7 @@
 FormatVersion: OOS-2019-06-01
 Description:
   en: Modify protection module status
-  zh-cn: 开启WAF防护功能模块模块
+  zh-cn: 开启WAF防护功能模块
   name-en: ACS-WAF-BulkyModifyProtectionModuleStatus
   name-zh-cn: 开启WAF防护功能模块
   categories:

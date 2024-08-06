@@ -2,8 +2,10 @@ FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS-ECS-InheritDiskTagToSnapshot 
   name-zh-cn: 某个地域所有磁盘标签继承到快照
-  en: Inherit all disk tags to snapshots
-  zh-cn: 某个地域所有磁盘标签继承到快照
+  en: All snapshots in the specified region inherit the specified tag on the corresponding disk.
+  zh-cn: 指定地域下所有的快照继承对应磁盘上指定的标签
+  categories:
+    - tag_manage
 Parameters:
   regionId:
     Type: String

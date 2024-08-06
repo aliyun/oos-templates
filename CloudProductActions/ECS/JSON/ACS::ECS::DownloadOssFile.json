@@ -1,0 +1,179 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::DownloadOssFile",
+    "name-zh-cn": "下载OSS文件(ECS)",
+    "en": "Download OSS files",
+    "zh-cn": "下载OSS文件 (ECS)"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "ossRegion": {
+      "Description": {
+        "en": "The region id of OSS",
+        "zh-cn": "OSS所在地域"
+      },
+      "Label": {
+        "en": "OSS Region",
+        "zh-cn": "OSS地域"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "bucketName": {
+      "Label": {
+        "en": "BucketName",
+        "zh-cn": "OSS bucket 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "ossRegion"
+      }
+    },
+    "objectName": {
+      "Label": {
+        "en": "ObjectName",
+        "zh-cn": "OSS object 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Object::ObjectName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "ossRegion",
+        "BucketName": "bucketName",
+        "ValueType": "bucketName"
+      }
+    },
+    "validTime": {
+      "Label": {
+        "en": "Valid time of OSS file (s)",
+        "zh-cn": "OSS文件有效期（秒）"
+      },
+      "Type": "Number",
+      "Default": 6000
+    },
+    "instanceId": {
+      "Label": {
+        "en": "ECSInstanceId",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "destinationDir": {
+      "Label": {
+        "en": "Destination directory",
+        "zh-cn": "下载文件路径"
+      },
+      "Description": {
+        "en": "The directory where the file to download to, like /root/dir1/dir2 (linux), C:\\\\Users\\\\Administrator\\\\dir1\\\\dir2 (windows)",
+        "zh-cn": "文件要下载到的目录，如/root/dir1/dir2 (linux), C:\\\\Users\\\\Administrator\\\\dir1\\\\dir2 (windows)"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "generateUrl",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Generate download url",
+        "zh-cn": "生成下载链接"
+      },
+      "Properties": {
+        "Service": "OSS",
+        "API": "GenerateUrl",
+        "Method": "GET",
+        "URI": "{{ objectName }}",
+        "Headers": {
+          "Content-MD5": "",
+          "Content-Type": "application/json"
+        },
+        "Parameters": {
+          "BucketName": "{{ bucketName }}",
+          "RegionId": "{{ ossRegion }}",
+          "Expires": "{{ validTime }}",
+          "Internal": {
+            "Fn::If": [
+              {
+                "Fn::Equals": [
+                  "{{ ossRegion }}",
+                  "{{ regionId }}"
+                ]
+              },
+              "true",
+              "false"
+            ]
+          }
+        },
+        "Body": ""
+      },
+      "Outputs": {
+        "temporaryUrl": {
+          "Type": "String",
+          "ValueSelector": ".Url"
+        }
+      }
+    },
+    {
+      "Name": "downloadFile",
+      "Action": "ACS::ECS::DownloadFile",
+      "Description": {
+        "en": "Download file from OSS",
+        "zh-cn": "从OSS下载文件"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "sourceType": "https",
+        "sourcePath": "{{ generateUrl.temporaryUrl }}",
+        "destinationDir": "{{ destinationDir }}"
+      }
+    }
+  ],
+  "Metadata": {
+    "ALIYUN::OOS::Interface": {
+      "ParameterGroups": [
+        {
+          "Parameters": [
+            "ossRegion",
+            "bucketName",
+            "objectName",
+            "validTime"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "Oss信息",
+              "en": "Oss Info"
+            }
+          }
+        },
+        {
+          "Parameters": [
+            "regionId",
+            "instanceId",
+            "destinationDir"
+          ],
+          "Label": {
+            "default": {
+              "zh-cn": "Ecs信息与下载路径",
+              "en": "Ecs Info and Download Path"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,112 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DisassociateSharedImages
+  name-zh-cn: 解除镜像共享关系（资源共享）
+  en: Disassociate shared images.
+  zh-cn: 解除镜像共享关系（资源共享）
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+Tasks:
+  - Name: DescribeSnapshotsRelatedToImage
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe snapshots related to image
+      zh-cn: 查询被自定义镜像关联快照
+    Properties:
+      Service: ECS
+      API: DescribeSnapshots
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      imageSnapshotIds:
+        Type: List
+        ValueSelector: .Snapshots.Snapshot | map(select(.Usage == "image" or .Usage == "image_disk" ) | .SnapshotId) | .[]
+  - Name: DescribeImagesRelatedToSnapshot
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe images related to snapshot
+      zh-cn: 查询被快照关联的自定义镜像
+    Properties:
+      Service: ECS
+      API: DescribeImages
+      Parameters:
+        RegionId: '{{ regionId }}'
+        SnapshotId: '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      imageIds:
+        Type: List
+        ValueSelector: .Images.Image[].ImageId
+    Loop:
+      Items: '{{ DescribeSnapshotsRelatedToImage.imageSnapshotIds }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+      Outputs:
+        imageIdList:
+          AggregateType: Fn::ListJoin
+          AggregateField: imageIds
+  - Name: ListSharedResources
+    Action: ACS::ExecuteApi
+    Description:
+      en: List shared resources
+      zh-cn: 查询被共享自定义镜像的共享单元信息
+    Properties:
+      Service: ResourceSharing
+      API: ListSharedResources
+      Parameters:
+        ResourceOwner: Self
+        ResourceType: Image
+        ResourceIds:
+          - '{{ ACS::TaskLoopItem }}'
+    Outputs:
+      resourceShareInfo:
+        Type: Json
+        ValueSelector: .SharedResources | map({resourceId:.ResourceId, resourceShareId:.ResourceShareId}) | first
+    Loop:
+      Items:
+        Fn::Jq:
+          - All
+          - map(select(. != null)) | .[][]
+          - '{{ DescribeImagesRelatedToSnapshot.imageIdList }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1
+      Outputs:
+        resourceShareInfos:
+          AggregateType: Fn::ListJoin
+          AggregateField: resourceShareInfo
+  - Name: DisassociateResourceShare
+    Action: ACS::ExecuteApi
+    Description:
+      en: Disassociate resource share
+      zh-cn: 解除被共享自定义镜像的共享关系
+    Properties:
+      Service: ResourceSharing
+      API: DisassociateResourceShare
+      Parameters:
+        ResourceShareId:
+          Fn::Select:
+            - resourceShareId
+            - '{{ ACS::TaskLoopItem }}'
+        Resources:
+          - ResourceType: Image
+            ResourceId:
+              Fn::Select:
+                - resourceId
+                - '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items:
+        Fn::Jq:
+          - First
+          - map(select(.!= null))
+          - '{{ ListSharedResources.resourceShareInfos }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1

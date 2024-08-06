@@ -63,13 +63,7 @@ Tasks:
     Properties:
       runtime: '{{ Runtime }}'
       script: '{{ Script }}'
-      role:
-        Fn::If:
-          - Fn::Equals:
-              - '{{FCAssumeRole}}'
-              - ''
-          - ''
-          - 'acs:ram::{{ACS::AccountId}}:role/{{FCAssumeRole}}'
+      role: '{{ FCAssumeRole }}'
     Outputs:
       Result:
         Type: String

@@ -1,0 +1,213 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::ConfigureOOSPackageWithTemporaryURLFullActions",
+    "name-zh-cn": "在ECS实例中通过生成临时地址安装、卸载或更新OOS软件包",
+    "en": "Configure OOS package on ECS instance",
+    "zh-cn": "在ECS实例中配置OOS自定义软件包"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String"
+    },
+    "action": {
+      "Description": {
+        "en": "The action to configure package",
+        "zh-cn": "设置软件包的方式"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "install",
+        "uninstall",
+        "update"
+      ],
+      "Default": "install"
+    },
+    "packageName": {
+      "Description": {
+        "en": "The name of package",
+        "zh-cn": "软件包名称"
+      },
+      "Type": "String"
+    },
+    "packageVersion": {
+      "Description": {
+        "en": "The version of package",
+        "zh-cn": "软件包版本"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "parameters": {
+      "Label": {
+        "en": "Parameters",
+        "zh-cn": "命令中的参数"
+      },
+      "Type": "Json",
+      "Default": {}
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "InstallOrUninstallOOSPackage",
+      "When": {
+        "Fn::Not": {
+          "Fn::Equals": [
+            "{{ action }}",
+            "update"
+          ]
+        }
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Description": {
+        "en": "Install or uninstall OOS package",
+        "zh-cn": "安装或卸载OOS自定义软件包"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "action": "{{ action }}",
+        "packageName": "{{ packageName }}",
+        "packageVersion": "{{ packageVersion }}",
+        "parameters": "{{ parameters }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        },
+        "configurationOutput": {
+          "Type": "String",
+          "ValueSelector": "configurationOutput"
+        }
+      }
+    },
+    {
+      "Name": "GetTemplateOldVersion",
+      "When": {
+        "Fn::Equals": [
+          "{{ action }}",
+          "update"
+        ]
+      },
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get template old version",
+        "zh-cn": "获取旧版本软件包"
+      },
+      "Properties": {
+        "Service": "OOS",
+        "API": "ListInstancePackageStates",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "TemplateNames": "[\"{{ packageName }}\"]"
+        }
+      },
+      "Outputs": {
+        "packageVersion": {
+          "Type": "String",
+          "ValueSelector": ".PackageStates[].TemplateVersion"
+        }
+      }
+    },
+    {
+      "Name": "UpdateOOSPackageUninstallOldVersion",
+      "When": {
+        "Fn::Equals": [
+          "{{ action }}",
+          "update"
+        ]
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Description": {
+        "en": "Update OOS package (uninstall old version)",
+        "zh-cn": "更新OOS自定义软件包（卸载旧版本）"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "action": "uninstall",
+        "packageName": "{{ packageName }}",
+        "packageVersion": "{{ GetTemplateOldVersion.packageVersion }}"
+      }
+    },
+    {
+      "Name": "UpdateOOSPackageInstallNewVersion",
+      "When": {
+        "Fn::Equals": [
+          "{{ action }}",
+          "update"
+        ]
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Description": {
+        "en": "Update OOS package (install new version)",
+        "zh-cn": "更新OOS自定义软件包（安装新版本）"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "action": "install",
+        "packageName": "{{ packageName }}",
+        "packageVersion": "{{ packageVersion }}",
+        "parameters": "{{ parameters }}"
+      },
+      "Outputs": {
+        "commandOutput": {
+          "Type": "String",
+          "ValueSelector": "commandOutput"
+        },
+        "configurationOutput": {
+          "Type": "String",
+          "ValueSelector": "configurationOutput"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "commandOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "{{ action }}",
+              "update"
+            ]
+          },
+          "{{ UpdateOOSPackageInstallNewVersion.commandOutput }}",
+          "{{ InstallOrUninstallOOSPackage.commandOutput }}"
+        ]
+      }
+    },
+    "configurationOutput": {
+      "Type": "String",
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "{{ action }}",
+              "update"
+            ]
+          },
+          "{{ UpdateOOSPackageInstallNewVersion.configurationOutput }}",
+          "{{ InstallOrUninstallOOSPackage.configurationOutput }}"
+        ]
+      }
+    }
+  }
+}

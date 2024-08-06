@@ -4,6 +4,8 @@ Description:
   zh-cn: Ecs实例相关资源（Disk、Image、Snapshot、EIP、ENI）继承实例的标签
   name-en: ACS-TAG-ExtendEcsInstanceTagsByInputParams
   name-zh-cn: Ecs实例相关资源（Disk、Image、Snapshot、EIP、ENI）继承实例的标签
+  categories:
+    - tag_manage
 Parameters:
   regionId:
     Label:

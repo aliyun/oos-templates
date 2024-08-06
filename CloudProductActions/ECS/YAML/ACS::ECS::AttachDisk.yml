@@ -32,6 +32,20 @@ Parameters:
       zh-cn: 删除实例时选择是否删除数据盘，默认为不删除
     Type: Boolean
     Default: false
+  bootable:
+    Description:
+      en: Whether to mount as a system disk. When set to true, the target ECS instance must be in a state without a system disk
+      zh-cn: 是否作为系统盘挂载，设置为 true 时，目标 ECS 实例必须处于无系统盘状态
+    Type: Boolean
+    Default: false
+  password:
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::Password
+    Default: ''
+    Label:
+      en: Instance Password
+      zh-cn: 实例密码
+    NoEcho: true
 Tasks:
 - Name: attachDisk
   Action: ACS::ExecuteAPI
@@ -46,6 +60,8 @@ Tasks:
       DiskId: '{{ diskId }}'
       InstanceId: '{{ instanceId }}'
       DeleteWithInstance: '{{ deleteWithInstance }}'
+      Bootable: '{{ bootable }}'
+      Password: '{{ password }}'
 - Name: untilDiskAttached
   Action: ACS::WaitFor
   Description:

@@ -1,0 +1,344 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Solutions to Repair Windows System Blue Screen Issues",
+    "zh-cn": "修复Windows系统蓝屏问题解决方案",
+    "name-en": "ACS-ECS-RepairWindowsBlueScreenIssue",
+    "name-zh-cn": "修复Windows系统蓝屏问题"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例Id"
+      }
+    },
+    "password": {
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::Password",
+      "Label": {
+        "en": "ECS Instance Password",
+        "zh-cn": "实例密码"
+      },
+      "NoEcho": true
+    }
+  },
+  "RamRole": "",
+  "Tasks": [
+    {
+      "Name": "getZoneId",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get zoneId of ECS instance",
+        "zh-cn": "获取ECS实例可用区"
+      },
+      "Properties": {
+        "Service": "ecs",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[].ZoneId"
+        },
+        "instanceType": {
+          "Type": "String",
+          "ValueSelector": ".Instances.Instance[].InstanceType"
+        }
+      }
+    },
+    {
+      "Name": "createStack",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Create a resource stack of VPC",
+        "zh-cn": "创建VPC资源栈"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "CreateStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackName": "OOS-{{ACS::ExecutionId}}",
+          "TimeoutInMinutes": 10,
+          "DisableRollback": false,
+          "Parameters": [
+            {
+              "ParameterKey": "ZoneId",
+              "ParameterValue": "{{ getZoneId.zoneId }}"
+            },
+            {
+              "ParameterKey": "VpcCidrBlock",
+              "ParameterValue": "192.168.0.0/16"
+            },
+            {
+              "ParameterKey": "VSwitchCidrBlock",
+              "ParameterValue": "192.168.1.0/24"
+            }
+          ],
+          "TemplateBody": "ROSTemplateFormatVersion: '2015-09-01'\nParameters:\n  ZoneId:\n    Type: String\n  VpcCidrBlock:\n    Type: String\n  VSwitchCidrBlock:\n    Type: String\nResources:\n  EcsVpc:\n    Type: ALIYUN::ECS::VPC\n    Properties:\n      CidrBlock:\n        Ref: VpcCidrBlock\n      VpcName:\n        Ref: ALIYUN::StackName\n  EcsVSwitch:\n    Type: ALIYUN::ECS::VSwitch\n    Properties:\n      ZoneId:\n        Ref: ZoneId\n      VpcId:\n        Ref: EcsVpc\n      CidrBlock:\n        Ref: VSwitchCidrBlock\n  EcsSecurityGroup:\n    Type: ALIYUN::ECS::SecurityGroup\n    Properties:\n      VpcId:\n        Ref: EcsVpc\nOutputs:\n  SecurityGroupId:\n    Value:\n      Ref: EcsSecurityGroup\n  VSwitchId:\n    Value:\n      Ref: EcsVSwitch\n"
+        }
+      },
+      "Outputs": {
+        "StackId": {
+          "Type": "String",
+          "ValueSelector": "StackId"
+        }
+      }
+    },
+    {
+      "Name": "untilStackReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Wait for the stack status CREATE_COMPLETE",
+        "zh-cn": "等待资源栈至创建成功状态"
+      },
+      "OnError": "deleteStack",
+      "Retries": 10,
+      "DelayType": "Exponential",
+      "Delay": 2,
+      "BackOff": 2,
+      "Properties": {
+        "Service": "ROS",
+        "API": "GetStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackId": "{{createStack.StackId}}"
+        },
+        "DesiredValues": [
+          "CREATE_COMPLETE"
+        ],
+        "StopRetryValues": [
+          "CREATE_FAILED",
+          "CHECK_FAILED",
+          "ROLLBACK_FAILED",
+          "ROLLBACK_COMPLETE",
+          "CREATE_ROLLBACK_COMPLETE"
+        ],
+        "PropertySelector": "Status",
+        "NotDesiredValues": []
+      },
+      "Outputs": {
+        "securityGroupId": {
+          "Type": "String",
+          "ValueSelector": "Outputs[0].OutputValue"
+        },
+        "vSwitchId": {
+          "Type": "String",
+          "ValueSelector": "Outputs[1].OutputValue"
+        }
+      }
+    },
+    {
+      "Name": "runInstances",
+      "Action": "ACS::ECS::RunInstances",
+      "Description": {
+        "en": "Create a temporary ECS instance",
+        "zh-cn": "创建临时ECS实例"
+      },
+      "OnError": "deleteStack",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "imageId": "wincore_2022_x64_dtc_zh-cn_40G_alibase_20240617.vhd",
+        "instanceType": "{{ getZoneId.instanceType }}",
+        "securityGroupId": "{{ untilStackReady.securityGroupId }}",
+        "vSwitchId": "{{ untilStackReady.vSwitchId }}",
+        "systemDiskCategory": "cloud_essd",
+        "systemDiskSize": "40",
+        "internetMaxBandwidthIn": 0,
+        "internetMaxBandwidthOut": 0,
+        "amount": 1
+      },
+      "Outputs": {
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": "instanceIds[0]"
+        }
+      }
+    },
+    {
+      "Name": "StopInstance",
+      "Action": "ACS::ECS::StopInstance",
+      "Description": {
+        "en": "Stop ECS instance pending repair.",
+        "zh-cn": "停止待修复ECS实例"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "forceStop": true
+      }
+    },
+    {
+      "Name": "getDiskId",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Get system disk ID of the ECS instance pending repair.",
+        "zh-cn": "获取待修复ECS实例系统盘Id"
+      },
+      "Properties": {
+        "Service": "ecs",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "DiskType": "system"
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": ".Disks.Disk[].DiskId"
+        }
+      }
+    },
+    {
+      "Name": "detachSystemDisk",
+      "Description": {
+        "en": "Detach system disk of the ECS instance pending repair.",
+        "zh-cn": "卸载待修复ECS实例系统盘"
+      },
+      "Action": "ACS::ECS::DetachDisk",
+      "OnError": "deleteInstance",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "diskId": "{{ getDiskId.diskId }}"
+      }
+    },
+    {
+      "Name": "attachDiskToTempInstance",
+      "Action": "ACS::ECS::AttachDisk",
+      "Description": {
+        "en": "Attach disk to a temporary ECS instance.",
+        "zh-cn": "将磁盘挂载到临时ECS实例"
+      },
+      "OnError": "deleteInstance",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ runInstances.instanceId }}",
+        "diskId": "{{ getDiskId.diskId }}"
+      }
+    },
+    {
+      "Name": "waitForAWhile",
+      "Description": {
+        "en": "Wait for ready",
+        "zh-cn": "等待状态就绪"
+      },
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "PT4M"
+      }
+    },
+    {
+      "Name": "runCommand",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Run the repair command.",
+        "zh-cn": "运行修复命令"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "commandType": "RunPowerShellScript",
+        "instanceId": "{{ runInstances.instanceId }}",
+        "commandContent": "$disks = Get-Disk\n$disks | ForEach-Object {\n  if ($_.IsOffline) {\n    Set-Disk -Number $_.Number -IsOffline $false\n  }\n\n  if ($_.IsReadOnly) {\n    Set-Disk -Number $_.Number -IsReadOnly $false\n  }\n}\n\n# Rename driver dir\n$driverDir = \"D:\\windows\\system32\\drivers\\CrowdStrike\"\nif (!(Test-Path $driverDir)) {\n  Write-Host \"driver path not found\"\n  exit 1\n}\n\nRename-Item -Path $driverDir -NewName ($driverDir + \".bak\")"
+      }
+    },
+    {
+      "Name": "detachDisk",
+      "Action": "ACS::ECS::DetachDisk",
+      "Description": {
+        "en": "Detach disk from the temporary instance.",
+        "zh-cn": "从临时实例卸载磁盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ runInstances.instanceId }}",
+        "diskId": "{{ getDiskId.diskId }}"
+      }
+    },
+    {
+      "Name": "attachDiskToOriginalInstance",
+      "Action": "ACS::ECS::AttachDisk",
+      "Description": {
+        "en": "Attach disk to the original instance.",
+        "zh-cn": "将磁盘挂载回源实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "diskId": "{{ getDiskId.diskId }}",
+        "bootable": true,
+        "password": "{{ password }}"
+      }
+    },
+    {
+      "Name": "startInstance",
+      "Action": "ACS::ECS::StartInstance",
+      "Description": {
+        "en": "Start original instance.",
+        "zh-cn": "启动源实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}"
+      }
+    },
+    {
+      "Name": "deleteInstance",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Delete the temporary instance.",
+        "zh-cn": "删除临时实例"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteInstance",
+        "Risk": "Normal",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ runInstances.instanceId }}",
+          "Force": true
+        }
+      }
+    },
+    {
+      "Name": "deleteStack",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Delete the stack of VPC",
+        "zh-cn": "删除VPC资源栈"
+      },
+      "Properties": {
+        "Service": "ROS",
+        "API": "DeleteStack",
+        "Parameters": {
+          "RegionId": "{{ regionId  }}",
+          "StackId": "{{ createStack.StackId }}"
+        }
+      }
+    }
+  ]
+}

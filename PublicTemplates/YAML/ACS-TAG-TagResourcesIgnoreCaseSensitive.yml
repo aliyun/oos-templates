@@ -24,54 +24,54 @@ Parameters:
       en: ResourceType
       zh-cn: 资源类型
     Type: String
-    AllowedValues:
+    AllowedValues:      
       - ACS::ACK::Cluster
       - ACS::ADB::DBCluster
       - ACS::ADB::DBClusterLakeVersion
-      - ACS::AliKafka::ConsumerGroup
-      - ACS::AliKafka::Instance
-      - ACS::AliKafka::Topic
       - ACS::ALB::Acl
       - ACS::ALB::HealthCheckTemplate
-      - ACS::ALB::LoadBalancer
       - ACS::ALB::Listener
+      - ACS::ALB::LoadBalancer
       - ACS::ALB::Rule
       - ACS::ALB::SecurityPolicy
       - ACS::ALB::ServerGroup
+      - ACS::AliKafka::ConsumerGroup
+      - ACS::AliKafka::Instance
+      - ACS::AliKafka::Topic
       - ACS::ApiGateway::Api
       - ACS::ApiGateway::ApiGroup
       - ACS::CBWP::CommonBandwidthPackage
       - ACS::CDN::Domain
-      - ACS::CEN::CenInstance
       - ACS::CEN::CenBandwidthPackage
+      - ACS::CEN::CenInstance
       - ACS::CEN::Flowlog
       - ACS::CEN::TransitRouter
+      - ACS::CEN::TransitRouterMulticastDomain
+      - ACS::CEN::TransitRouterPeerAttachment
+      - ACS::CEN::TransitRouterRouteTable
       - ACS::CEN::TransitRouterVbrAttachment
       - ACS::CEN::TransitRouterVpcAttachment
       - ACS::CEN::TransitRouterVpnAttachment
-      - ACS::CEN::TransitRouterRouteTable
-      - ACS::CEN::TransitRouterPeerAttachment
-      - ACS::CEN::TransitRouterMulticastDomain
       - ACS::DCDN::Domain
       - ACS::DdosCoo::Instance
       - ACS::EBS::DedicatedBlockStorageCluster
       - ACS::EBS::DiskReplicaGroup
       - ACS::EBS::DiskReplicaPair
       - ACS::EBS::EnterpriseSnapshotPolicy
+      - ACS::ECI::ContainerGroup
+      - ACS::ECS::AutoSnapshotPolicy
+      - ACS::ECS::Command
       - ACS::ECS::DedicatedHost
       - ACS::ECS::Disk
+      - ACS::ECS::Image
       - ACS::ECS::Instance
+      - ACS::ECS::KeyPair
       - ACS::ECS::LaunchTemplate
       - ACS::ECS::NetworkInterface
       - ACS::ECS::SecurityGroup
       - ACS::ECS::Snapshot
-      - ACS::ESS::ScalingGroup
-      - ACS::ECI::ContainerGroup
-      - ACS::ECS::Command
-      - ACS::ECS::Image
-      - ACS::ECS::KeyPair
-      - ACS::ECS::AutoSnapshotPolicy
       - ACS::EIP::EipAddress
+      - ACS::ESS::ScalingGroup
       - ACS::ExpressConnect::PhysicalConnection
       - ACS::FC::Service
       - ACS::GPDB::DBInstance
@@ -95,6 +95,7 @@ Parameters:
       - ACS::OSS::Bucket
       - ACS::Ons::Group
       - ACS::Ons::Instance
+      - ACS::Ons::Instance
       - ACS::Ons::Topic
       - ACS::PolarDB::DBCluster
       - ACS::PrivateLink::VpcEndpoint
@@ -109,6 +110,7 @@ Parameters:
       - ACS::SLB::MasterSlaveServerGroup
       - ACS::SLB::ServerCertificate
       - ACS::SLB::VServerGroup
+      - ACS::SLS::Project
       - ACS::VPC::DhcpOptionsSet
       - ACS::VPC::FlowLog
       - ACS::VPC::GatewayEndpoint

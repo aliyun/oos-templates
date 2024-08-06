@@ -1,0 +1,107 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::CancelDiskAutoSnapshotPolicies",
+    "name-zh-cn": "取消磁盘自动快照策略",
+    "en": "Cancel disk auto snapshot policy.",
+    "zh-cn": "取消磁盘自动快照策略"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域Id"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "DescribeAutoSnapshotPolicyEx",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Describe auto snapshot policies",
+        "zh-cn": "查询自动快照策略"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeAutoSnapshotPolicyEx",
+        "Parameters": {
+          "RegionId": "{{ regionId }}"
+        }
+      },
+      "Outputs": {
+        "autoSnapshotPolicyIds": {
+          "Type": "List",
+          "ValueSelector": ".AutoSnapshotPolicies.AutoSnapshotPolicy[].AutoSnapshotPolicyId"
+        }
+      }
+    },
+    {
+      "Name": "DescribeDisksRelatedToAutoSnapshotPolicy",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Describe disks related to auto snapshot policy",
+        "zh-cn": "查询用户自动快照策略关联的磁盘"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "AutoSnapshotPolicyId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "diskIds": {
+          "Type": "List",
+          "ValueSelector": ".Disks.Disk[].DiskId"
+        }
+      },
+      "Loop": {
+        "Items": "{{ DescribeAutoSnapshotPolicyEx.autoSnapshotPolicyIds }}",
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        },
+        "Outputs": {
+          "diskIdList": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "diskIds"
+          }
+        }
+      }
+    },
+    {
+      "Name": "CancelDiskAutoSnapshotPolicies",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Cancel disk auto snapshot policies",
+        "zh-cn": "取消磁盘自动快照策略"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CancelAutoSnapshotPolicy",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "diskIds": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            "map(select(. != null)) | .[][] | [.]",
+            "{{ DescribeDisksRelatedToAutoSnapshotPolicy.diskIdList }}"
+          ]
+        },
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        }
+      }
+    }
+  ]
+}

@@ -27,7 +27,8 @@
       "Type": "String",
       "AllowedValues": [
         "install",
-        "uninstall"
+        "uninstall",
+        "update"
       ],
       "Default": "install",
       "AssociationPropertyMetadata": {
@@ -211,12 +212,12 @@
       },
       "Outputs": {
         "commandOutput": {
-          "Type": "List",
-          "ValueSelector": ".commandOutput"
+          "Type": "Json",
+          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"InstanceResult\": .commandOutput}"
         },
         "configurationOutput": {
-          "Type": "List",
-          "ValueSelector": ".configurationOutput"
+          "Type": "Json",
+          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"InstanceResult\": .configurationOutput}"
         }
       }
     }

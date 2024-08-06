@@ -1,0 +1,192 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Use lifecycleHook to modify instance charge type in the specified scaling activity
+  zh-cn: 使用生命周期挂钩修改实例付费方式
+  name-en: ACS-ESS-LifeCycleModifyInstanceChargeType
+  name-zh-cn: 使用生命周期挂钩修改实例付费方式
+  categories:
+    - elastic_manage
+Parameters:
+  instanceChargeType:
+    Label:
+      en: InstanceChargeType
+      zh-cn: 实例需要修改的目标计费方式
+    Type: String
+    AllowedValues:
+      - PostPaid
+      - PrePaid
+    Default: PostPaid
+  periodUnit:
+    Label:
+      en: PeriodUnit
+      zh-cn: 续费时长的时间单位
+    Type: String
+    AllowedValues:
+      - Week
+      - Month
+    Default: Month
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Not:
+            Fn::Equals:
+              - ${instanceChargeType}
+              - PostPaid
+  period:
+    Description:
+      en: The period of the instance
+      zh-cn: PeriodUnit=Week时，Period取值：1~4，PeriodUnit=Month时，Period取值：1~12,24, 36, 48, 60
+    Label:
+      en: Period
+      zh-cn: 续费时长
+    Type: Number
+    Default: 1
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Not:
+            Fn::Equals:
+              - ${instanceChargeType}
+              - PostPaid
+  includeDataDisks:
+    Description:
+      en: Specifies whether to change the billing method of all data disks attached to the instance from pay-as-you-go to subscription
+      zh-cn: 是否将实例挂载的所有按量付费数据盘一起转换为包年包月数据盘
+    Label:
+      en: IncludeDataDisks
+      zh-cn: 是否转换数据盘
+    Type: Boolean
+    Default: false
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Not:
+            Fn::Equals:
+              - ${instanceChargeType}
+              - PostPaid
+  networkChargeType:
+    Label:
+      en: NetworkChargeType
+      zh-cn: 网络需要修改的目标计费方式
+    Type: String
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+    Default: PayByTraffic
+  lifecycleActionResult:
+    Label:
+      en: LifecycleActionResult
+      zh-cn: 生命周期挂钩等待状态结束后的下一步动作
+    Description:
+      en: After the command execution fails, the lifecycle hook waits for the next action after the state ends
+      zh-cn: 命令执行失败后，生命周期挂钩等待状态结束后的下一步动作
+    Type: String
+    AllowedValues:
+      - ABANDON
+      - ROLLBACK
+      - CONTINUE
+    Default: ABANDON
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Description:
+      en: The ID of region
+      zh-cn: 地域ID，请使用弹性伸缩系统默认值 ${regionId}
+    Type: String
+    Default: ${regionId}
+  instanceIds:
+    Label:
+      en: InstanceIds
+      zh-cn: ECS实例ID列表
+    Description:
+      en: The ID list of the ECS instance
+      zh-cn: ECS实例ID列表,请使用弹性伸缩系统默认值 ["${instanceId}"]
+    Type: List
+    Default:
+      - ${instanceIds}
+  lifecycleHookId:
+    Label:
+      en: LifecycleHookId
+      zh-cn: 生命周期挂钩ID
+    Description:
+      en: The ID of the lifecycle hook
+      zh-cn: 生命周期挂钩ID,请使用弹性伸缩系统默认值 ${lifecycleHookId}
+    Type: String
+    Default: ${lifecycleHookId}
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  lifecycleActionToken:
+    Label:
+      en: LifecycleActionToken
+      zh-cn: 实例关联的特定伸缩活动的令牌
+    Description:
+      en: The token that indicates a specific scaling activity associated with an instance
+      zh-cn: 实例关联的特定伸缩活动的令牌,请使用弹性伸缩系统默认值 ${lifecycleActionToken}
+    Type: String
+    Default: ${lifecycleActionToken}
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: sleepTask
+    Action: ACS::Sleep
+    Properties:
+      Duration: 10s
+  - Name: modifyInstanceChargeType
+    OnError: CompleteLifecycleActionForAbandon
+    OnSuccess: CompleteLifecycleActionForContinue
+    Description:
+      en: Modify instance charge type
+      zh-cn: 修改实例计费方式
+    Action: ACS::ECS::ModifyInstanceChargeType
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ ACS::TaskLoopItem }}'
+      instanceChargeType: '{{ instanceChargeType }}'
+      networkChargeType: '{{ networkChargeType }}'
+      period: '{{ period }}'
+      periodUnit: '{{ periodUnit }}'
+      includeDataDisks: '{{ includeDataDisks }}'
+    Loop:
+      Items: '{{ instanceIds }}'
+      RateControl: '{{ rateControl }}'
+  - Name: CompleteLifecycleActionForContinue
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Modify lifecycle action for continue
+      zh-cn: 修改伸缩活动的等待状态为继续完成
+    OnSuccess: ACS::END
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: CONTINUE
+  - Name: CompleteLifecycleActionForAbandon
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Complete lifecycle action for Abandon
+      zh-cn: 修改伸缩活动的等待状态为弃用
+    Properties:
+      Service: ESS
+      API: CompleteLifecycleAction
+      Parameters:
+        RegionId: '{{ regionId }}'
+        LifecycleHookId: '{{ lifecycleHookId }}'
+        LifecycleActionToken: '{{ lifecycleActionToken }}'
+        LifecycleActionResult: '{{ lifecycleActionResult }}'

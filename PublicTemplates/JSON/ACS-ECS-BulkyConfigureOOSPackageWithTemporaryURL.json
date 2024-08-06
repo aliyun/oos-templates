@@ -28,7 +28,8 @@
       "Type": "String",
       "AllowedValues": [
         "install",
-        "uninstall"
+        "uninstall",
+        "update"
       ],
       "Default": "install",
       "AssociationPropertyMetadata": {
@@ -55,7 +56,9 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::OOS::Package::PackageVersion",
       "AssociationPropertyMetadata": {
-        "TemplateName": "${packageName}"
+        "TemplateName": "${packageName}",
+        "PublicDisabled": true,
+        "DoRequestAtFirst": true
       },
       "Default": ""
     },
@@ -73,7 +76,8 @@
       "AssociationProperty": "Targets",
       "AssociationPropertyMetadata": {
         "ResourceType": "ALIYUN::ECS::Instance",
-        "RegionId": "regionId"
+        "RegionId": "regionId",
+        "Status": "Running"
       }
     },
     "orderId": {
@@ -192,7 +196,7 @@
         "en": "Configure Package",
         "zh-cn": "配置软件包"
       },
-      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURLFullActions",
       "Properties": {
         "regionId": "{{ regionId }}",
         "instanceId": "{{ ACS::TaskLoopItem }}",
@@ -228,12 +232,12 @@
       },
       "Outputs": {
         "commandOutput": {
-          "Type": "String",
-          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"Result\": .commandOutput}"
+          "Type": "Json",
+          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"InstanceResult\": [{\"Package\": \"{{packageName}}\", \"PackageResult\": .commandOutput}]}"
         },
         "configurationOutput": {
-          "Type": "String",
-          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"Result\": .configurationOutput}"
+          "Type": "Json",
+          "ValueSelector": ".|{\"InstanceId\": \"{{ ACS::TaskLoopItem }}\", \"InstanceResult\": [{\"Package\": \"{{packageName}}\", \"PackageResult\": .configurationOutput}]}"
         }
       }
     }

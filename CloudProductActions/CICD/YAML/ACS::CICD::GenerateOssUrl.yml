@@ -1,0 +1,64 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::CICD::GenerateOssUrl
+  name-zh-cn: oss代码源
+  en: Generate temporary OSS Url
+  zh-cn: 生成OSS临时地址
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  bucketName:
+    Label:
+      en: BucketName
+      zh-cn: OSS bucket 名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Bucket::BucketName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  objectName:
+    Label:
+      en: ObjectName
+      zh-cn: OSS object 名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Object::ObjectName
+    AssociationPropertyMetadata:
+      RegionId: regionId
+      BucketName: bucketName
+      ValueType: bucketName
+  validTime:
+    Label:
+      en: Valid time of OSS file (s)
+      zh-cn: OSS文件有效期（秒）
+    Type: Number
+    Default: 6000
+  isInternal:
+    Label:
+      en: Whether to generate an internal url
+      zh-cn: 是否生成内网URL
+    Description:
+      en: False generates an public url, True generates an internal url. If the ECS and OSS are in the same region, you can choose True to download via the internal URL, which saves traffic fees.
+      zh-cn: False生成公网URL，True生成内网URL。如果您要下载到的ECS和OSS同地域，可选择True，通过内网URL下载，节省流量。
+    Type: Boolean
+    Default: false
+Tasks:
+  - Name: generateUrl
+    Action: 'ACS::OSS::GenerateUrl'
+    Properties:
+      regionId: '{{ regionId }}'
+      bucketName: '{{ bucketName }}'
+      objectName: '{{ objectName }}'
+      validTime: '{{ validTime }}'
+      isInternal: '{{ isInternal }}'
+    Outputs:
+      temporaryUrl:
+        Type: String
+        ValueSelector: .temporaryUrl
+Outputs:
+  temporaryUrl:
+    Type: String
+    Value: '{{ generateUrl.temporaryUrl }}'

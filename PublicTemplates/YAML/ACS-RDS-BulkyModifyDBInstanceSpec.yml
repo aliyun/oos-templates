@@ -1,0 +1,186 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS-RDS-BulkyModifyDBInstanceSpec
+  name-zh-cn: 修改RDS实例的配置
+  en: |-
+    <div><p>Modify the configuration of the RDS instance, change reminder:</p>
+    <ul>
+    <li>Changing the RDS configuration may involve the migration of underlying data, please wait patiently. After the migration is completed, the switch will be performed, and there will be a flash disconnection of about 30 seconds during the switch. Please ensure that the application has a reconnection mechanism.</li>
+    <li>The instance specification change process will automatically restart the instance according to the switch time you choose, without manual operation.</li>
+    <li>The expansion business of the same storage type of cloud disk is not sensitive, and it will be executed immediately after the configuration change, and will not wait for the operation and maintenance window; the expansion business of local disks and different types of cloud disks will have flash disconnections, and you can choose to switch in the operation and maintenance window.</li>
+    <li>During the flash disconnection, most operations related to databases, accounts, networks, etc. cannot be performed, so please try to perform the configuration change operation during the off-peak period of the business.</li>
+    <li>The disk space of the main instance must be less than or equal to the disk space of the read-only instance</li>
+    </ul>
+    </div>
+  zh-cn: |-
+    <div><p>修改RDS实例的配置，变更提醒：</p>
+      <ul>
+        <li>RDS变更配置可能涉及底层数据迁移，请您耐心等待。在迁移完成后会进行切换，切换时会出现30秒左右的闪断，请确保应用具备重连机制。</li>
+        <li>变更实例规格过程会根据您选择的切换时间自动重启实例，无需手动操作。</li>
+        <li>云盘同存储类型的扩容业务无感，变配后会将立即执行，不会等待运维窗口；本地盘及不同类型云盘扩容业务会出现闪断，可选择运维窗口切换。</li>
+        <li>闪断过程中，与数据库、账号、网络等相关的大部分操作都无法执行，因此请尽量在业务低峰期执行变配操作。</li>
+        <li>主实例磁盘空间须小于等于只读实例磁盘空间</li>
+      </ul>
+    </div>
+Parameters:
+  regionId:
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: ALIYUN::RDS::Instance
+      RegionId: regionId
+      Status: Running
+  dBInstanceStorageType:
+    Type: String
+    Label:
+      en: DBInstanceStorageType
+      zh-cn: 实例储存类型
+    Description:
+      en: |-
+        <div><p>Instance storage type, value:</p>
+            <ul>
+                <li><strong>local_ssd</strong>: Local SSD disk</li>
+                <li><strong>cloud_essd</strong>: ESSD PL1 cloud disk</li>
+                <li><strong>cloud_essd2</strong>: ESSD PL2 cloud disk</li>
+                <li><strong>cloud_essd3</strong>: ESSD PL3 cloud disk</li>
+                <li><strong>general_essd</strong>: General cloud disk</li>
+            </ul>
+        </div>
+      zh-cn: |-
+        <div><p>实例储存类型，取值：</p>
+            <ul>
+                <li><strong>local_ssd</strong>：本地 SSD 盘</li>
+                <li><strong>cloud_essd</strong>：ESSD PL1 云盘</li>
+                <li><strong>cloud_essd2</strong>：ESSD PL2 云盘</li>
+                <li><strong>cloud_essd3</strong>：ESSD PL3 云盘</li>
+                <li><strong>general_essd</strong>：通用云盘</li>
+            </ul>
+        </div>
+    AllowedValues:
+      - local_ssd
+      - cloud_essd
+      - cloud_essd2
+      - cloud_essd3
+      - general_essd
+  dBInstanceClass:
+    Type: String
+    Label:
+      en: DBInstanceClass
+      zh-cn: 目标实例规格
+    AssociationProperty: ALIYUN::RDS::Instance::InstanceType
+    AssociationPropertyMetadata:
+      DBInstanceStorageType: ${dBInstanceStorageType}
+  dBInstanceStorage:
+    Type: Number
+    Label:
+      en: DBInstanceStorage
+      zh-cn: 目标存储空间大小
+    Description:
+      en: Unit:GB. You can increase the storage capacity in increments of 5 GB.
+      zh-cn: 单位：GB，每 5GB 进行递增
+  effectiveTime:
+    Type: String
+    Label:
+      en: EffectiveTime
+      zh-cn: 变更生效时间
+    Description:
+      en: |-
+        <div><p>The time when the configuration change takes effect:</p>
+          <ul>
+            <li><strong>Immediate</strong>: The configuration change takes effect immediately.</li>
+            <li><strong>MaintainTime</strong>: The configuration change takes effect during the maintenance window.</li>
+          </ul>
+        </div>
+      zh-cn: |-
+        <div><p>配置变更生效时间:</p>
+          <ul>
+            <li><strong>Immediate</strong>：配置变更生效立即生效。</li>
+            <li><strong>MaintainTime</strong>：配置变更生效于维护时间段。</li>
+          </ul>
+        </div>
+    AllowedValues:
+      - Immediate
+      - MaintainTime
+    Default: Immediate
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+  - Name: getInstance
+    Description:
+      en: Get the RDS instances
+      zh-cn: 获取RDS实例
+    Action: ACS::SelectTargets
+    Properties:
+      ResourceType: ALIYUN::RDS::Instance
+      RegionId: '{{ regionId }}'
+      Filters:
+        - '{{ targets }}'
+    Outputs:
+      instanceIds:
+        Type: List
+        ValueSelector: Instances.Instance[].InstanceId
+  - Name: modifyDBInstanceSpec
+    Action: ACS::RDS::ModifyDBInstanceSpec
+    Description:
+      en: Modify RDS instance spec
+      zh-cn: 变更RDS实例
+    Properties:
+      regionId: '{{ regionId }}'
+      dBInstanceId: '{{ ACS::TaskLoopItem }}'
+      dBInstanceClass: '{{ dBInstanceClass }}'
+      dBInstanceStorage: '{{ dBInstanceStorage }}'
+      dBInstanceStorageType: '{{ dBInstanceStorageType }}'
+      effectiveTime: '{{ effectiveTime }}'
+    Loop:
+      RateControl: '{{ rateControl }}'
+      Items: '{{ getInstance.instanceIds }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select RDS Instances
+      - Parameters:
+          - dBInstanceStorageType
+          - dBInstanceClass
+          - dBInstanceStorage
+          - effectiveTime
+        Label:
+          default:
+            zh-cn: 配置参数
+            en: Configuration
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

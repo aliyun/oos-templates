@@ -1,0 +1,108 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::DeleteCustomImagesLinkedToSnapshot",
+    "name-zh-cn": "删除关联快照的自定义镜像",
+    "en": "Delete custom images linked to snapshot.",
+    "zh-cn": "删除关联快照的自定义镜像"
+  },
+  "Parameters": {
+    "regionId": {
+      "Type": "String",
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "DescribeSnapshotsRelatedToImage",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Describe snapshots related to image",
+        "zh-cn": "查询被自定义镜像关联快照"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeSnapshots",
+        "Parameters": {
+          "RegionId": "{{ regionId }}"
+        }
+      },
+      "Outputs": {
+        "imageSnapshotIds": {
+          "Type": "List",
+          "ValueSelector": ".Snapshots.Snapshot | map(select(.Usage == \"image\" or .Usage == \"image_disk\" ) | .SnapshotId) | .[]"
+        }
+      }
+    },
+    {
+      "Name": "DescribeImagesRelatedToSnapshot",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Describe images related to snapshot",
+        "zh-cn": "查询被快照关联的自定义镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeImages",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "SnapshotId": "{{ ACS::TaskLoopItem }}"
+        }
+      },
+      "Outputs": {
+        "imageIds": {
+          "Type": "List",
+          "ValueSelector": ".Images.Image[].ImageId"
+        }
+      },
+      "Loop": {
+        "Items": "{{ DescribeSnapshotsRelatedToImage.imageSnapshotIds }}",
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        },
+        "Outputs": {
+          "imageIdList": {
+            "AggregateType": "Fn::ListJoin",
+            "AggregateField": "imageIds"
+          }
+        }
+      }
+    },
+    {
+      "Name": "DeleteImages",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Delete images",
+        "zh-cn": "删除自定义镜像"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DeleteImage",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "ImageId": "{{ ACS::TaskLoopItem }}",
+          "Force": true
+        }
+      },
+      "Loop": {
+        "Items": {
+          "Fn::Jq": [
+            "All",
+            "map(select(. != null)) | .[][]",
+            "{{ DescribeImagesRelatedToSnapshot.imageIdList }}"
+          ]
+        },
+        "RateControl": {
+          "MaxErrors": 0,
+          "Mode": "Concurrency",
+          "Concurrency": 1
+        }
+      }
+    }
+  ]
+}

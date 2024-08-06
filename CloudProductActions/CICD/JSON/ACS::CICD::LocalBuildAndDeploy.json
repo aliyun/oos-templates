@@ -1,0 +1,176 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::CICD::LocalBuildAndDeploy",
+    "name-zh-cn": "本地构建并部署",
+    "en": "Build and deploy the local code",
+    "zh-cn": "本地构建并部署"
+  },
+  "Parameters": {
+    "regionId": {
+      "Description": {
+        "en": "The ID of region",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "Default": "{{ ACS::RegionId }}",
+      "AssociationProperty": "RegionId"
+    },
+    "instanceId": {
+      "Description": {
+        "en": "The ID of ECS instance",
+        "zh-cn": "ECS实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      }
+    },
+    "codeSource": {
+      "Label": {
+        "en": "CodeResource",
+        "zh-cn": "代码源"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "oss",
+        "git"
+      ]
+    },
+    "codeSourceUrl": {
+      "Label": {
+        "en": "CodeResourceUrl",
+        "zh-cn": "代码源链接"
+      },
+      "Type": "String",
+      "AssociationPropertyMetadata": {
+        "PropertyType": "ref"
+      }
+    },
+    "branch": {
+      "Label": {
+        "en": "Branch",
+        "zh-cn": "分支"
+      },
+      "Description": {
+        "en": "Branch, pull default branch if not set",
+        "zh-cn": "代码仓库分支，不填拉取默认分支"
+      },
+      "Type": "String",
+      "Default": "",
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Equals": [
+              "${codeSource}",
+              "git"
+            ]
+          }
+        }
+      }
+    },
+    "isDockerBuild": {
+      "Label": {
+        "en": "IsDockerBuild",
+        "zh-cn": "是否Docker构建"
+      },
+      "Description": {
+        "en": "If true, docker will automatically be install on your ecs.",
+        "zh-cn": "如果为true，会为您在ECS上自动安装Docker。"
+      },
+      "Type": "Boolean",
+      "Default": true
+    },
+    "buildAndDeployScript": {
+      "Label": {
+        "en": "buildAndDeployScript",
+        "zh-cn": "构建部署脚本"
+      },
+      "Type": "String",
+      "MaxLength": 16384,
+      "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
+      "AssociationPropertyMetadata": {
+        "CommandType": "RunShellScript"
+      }
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "downloadCodeFromOss",
+      "Action": "ACS::ECS::DownloadFile",
+      "When": {
+        "Fn::Equals": [
+          "{{ codeSource }}",
+          "oss"
+        ]
+      },
+      "Description": {
+        "en": "Download code from OSS",
+        "zh-cn": "从OSS下载代码"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "sourceType": "https",
+        "sourcePath": "{{ codeSourceUrl }}",
+        "destinationDir": "/root/workspace/{{ACS::ExecutionId}}"
+      }
+    },
+    {
+      "Name": "downloadCodeFromGit",
+      "Action": "ACS::ECS::RunCommand",
+      "When": {
+        "Fn::Equals": [
+          "{{ codeSource }}",
+          "git"
+        ]
+      },
+      "Description": {
+        "en": "Download code from git",
+        "zh-cn": "从git下载代码"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "commandContent": "#!/bin/bash\n# Function to install git on Ubuntu/Debian\ninstall_git_debian() {\n    echo \"Installing git...\"\n    sudo apt-get install git -y\n}\n\n# Function to install git on CentOS/Red Hat\ninstall_git_centos() {\n    echo \"Installing git...\"\n    sudo yum install git -y\n}\n\n# Identify the Operating System\n. /etc/os-release\n\ncase $ID in\n    ubuntu|debian)\n        echo \"Detected system: Ubuntu/Debian\"\n        install_git_debian\n        ;;\n    centos|rhel|alinux)\n        echo \"Detected system: CentOS/Red Hat\"\n        install_git_centos\n        ;;\n    *)\n        echo \"Unsupported Operating System: $ID\"\n        exit 1\n        ;;\nesac\n\necho \"Git installation script has completed.\"\nmkdir -p /root/workspace/{{ACS::ExecutionId}}\ncd /root/workspace/{{ACS::ExecutionId}}\nif [ -n \"{{ branch }}\" ]; then\n  git clone --branch {{ branch }} {{ codeSourceUrl }} .\nelse\n  git clone {{ codeSourceUrl }} .\nfi"
+      }
+    },
+    {
+      "Name": "installDocker",
+      "When": {
+        "Fn::Equals": [
+          "{{ isDockerBuild }}",
+          true
+        ]
+      },
+      "Description": {
+        "en": "Install environment",
+        "zh-cn": "安装Docker环境"
+      },
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "action": "install",
+        "packageName": "ACS-Extension-DockerCE-1853370294850618"
+      }
+    },
+    {
+      "Name": "buildAndDeploy",
+      "Action": "ACS::ECS::RunCommand",
+      "Description": {
+        "en": "Build and deploy",
+        "zh-cn": "构建并部署"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ instanceId }}",
+        "commandType": "RunShellScript",
+        "workingDir": "/root/workspace/{{ACS::ExecutionId}}",
+        "commandContent": "{{ buildAndDeployScript }}"
+      }
+    }
+  ]
+}

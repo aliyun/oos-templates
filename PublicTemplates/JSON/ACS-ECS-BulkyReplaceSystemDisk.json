@@ -7,7 +7,8 @@
     "name-zh-cn": "批量更换ECS实例的系统盘",
     "categories": [
       "instance_manage",
-      "application_management"
+      "application_management",
+      "tag_operate_resource"
     ]
   },
   "Parameters": {

@@ -1,0 +1,145 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::RDS::ModifyDBInstanceSpec",
+    "name-zh-cn": "修改实例配置(RDS)",
+    "en": "Modify the configuration of an RDS instance",
+    "zh-cn": "修改RDS实例的配置"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId"
+    },
+    "dBInstanceId": {
+      "Type": "String",
+      "Label": {
+        "en": "DBInstanceId",
+        "zh-cn": "实例ID"
+      },
+      "AssociationProperty": "ALIYUN::RDS::Instance::InstanceId"
+    },
+    "dBInstanceStorageType": {
+      "Type": "String",
+      "Label": {
+        "en": "DBInstanceStorageType",
+        "zh-cn": "实例储存类型"
+      },
+      "Description": {
+        "en": "<div><p>Instance storage type, value:</p>\n    <ul>\n        <li><strong>local_ssd</strong>: Local SSD disk</li>\n        <li><strong>cloud_essd</strong>: ESSD PL1 cloud disk</li>\n        <li><strong>cloud_essd2</strong>: ESSD PL2 cloud disk</li>\n        <li><strong>cloud_essd3</strong>: ESSD PL3 cloud disk</li>\n        <li><strong>general_essd</strong>: General cloud disk</li>\n    </ul>\n</div>",
+        "zh-cn": "<div><p>实例储存类型，取值：</p>\n    <ul>\n        <li><strong>local_ssd</strong>：本地 SSD 盘</li>\n        <li><strong>cloud_essd</strong>：ESSD PL1 云盘</li>\n        <li><strong>cloud_essd2</strong>：ESSD PL2 云盘</li>\n        <li><strong>cloud_essd3</strong>：ESSD PL3 云盘</li>\n        <li><strong>general_essd</strong>：通用云盘</li>\n    </ul>\n</div>"
+      },
+      "AllowedValues": [
+        "local_ssd",
+        "cloud_essd",
+        "cloud_essd2",
+        "cloud_essd3",
+        "general_essd"
+      ]
+    },
+    "dBInstanceClass": {
+      "Type": "String",
+      "Label": {
+        "en": "DBInstanceClass",
+        "zh-cn": "目标实例规格"
+      },
+      "AssociationProperty": "ALIYUN::RDS::Instance::InstanceType",
+      "AssociationPropertyMetadata": {
+        "DBInstanceStorageType": "${dBInstanceStorageType}"
+      }
+    },
+    "dBInstanceStorage": {
+      "Type": "Number",
+      "Label": {
+        "en": "DBInstanceStorage",
+        "zh-cn": "目标存储空间大小"
+      },
+      "Description": {
+        "en": "Unit:GB. You can increase the storage capacity in increments of 5 GB.",
+        "zh-cn": "单位：GB，每 5GB 进行递增"
+      }
+    },
+    "effectiveTime": {
+      "Type": "String",
+      "Label": {
+        "en": "EffectiveTime",
+        "zh-cn": "变更生效时间"
+      },
+      "Description": {
+        "en": "<div><p>The time when the configuration change takes effect:</p>\n  <ul>\n    <li><strong>Immediate</strong>: The configuration change takes effect immediately.</li>\n    <li><strong>MaintainTime</strong>: The configuration change takes effect during the maintenance window.</li>\n  </ul>\n</div>",
+        "zh-cn": "<div><p>配置变更生效时间:</p>\n  <ul>\n    <li><strong>Immediate</strong>：配置变更生效立即生效。</li>\n    <li><strong>MaintainTime</strong>：配置变更生效于维护时间段。</li>\n  </ul>\n</div>"
+      },
+      "AllowedValues": [
+        "Immediate",
+        "MaintainTime"
+      ],
+      "Default": "Immediate"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "checkForInstanceReady",
+      "Action": "ACS::CheckFor",
+      "Description": {
+        "en": "Checks whether the RDS instance in Running status",
+        "zh-cn": "检查RDS实例是否处于运行中状态"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstanceAttribute",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstanceAttribute[].DBInstanceStatus"
+      }
+    },
+    {
+      "Name": "modifyDBInstanceSpec",
+      "Action": "ACS::ExecuteApi",
+      "Description": {
+        "en": "Modify RDS instance spec",
+        "zh-cn": "变更RDS实例"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "ModifyDBInstanceSpec",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dBInstanceId }}",
+          "DBInstanceClass": "{{ dBInstanceClass }}",
+          "DBInstanceStorage": "{{ dBInstanceStorage }}",
+          "DBInstanceStorageType": "{{ dBInstanceStorageType }}",
+          "EffectiveTime": "{{ effectiveTime }}"
+        }
+      }
+    },
+    {
+      "Name": "untilInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the DB Instance to enter running status",
+        "zh-cn": "等待DB实例进入running状态"
+      },
+      "Properties": {
+        "Service": "RDS",
+        "API": "DescribeDBInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DBInstanceId": "{{ dBInstanceId }}"
+        },
+        "DesiredValues": [
+          "Running"
+        ],
+        "PropertySelector": "Items.DBInstance[].DBInstanceStatus"
+      }
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::DeleteSnapshotGroups
+  name-zh-cn: 删除一致性快照组
+  en: Delete snapshot groups.
+  zh-cn: 删除一致性快照组
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域Id
+Tasks:
+  - Name: DescribeSnapshotGroups
+    Action: ACS::ExecuteApi
+    Description:
+      en: Describe snapshot groups
+      zh-cn: 查询一致性快照组
+    Properties:
+      Service: ECS
+      API: DescribeSnapshotGroups
+      Parameters:
+        RegionId: '{{ regionId }}'
+    Outputs:
+      snapshotGroupIds:
+        Type: List
+        ValueSelector: .SnapshotGroups.SnapshotGroup[].SnapshotGroupId
+  - Name: DeleteSnapshotGroups
+    Action: ACS::ExecuteApi
+    Description:
+      en: Delete snapshot groups
+      zh-cn: 删除一致性快照组
+    Properties:
+      Service: ECS
+      API: DeleteSnapshotGroup
+      Parameters:
+        RegionId: '{{ regionId }}'
+        SnapshotGroupId: '{{ ACS::TaskLoopItem }}'
+    Loop:
+      Items: '{{ DescribeSnapshotGroups.snapshotGroupIds }}'
+      RateControl:
+        MaxErrors: 0
+        Mode: Concurrency
+        Concurrency: 1

@@ -31,39 +31,39 @@
       },
       "Default": "index.handler"
     },
-    "inputPayload": {
-      "Type": "Json",
-      "Label": {
-        "en": "InputPayload",
-        "zh-cn": "输入参数"
-      },
-      "Description": {
-        "en": "The parameter value of the script",
-        "zh-cn": "脚本的参数值"
-      },
-      "Default": ""
-    },
     "script": {
       "Type": "String",
       "Label": {
         "en": "Python Script",
-        "zh-cn": "python脚本代码"
+        "zh-cn": "Python脚本代码"
       },
       "AssociationProperty": "ALIYUN::OOS::Command::CommandContent",
       "AssociationPropertyMetadata": {
         "CommandType": "RunPythonScript"
       },
-      "Default": "import datetime\nimport os\nimport sys\n\ndef _now(format=\"%Y-%m-%d %H:%M:%S\"):\n  return datetime.datetime.now().strftime(format)\n\ndef job_start():\n  return (\"[%s][%s] job_start\" % (_now(), os.getpid()))\n\ndef handler(event, context):\n  return job_start()"
+      "Default": "import json\n\ndef handler(event, context):\n  # 解析传入的调用参数\n  data = json.loads(event)\n  handler_name = data.get('handler_name')\n  print(f'My name is {handler_name}')\n  return handler_name"
+    },
+    "inputPayload": {
+      "Type": "String",
+      "Label": {
+        "en": "The parameters of function invocation",
+        "zh-cn": "函数调用参数"
+      },
+      "Description": {
+        "en": "JSON Format: {\"key\": \"value\"} Please refer to <a href=\"https://www.alibabacloud.com/help/en/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q\" target=\"_blank\">document</a>",
+        "zh-cn": "JSON格式：{\"key\": \"value\"} 详情请<a href=\"https://help.aliyun.com/zh/functioncompute/user-guide/event-handlers#section-qv4-7ev-s0q\" target=\"_blank\">参考</a>"
+      },
+      "Default": "{\"handler_name\": \"fc_demo\"}"
     },
     "role": {
       "Type": "String",
       "Label": {
-        "en": "RamRoleArn",
-        "zh-cn": "授予函数计算所需权限的RAM角色ARN"
+        "en": "FCRamRole",
+        "zh-cn": "授予函数计算所需权限的RAM角色"
       },
-      "Description": {
-        "en": "Format：\"acs:ram::{{ACS::AccountId}}:role/{RoleName}, for example:\"acs:ram::{{ACS::AccountId}}:role/fc-test-role\"",
-        "zh-cn": "格式：\"acs:ram::{{ACS::AccountId}}:role/{RoleName}, 如:\"acs:ram::{{ACS::AccountId}}:role/fc-test-role\""
+      "AssociationProperty": "ALIYUN::RAM::Service::Role",
+      "AssociationPropertyMetadata": {
+        "Service": "fc.aliyuncs.com"
       },
       "Default": ""
     }
@@ -98,9 +98,13 @@
             {
               "ParameterKey": "Script",
               "ParameterValue": "{{ script }}"
+            },
+            {
+              "ParameterKey": "Role",
+              "ParameterValue": "{{ role }}"
             }
           ],
-          "TemplateBody": "ROSTemplateFormatVersion: 2015-09-01\nParameters:\n  ParameterKeys:\n    Type: String\n  Script:\n    Type: String\nResources:\n  Service:\n    Type: ALIYUN::FC::Service\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      Role: \"{{ role }}\"\n  Function:\n    Type: ALIYUN::FC::Function\n    DependsOn: Service\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      FunctionName:\n        Ref: ALIYUN::StackName\n      Code:\n        SourceCode: \n          Ref: Script\n      Handler: \"{{ handler }}\"\n      Runtime: \"{{ runtime }}\"\n      Timeout: 300\n  FunctionInvoker:\n    Type: ALIYUN::FC::FunctionInvoker\n    DependsOn: Function\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      FunctionName:\n        Ref: ALIYUN::StackName\n      Async: false\n      Event:\n        Ref: ParameterKeys\n      ExecuteVersion: 0\nOutputs:\n  Result:\n    Value:\n      Fn::Replace:\n        - FcResult:\n            Fn::GetAtt:\n              - FunctionInvoker\n              - Result\n        - FcResult\nMetadata:\n  ALIYUN::ROS::Interface:\n    TemplateTags:\n      - acs:integrate:oos:fc_execute_script"
+          "TemplateBody": "ROSTemplateFormatVersion: 2015-09-01\nParameters:\n  ParameterKeys:\n    Type: String\n  Script:\n    Type: String\n  Role:\n    Type: String\n    Default: ''\nConditions:\n  Role:\n    Fn::Equals:\n      - Ref: Role\n      - ''\nResources:\n  Service:\n    Type: ALIYUN::FC::Service\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      Role: \n        Fn::If:\n          - Role\n          - ''\n          - Fn::Sub:\n              - acs:ram::${AccountId}:role/${Role}\n              - AccountId: '{{ ACS::AccountId }}'\n                Role:\n                  Ref: Role\n  Function:\n    Type: ALIYUN::FC::Function\n    DependsOn: Service\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      FunctionName:\n        Ref: ALIYUN::StackName\n      Code:\n        SourceCode: \n          Ref: Script\n      Handler: \"{{ handler }}\"\n      Runtime: \"{{ runtime }}\"\n      Timeout: 300\n  FunctionInvoker:\n    Type: ALIYUN::FC::FunctionInvoker\n    DependsOn: Function\n    Properties:\n      ServiceName:\n        Ref: ALIYUN::StackName\n      FunctionName:\n        Ref: ALIYUN::StackName\n      Async: false\n      Event:\n        Ref: ParameterKeys\n      ExecuteVersion: 0\nOutputs:\n  Result:\n    Value:\n      Fn::Replace:\n        - FcResult:\n            Fn::GetAtt:\n              - FunctionInvoker\n              - Result\n        - FcResult\nMetadata:\n  ALIYUN::ROS::Interface:\n    TemplateTags:\n      - acs:integrate:oos:fc_execute_script"
         }
       },
       "Outputs": {

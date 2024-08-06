@@ -58,6 +58,14 @@
       "Type": "String",
       "AssociationProperty": "ALIYUN::ECS::KeyPair::KeyPairName",
       "Default": ""
+    },
+    "passwordInherit": {
+      "Label": {
+        "en": "PasswordInherit",
+        "zh-cn": "是否使用镜像预设的密码"
+      },
+      "Type": "Boolean",
+      "Default": false
     }
   },
   "Tasks": [
@@ -182,7 +190,8 @@
               null,
               "{{ password }}"
             ]
-          }
+          },
+          "PasswordInherit": "{{ passwordInherit }}"
         }
       },
       "Outputs": {

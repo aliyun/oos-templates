@@ -78,7 +78,6 @@ Parameters:
       en: The ID of the VSwitch
       zh-cn: 交换机ID
     Type: String
-    AllowedPattern: vsw-[A-Za-z0-9]*
     MaxLength: 30
     MinLength: 1
     AssociationProperty: ALIYUN::VPC::VSwitch::VSwitchId
@@ -89,7 +88,6 @@ Parameters:
       en: InstanceType
       zh-cn: 实例类型
     Type: String
-    AllowedPattern: ecs\.[A-Za-z0-9\.\-]*
     MaxLength: 30
     MinLength: 1
     AssociationProperty: ALIYUN::ECS::Instance::InstanceType
@@ -101,7 +99,6 @@ Parameters:
       en: ImageId
       zh-cn: 镜像ID
     Type: String
-    AllowedPattern: '[A-Za-z0-9_\-\.]*'
     MinLength: 1
     MaxLength: 100
     AssociationProperty: 'ALIYUN::ECS::Image::ImageId'
@@ -121,8 +118,9 @@ Parameters:
      - cloud_efficiency
      - cloud_ssd
      - cloud_essd
+     - cloud_auto
      - cloud
-    Default: cloud_efficiency
+    Default: cloud_essd
   systemDiskSize:
     Label:
       en: SystemDiskSize
@@ -146,7 +144,6 @@ Parameters:
       en: SecurityGroupId
       zh-cn: 安全组ID
     Type: String
-    AllowedPattern: sg-[A-Za-z0-9]*
     MaxLength: 30
     MinLength: 1
     AssociationProperty: ALIYUN::ECS::SecurityGroup::SecurityGroupId

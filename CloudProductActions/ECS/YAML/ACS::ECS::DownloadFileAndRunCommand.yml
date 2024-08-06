@@ -166,6 +166,9 @@ Tasks:
           if ("{{sourceType}}" -eq "local")
           {
             Invoke-WebRequest -Uri $sourcePath -OutFile $destinationFile
+            if ($LASTEXITCODE -ne 0){
+              exit $LASTEXITCODE;
+            }
             Write-Host "$destinationFile execute success."
           }
           else

@@ -147,7 +147,7 @@
       "Properties": {
         "runtime": "python3.10",
         "handler": "index.handler",
-        "role": "acs:ram::{{ACS::AccountId}}:role/AliyunFcDefaultRole",
+        "role": "AliyunFcDefaultRole",
         "script": "import oss2\nimport requests\n\ndef handler(event, context):\n  auth = oss2.StsAuth(context.credentials.access_key_id, context.credentials.access_key_secret, context.credentials.security_token)\n  endpoint = 'https://oss-{{OSSRegionId}}.aliyuncs.com'\n  bucket = oss2.Bucket(auth, endpoint, '{{OSSBucketName}}')\n  unique_identifier = '{{ACS::TaskLoopItem}}'.split('?')[0].split('/')[-1]\n  execution_id = '{{ACS::ExecutionId}}'.split('.')[0]\n  input = requests.get('{{ACS::TaskLoopItem}}')\n  bucket.put_object(f'Backup_{{InstanceId}}/{{ACS::CurrentDate}}/{execution_id}/{unique_identifier}', input)"
       },
       "Loop": {

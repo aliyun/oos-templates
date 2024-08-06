@@ -1,0 +1,155 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  name-en: ACS::ECS::UploadOssFile
+  name-zh-cn: 上传OSS文件(ECS)
+  en: Upload OSS files
+  zh-cn: 上传OSS文件 (ECS)
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  ossRegion:
+    Description:
+      en: The region id of OSS
+      zh-cn: OSS所在地域
+    Label:
+      en: OSS Region
+      zh-cn: OSS地域
+    Type: String
+    AssociationProperty: ALIYUN::ECS::RegionId
+    Default: '{{ ACS::RegionId }}'
+  bucketName:
+    Label:
+      en: BucketName
+      zh-cn: OSS bucket 名称
+    Type: String
+    AssociationProperty: ALIYUN::OSS::Bucket::BucketName
+    AssociationPropertyMetadata:
+      RegionId: ossRegion
+  objectName:
+    Label:
+      en: ObjectName
+      zh-cn: OSS object 名称
+    Description:
+      en: The full path of the file to be uploaded to OSS, including the file name, such as path_section_1/path_section_2/file_name.md
+      zh-cn: 文件上传到oss上的完整路径，末尾包含文件名，如 path_section_1/path_section_2/file_name.md
+    Type: String
+  validTime:
+    Label:
+      en: Valid time of OSS file (s)
+      zh-cn: OSS文件有效期（秒）
+    Type: Number
+    Default: 6000
+  instanceId:
+    Label:
+      en: ECSInstanceId
+      zh-cn: ECS实例ID
+    Type: String
+    AssociationProperty: ALIYUN::ECS::Instance::InstanceId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+  fileToUpload:
+    Label:
+      en: File to upload
+      zh-cn: 待上传文件
+    Description:
+      en: Path of the file to be uploaded on the ecs
+      zh-cn: 待上传文件在ecs上的路径，如/root/your_file.zip (linux), C:\\Users\\Administrator\\your_file.zip (windows)
+    Type: String
+Tasks:
+  - Name: queryInstanceOSType
+    Action: 'ACS::ExecuteApi'
+    Description:
+      en: Queries ECS instance OS type
+      zh-cn: 获取ECS实例操作系统类型
+    Properties:
+      Service: ECS
+      API: DescribeInstances
+      Parameters:
+        RegionId: '{{ regionId }}'
+        InstanceIds:
+          - '{{ instanceId }}'
+    Outputs:
+      OSType:
+        Type: String
+        ValueSelector: 'Instances.Instance[].OSType'
+  - Name: generateUrl
+    Action: ACS::ExecuteAPI
+    Description:
+      en: Generate upload url
+      zh-cn: 生成上传链接
+    Properties:
+      Service: OSS
+      API: GenerateUrl
+      Method: PUT
+      URI: '{{ objectName }}'
+      Headers:
+        Content-MD5: ""
+        Content-Type: application/json
+      Parameters:
+        BucketName: '{{ bucketName }}'
+        RegionId: '{{ ossRegion }}'
+        Expires: '{{ validTime }}'
+        Internal:
+          Fn::If:
+            - Fn::Equals:
+                - '{{ ossRegion }}'
+                - '{{ regionId }}'
+            - 'true'
+            - 'false'
+      Body: ''
+    Outputs:
+      temporaryUrl:
+        Type: String
+        ValueSelector: .Url
+  - Name: uploadFile
+    Description:
+      en: Upload file to OSS
+      zh-cn: 上传文件到OSS
+    Action: ACS::ECS::RunCommand
+    Properties:
+      regionId: '{{ regionId }}'
+      instanceId: '{{ instanceId }}'
+      commandType:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ queryInstanceOSType.OSType }}'
+              - 'linux'
+          - RunShellScript
+          - RunPowerShellScript
+      commandContent:
+        Fn::If:
+          - Fn::Equals:
+              - '{{ queryInstanceOSType.OSType }}'
+              - 'linux'
+          - |-
+              curl -X PUT -T "{{fileToUpload}}" "{{generateUrl.temporaryUrl}}"
+          - |-
+              $localFilePath = "{{fileToUpload}}"
+              $uploadUrl = "{{generateUrl.temporaryUrl}}"
+              
+              Invoke-WebRequest -Uri $uploadUrl -Method Put -InFile $localFilePath
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - ossRegion
+          - bucketName
+          - objectName
+          - validTime
+        Label:
+          default:
+            zh-cn: Oss信息
+            en: Oss Info
+      - Parameters:
+          - regionId
+          - instanceId
+          - fileToUpload
+        Label:
+          default:
+            zh-cn: Ecs信息与上传路径
+            en: Ecs Info and Download Path

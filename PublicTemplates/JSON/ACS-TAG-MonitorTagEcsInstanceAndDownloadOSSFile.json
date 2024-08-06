@@ -1,0 +1,216 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Listen to tag events and upload files to instance when the specified tag is added to the ECS instance",
+    "zh-cn": "监听标签事件当给ECS实例打上指定标签时批量上传文件到ECS实例",
+    "name-en": "ACS-TAG-MonitorTagEcsInstanceAndDownloadOSSFile",
+    "name-zh-cn": "监听标签事件当给ECS实例打上指定标签时批量上传文件到ECS实例",
+    "categories": [
+      "event-trigger",
+      "tag_event_trigger"
+    ]
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "tagKey": {
+      "Label": {
+        "en": "Tag key being monitored",
+        "zh-cn": "监听的标签键"
+      },
+      "Type": "String"
+    },
+    "tagValue": {
+      "Label": {
+        "en": "Tag value being monitored",
+        "zh-cn": "监听的标签值"
+      },
+      "Description": {
+        "en": "When you tag an ECS instance, if the instance is in the stopped state, <font color='red'>uploading files to the ECS instance will fail.</font>",
+        "zh-cn": "当给ECS实例打上指定标签时，<font color='red'>如果实例处于停止状态，则无法上传文件到该ECS实例。</font>"
+      },
+      "Type": "String"
+    },
+    "ossRegion": {
+      "Description": {
+        "en": "The region id of OSS",
+        "zh-cn": "OSS所在地域"
+      },
+      "Label": {
+        "en": "OSS Region",
+        "zh-cn": "OSS地域"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "bucketName": {
+      "Label": {
+        "en": "BucketName",
+        "zh-cn": "OSS bucket 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Bucket::BucketName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "ossRegion"
+      }
+    },
+    "objectName": {
+      "Label": {
+        "en": "ObjectName",
+        "zh-cn": "OSS object 名称"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::OSS::Object::ObjectName",
+      "AssociationPropertyMetadata": {
+        "RegionId": "ossRegion",
+        "BucketName": "bucketName",
+        "ValueType": "bucketName"
+      }
+    },
+    "URLExpirationTime": {
+      "Label": {
+        "en": "DownloadURLExpirationTime",
+        "zh-cn": "下载链接的过期时间"
+      },
+      "Type": "Number",
+      "Default": 6000
+    },
+    "destinationDir": {
+      "Label": {
+        "en": "Destination directory",
+        "zh-cn": "下载文件路径"
+      },
+      "Description": {
+        "en": "The directory where the file to download to, like /root/dir1/dir2 (linux), C:\\\\Users\\\\Administrator\\\\dir1\\\\dir2 (windows)",
+        "zh-cn": "文件要下载到的目录，如/root/dir1/dir2 (linux), C:\\\\Users\\\\Administrator\\\\dir1\\\\dir2 (windows)"
+      },
+      "Type": "String"
+    },
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Description": {
+        "en": "The RAM role to be assumed by OOS.",
+        "zh-cn": "OOS扮演的RAM角色。"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "eventTrigger",
+      "Description": {
+        "en": "Monitor the ECS instance TAG event.",
+        "zh-cn": "监控实例标签变化。"
+      },
+      "Action": "ACS::EventTrigger",
+      "Properties": {
+        "Product": "tag",
+        "Name": [
+          "Tag:ChangeOnResource"
+        ],
+        "Level": [
+          "INFO"
+        ],
+        "RegionId": [
+          "{{ regionId }}"
+        ],
+        "Content": {
+          "product": [
+            "ecs"
+          ],
+          "resourceType": [
+            "instance"
+          ],
+          "changedTagKeys": [
+            "{{ tagKey }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "instanceId": {
+          "ValueSelector": ".content.resourceId",
+          "Type": "String"
+        },
+        "content": {
+          "ValueSelector": ".content",
+          "Type": "String"
+        },
+        "isAddTag": {
+          "ValueSelector": ".content.tags|.{{tagKey}}==\"{{tagValue}}\"|tostring",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "whetherTagSmc",
+      "Action": "ACS::Choice",
+      "Properties": {
+        "DefaultTask": "ACS::END",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "true",
+                "{{ eventTrigger.isAddTag }}"
+              ]
+            },
+            "NextTask": "downloadFileToInstances"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "downloadFileToInstances",
+      "Action": "ACS::ECS::DownloadOssFile",
+      "Description": {
+        "en": "Downloads file to the ECS instances",
+        "zh-cn": "下载文件到实例"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "ossRegion": "{{ ossRegion }}",
+        "bucketName": "{{ bucketName }}",
+        "objectName": "{{ objectName }}",
+        "validTime": "{{ URLExpirationTime }}",
+        "instanceId": "{{ eventTrigger.instanceId }}",
+        "destinationDir": "{{ destinationDir }}"
+      }
+    }
+  ],
+  "Outputs": {
+    "tagEventContent": {
+      "Value": "{{ eventTrigger.content }}",
+      "Type": "String"
+    },
+    "instanceId": {
+      "Value": "{{ eventTrigger.instanceId }}",
+      "Type": "String"
+    },
+    "isTriggerExecute": {
+      "Value": "{{ eventTrigger.isAddTag }}",
+      "Type": "String"
+    }
+  }
+}

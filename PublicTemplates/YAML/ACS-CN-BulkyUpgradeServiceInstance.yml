@@ -23,10 +23,11 @@ Parameters:
     AssociationPropertyMetadata:
       ResourceType: ALIYUN::ComputeNestSupplier::Instance
       RegionId: RegionId
+      SupportUpgradeVersion: ${ServiceVersion}
   ServiceVersion:
     Label:
-      en: ServiceVersion
-      zh-cn: 服务版本
+      en: UpgradeServiceVersion
+      zh-cn: 升级服务版本
     Type: String
     AssociationProperty: ALIYUN::ComputeNestSupplier::Service::ServiceVersion
   RateControl:
@@ -77,8 +78,8 @@ Metadata:
     ParameterGroups:
       - Parameters:
           - RegionId
-          - Targets
           - ServiceVersion
+          - Targets
         Label:
           default:
             zh-cn: 配置参数

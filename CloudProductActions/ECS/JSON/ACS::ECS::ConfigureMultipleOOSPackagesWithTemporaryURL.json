@@ -24,7 +24,8 @@
       "Type": "String",
       "AllowedValues": [
         "install",
-        "uninstall"
+        "uninstall",
+        "update"
       ],
       "Default": "install",
       "AssociationPropertyMetadata": {
@@ -70,7 +71,7 @@
         "en": "Configure Package",
         "zh-cn": "配置软件包"
       },
-      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURL",
+      "Action": "ACS::ECS::ConfigureOOSPackageWithTemporaryURLFullActions",
       "Properties": {
         "regionId": "{{ regionId }}",
         "instanceId": "{{ instanceId }}",
@@ -130,12 +131,36 @@
       },
       "Outputs": {
         "commandOutput": {
-          "Type": "List",
-          "ValueSelector": ".commandOutput"
+          "Type": "Json",
+          "ValueSelector": {
+            "Fn::Sub": [
+              ".|{\"Package\": \"${package}\", \"PackageResult\": .commandOutput}",
+              {
+                "package": {
+                  "Fn::Select": [
+                    "packageName",
+                    "{{ ACS::TaskLoopItem }}"
+                  ]
+                }
+              }
+            ]
+          }
         },
         "configurationOutput": {
-          "Type": "List",
-          "ValueSelector": ".configurationOutput"
+          "Type": "Json",
+          "ValueSelector": {
+            "Fn::Sub": [
+              ".|{\"Package\": \"${package}\", \"PackageResult\": .configurationOutput}",
+              {
+                "package": {
+                  "Fn::Select": [
+                    "packageName",
+                    "{{ ACS::TaskLoopItem }}"
+                  ]
+                }
+              }
+            ]
+          }
         }
       }
     },
@@ -162,6 +187,10 @@
     "commandOutput": {
       "Type": "List",
       "Value": "{{ configurePackage.commandOutputs }}"
+    },
+    "configurationOutput": {
+      "Type": "List",
+      "Value": "{{ configurePackage.configurationOutputs }}"
     }
   }
 }

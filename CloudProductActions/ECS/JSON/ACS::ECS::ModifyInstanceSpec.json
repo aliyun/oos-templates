@@ -46,6 +46,7 @@
     {
       "Name": "modifyPostPaidInstanceSpec",
       "Action": "ACS::ExecuteAPI",
+      "OnError": "startInstance",
       "Description": {
         "en": "Modifies the instance type of a pay-as-you-go instance",
         "zh-cn": "修改按量付费ECS实例的实例规格"

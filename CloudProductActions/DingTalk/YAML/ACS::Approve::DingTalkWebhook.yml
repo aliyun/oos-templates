@@ -2,17 +2,18 @@ FormatVersion: OOS-2019-06-01
 Description:
   name-en: ACS::Approve::DingTalkWebhook
   name-zh-cn: 发送审批通知(DingTalk)
-  en: 'Sends notification to DingTalk via webhook for asking approval. The execution remains paused until
-        approved or rejected. Please refer https://open.dingtalk.com/document/isvapp/message-type
-        for details'
-  zh-cn: '通过webhook向DingTalk发送请求批准的通知。执行将保持暂停状态，直到批准或拒绝。
-          请参阅https://open.dingtalk.com/document/isvapp/message-type获取详细信息'
+  en: Send notification requesting approval to DingTalk via webhook. Execution will remain suspended until approved or denied. For details, please see the <a href='https://open.dingtalk.com/document/isvapp/message-type' target='_blank'>documentation</a>
+  zh-cn: 通过webhook向DingTalk发送请求批准的通知。执行将保持暂停状态，直到批准或拒绝。详情请查看<a href='https://open.dingtalk.com/document/isvapp/message-type' target='_blank'>文档</a>
 Parameters:
   webhook:
+    Label:
+      en: DingTalk Webhook
+      zh-cn: DingTalk Webhook
     Description:
-      en: DingTalk webhook to notify
-      zh-cn: DingTalk webhook来通知
+      en: <a href='https://help.aliyun.com/zh/oos/use-cases/use-oos-to-configure-the-approval-process#section-iqc-0ul-vpy' target='_blank' >Get DingTalk Webhook</a>
+      zh-cn: <a href='https://help.aliyun.com/zh/oos/use-cases/use-oos-to-configure-the-approval-process#section-iqc-0ul-vpy' target='_blank'>获取钉钉Webhook</a>
     Type: String
+    Default: https://oapi.dingtalk.com/robot/send?access_token=12345678900000
   msgtype:
     Description:
       en: Message types
