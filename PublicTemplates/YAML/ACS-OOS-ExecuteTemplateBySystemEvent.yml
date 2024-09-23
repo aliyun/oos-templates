@@ -18,6 +18,7 @@ Parameters:
       en: EventOutputTransformer
       zh-cn: 系统事件消息体到模板调用参数的转换器
     Type: Json
+    Default: {}
   templateName:
     Label:
       en: TemplateName

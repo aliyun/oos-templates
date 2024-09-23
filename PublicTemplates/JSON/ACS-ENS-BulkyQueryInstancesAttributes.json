@@ -1,0 +1,57 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "en": "Bulky query ENS instance ID and instance information",
+    "zh-cn": "批量查询ENS实例ID及实例信息",
+    "name-en": "ACS-ENS-BulkyQueryInstancesAttributes",
+    "name-zh-cn": "批量查询ENS实例ID及实例信息"
+  },
+  "Parameters": {
+    "rateControl": {
+      "Label": {
+        "en": "RateControl",
+        "zh-cn": "任务执行的并发比率"
+      },
+      "Type": "Json",
+      "AssociationProperty": "RateControl",
+      "Default": {
+        "Mode": "Concurrency",
+        "MaxErrors": 0,
+        "Concurrency": 10
+      }
+    },
+    "OOSAssumeRole": {
+      "Label": {
+        "en": "OOSAssumeRole",
+        "zh-cn": "OOS扮演的RAM角色"
+      },
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "RamRole": "{{ OOSAssumeRole }}",
+  "Tasks": [
+    {
+      "Name": "ExecuteApi",
+      "Action": "ACS::ExecuteApi",
+      "Description": "查询ENS实例列表",
+      "Properties": {
+        "Parameters": {},
+        "Service": "ens",
+        "API": "DescribeInstances"
+      },
+      "Outputs": {
+        "InstancesInfo": {
+          "Type": "List",
+          "ValueSelector": ".Instances.Instance[]"
+        }
+      }
+    }
+  ],
+  "Outputs": {
+    "instances_info": {
+      "Type": "List",
+      "Value": "{{ ExecuteApi.InstancesInfo }}"
+    }
+  }
+}

@@ -1,0 +1,154 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Bulky encrypt the disks
+  zh-cn: 批量加密云盘
+  name-en: ACS-ECS-BulkyEncryptDisks
+  name-zh-cn: 批量加密云盘
+  categories:
+    - security
+Parameters:
+  regionId:
+    Type: String
+    Label:
+      en: RegionId
+      zh-cn: 地域ID
+    AssociationProperty: RegionId
+    Default: '{{ ACS::RegionId }}'
+  targets:
+    Type: Json
+    Label:
+      en: TargetInstance
+      zh-cn: 目标实例
+    AssociationProperty: Targets
+    AssociationPropertyMetadata:
+      ResourceType: 'ALIYUN::ECS::Instance'
+      RegionId: regionId
+  KMSKeyId:
+    Label:
+      en: KMSKeyId
+      zh-cn: 加密镜像使用的KMS密钥ID
+    AssociationProperty: ALIYUN::KMS::Key::KeyId
+    AssociationPropertyMetadata:
+      RegionId: regionId
+    Type: String
+  diskType:
+    Label:
+      en: DiskType
+      zh-cn: 磁盘类型
+    Type: List
+    AllowedValues:
+      - system
+      - data
+    Default:
+      - system
+  rateControl:
+    Label:
+      en: RateControl
+      zh-cn: 任务执行的并发比率
+    Type: Json
+    AssociationProperty: RateControl
+    Default:
+      Mode: Concurrency
+      MaxErrors: 0
+      Concurrency: 10
+  OOSAssumeRole:
+    Label:
+      en: OOSAssumeRole
+      zh-cn: OOS扮演的RAM角色
+    Type: String
+    Default: ''
+RamRole: '{{ OOSAssumeRole }}'
+Tasks:
+- Name: getInstance
+  Description:
+    en: Views the ECS instances
+    zh-cn: 获取ECS实例
+  Action: ACS::SelectTargets
+  Properties:
+    ResourceType: ALIYUN::ECS::Instance
+    RegionId: '{{ regionId }}'
+    Filters:
+      - '{{ targets }}'
+  Outputs:
+    instanceIds:
+      Type: List
+      ValueSelector: Instances.Instance[].InstanceId
+- Name: encryptSystemDisk
+  Action: ACS::ECS::EncryptSystemDisk
+  Description:
+    en: Bulky encrypt the system disks
+    zh-cn: 批量加密系统盘
+  When:
+    Fn::Equals:
+      - true
+      - Fn::Jq:
+          - First
+          - 'contains(["system"])'
+          - '{{diskType}}'
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ ACS::TaskLoopItem }}'
+    KMSKeyId: '{{ KMSKeyId }}'
+  Outputs:
+    systemDiskEncryptedInstance:
+      Type: String
+      ValueSelector: .systemDiskEncryptedInstance
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'
+    Outputs:
+      systemDiskEncryptedInstances:
+        AggregateType: Fn::ListJoin
+        AggregateField: systemDiskEncryptedInstance
+- Name: encryptDataDisk
+  Action: ACS::ECS::BulkyEncryptDataDisk
+  Description:
+    en: Bulky encrypt the data disks
+    zh-cn: 批量加密数据盘
+  When:
+    Fn::Equals:
+      - true
+      - Fn::Jq:
+          - First
+          - 'contains(["data"])'
+          - '{{diskType}}'
+  Properties:
+    regionId: '{{ regionId }}'
+    instanceId: '{{ ACS::TaskLoopItem }}'
+    KMSKeyId: '{{ KMSKeyId }}'
+  Loop:
+    RateControl: '{{ rateControl }}'
+    Items: '{{ getInstance.instanceIds }}'
+Outputs:
+  systemDiskEncryptedInstances:
+    Type: Json
+    Value:
+      Fn::Jq:
+        - First
+        - '[.[][]]|.|= map(select(.))'
+        - '{{ encryptSystemDisk.systemDiskEncryptedInstances }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - regionId
+          - targets
+          - instancePassword
+          - diskType
+        Label:
+          default:
+            zh-cn: 选择实例
+            en: Select Ecs Instances
+      - Parameters:
+          - KMSKeyId
+        Label:
+          default:
+            zh-cn: 配置KMSKey
+            en: Configure KMSKey
+      - Parameters:
+          - rateControl
+          - OOSAssumeRole
+        Label:
+          default:
+            zh-cn: 高级选项
+            en: Control Options

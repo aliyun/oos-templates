@@ -53,6 +53,7 @@ Parameters:
       en: 'Unit: Hour. The bandwidth upgrade should last at least 4 hours. Upgrade only ends on the hour'
     Type: Number
     MinValue: 4
+    MaxValue: 10000
     Default: 4
   rateControl:
     Label:

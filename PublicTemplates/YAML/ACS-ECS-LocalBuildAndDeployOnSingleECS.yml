@@ -1,0 +1,135 @@
+FormatVersion: OOS-2019-06-01
+Description:
+  en: Build and deploy applications on a single ECS
+  zh-cn: 在单个ECS上构建并部署应用
+  name-en: ACS-ECS-LocalBuildAndDeployOnSingleECS
+  name-zh-cn: 单ECS本地构建部署
+Parameters:
+  platform:
+    Type: String
+    Label:
+      en: Platform
+      zh-cn: 平台
+    AssociationProperty: ALIYUN::OOS::GitPlatform::Name
+    Default: github
+    AllowedValues:
+      - github
+      - gitee
+  owner:
+    Type: String
+    Label:
+      en: Owner
+      zh-cn: 所有者
+    AssociationProperty: ALIYUN::OOS::GitAccount::Name
+    AssociationPropertyMetadata:
+      Platform: ${platform}
+  organization:
+    Type: String
+    Label:
+      en: Organization
+      zh-cn: 组织
+    Default: ''
+    AssociationProperty: ALIYUN::OOS::GitOrganization::Name
+    AssociationPropertyMetadata:
+      Platform: ${platform}
+      Owner: ${owner}
+  repository:
+    Type: String
+    Label:
+      en: Repository
+      zh-cn: 仓库
+    AssociationProperty: ALIYUN::OOS::GitRepository::Name
+    AssociationPropertyMetadata:
+      Platform: ${platform}
+      Organization: ${organization}
+      Owner: ${owner}
+  instanceId:
+    Description:
+      en: The ID of ECS instance
+      zh-cn: ECS实例ID
+    Type: String
+    Default: ''
+    AssociationPropertyMetadata:
+      Visible:
+        Condition:
+          Fn::Equals:
+            - ${platform}
+            - Null
+  branch:
+    Label:
+      en: Branch
+      zh-cn: 分支
+    Description:
+      en: Branch, pull default branch if not set
+      zh-cn: 代码仓库分支，不填拉取默认分支
+    Type: String
+    Default: ''
+  isDockerBuild:
+    Label:
+      en: IsDockerBuild
+      zh-cn: 是否Docker构建
+    Description:
+      en: If true, docker will automatically be install on your ecs.
+      zh-cn: 如果为true，会为您在ECS上自动安装Docker。
+    Type: Boolean
+    Default: true
+  buildAndDeployScript:
+    Label:
+      en: buildAndDeployScript
+      zh-cn: 构建部署脚本
+    Type: String
+    MaxLength: 16384
+    AssociationProperty: ALIYUN::OOS::Command::CommandContent
+    AssociationPropertyMetadata:
+      CommandType: RunShellScript
+    Default: |-
+      # sample java deploy script
+      set -e
+      yum install -y maven-3.5.4
+      mvn package
+      java -jar target/sample-spring-1.0-SNAPSHOT.jar &
+RamRole: ''
+Tasks:
+  - Name: GitCodeRepo
+    Action: ACS::CICD::GitCodeRepo
+    Description: 指定代码源，生成临时授权链接
+    Properties:
+      organization: '{{ organization }}'
+      platform: '{{ platform }}'
+      owner: '{{ owner }}'
+      repository: '{{ repository }}'
+    Outputs:
+      authorizedUrl:
+        Type: String
+        ValueSelector: authorizedUrl
+  - Name: LocalBuildAndDeploy
+    Action: ACS::CICD::LocalBuildAndDeploy
+    Description: 拉取代码，构建并部署应用
+    Properties:
+      instanceId: '{{ instanceId }}'
+      codeSource: git
+      isDockerBuild: '{{ isDockerBuild }}'
+      codeSourceUrl: '{{ GitCodeRepo.authorizedUrl }}'
+      branch: '{{ branch }}'
+      buildAndDeployScript: '{{ buildAndDeployScript }}'
+      regionId: '{{ ACS::RegionId }}'
+Metadata:
+  ALIYUN::OOS::Interface:
+    ParameterGroups:
+      - Parameters:
+          - platform
+          - owner
+          - organization
+          - repository
+          - branch
+        Label:
+          default:
+            zh-cn: 代码源配置
+            en: Code Source Configuration
+      - Parameters:
+          - isDockerBuild
+          - buildAndDeployScript
+        Label:
+          default:
+            zh-cn: 构建部署配置
+            en: Build and Deploy Configuration

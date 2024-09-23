@@ -18,6 +18,7 @@ Parameters:
       en: AlarmOutputTransformer
       zh-cn: 告警消息体到调用模板参数的转换器
     Type: Json
+    Default: {}
   templateName:
     Label:
       en: TemplateName

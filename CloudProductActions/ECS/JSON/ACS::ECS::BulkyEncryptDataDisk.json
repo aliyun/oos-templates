@@ -1,0 +1,110 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::BulkyEncryptDataDisk",
+    "name-zh-cn": "批量加密数据盘",
+    "en": "Bulky encrypt Data disk",
+    "zh-cn": "批量加密数据盘"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "instanceId": {
+      "Label": {
+        "en": "InstanceId",
+        "zh-cn": "实例ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId"
+    },
+    "KMSKeyId": {
+      "Label": {
+        "en": "KMSKeyId",
+        "zh-cn": "加密快照使用的KMS密钥ID"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "waitInstanceReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits the ECS instance status to running or stopped",
+        "zh-cn": "等待实例到running或者stopped状态"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeInstances",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceIds": [
+            "{{ instanceId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Running",
+          "Stopped"
+        ],
+        "PropertySelector": "Instances.Instance[].Status"
+      },
+      "Outputs": {
+        "keyPairName": {
+          "Type": "String",
+          "ValueSelector": "Instances.Instance[].KeyPairName"
+        }
+      }
+    },
+    {
+      "Name": "describeDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the disk info",
+        "zh-cn": "获取磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "DiskType": "Data"
+        }
+      },
+      "Outputs": {
+        "diskIds": {
+          "Type": "List",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        }
+      }
+    },
+    {
+      "Name": "encryptDataDisk",
+      "Action": "ACS::ECS::EncryptDataDisk",
+      "Description": {
+        "en": "Encrypt data disk",
+        "zh-cn": "加密数据盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ ACS::TaskLoopItem }}",
+        "KMSKeyId": "{{ KMSKeyId }}"
+      },
+      "Loop": {
+        "Items": "{{ describeDisk.diskIds }}",
+        "RateControl": {
+          "Mode": "Concurrency",
+          "MaxErrors": 0,
+          "Concurrency": 1
+        }
+      }
+    }
+  ]
+}
