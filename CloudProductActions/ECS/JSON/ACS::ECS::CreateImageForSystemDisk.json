@@ -1,10 +1,10 @@
 {
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
-    "name-en": "ACS::ECS::CreateImage",
-    "name-zh-cn": "创建镜像(ECS)",
-    "en": "Creates a custom image from ECS instance",
-    "zh-cn": "为ECS实例创建一份自定义镜像"
+    "name-en": "ACS::ECS::CreateImageForSystemDisk",
+    "name-zh-cn": "创建系统盘镜像",
+    "en": "Creates a custom image from ECS instance system disk",
+    "zh-cn": "为ECS实例创建一份只有系统盘的自定义镜像"
   },
   "Parameters": {
     "regionId": {
@@ -32,9 +32,7 @@
       "AssociationProperty": "ALIYUN::ECS::Instance::InstanceId",
       "AssociationPropertyMetadata": {
         "RegionId": "regionId"
-      },
-      "MinLength": 1,
-      "MaxLength": 30
+      }
     },
     "tags": {
       "Label": {
@@ -163,6 +161,48 @@
       }
     },
     {
+      "Name": "getSystemDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Queries system disk of the ECS instance",
+        "zh-cn": "获取ECS实例的系统盘"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "InstanceId": "{{ instanceId }}",
+          "DiskType": "system"
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        }
+      }
+    },
+    {
+      "Name": "createSnapshot",
+      "Action": "ACS::ECS::CreateSnapshot",
+      "Description": {
+        "en": "Creates a snapshot for the system disk",
+        "zh-cn": "为系统盘创建快照"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ getSystemDisk.diskId }}",
+        "snapshotName": "Snapshot-{{ ACS::ExecutionId }}"
+      },
+      "Outputs": {
+        "snapshotId": {
+          "Type": "String",
+          "ValueSelector": "snapshotId"
+        }
+      }
+    },
+    {
       "Name": "createImage",
       "Action": "ACS::ExecuteAPI",
       "Description": {
@@ -175,7 +215,7 @@
         "Parameters": {
           "RegionId": "{{ regionId }}",
           "ImageName": "{{ imageName }}",
-          "InstanceId": "{{ instanceId }}",
+          "SnapshotId": "{{ createSnapshot.snapshotId }}",
           "Tags": "{{ tags }}",
           "ResourceGroupId": {
             "Fn::If": [

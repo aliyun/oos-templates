@@ -54,6 +54,51 @@
       },
       "Default": []
     },
+    "imageFamily": {
+      "Label": {
+        "en": "ImageFamily",
+        "zh-cn": "镜像族系"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "imageDescription": {
+      "Label": {
+        "en": "ImageDescription",
+        "zh-cn": "镜像描述"
+      },
+      "Type": "String",
+      "Default": ""
+    },
+    "resourceGroupId": {
+      "Label": {
+        "en": "ResourceGroupId",
+        "zh-cn": "资源组ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::ResourceGroup::ResourceGroupId",
+      "Default": ""
+    },
+    "detectionStrategy": {
+      "Label": {
+        "en": "DetectionStrategy",
+        "zh-cn": "镜像检测策略"
+      },
+      "Type": "String",
+      "AllowedValues": [
+        "Standard",
+        ""
+      ],
+      "Default": ""
+    },
+    "whetherOnlySystemDisk": {
+      "Label": {
+        "en": "WhetherOnlySystemDisk",
+        "zh-cn": "是否仅选择系统盘"
+      },
+      "Type": "Boolean",
+      "Default": false
+    },
     "OOSAssumeRole": {
       "Label": {
         "en": "OOSAssumeRole",
@@ -72,11 +117,51 @@
         "en": "Create new image with the specified image name and instance ID",
         "zh-cn": "通过指定实例ID和镜像名称创建新的镜像"
       },
+      "When": {
+        "Fn::Equals": [
+          "{{ whetherOnlySystemDisk }}",
+          false
+        ]
+      },
       "Properties": {
         "regionId": "{{ regionId }}",
         "imageName": "{{ imageName }}__on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}",
         "instanceId": "{{ instanceId }}",
-        "tags": "{{tags}}"
+        "tags": "{{tags}}",
+        "imageFamily": "{{ imageFamily }}",
+        "imageDescription": "{{ imageDescription }}",
+        "resourceGroupId": "{{ resourceGroupId }}",
+        "detectionStrategy": "{{ detectionStrategy }}"
+      },
+      "Outputs": {
+        "imageId": {
+          "ValueSelector": "imageId",
+          "Type": "String"
+        }
+      }
+    },
+    {
+      "Name": "createImageOnlySystemDisk",
+      "Action": "ACS::ECS::CreateImageForSystemDisk",
+      "Description": {
+        "en": "Create new system disk image with the specified image name and instance ID",
+        "zh-cn": "通过指定实例ID和镜像名称创建新的系统盘镜像"
+      },
+      "When": {
+        "Fn::Equals": [
+          "{{ whetherOnlySystemDisk }}",
+          true
+        ]
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "imageName": "{{ imageName }}__on_{{ ACS::ExecutionId }}_at_{{ Acs::CurrentDate }}",
+        "instanceId": "{{ instanceId }}",
+        "tags": "{{tags}}",
+        "imageFamily": "{{ imageFamily }}",
+        "imageDescription": "{{ imageDescription }}",
+        "resourceGroupId": "{{ resourceGroupId }}",
+        "detectionStrategy": "{{ detectionStrategy }}"
       },
       "Outputs": {
         "imageId": {
@@ -89,7 +174,18 @@
   "Outputs": {
     "imageId": {
       "Type": "String",
-      "Value": "{{ createImage.imageId }}"
+      "Value": {
+        "Fn::If": [
+          {
+            "Fn::Equals": [
+              "{{ whetherOnlySystemDisk }}",
+              false
+            ]
+          },
+          "{{ createImage.imageId }}",
+          "{{ createImageOnlySystemDisk.imageId }}"
+        ]
+      }
     }
   },
   "Metadata": {
@@ -110,7 +206,12 @@
         {
           "Parameters": [
             "imageName",
-            "tags"
+            "tags",
+            "whetherOnlySystemDisk",
+            "imageFamily",
+            "imageDescription",
+            "resourceGroupId",
+            "detectionStrategy"
           ],
           "Label": {
             "default": {

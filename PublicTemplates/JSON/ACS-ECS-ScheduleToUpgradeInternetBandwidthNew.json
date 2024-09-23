@@ -69,6 +69,7 @@
       },
       "Type": "Number",
       "MinValue": 4,
+      "MaxValue": 10000,
       "Default": 4
     },
     "rateControl": {

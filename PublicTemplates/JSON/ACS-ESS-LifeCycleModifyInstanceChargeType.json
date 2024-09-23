@@ -2,9 +2,9 @@
   "FormatVersion": "OOS-2019-06-01",
   "Description": {
     "en": "Use lifecycleHook to modify instance charge type in the specified scaling activity",
-    "zh-cn": "使用生命周期挂钩修改实例付费方式",
+    "zh-cn": "使用生命周期挂钩修改实例付费方式(仅支持弹性扩张活动)",
     "name-en": "ACS-ESS-LifeCycleModifyInstanceChargeType",
-    "name-zh-cn": "使用生命周期挂钩修改实例付费方式",
+    "name-zh-cn": "使用生命周期挂钩修改实例付费方式(仅支持弹性扩张活动)",
     "categories": [
       "elastic_manage"
     ]
@@ -78,6 +78,30 @@
       "Label": {
         "en": "IncludeDataDisks",
         "zh-cn": "是否转换数据盘"
+      },
+      "Type": "Boolean",
+      "Default": false,
+      "AssociationPropertyMetadata": {
+        "Visible": {
+          "Condition": {
+            "Fn::Not": {
+              "Fn::Equals": [
+                "${instanceChargeType}",
+                "PostPaid"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "autoRenew": {
+      "Description": {
+        "en": "Specifies whether instances are automatically renewed before expire.",
+        "zh-cn": "实例到期前是否自动续费。"
+      },
+      "Label": {
+        "en": "AutoRenew",
+        "zh-cn": "实例到期前是否自动续费。"
       },
       "Type": "Boolean",
       "Default": false,
@@ -207,7 +231,6 @@
     {
       "Name": "modifyInstanceChargeType",
       "OnError": "CompleteLifecycleActionForAbandon",
-      "OnSuccess": "CompleteLifecycleActionForContinue",
       "Description": {
         "en": "Modify instance charge type",
         "zh-cn": "修改实例计费方式"
@@ -225,6 +248,33 @@
       "Loop": {
         "Items": "{{ instanceIds }}",
         "RateControl": "{{ rateControl }}"
+      }
+    },
+    {
+      "Name": "modifyInstanceAutoRenewAttribute",
+      "OnError": "CompleteLifecycleActionForAbandon",
+      "OnSuccess": "CompleteLifecycleActionForContinue",
+      "Description": {
+        "en": "Modify Instance AutoRenew Attribute",
+        "zh-cn": "设置包年包月实例的自动续费状态"
+      },
+      "Action": "ACS::ECS::ModifyInstanceAutoRenewAttribute",
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "instanceId": "{{ ACS::TaskLoopItem }}",
+        "autoRenew": "{{ autoRenew }}",
+        "duration": "{{ period }}",
+        "periodUnit": "{{ periodUnit }}"
+      },
+      "Loop": {
+        "Items": "{{ instanceIds }}",
+        "RateControl": "{{ rateControl }}"
+      },
+      "When": {
+        "Fn::Equals": [
+          "{{ autoRenew }}",
+          true
+        ]
       }
     },
     {

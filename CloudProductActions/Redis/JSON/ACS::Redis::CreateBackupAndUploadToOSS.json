@@ -124,7 +124,12 @@
           },
           "EndTime": {
             "Fn::FormatUTCTime": [
-              "{{ ACS::CurrentUTCTime }}",
+              {
+                "Fn::AddHour": [
+                  "{{ ACS::CurrentUTCTime }}",
+                  1
+                ]
+              },
               "%Y-%m-%dT%H:%MZ"
             ]
           }

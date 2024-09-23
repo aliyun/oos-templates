@@ -1,0 +1,224 @@
+{
+  "FormatVersion": "OOS-2019-06-01",
+  "Description": {
+    "name-en": "ACS::ECS::EncryptDataDisk",
+    "name-zh-cn": "加密数据盘",
+    "en": "Encrypt Data disk",
+    "zh-cn": "加密数据盘"
+  },
+  "Parameters": {
+    "regionId": {
+      "Label": {
+        "en": "RegionId",
+        "zh-cn": "地域ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "RegionId",
+      "Default": "{{ ACS::RegionId }}"
+    },
+    "diskId": {
+      "Label": {
+        "en": "DiskId",
+        "zh-cn": "磁盘ID"
+      },
+      "Type": "String",
+      "AssociationProperty": "ALIYUN::ECS::Disk::DiskId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId",
+        "DiskType": "Data"
+      }
+    },
+    "KMSKeyId": {
+      "Label": {
+        "en": "KMSKeyId",
+        "zh-cn": "加密快照使用的KMS密钥ID"
+      },
+      "AssociationProperty": "ALIYUN::KMS::Key::KeyId",
+      "AssociationPropertyMetadata": {
+        "RegionId": "regionId"
+      },
+      "Type": "String"
+    }
+  },
+  "Tasks": [
+    {
+      "Name": "describeDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Query the disk info",
+        "zh-cn": "获取磁盘信息"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DiskIds": [
+            "{{ diskId }}"
+          ]
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskId"
+        },
+        "encrypted": {
+          "Type": "Boolean",
+          "ValueSelector": "Disks.Disk[].Encrypted"
+        },
+        "category": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].Category"
+        },
+        "zoneId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].ZoneId"
+        },
+        "description": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].Description"
+        },
+        "name": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].DiskName"
+        },
+        "size": {
+          "Type": "Number",
+          "ValueSelector": "Disks.Disk[].Size"
+        },
+        "device": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].Device"
+        },
+        "instanceId": {
+          "Type": "String",
+          "ValueSelector": "Disks.Disk[].InstanceId"
+        },
+        "deleteWithInstance": {
+          "Type": "Boolean",
+          "ValueSelector": "Disks.Disk[].DeleteWithInstance"
+        }
+      }
+    },
+    {
+      "Name": "whetherToEncrypt",
+      "Action": "ACS::Choice",
+      "Description": {
+        "en": "Choose the next task according to whether the disk is encrypted",
+        "zh-cn": "根据磁盘是否加密选择下一个任务"
+      },
+      "Properties": {
+        "DefaultTask": "createSnapshot",
+        "Choices": [
+          {
+            "When": {
+              "Fn::Equals": [
+                "{{ describeDisk.encrypted }}",
+                true
+              ]
+            },
+            "NextTask": "ACS::END"
+          }
+        ]
+      }
+    },
+    {
+      "Name": "createSnapshot",
+      "Action": "ACS::ECS::CreateSnapshot",
+      "Description": {
+        "en": "Creates a snapshot for the Data disk",
+        "zh-cn": "为数据盘创建快照"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ describeDisk.diskId }}",
+        "snapshotName": "Snapshot-{{ ACS::ExecutionId }}"
+      },
+      "Outputs": {
+        "snapshotId": {
+          "Type": "String",
+          "ValueSelector": "snapshotId"
+        }
+      }
+    },
+    {
+      "Name": "createDisk",
+      "Action": "ACS::ExecuteAPI",
+      "Description": {
+        "en": "Creates a disk",
+        "zh-cn": "创建磁盘"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "CreateDisk",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "Size": "{{ describeDisk.Size }}",
+          "ZoneId": "{{ describeDisk.ZoneId }}",
+          "DiskName": "{{ describeDisk.name }}",
+          "DiskCategory": "{{ describeDisk.category }}",
+          "SnapshotId": "{{ createSnapshot.snapshotId }}",
+          "Description": "{{ describeDisk.description }}",
+          "KMSKeyId": "{{ KMSKeyId }}",
+          "Encrypted": true
+        }
+      },
+      "Outputs": {
+        "diskId": {
+          "Type": "String",
+          "ValueSelector": "DiskId"
+        }
+      }
+    },
+    {
+      "Name": "untilNewDiskReady",
+      "Action": "ACS::WaitFor",
+      "Description": {
+        "en": "Waits for the disk to be created successfully",
+        "zh-cn": "等待磁盘创建成功"
+      },
+      "Properties": {
+        "Service": "ECS",
+        "API": "DescribeDisks",
+        "Parameters": {
+          "RegionId": "{{ regionId }}",
+          "DiskIds": [
+            "{{ createDisk.diskId }}"
+          ]
+        },
+        "DesiredValues": [
+          "Available"
+        ],
+        "PropertySelector": "Disks.Disk[].Status"
+      }
+    },
+    {
+      "Name": "detachDisk",
+      "Action": "ACS::ECS::DetachDisk",
+      "Description": {
+        "en": "Detaches the disk",
+        "zh-cn": "解绑磁盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ diskId }}",
+        "instanceId": "{{ describeDisk.instanceId }}"
+      }
+    },
+    {
+      "Name": "attachDisk",
+      "Action": "ACS::ECS::AttachDisk",
+      "Description": {
+        "en": "Attaches the disk",
+        "zh-cn": "绑定磁盘"
+      },
+      "Properties": {
+        "regionId": "{{ regionId }}",
+        "diskId": "{{ createDisk.diskId }}",
+        "instanceId": "{{ describeDisk.instanceId }}",
+        "deleteWithInstance": "{{ describeDisk.deleteWithInstance }}"
+      }
+    }
+  ]
+}

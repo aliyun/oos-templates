@@ -338,6 +338,23 @@
       }
     },
     {
+      "Name": "sleepForWindows",
+      "Description": {
+        "en": "Windows specific instance type wait for restart",
+        "zh-cn": "Windows实例类型等待重启"
+      },
+      "When": {
+        "Fn::Equals": [
+          "{{ queryInstanceOSType.OSType }}",
+          "windows"
+        ]
+      },
+      "Action": "ACS::Sleep",
+      "Properties": {
+        "Duration": "4m"
+      }
+    },
+    {
       "Name": "describeCloudAssistantStatus",
       "Action": "ACS::WaitFor",
       "Description": {

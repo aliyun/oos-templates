@@ -47,8 +47,17 @@ Parameters:
       zh-cn: 加密镜像使用的密钥ID
     Type: String
     Default: ""
+  tags:
+    Label:
+      en: Tags
+      zh-cn: 镜像标签
+    Type: Json
+    AssociationProperty: Tags
+    AssociationPropertyMetadata:
+      ShowSystem: false
+    Default: []
 Tasks:
-  - Name: whetheToCopyImage
+  - Name: whetherToCopyImage
     Action: 'ACS::Choice'
     Description:
       en: Whether to copy image by target region id
@@ -75,6 +84,7 @@ Tasks:
         DestinationRegionId: '{{ targetRegionId }}'
         DestinationImageName: '{{ targetImageName }}'
         Encrypted: '{{ encrypted }}'
+        Tags: '{{ tags }}'
         KMSKeyId:
           'Fn::If':
             - 'Fn::Equals':
